@@ -25,7 +25,7 @@ else:
     print('googlemaps help: https://github.com/googlemaps/google-maps-services-python')
 
 PLACES      = ['Bremen, Germany', 'Florence, Italy', 'Brussels, Belgium']
-GOOGLE_KEY  = 'AIzaSyA_uYf_EI850pc_24lTXpN1CgI-w1Jhdjg' # you need to provide your own API key here
+GOOGLE_KEY  = '' # you need to provide your own API key here
 NUTSDIR     = 'ref-nuts-2013-01m'
 NUTSFILE    = 'NUTS_RG_01M_2013_4326_LEVL_2.shp' # region
 
