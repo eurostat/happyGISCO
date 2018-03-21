@@ -8,14 +8,13 @@ Identifying NUTS regions associated to a given place or geolocation.
 
 **Description**
 
-* [PoC.py](PoC.py): this is a quick and dirty (`Python`) implementation of the service as a Proof of Concept (PoC); it shows how one can retrieve the NUTS
-region at level 2 associated to a toponame (place), _e.g._ for the simple example considered herein:
+* [offline.py](offline.py): this is a quick and dirty (`Python`) implementation of the search application as an offline service; it shows how one can retrieve (using local resources) the NUTS region at level 2 associated to a toponame (place), _e.g._ for the simple example considered herein:
 ~~~
 Bremen, Germany => NUTS ID: DE50 - NUTS name: Bremen
 Florence, Italy => NUTS ID: ITI1 - NUTS name: Toscana
 Brussels, Belgium => NUTS ID: BE10 - NUTS name: RŽgion de Bruxelles-Capitale / Brussels Hoofdstedelijk Gewest	
 ~~~
-For that purpose, it uses _Google maps_ geo services and [`gdal`](http://gdal.org) tools together with NUTS appropriate data sources. Note that it is a brute-force solution, since the program will explore sequentially all NUTS 
+ For that purpose, it uses _Google maps_ geo services and [`gdal`](http://gdal.org) tools together with NUTS appropriate data sources. Note that it is a brute-force solution, since the program will explore sequentially all NUTS 
 features so as to identify the correct region. This could be improved using a multithread process for instance, _e.g._ using [`multiprocessing`](https://docs.python.org/3.4/library/multiprocessing.html?highlight=process) module. Besides, the PoC does not check the
 validity of the result returned by _Google maps_ services, since this result can be ambiguous and/or inaccurate. On the simple examples tested (easily
 identified cities), the PoC provides with the outputs as expected.
