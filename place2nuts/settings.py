@@ -58,10 +58,13 @@ GISCO complete URL.
 """
 
 GOOGLE_KEY          = ''
+GOOGLE_CODER        = 'GoogleV3'
+DRIVER_NAME         = '' # 'ESRI Shapefile'
 
-ONLINE              = True
-OFFLINE             = True
+GISCO_SERVICE       = True
+API_SERVICE         = True
                        
+VERBOSE             = False
 
 
 
