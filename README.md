@@ -1,15 +1,27 @@
 place2nuts
-========
+==========
 
 Identifying NUTS regions associated to a given place or geolocation.
 ---
 
 **About**
 
+
+<table align="center">
+    <tr> <td align="left"><i>documentation</i></td> <td align="left"><strike>available at: https://eurostat.github.io/place2nuts/</strike></td> </tr> 
+    <tr> <td align="left"><i>status</i></td> <td align="left">since 2017 &ndash; <b>in construction</b></td></tr> 
+    <tr> <td align="left"><i>contributors</i></td> 
+    <td align="left" valign="middle">
+<a href="https://github.com/gjacopo"><img src="https://github.com/gjacopo.png" width="40"></a>
+</td> </tr> 
+    <tr> <td align="left"><i>license</i></td> <td align="left"><a href="https://joinup.ec.europa.eu/sites/default/files/eupl1.1.-licence-en_0.pdfEUPL">EUPL</a> </td> </tr> 
+</table>
+
 **Description**
 
-* [online.py](online.py): this is an interface to _Eurostat_ GISCO web-services.
-* [offline.py](offline.py): this is a quick and dirty (`Python`) implementation of the search application as an offline service; it shows how one can retrieve (using local resources) the NUTS region at level 2 associated to a toponame (place), _e.g._ for the simple example considered herein:
+Two implementations are made available through two different classes:
+* `GISCOService`: this is an interface to _Eurostat_ GISCO web-services.
+* `APIService`: this is a quick and dirty implementation of the search application as an offline service; it shows how one can retrieve (using local resources) the NUTS region at level 2 associated to a toponame (place), _e.g._ for the simple example considered herein:
     ~~~
     Bremen, Germany => NUTS ID: DE50 - NUTS name: Bremen
     Florence, Italy => NUTS ID: ITI1 - NUTS name: Toscana
