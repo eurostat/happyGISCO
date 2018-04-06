@@ -109,6 +109,7 @@ except ImportError:
 
 # local imports
 import settings
+from settings import nutsVerbose
       
 
 #%%
@@ -118,7 +119,8 @@ import settings
     
 class _geoDecorators(object):
     """Base class with dummy decorators used to parse and check place and coordinate 
-    arguments  used in the various methods of the geolocation services classes.
+    arguments, and not only, used in the various methods of the geolocation services 
+    classes.
     """
     
     KW_PLACE        = 'place'
@@ -128,7 +130,10 @@ class _geoDecorators(object):
     KW_PROJECTION   = 'proj' 
     
     #/************************************************************************/
-    class _parse(object):
+    class __parse(object):
+        """Base parsing class for geographical entities. All decorators in 
+        :class:`_geoDecorators` will inherit from this class.
+        """
         def __init__(self, func, obj=None, cls=None, method_type='function'):
             self.func, self.obj, self.cls, self.method_type = func, obj, cls, method_type     
         def __get__(self, obj=None, cls=None):
@@ -156,7 +161,7 @@ class _geoDecorators(object):
             return self.func(*args, **kwargs)
 
     #/************************************************************************/
-    class parse_place(_parse):
+    class parse_place(__parse):
         """Generic class decorator used to parse (positional,keyword) arguments 
         with place (topo,geo) names to functions and methods.
         """
@@ -180,7 +185,7 @@ class _geoDecorators(object):
             return self.func(place, **kwargs)
 
     #/************************************************************************/
-    class parse_coordinate(_parse):
+    class parse_coordinate(__parse):
         """Generic class decorator used to parse (positional,keyword) arguments 
         with :literal:`(lat,lng)` geographical coordinates to functions and methods.
         """
@@ -196,7 +201,8 @@ class _geoDecorators(object):
                         coord = args[0]
                 elif len(args) == 1 and isinstance(args[0],(tuple,list)) and len(args[0])==2:
                     lat, lon = args[0]
-                elif len(args) == 2 and all([isinstance(args[i],(tuple,list)) for i in (0,1)]):    
+                elif len(args) == 2                                         \
+                    and all([isinstance(args[i],(tuple,list)) or not hasattr(args[i],'__len__') for i in (0,1)]):    
                     lat, lon = args
                 else:   
                     raise IOError('input arguments not recognised')
@@ -231,11 +237,12 @@ class _geoDecorators(object):
             return self.func(lat, lon, **kwargs)
        
     #/************************************************************************/
-    class parse_geometry(_parse):
+    class parse_geometry(__parse):
         """Generic class decorator used to parse (positional,keyword) arguments 
         with :literal:`(lat,lng)` geographical coordinates stored in GISCO-like
         formatted dictionary (from JSON response) to functions and methods.
         """
+        KW_FEATURES     = 'features'
         KW_GEOMETRY     = 'geometry'
         KW_PROPERTIES   = 'properties'
         KW_TYPE         = 'type'
@@ -250,7 +257,7 @@ class _geoDecorators(object):
                     if all([isinstance(args[0][i],dict) for i in range(len(args[0]))]):
                         coord = args[0]
             else:   
-                coord = kwargs.pop('coord', None)                  
+                coord = kwargs.pop('coord', None)        
             if coord is not None:
                 if isinstance(coord,(list,tuple)) and all([isinstance(c,dict) for c in coord]):      
                     coord_ = [c for c in coord                                                               \
@@ -260,21 +267,23 @@ class _geoDecorators(object):
                        and (not(settings.CHECK_OSM_KEY) or c[self.KW_PROPERTIES][self.KW_OSM_KEY]=='place') \
                        ]
                     coord = coord[0] if coord_==[] else coord_[0]  
-                    coord = dict(zip(['lat','lon'],coord[self.KW_GEOMETRY][self.KW_COORDINATES]))
+                    coord = dict(zip(['lon','lat'],coord[self.KW_GEOMETRY][self.KW_COORDINATES]))
                 kwargs.update(coord) 
                 return self.func(**kwargs)
             else:
                 return self.func(*args, **kwargs)
         
     #/************************************************************************/
-    class parse_nuts(_parse):
+    class parse_nuts(__parse):
         """Generic class decorator used to parse (positional,keyword) arguments 
         with NUTS information stored in GISCO-like formatted dictionary (from JSON 
         response) to functions and methods.
         """
+        KW_RESULTS      = 'results'
         KW_ATTRIBUTES   = 'attributes'
         KW_LEVEL        = 'LEVL_CODE'
         def __call__(self, *args, **kwargs):
+            level = kwargs.pop('level',None)
             nuts = None
             if args not in (None,()):      
                 if all([isinstance(a,dict) for a in args]):
@@ -291,15 +300,13 @@ class _geoDecorators(object):
                 nuts = [nuts,]
             if not all([isinstance(n,dict) and self.KW_ATTRIBUTES in n for n in nuts]): 
                 raise IOError('NUTS attribtues not recognised')
-            nuts = [n[self.KW_ATTRIBUTES] for n in nuts]
-            level = kwargs.pop('level',None)
             if level is not None:
-                nuts = [n for n in nuts if n[self.KW_LEVEL] == level]
+                nuts = [n for n in nuts if n[self.KW_ATTRIBUTES][self.KW_LEVEL] == str(level)]
             kwargs.update({'nuts': nuts}) 
             return self.func(**kwargs)
         
     #/************************************************************************/
-    class parse_projection(_parse):
+    class parse_projection(__parse):
         """Generic class decorator used to parse keyword argument with projection 
         information to functions and methods.
         """
@@ -315,7 +322,7 @@ class _geoDecorators(object):
             return self.func(*args, **kwargs)
         
     #/************************************************************************/
-    class parse_year(_parse):
+    class parse_year(__parse):
         """Generic class decorator used to parse keyword year argument used for  
         NUTS definition.
         """
@@ -383,6 +390,11 @@ class GISCOService(object):
         """ 
         try:
             response = self.session.head(url)
+        except: # ConnectionError:
+            raise IOError('connection failed')  
+        else:
+            nutsVerbose('response status from web-service: %s' % response.status_code)
+        try:
             response.raise_for_status()
         except:
             raise IOError('wrong request formulated')  
@@ -400,7 +412,11 @@ class GISCOService(object):
         except:
             raise IOError('wrong request formulated')  
         else:
+            nutsVerbose('response reason from web-service: %s' % response.reason)
+        try:
             response.raise_for_status()
+        except:
+            raise IOError('wrong response retrieved')  
         return response   
     
     #/************************************************************************/
@@ -461,10 +477,13 @@ class GISCOService(object):
         >>> print GISCOService.url_geocode(place='paris, France')
             'http://europa.eu/webtools/rest/gisco/api?q=paris+France'
         """
-        return self.__build_url(domain=self.domain, 
-                                query='api', 
-                                **kwargs)
-
+        keys = ['q', 'lat', 'lon', 'distance_sort', 'limit', 'osm_tag', 'lang']
+        url = self.__build_url(domain=self.domain, 
+                               query='api', 
+                               **{k:v for k,v in kwargs.items() if k in keys})
+        nutsVerbose('url used for geocoding service: %s' % url)
+        return url
+    
     #/************************************************************************/
     def url_reverse(self, **kwargs):
         """Create a query URL to be be submitted GISCO geolocation web-service.
@@ -492,9 +511,12 @@ class GISCOService(object):
         >>> print GISCOService.url_reverse(lon=10, lat=52)
             'http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52'
         """
-        return self.__build_url(domain=self.domain, 
-                                query='reverse', 
-                                **kwargs)
+        keys = ['lat', 'lon', 'radius', 'distance_sort', 'limit', 'lang']
+        url = self.__build_url(domain=self.domain, 
+                               query='reverse', 
+                               **{k:v for k,v in kwargs.items() if k in keys})
+        nutsVerbose('url used for reverse geocoding service: %s' % url)
+        return url
     
     #/************************************************************************/
     @_geoDecorators.parse_projection
@@ -523,11 +545,14 @@ class GISCOService(object):
         Note
         ----
         The generic url formatting is: domain/nuts/find-nuts.py?{filters}
-       """
-        return self.__build_url(domain=self.domain, 
-                                path='nuts', 
-                                query='find-nuts.py', 
-                                **kwargs)
+        """
+        keys = ['x', 'y', 'f', 'year', 'proj', 'geometry']
+        url = self.__build_url(domain=self.domain, 
+                               path='nuts', 
+                               query='find-nuts.py', 
+                               **{k:v for k,v in kwargs.items() if k in keys})
+        nutsVerbose('url used for NUTS identification service: %s' % url)
+        return url
         
     #/************************************************************************/
     @_geoDecorators.parse_place
@@ -591,11 +616,12 @@ class GISCOService(object):
             except:
                 raise IOError('place for geolocation (%s,%s) not loaded' % (lat[i], lon[i]))
             try:
-                assert 'features' in data and data['features'] != [] 
+                assert _geoDecorators.parse_geometry.KW_FEATURES in data     \
+                    and data[_geoDecorators.parse_geometry.KW_FEATURES] != []
             except:
                 raise IOError('place for geolocation (%s,%s) not recognised' % (lat[i], lon[i]))      
             else:
-                p = data.get('features')
+                p = data.get(_geoDecorators.parse_geometry.KW_FEATURES)
                 place.append(p if len(p)>1 else p[0])
         return place[0] if len(place)==1 else place
     
@@ -622,21 +648,30 @@ class GISCOService(object):
             else:
                 response = self.get_response(url)
             try:
-                nut = json.loads(response.text)
-                assert nut is not None
+                data = json.loads(response.text)
+                assert data is not None
             except:
-                raise IOError('NUTS of location (%s,%s) not recognised' % (lat,lon))
+                raise IOError('NUTS of location (%s,%s) not loaded' % (lat[i], lon[i]))
+            try:
+                # assert 'results' in data and data['results'] != [] 
+                assert _geoDecorators.parse_nuts.KW_RESULTS in data     \
+                    and data[_geoDecorators.parse_nuts.KW_RESULTS] != []
+            except:
+                raise IOError('NUTS of location (%s,%s) not recognised' % (lat[i], lon[i]))      
             else:
-                nuts.append(nut)
-        return nuts
+                nuts = data.get(_geoDecorators.parse_nuts.KW_RESULTS)
+        return nuts[0] if len(nuts)==1 else nuts
 
     #/************************************************************************/
     @_geoDecorators.parse_year
     @_geoDecorators.parse_projection
     @_geoDecorators.parse_place
     def place2nuts(self, place, **kwargs): # specific use
-        lat, lon = [_ for _ in zip(*[(c['lat'], c['lon']) for c in self.place2coord(place, **kwargs)])]
-        return self.coord2nuts(lat, lon, **kwargs)
+        coord = self.place2coord(place, **kwargs)
+        lat, lon = _geoDecorators.parse_geometry(lambda **kw: [kw.get('lat'), kw.get('lon')])(coord)
+        nuts = self.coord2nuts(lat, lon, **kwargs)
+        res = _geoDecorators.parse_nuts(lambda **kw: kw.get('nuts'))(nuts, **kwargs)
+        return res[0] if len(res)==1 else res
     
 #/****************************************************************************/
 # CLASS _geoCoderAPI    
@@ -1011,8 +1046,7 @@ class APIService(object):
     def vec2id(self, layer, vector):
         answer = [] # will be same lenght as self.vector
         featureCount = layer.GetFeatureCount()
-        if settings.VERBOSE is True:
-            print('\nNumber of features in %s: %d' % (os.path.basename(NUTSFILE),featureCount))
+        nutsVerbose('\nNumber of features in %s: %d' % (os.path.basename(NUTSFILE),featureCount))
         # iterate through points
         for i in range(0, self.vector.GetGeometryCount()): # because it is a MULTIPOINT
             pt = self.vector.GetGeometryRef(i)
