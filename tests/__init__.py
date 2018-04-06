@@ -23,4 +23,4 @@ Testing units for API to Eurostat GISCO web-services.
     
 """
 
-__all__ = ['settings', 'place2nuts']#analysis:ignore
+__all__ = ['settings', 'services', 'entities']#analysis:ignore
