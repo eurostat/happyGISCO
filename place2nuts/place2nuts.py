@@ -412,7 +412,8 @@ class GISCOService(object):
         except:
             raise IOError('wrong request formulated')  
         else:
-            nutsVerbose('response reason from web-service: %s' % response.reason)
+            # nutsVerbose('response reason from web-service: %s' % response.reason)
+            pass
         try:
             response.raise_for_status()
         except:
@@ -478,10 +479,12 @@ class GISCOService(object):
             'http://europa.eu/webtools/rest/gisco/api?q=paris+France'
         """
         keys = ['q', 'lat', 'lon', 'distance_sort', 'limit', 'osm_tag', 'lang']
+        nutsVerbose('\n            * '.join(['input filters used for geocoding service :',]+[attr + '='+ str(kwargs[attr]) \
+                                            for attr in kwargs.keys() if attr in keys]))
         url = self.__build_url(domain=self.domain, 
                                query='api', 
                                **{k:v for k,v in kwargs.items() if k in keys})
-        nutsVerbose('url used for geocoding service: %s' % url)
+        nutsVerbose('output url:\n            %s' % url)
         return url
     
     #/************************************************************************/
@@ -512,10 +515,12 @@ class GISCOService(object):
             'http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52'
         """
         keys = ['lat', 'lon', 'radius', 'distance_sort', 'limit', 'lang']
+        nutsVerbose('\n            * '.join(['input filters used for reverse geocoding service:',]+[attr + '='+ str(kwargs[attr]) \
+                                            for attr in kwargs.keys() if attr in keys]))
         url = self.__build_url(domain=self.domain, 
                                query='reverse', 
                                **{k:v for k,v in kwargs.items() if k in keys})
-        nutsVerbose('url used for reverse geocoding service: %s' % url)
+        nutsVerbose('output url:\n            %s' % url)
         return url
     
     #/************************************************************************/
@@ -547,11 +552,13 @@ class GISCOService(object):
         The generic url formatting is: domain/nuts/find-nuts.py?{filters}
         """
         keys = ['x', 'y', 'f', 'year', 'proj', 'geometry']
+        nutsVerbose('\n            * '.join(['input filters used for NUTS identification service:',]+[attr + '='+ str(kwargs[attr]) \
+                                            for attr in kwargs.keys() if attr in keys]))
         url = self.__build_url(domain=self.domain, 
                                path='nuts', 
                                query='find-nuts.py', 
                                **{k:v for k,v in kwargs.items() if k in keys})
-        nutsVerbose('url used for NUTS identification service: %s' % url)
+        nutsVerbose('output url:\n            %s' % url)
         return url
         
     #/************************************************************************/
@@ -559,12 +566,12 @@ class GISCOService(object):
     def place2coord(self, place, **kwargs): # specific use
         """
         """
-        if settings.VERBOSE and 'lat' in kwargs and 'lon' in kwargs:
-            warnings.warn('location bias added to query: (lat=%s,lon=%s)' % (kwargs.get('lat'),kwargs.get('lon')))
-        if settings.VERBOSE and 'N' in kwargs:
-            warnings.warn('number of query results adapted to: %s' % kwargs.get('N'))
-        if settings.VERBOSE and 'lang' in kwargs:
-            warnings.warn('language of query results adjusted to: %s' % kwargs.get('lang'))
+        #if 'lat' in kwargs and 'lon' in kwargs:
+        #    nutsVerbose('location bias added to query: (lat=%s,lon=%s)' % (kwargs.get('lat'),kwargs.get('lon')))
+        #if 'N' in kwargs:
+        #    nutsVerbose('number of query results adapted to: %s' % kwargs.get('N'))
+        #if 'lang' in kwargs:
+        #    nutsVerbose('language of query results adjusted to: %s' % kwargs.get('lang'))
         coord = []
         for p in place:
             kwargs.update({'q': p})
@@ -594,12 +601,12 @@ class GISCOService(object):
     def coord2place(self, lat, lon, **kwargs): # specific use
         """
         """
-        if settings.VERBOSE and 'radius' in kwargs:
-            warnings.warn('search radius provided: %s' % kwargs.get('radius'))
-        if settings.VERBOSE and 'distance_sort' in kwargs:
-            warnings.warn('results sorted by distance')
-        if settings.VERBOSE and 'lang' in kwargs:
-            warnings.warn('language of query results adjusted to: %s' % kwargs.get('lang'))
+        #if 'radius' in kwargs:
+        #    nutsVerbose('search radius provided: %s' % kwargs.get('radius'))
+        #if 'distance_sort' in kwargs:
+        #    nutsVerbose('results sorted by distance')
+        #if 'lang' in kwargs:
+        #    nutsVerbose('language of query results adjusted to: %s' % kwargs.get('lang'))
         place = []
         for i in range(len(lat)):
             kwargs.update({'lat': lat[i], 'lon': lon[i]})
