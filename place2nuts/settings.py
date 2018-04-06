@@ -77,7 +77,42 @@ CODER_PROJ          = {CODER_GISCO: 'WGS84',
 
 DRIVER_NAME         = '' # 'ESRI Shapefile'
                        
-VERBOSE             = False
+VERBOSE             = True
+
+
+#==============================================================================
+# ERROR/WARNING CLASSES
+#==============================================================================
+
+class nutsError(Exception):
+    """Base class for exceptions in this module."""
+    def __init__(self, msg, expr=None):    
+        self.msg = msg
+        if expr is not None:    self.expr = expr
+        Exception.__init__(self, msg)
+    def __str__(self):              return repr(self.msg)
+
+class nutsWarning(Warning):
+    """Base class for warnings in this module."""
+    def __init__(self, msg, expr=None):    
+        self.msg = msg
+        if expr is not None:    self.expr = expr
+        # logging.warning(self.msg)
+    def __repr__(self):             return self.msg
+    def __str__(self):              return repr(self.msg)
+
+class nutsVerbose(object):
+    """Base class for verbose printing mode in this module."""
+    def __init__(self, msg, expr=None, verb=VERBOSE):    
+        self.msg = msg
+        if verb is True:
+            print('\n[verbose] - %s' % self.msg)
+        if expr is not None:    self.expr = expr
+    def __repr__(self):             return self.msg
+    def __str__(self):              return repr(self.msg)
+
+    
+        
 
 
 
