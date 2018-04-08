@@ -18,8 +18,41 @@ Basic definitions for NUTS datasets and webservices.
 """
 
 import os, sys#analysis:ignore
-import inspect
+import inspect#analysis:ignore
 
+#%%
+#==============================================================================
+# CLASSES Error/Warning/Verbose
+#==============================================================================
+
+class nutsError(Exception):
+    """Base class for exceptions in this module."""
+    def __init__(self, msg, expr=None):    
+        self.msg = msg
+        if expr is not None:    self.expr = expr
+        Exception.__init__(self, msg)
+    def __str__(self):              return repr(self.msg)
+
+class nutsWarning(Warning):
+    """Base class for warnings in this module."""
+    def __init__(self, msg, expr=None):    
+        self.msg = msg
+        if expr is not None:    self.expr = expr
+        # logging.warning(self.msg)
+    def __repr__(self):             return self.msg
+    def __str__(self):              return repr(self.msg)
+
+class nutsVerbose(object):
+    """Base class for verbose printing mode in this module."""
+    def __init__(self, msg, expr=None, verb=True):    
+        self.msg = msg
+        if verb is True:
+            print('\n[verbose] - %s' % self.msg)
+        if expr is not None:    self.expr = expr
+    def __repr__(self):             return self.msg
+    def __str__(self):              return repr(self.msg)
+
+#%%
 #==============================================================================
 # GLOBAL VARIABLES
 #==============================================================================
@@ -78,38 +111,6 @@ CODER_PROJ          = {CODER_GISCO: 'WGS84',
 DRIVER_NAME         = '' # 'ESRI Shapefile'
                        
 VERBOSE             = True
-
-#%%
-#==============================================================================
-# CLASSES Error/Warning/Verbose
-#==============================================================================
-
-class nutsError(Exception):
-    """Base class for exceptions in this module."""
-    def __init__(self, msg, expr=None):    
-        self.msg = msg
-        if expr is not None:    self.expr = expr
-        Exception.__init__(self, msg)
-    def __str__(self):              return repr(self.msg)
-
-class nutsWarning(Warning):
-    """Base class for warnings in this module."""
-    def __init__(self, msg, expr=None):    
-        self.msg = msg
-        if expr is not None:    self.expr = expr
-        # logging.warning(self.msg)
-    def __repr__(self):             return self.msg
-    def __str__(self):              return repr(self.msg)
-
-class nutsVerbose(object):
-    """Base class for verbose printing mode in this module."""
-    def __init__(self, msg, expr=None, verb=VERBOSE):    
-        self.msg = msg
-        if verb is True:
-            print('\n[verbose] - %s' % self.msg)
-        if expr is not None:    self.expr = expr
-    def __repr__(self):             return self.msg
-    def __str__(self):              return repr(self.msg)
 
 #%%
 #==============================================================================
@@ -203,7 +204,7 @@ class _geoDecorators(object):
                     and all([isinstance(args[i],(tuple,list)) or not hasattr(args[i],'__len__') for i in (0,1)]):    
                     lat, lon = args
                 else:   
-                    raise IOError('input arguments not recognised')
+                    raise IOError('input coordinate arguments not recognised')
             else:   
                 coord = kwargs.pop('coord', None)         
                 lat = kwargs.pop('lat', None) or kwargs.pop('x', None)
@@ -211,11 +212,11 @@ class _geoDecorators(object):
             try:
                 assert not(coord is None and lat is None and lon is None) 
             except AssertionError:
-                raise IOError('no input arguments passed')
+                raise IOError('no input coordinate arguments passed')
             try:
                 assert coord is None or (lat is None and lon is None)
             except AssertionError:
-                raise IOError('too many input arguments')
+                raise IOError('too many input coordinate arguments')
             if coord is not None:
                 if not isinstance(coord,(list,tuple)):  
                     coord = [coord]
@@ -235,7 +236,7 @@ class _geoDecorators(object):
             return self.func(lat, lon, **kwargs)
        
     #/************************************************************************/
-    class parse_place_or_coordinates(__parse):
+    class parse_place_or_coordinate(__parse):
         """
         """
         def __call__(self, *args, **kwargs):
@@ -260,6 +261,38 @@ class _geoDecorators(object):
             except:
                 raise IOError('too many geographical entities parsed to define the place')
             return self.func(*args, **kwargs)
+        
+    #/************************************************************************/
+    class parse_nuts(__parse):
+        """Generic class decorator used to parse (positional,keyword) arguments 
+        with NUTS information stored in GISCO-like formatted dictionary (from JSON 
+        response) to functions and methods.
+        """
+        KW_RESULTS      = 'results'
+        KW_ATTRIBUTES   = 'attributes'
+        KW_LEVEL        = 'LEVL_CODE'
+        def __call__(self, *args, **kwargs):
+            level = kwargs.pop('level',None)
+            nuts = None
+            if args not in (None,()):      
+                if all([isinstance(a,dict) for a in args]):
+                    nuts = args
+                elif len(args) == 1 and isinstance(args[0],(tuple,list)):
+                    if all([isinstance(args[0][i],dict) for i in range(len(args[0]))]):
+                        nuts = args[0]
+            else:   
+                nuts = kwargs.pop('nuts', None)                  
+            if nuts is None:
+                # raise IOError('no NUTS parsed')
+                return self.func(*args, **kwargs)
+            if not isinstance(nuts,(list,tuple)):
+                nuts = [nuts,]
+            if not all([isinstance(n,dict) and self.KW_ATTRIBUTES in n for n in nuts]): 
+                raise IOError('NUTS attribtues not recognised')
+            if level is not None:
+                nuts = [n for n in nuts if n[self.KW_ATTRIBUTES][self.KW_LEVEL] == str(level)]
+            kwargs.update({'nuts': nuts}) 
+            return self.func(**kwargs)
 
     #/************************************************************************/
     class parse_geometry(__parse):
@@ -299,38 +332,6 @@ class _geoDecorators(object):
                 return self.func(*args, **kwargs)
         
     #/************************************************************************/
-    class parse_nuts(__parse):
-        """Generic class decorator used to parse (positional,keyword) arguments 
-        with NUTS information stored in GISCO-like formatted dictionary (from JSON 
-        response) to functions and methods.
-        """
-        KW_RESULTS      = 'results'
-        KW_ATTRIBUTES   = 'attributes'
-        KW_LEVEL        = 'LEVL_CODE'
-        def __call__(self, *args, **kwargs):
-            level = kwargs.pop('level',None)
-            nuts = None
-            if args not in (None,()):      
-                if all([isinstance(a,dict) for a in args]):
-                    nuts = args
-                elif len(args) == 1 and isinstance(args[0],(tuple,list)):
-                    if all([isinstance(args[0][i],dict) for i in range(len(args[0]))]):
-                        nuts = args[0]
-            else:   
-                nuts = kwargs.pop('nuts', None)                  
-            if nuts is None:
-                # raise IOError('no NUTS parsed')
-                return self.func(*args, **kwargs)
-            if not isinstance(nuts,(list,tuple)):
-                nuts = [nuts,]
-            if not all([isinstance(n,dict) and self.KW_ATTRIBUTES in n for n in nuts]): 
-                raise IOError('NUTS attribtues not recognised')
-            if level is not None:
-                nuts = [n for n in nuts if n[self.KW_ATTRIBUTES][self.KW_LEVEL] == str(level)]
-            kwargs.update({'nuts': nuts}) 
-            return self.func(**kwargs)
-        
-    #/************************************************************************/
     class parse_projection(__parse):
         """Generic class decorator used to parse keyword argument with projection 
         information to functions and methods.
@@ -360,6 +361,45 @@ class _geoDecorators(object):
             kwargs.update({'year': year})                  
             return self.func(*args, **kwargs)
 
+    #/************************************************************************/
+    class parse_file(__parse):
+        """
+        """
+        def __call__(self, *args, **kwargs):
+            dirname, basename, filename = None, None, None
+            if args not in (None,()):      
+                if len(args) == 1 and isinstance(args[0],(tuple,list)):
+                    if len(args[0])==2 and all([isinstance(args[0][i],str) for i in (0,1)]):
+                        dirname, basename = args[0]
+                    elif all([isinstance(args[0][i],str) for i in range(len(args[0]))]):
+                        filename = args[0]
+                elif len(args) == 1 and isinstance(args[0],str) and len(args[0])==2:
+                    dirname, basename = args[0]
+                elif len(args) == 2                                         \
+                    and all([isinstance(args[i],str) or not hasattr(args[i],'__len__') for i in (0,1)]):    
+                    dirname, basename = args
+                else:   
+                    raise IOError('input file arguments not recognised')
+            else:   
+                dirname = kwargs.pop('dir', '')         
+                basename = kwargs.pop('base', '')
+                filename = kwargs.pop('file', '')
+            try:
+                assert not(filename in ('',None) and basename in ('',None))
+            except AssertionError:
+                raise IOError('no input file arguments passed')
+            try:
+                assert filename in ('',None) or basename in ('',None)
+            except AssertionError:
+                raise IOError('too many input file arguments')
+            if filename is None:
+                try:
+                    filename = os.path.join(os.path.realpath(dirname or ''), basename)
+                except:
+                    raise IOError('wrong input file argument passed')
+            if not isinstance(filename,str):
+                filename = [filename,]
+            return self.func(filename, **kwargs)
     
         
 
