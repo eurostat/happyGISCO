@@ -66,8 +66,8 @@ from nuts2place.services import GISCOService, APIService, GDALservice
 from .base import runtest as BaseRuntest
 
 PARIS = {'place': 'Paris, France',
-                 'lat':   48.85693, # 48.856614, 
-                 'lon':   2.3412,   # 2.3522219,
+                 'lat': 48.8566, # 48.8566101
+                 'lon':  2.3515, # 2.3514992
                  'woe_id': 615702} 
 BERLIN = {'place': 'Berlin, Germany',
                  'lat':   None, 
