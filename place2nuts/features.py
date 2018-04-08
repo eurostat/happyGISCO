@@ -38,14 +38,6 @@ import functools#analysis:ignore
 
 # requirements
 
-try:
-    from osgeo import ogr
-except ImportError:
-    # GDAL_RESOURCE = False
-    warnings.warn('GDAL package (https://pypi.python.org/pypi/GDAL) not loaded - Inline resources not available')
-else:
-    print('GDAL help: https://pcjericks.github.io/py-gdalogr-cookbook/index.html')
-
 # local imports
 import settings
 from settings import nutsVerbose, _geoDecorators
@@ -88,6 +80,12 @@ class __Feature(object):
                 raise IOError('service %s not available' % service)
         if not isinstance(self.__service,(services.GISCOService,services.APIService)):
             raise IOError('service %s not supported' % service)
+       
+    @property
+    def service(self):
+        """
+        """
+        return self.__service
 
 #==============================================================================
 # CLASS Place
@@ -99,54 +97,37 @@ class Place(__Feature):
     @_geoDecorators.parse_place
     def __init__(self, place, **kwargs):
         """
+        Arguments
+        ---------
+        place : tuple, str
+            a (list of) str representing place (geo)names.
         """
-        super(Place,self).__init__(*args, **kwargs)
+        super(Place,self).__init__(**kwargs)
         self.__place = place
+        self.__lat, self.__lon = None, None
 
     @property
     def place(self):
         """
         """
         return self.__place
-       
-    @property
-    def service(self):
-        """
-        """
-        return self.__service
-       
-    @property
-    def coord(self):
-        """
-        """
-        return self.__coord
-    
+   
     def tourl(self):
         return ['+'.join(p.replace(',',' ').split()) for p in self.place]
 
     def __repr__(self):
         return [','.join(p.replace(',',' ').split()) for p in self.place]
 
-    def tonuts(self, **kwargs):  
-        pass
-
     def geocode(self, **kwargs):   
         """Convert place names to geographic coordinates (default) and reciprocally, 
         depending on the type of input arguments passed.
         
-            >>> location = place.geocode(*args, **kwargs)
-
-        Arguments
-        ---------
-        args : tuple, str
-            a tuple representing (lat,Lon) coordinates, or a string representing
-            either a place name, or again (lat,Lon) coordinates.
+            >>> loc = place.geocode(**kwargs)
         
         Keyword Arguments
         -----------------        
-        reverse : bool  
-            set to :literal:`True` when `location` is passed as a tuple of (lat,Lon) so 
-            that a place name is reverse; default: :literal:`False`
+        kwargs : dict  
+            
 
         Returns
         -------
@@ -177,48 +158,16 @@ class Place(__Feature):
         
         See also
         --------
-        :meth:`~OfflineService.reverse`
+        :meth:`~Location.reverse`
         """
-        try:
-            return self.service.place2coord(place=self.place, *kwargs)
-        except:     
-            raise IOError('unrecognised address/location argument') 
-    
-     #/************************************************************************/
-    def reverse(self, *args):
-        """Convert geographic location (passed as a tuple of coordinates or a string 
-        with those coordinates). 
-        
-            >>> place = serv.reverse(*args)
-        
-        This is nothing else than a (dummy) shortcut to:
-        
-            >>> place = serv.code(*args, reverse=True)
-
-        Arguments
-        ---------
-        args: tuple, str
-            a tuple or a string representing (lat,Lon) coordinates.
-
-        Returns
-        -------
-        place : str
-            a place name.        
-
-        Examples
-        --------
-        >>> paris = serv.reverse('48.85693, 2.3412') 
-        >>> print paris
-            [u'76 Quai des Orf\xe8vres, 75001 Paris, France', u"Saint-Germain-l'Auxerrois, Paris, France", 
-             u'75001 Paris, France', u'1er Arrondissement, Paris, France', u'Paris, France', 
-             u'Paris, France', u'\xcele-de-France, France', u'France']
-        >>> paris == serv.reverse(48.85693, 2.3412)
-            True
-        """
-        # geocode may return no results if it is passed a  
-        # non-existent address or a lat/lng in a remote location
-        # raise LocationError('unrecognised location argument')          
-        return self.geocode(*args, reverse=True)
+        if self.__lat in ([],None) or self.__lon in ([],None):
+            try:
+                lat, lon = self.service.place2coord(place=self.place, **kwargs)
+            except:     
+                raise IOError('unrecognised address/location argument') 
+            else:
+                self.__lat, self.__lon = lat, lon
+        return self.__lat, self.__lon
     
     def distance(self, *args, **kwargs):            
         """Method used for computing pairwise distances between given locations, 
@@ -266,24 +215,77 @@ class Place(__Feature):
             7338.5353364838438
         """
         pass
-    
-    #/************************************************************************/
-    def place2nuts():
-        return
-    
+     
+    def is_contained(self, layer, **kwargs):
+        pass
+   
 class Location(__Feature):
     """
     """
     @_geoDecorators.parse_coordinate
     def __init__self(self, lat, lon, **kwargs):
-        self.__lat, self.__lon = lat, lon
+        """
+        Arguments
+        ---------
+        lat, lon : tuple, float
+            a tuple representing (lat,Lon) coordinates coordinates.
+        """
+        super(Location,self).__init__(**kwargs)
+        self.__lat, self.__lon = lat, lon        
+        self.__place = ''
+    
+    #/************************************************************************/
+    def reverse(self, **kwargs):
+        """Convert geographic location (passed as a tuple of coordinates or a string 
+        with those coordinates). 
+        
+            >>> place = loc.reverse(**kwargs)
+
+        Keyword arguments
+        -----------------
+        kwargs: tuple, str
+            .
+
+        Returns
+        -------
+        place : str
+            a place name.        
+
+        Examples
+        --------
+        >>> loc = Location('48.85693, 2.3412')
+        >>> paris = loc.reverse()
+        >>> print paris
+            [u'76 Quai des Orf\xe8vres, 75001 Paris, France', u"Saint-Germain-l'Auxerrois, Paris, France", 
+             u'75001 Paris, France', u'1er Arrondissement, Paris, France', u'Paris, France', 
+             u'Paris, France', u'\xcele-de-France, France', u'France']
+        
+        See also
+        --------
+        :meth:`~Place.geocode`
+        """
+        # geocode may return no results if it is passed a  
+        # non-existent address or a lat/lng in a remote location
+        # raise LocationError('unrecognised location argument')      
+        if self.__place in (None,''):
+            try:
+                place = self.service.coord2place(lat=self.lat, lon=self.lon, **kwargs)
+            except:     
+                raise IOError('unrecognised address/location argument') 
+            else:
+                self.__place = place
+        return self.__place
+    
+    def is_contained(self, layer, **kwargs):
+        pass
     
 class NUTS(__Feature):
     """
     """
     @_geoDecorators.parse_nuts
-    def __init__self(self, *args, **kwargs):
-        pass
+    def __init__self(self, nuts, **kwargs):
+        super(NUTS,self).__init__(**kwargs)
+        self.__nuts = nuts
     
     def identify(self, place, **kwargs):
         pass
