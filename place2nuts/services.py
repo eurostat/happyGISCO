@@ -341,11 +341,11 @@ class GISCOService(object):
         
     #/************************************************************************/
     @_geoDecorators.parse_place
-    def place2coord(self, place, **kwargs): # specific use
+    def place2geom(self, place, **kwargs): 
         """
         """
         place = ['+'.join(p.replace(',',' ').split()) for p in place]
-        coord = []
+        geom = []
         for p in place:
             kwargs.update({'q': p})
             try:
@@ -366,9 +366,17 @@ class GISCOService(object):
                 raise IOError('geolocation for place %s not recognised' % p)      
             else:
                 c = data.get('features')
-                coord.append(c if len(c)>1 else c[0])
-        return coord if len(coord)>1 else coord[0]
+                geom.append(c if len(c)>1 else c[0])
+        return geom if len(geom)>1 else geom[0]
         
+    #/************************************************************************/
+    @_geoDecorators.parse_place
+    def place2coord(self, place, **kwargs): # specific use
+        """
+        """
+        geom = self.place2geom(place, **kwargs)
+        return _geoDecorators.parse_geometry(lambda **kw: [kw.get('lat'), kw.get('lon')])(geom)
+       
     #/************************************************************************/
     @_geoDecorators.parse_coordinate
     def coord2place(self, lat, lon, **kwargs): # specific use
@@ -441,11 +449,11 @@ class GISCOService(object):
     @_geoDecorators.parse_projection
     @_geoDecorators.parse_place
     def place2nuts(self, place, **kwargs): # specific use
-        coord = self.place2coord(place, **kwargs)
-        lat, lon = _geoDecorators.parse_geometry(lambda **kw: [kw.get('lat'), kw.get('lon')])(coord)
+        lat, lon = self.place2coord(place, **kwargs)
         nuts = self.coord2nuts(lat, lon, **kwargs)
-        res = _geoDecorators.parse_nuts(lambda **kw: kw.get('nuts'))(nuts, **kwargs)
-        return res[0] if len(res)==1 else res
+        return nuts[0] if len(nuts)==1 else nuts
+        #res = _geoDecorators.parse_nuts(lambda **kw: kw.get('nuts'))(nuts, **kwargs)
+        #return res[0] if len(res)==1 else res
     
 #%%
 #/****************************************************************************/
@@ -695,8 +703,6 @@ class APIService(object):
         key/token/username : str
             key (depending on the :literal:`coder actually chosen) used to connect 
             to the geolocation API.
-        driver_name : str
-            name of the driver used for vector files
         """
         # initial settings
         self.__coder, self.__coder_key = None, ''
@@ -748,20 +754,21 @@ class APIService(object):
     def place2coord(self, place, **kwargs):
         """
         """
+        lat, lon = self.coder.geocode(place)
         coord = [] 
         for p in place:   
             try:
-                geocode = self.coder.geocode(p)
-                coord.append(geocode[0]['geometry']['location'])
+                lat, lon = self.coder.geocode(p)
+                coord.append([lat,lon])
                 assert coord is not None
             except:
                 coord.append(None)
-                if settings.VERBOSE: print('\nCould not retrieve geolocation of %s' % p)
+                nutsVerbose('\ncould not retrieve geolocation of %s' % p)
                 # continue
             else:
-                if settings.VERBOSE: print('%s => %s' % (place, coord))
-                # continue
-        return coord
+                # nutsVerbose('%s => %s' % (p, coord))
+                pass
+        return coord #{'lat':lat, 'lon': lon}
 
 #%%
 #==============================================================================
@@ -774,15 +781,12 @@ class GDALService(object):
     
     #/************************************************************************/
     def __init__(self, **kwargs):
-        """Initialisation of a :class:`OfflineService` instance.
+        """Initialisation of a :class:`GDALService` instance.
 
             >>> serv = GDALService(**kwargs)
 
         Arguments
         ---------
-        client_key : str
-            key used to connect to the geolocation API, _e.g._:= Google Maps, 
-            Google Places, _etc_...
         driver_name : str
             name of the driver used for vector files
         """
