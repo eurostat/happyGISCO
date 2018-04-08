@@ -53,9 +53,10 @@ except ImportError:
     GISCO_SERVICE = False
 
 try:
+    GDAL_SERVICE = True
     from osgeo import ogr
 except ImportError:
-    # GDAL_RESOURCE = False
+    GDAL_SERVICE = False
     warnings.warn('GDAL package (https://pypi.python.org/pypi/GDAL) not loaded - Inline resources not available')
 else:
     print('GDAL help: https://pcjericks.github.io/py-gdalogr-cookbook/index.html')
@@ -682,21 +683,23 @@ class APIService(object):
     
     #/************************************************************************/
     def __init__(self, **kwargs):
-        """Initialisation of a :class:`OfflineService` instance.
+        """Initialisation of a :class:`APIService` instance.
 
-            >>> serv = OfflineService(**kwargs)
+            >>> serv = APIService(**kwargs)
 
         Arguments
         ---------
-        client_key : str
-            key used to connect to the geolocation API, _e.g._:= Google Maps, 
-            Google Places, _etc_...
+        coder : str
+            identifier of the geocoder, _e.g._ _Google Maps_, _Google Places_, 
+            _etc_... used for geolocation queries.
+        key/token/username : str
+            key (depending on the :literal:`coder actually chosen) used to connect 
+            to the geolocation API.
         driver_name : str
             name of the driver used for vector files
         """
         # initial settings
         self.__coder, self.__coder_key = None, ''
-        self.__driver, self.__drivername = None, ''
         try:
             assert API_SERVICE is not False
         except:
@@ -704,7 +707,6 @@ class APIService(object):
         # read the arguments              
         self.__coder = kwargs.pop('coder', settings.CODER_GOOGLE_MAPS)
         self.__coder_key  = kwargs.get(self.CODER[self.__coder]) # it is a get!!! maybe None
-        self.__drivername   = kwargs.pop('driver_name', settings.DRIVER_NAME)
         if self.__coder in _googleMapsAPI.CODER.keys():
             try:
                 # geomapper defined as an instance of _googleMapsAPI class derived
@@ -726,22 +728,11 @@ class APIService(object):
                 self.__coder = _geoCoderAPI(geocoder=self.__coder, **kwargs) 
             except:
                 raise IOError('geopy geocoder not available')
-        try:
-            self.__driver = ogr.GetDriverByName(self.driver_name)
-        except:
-            try:
-                self.__driver = ogr.GetDriver(0)
-            except:
-                raise IOError('driver not available')
             
     #/************************************************************************/
     @property
     def coder(self):
         return self.__coder
-    
-    @property
-    def driver(self):
-        return self.__driver
             
     @property
     def coder_key(self):
@@ -751,6 +742,69 @@ class APIService(object):
         if not isinstance(key, str):
             raise IOError('wrong type for CODER_KEY parameter')
         self.__coder_key = key
+
+    #/************************************************************************/
+    @_geoDecorators.parse_place
+    def place2coord(self, place, **kwargs):
+        """
+        """
+        coord = [] 
+        for p in place:   
+            try:
+                geocode = self.coder.geocode(p)
+                coord.append(geocode[0]['geometry']['location'])
+                assert coord is not None
+            except:
+                coord.append(None)
+                if settings.VERBOSE: print('\nCould not retrieve geolocation of %s' % p)
+                # continue
+            else:
+                if settings.VERBOSE: print('%s => %s' % (place, coord))
+                # continue
+        return coord
+
+#%%
+#==============================================================================
+# CLASS GDALService
+#==============================================================================
+    
+class GDALService(object):
+    """
+    """
+    
+    #/************************************************************************/
+    def __init__(self, **kwargs):
+        """Initialisation of a :class:`OfflineService` instance.
+
+            >>> serv = GDALService(**kwargs)
+
+        Arguments
+        ---------
+        client_key : str
+            key used to connect to the geolocation API, _e.g._:= Google Maps, 
+            Google Places, _etc_...
+        driver_name : str
+            name of the driver used for vector files
+        """
+        # initial settings
+        self.__driver, self.__drivername = None, ''
+        try:
+            assert GDAL_SERVICE is not False
+        except:
+            raise IOError('GDAL service not available')
+        self.__drivername   = kwargs.pop('driver_name', settings.DRIVER_NAME)
+        try:
+            self.__driver = ogr.GetDriverByName(self.driver_name)
+        except:
+            try:
+                self.__driver = ogr.GetDriver(0)
+            except:
+                raise IOError('driver not available')
+            
+    #/************************************************************************/    
+    @property
+    def driver(self):
+        return self.__driver
             
     @property
     def driver_name(self):
@@ -760,8 +814,9 @@ class APIService(object):
         if not isinstance(driver_name, str):
             raise IOError('wrong type for DRIVER_NAME parameter')
         self.__driver_name = driver_name
-    
+
     #/************************************************************************/
+    @_geoDecorators.parse_file
     def file2layer(self, filename):
         """
         """
@@ -786,52 +841,31 @@ class APIService(object):
         return layer
 
     #/************************************************************************/
-    @_geoDecorators.parse_place
-    def place2coord(self, place, **kwargs):
-        """
-        """
-        coord = [] 
-        for p in place:   
-            try:
-                geocode = self.coder.geocode(p)
-                coord.append(geocode[0]['geometry']['location'])
-                assert coord is not None
-            except:
-                coord.append(None)
-                if settings.VERBOSE: print('\nCould not retrieve geolocation of %s' % p)
-                # continue
-            else:
-                if settings.VERBOSE: print('%s => %s' % (place, coord))
-                # continue
-        return coord
-
-    #/************************************************************************/
     @_geoDecorators.parse_coordinate
-    def coord2vec(self, lat, lng, **kwargs):
+    def coord2vec(self, lat, lon, **kwargs):
         """
         """
         vector = ogr.Geometry(ogr.wkbMultiPoint)
         for i in range(len(lat)):
             try:
                 pt = ogr.Geometry(ogr.wkbPoint)
-                pt.AddPoint(lng[i], lat[i]) 
+                pt.AddPoint(lon[i], lat[i]) 
             except:
-                if settings.VERBOSE is True:
-                        print('\nCould not add geolocation')
+                nutsVerbose('\ncould not add geolocation')
             else:
                 vector.AddGeometry(pt)
         return vector
-
+    
     #/************************************************************************/
     def vec2id(self, layer, vector):
         """
         """
         answer = [] # will be same lenght as self.vector
         featureCount = layer.GetFeatureCount()
-        nutsVerbose('\nNumber of features in %s: %d' % (os.path.basename(NUTSFILE),featureCount))
+        nutsVerbose('\nnumber of features in %s: %d' % (layer,featureCount))
         # iterate through points
-        for i in range(0, self.vector.GetGeometryCount()): # because it is a MULTIPOINT
-            pt = self.vector.GetGeometryRef(i)
+        for i in range(0, vector.GetGeometryCount()): # because it is a MULTIPOINT
+            pt = vector.GetGeometryRef(i)
             #print(pt.ExportToWkt())
             # iterate through polygons in layer
             for j in range(0, featureCount):
@@ -848,292 +882,31 @@ class APIService(object):
         return answer
 
     #/************************************************************************/
-    def coord2nuts(self, *args, **kwargs):
+    def coord2id(self, *args, **kwargs):
         """
         """
         try:
-            layer = self.file2layer(kwargs.pop('nuts_file',''))
+            lat, lon = _geoDecorators.parse_coordinate(lambda l, L: [l, L])(*args, **kwargs)
+            assert not (lat in ([], None) or lon in ([], None)) 
+        except:
+            raise IOError('could not retrieve coordinate')
+        try:
+            filename = _geoDecorators.parse_file(lambda f: f)(**kwargs) 
+            assert filename not in ('', None)
+        except:
+            raise IOError('could not retrieve filename')
+        try:
+            layer = self.file2layer(filename)
             assert layer not in (None,[])
         except:
             raise IOError('could not load feature layer')
         try:
-            vector = self.coord2vec(*args, **kwargs)
+            vector = self.coord2vec(lat, lon)
             assert vector not in (None,[])
         except:
             raise IOError('could not load geolocation vector')
-        return self.vec2nuts(layer, vector)
-    
-#==============================================================================
-# CLASS __Entity
-#==============================================================================
-            
-class __Entity(object):    
-    """
-    """
-    def __init__(self, *args, **kwargs):
-        """
-        """
-        self.__service = None
-        try:
-            assert API_SERVICE or GISCO_SERVICE
-        except:
-            raise IOError('external API and GISCO services not available')
-        service = kwargs.pop('serv', settings.CODER_GISCO)
-        if service is None: # whatever works
-            try:
-                assert GISCO_SERVICE is True
-                self.__service = GISCOService(coder=service)
-            except:
-                try:
-                    assert API_SERVICE is True
-                    self.__service = APIService(coder=service)
-                except:
-                    raise IOError('no service available')
-        elif isinstance(service,str):
-            if service in GISCOService.CODER:
-                self.__service = GISCOService(coder=service)
-            elif service in APIService.CODER:
-                self.__service = APIService(coder=service)
-            else:
-                raise IOError('service %s not available' % service)
-        if not isinstance(self.__service,(GISCOService,APIService)):
-            raise IOError('service %s not supported' % service)
+        return self.vec2id(layer, vector)
 
-#==============================================================================
-# CLASS Place
-#==============================================================================
-            
-class Place(__Entity):
-    """
-    """
-    @_geoDecorators.parse_place_or_coordinates
-    def __init__(self, *args, **kwargs):
-        """
-        """
-        super(Place,self).__init__(*args, **kwargs)
-        self.__place = kwargs.get('place')
-        self.__lat, self.__lon = kwargs.get('lat'), kwargs.get('lon')
-
-    @property
-    def place(self):
-        """
-        """
-        return self.__place
-       
-    @property
-    def service(self):
-        """
-        """
-        return self.__service
-       
-    @property
-    def coord(self):
-        """
-        """
-        return self.__coord
-    
-    def tourl(self):
-        return ['+'.join(p.replace(',',' ').split()) for p in self.place]
-
-    def __repr__(self):
-        return [','.join(p.replace(',',' ').split()) for p in self.place]
-
-    def tonuts(self, **kwargs):  
-        pass
-
-    def geocode(self, **kwargs):   
-        """Convert place names to geographic coordinates (default) and reciprocally, 
-        depending on the type of input arguments passed.
-        
-            >>> location = place.geocode(*args, **kwargs)
-
-        Arguments
-        ---------
-        args : tuple, str
-            a tuple representing (lat,Lon) coordinates, or a string representing
-            either a place name, or again (lat,Lon) coordinates.
-        
-        Keyword Arguments
-        -----------------        
-        reverse : bool  
-            set to :literal:`True` when `location` is passed as a tuple of (lat,Lon) so 
-            that a place name is reverse; default: :literal:`False`
-
-        Returns
-        -------
-        location : tuple, str
-            a place name or a :data:`(lat,Lon)` tuple.
-
-        Raises
-        ------
-        IOError:
-            when unable to recognize address/location.
-
-        Note
-        ----
-        It may return no results if it is passed a non-existent address or a lat/lng 
-        in a remote location.
-
-        Examples
-        --------
-        >>> print serv.code('Paris, France')
-            (48.856614, 2.3522219)
-        >>> paris = serv.code('48.85693, 2.3412', reverse=True)
-        >>> print paris
-            [u'76 Quai des Orf\xe8vres, 75001 Paris, France', u"Saint-Germain-l'Auxerrois, Paris, France", 
-             u'75001 Paris, France', u'1er Arrondissement, Paris, France', u'Paris, France', 
-             u'Paris, France', u'\xcele-de-France, France', u'France']
-        >>> paris == serv.code(48.85693, 2.3412, reverse=True)
-            True
-        
-        See also
-        --------
-        :meth:`~OfflineService.reverse`
-        """
-        try:
-            return self.service.place2coord(place=self.place, *kwargs)
-        except:     
-            raise IOError('unrecognised address/location argument') 
-    
-     #/************************************************************************/
-    def reverse(self, *args):
-        """Convert geographic location (passed as a tuple of coordinates or a string 
-        with those coordinates). 
-        
-            >>> place = serv.reverse(*args)
-        
-        This is nothing else than a (dummy) shortcut to:
-        
-            >>> place = serv.code(*args, reverse=True)
-
-        Arguments
-        ---------
-        args: tuple, str
-            a tuple or a string representing (lat,Lon) coordinates.
-
-        Returns
-        -------
-        place : str
-            a place name.        
-
-        Examples
-        --------
-        >>> paris = serv.reverse('48.85693, 2.3412') 
-        >>> print paris
-            [u'76 Quai des Orf\xe8vres, 75001 Paris, France', u"Saint-Germain-l'Auxerrois, Paris, France", 
-             u'75001 Paris, France', u'1er Arrondissement, Paris, France', u'Paris, France', 
-             u'Paris, France', u'\xcele-de-France, France', u'France']
-        >>> paris == serv.reverse(48.85693, 2.3412)
-            True
-        """
-        # geocode may return no results if it is passed a  
-        # non-existent address or a lat/lng in a remote location
-        # raise LocationError('unrecognised location argument')          
-        return self.geocode(*args, reverse=True)
-    
-    def distance(self, *args, **kwargs):            
-        """Method used for computing pairwise distances between given locations, 
-        passed indifferently as places names or geographic coordinates.
-        
-            >>> D = _geoCoderAPI.distance(*args, **kwargs)
-    
-        Arguments
-        ---------
-        args : tuple, str
-            a pair of locations represented either as tuple of (lat,Lon) coordinates
-            or string of place name.
-            
-        Keyword Arguments
-        -----------------        
-        dist : str  
-            name of the geo-principle used to estimate the distance: it is any string
-            in :literal:`['great_circle','vincenty']`; see :meth:`geopy.distance` method; 
-            default to :literal:`'great_circle'`.
-        unit : str  
-            name of the unit used to return the result: any string in the list
-            :literal:`['km','mi','m','ft']`; default to :literal:`'km'`.
-            
-        Returns
-        -------
-        D : :class:`np.array`
-            matrix of pairwise distances computed in `unit` unit.
-        
-        Raises
-        ------
-        IOError:
-            when wrong unit/code for geodesic distance or when unable to find/recognize
-            locations.
-            
-        Examples
-        --------        
-        >>> print _geoCoderAPI.distance((26.062951, -80.238853), (26.060484,-80.207268), 
-        ...                             dist='vincenty', unit='m')
-            3172.3596179302895
-        >>> print _geoCoderAPI.distance((26.062951, -80.238853), (26.060484,-80.207268), 
-        ...                             dist='great_circle', unit='km')
-            3.167782321855102
-        >>> print _geoCoderAPI.distance((26.062951, -80.238853), 'Paris, France', 
-        ...                             dist='great_circle', unit='km')
-            7338.5353364838438
-        """
-        pass
-    
-    
-    @property
-    def tovector(self):       
-        if self.__vector in ([], None):
-            location = ogr.Geometry(ogr.wkbMultiPoint)
-            for p in self.coord:   
-                try:
-                    pt = ogr.Geometry(ogr.wkbPoint)
-                    pt.AddPoint(self.coord['lng'], self.coord['lat']) 
-                except:
-                    if settings.VERBOSE is True:
-                        print('\nCould not add geolocation')
-                else:
-                    location.AddGeometry(pt)
-            self.__vector = location
-        return self.vector
-    
-    def inlayer(self, layer):
-        answer = [] # will be same lenght as self.vector
-        featureCount = layer.GetFeatureCount()
-        if settings.VERBOSE is True:
-            print('\nNumber of features in %s: %d' % (os.path.basename(NUTSFILE),featureCount))
-        # iterate through points
-        for i in range(0, self.vector.GetGeometryCount()): # because it is a MULTIPOINT
-            pt = self.vector.GetGeometryRef(i)
-            #print(pt.ExportToWkt())
-            # iterate through polygons in layer
-            for j in range(0, featureCount):
-                feature = layer.GetFeature(j)
-                if feature is None:
-                    continue    
-                #elif feature.geometry() and feature.geometry().Contains(pt):
-                #    Regions.append(feature)
-                ft = feature.GetGeometryRef()
-                if ft is not None and ft.Contains(pt):
-                    answer.append(feature)
-            if len(answer)<i+1:    
-                answer.append(None)
-        return answer
-
-    #/************************************************************************/
-    def place2nuts():
-        return
-    
-class NUTS(object):
-    """
-    """
-    @_geoDecorators.parse_nuts
-    def __init__self(self, *args, **kwargs):
-        pass
-    
-    def identify(self, place, **kwargs):
-        pass
-    
-    def contains(self, place, **kwargs):
-        pass
 
 
  #   http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52
