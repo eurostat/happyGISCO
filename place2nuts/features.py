@@ -54,10 +54,10 @@ from services import GISCO_SERVICE, API_SERVICE
 
     
 #==============================================================================
-# CLASS __Entity
+# CLASS __Feature
 #==============================================================================
             
-class __Entity(object):    
+class __Feature(object):    
     """
     """
     def __init__(self, *args, **kwargs):
@@ -93,16 +93,15 @@ class __Entity(object):
 # CLASS Place
 #==============================================================================
             
-class Place(__Entity):
+class Place(__Feature):
     """
     """
-    @_geoDecorators.parse_place_or_coordinates
-    def __init__(self, *args, **kwargs):
+    @_geoDecorators.parse_place
+    def __init__(self, place, **kwargs):
         """
         """
         super(Place,self).__init__(*args, **kwargs)
-        self.__place = kwargs.get('place')
-        self.__lat, self.__lon = kwargs.get('lat'), kwargs.get('lon')
+        self.__place = place
 
     @property
     def place(self):
@@ -268,51 +267,18 @@ class Place(__Entity):
         """
         pass
     
-    
-    @property
-    def tovector(self):       
-        if self.__vector in ([], None):
-            location = ogr.Geometry(ogr.wkbMultiPoint)
-            for p in self.coord:   
-                try:
-                    pt = ogr.Geometry(ogr.wkbPoint)
-                    pt.AddPoint(self.coord['lng'], self.coord['lat']) 
-                except:
-                    if settings.VERBOSE is True:
-                        print('\nCould not add geolocation')
-                else:
-                    location.AddGeometry(pt)
-            self.__vector = location
-        return self.vector
-    
-    def inlayer(self, layer):
-        answer = [] # will be same lenght as self.vector
-        featureCount = layer.GetFeatureCount()
-        if settings.VERBOSE is True:
-            print('\nNumber of features in %s: %d' % (os.path.basename(NUTSFILE),featureCount))
-        # iterate through points
-        for i in range(0, self.vector.GetGeometryCount()): # because it is a MULTIPOINT
-            pt = self.vector.GetGeometryRef(i)
-            #print(pt.ExportToWkt())
-            # iterate through polygons in layer
-            for j in range(0, featureCount):
-                feature = layer.GetFeature(j)
-                if feature is None:
-                    continue    
-                #elif feature.geometry() and feature.geometry().Contains(pt):
-                #    Regions.append(feature)
-                ft = feature.GetGeometryRef()
-                if ft is not None and ft.Contains(pt):
-                    answer.append(feature)
-            if len(answer)<i+1:    
-                answer.append(None)
-        return answer
-
     #/************************************************************************/
     def place2nuts():
         return
     
-class NUTS(object):
+class Location(__Feature):
+    """
+    """
+    @_geoDecorators.parse_coordinate
+    def __init__self(self, lat, lon, **kwargs):
+        self.__lat, self.__lon = lat, lon
+    
+class NUTS(__Feature):
     """
     """
     @_geoDecorators.parse_nuts
