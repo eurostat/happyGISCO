@@ -10,7 +10,7 @@ Module for place/location entities definition
 
 *credits*:      `grazzja <jacopo.grazzini@ec.europa.eu>`_ 
 
-*version*:      0.1
+*version*:      1
 --
 *since*:        Sat Apr  7 01:34:07 2018
 
@@ -32,17 +32,16 @@ Define place and NUTS entities to which geotransformations are associated.
 
 # generic import
 import os, sys#analysis:ignore
-import warnings
 
 import functools#analysis:ignore
 
-# requirements
-
 # local imports
-import settings
-from settings import nutsVerbose, _geoDecorators
-import services     
-from services import GISCO_SERVICE, API_SERVICE
+from . import settings
+from .settings import happyVerbose, _geoDecorators
+from . import services     
+from .services import GISCO_SERVICE, API_SERVICE
+
+# requirements
 
     
 #==============================================================================
@@ -105,7 +104,7 @@ class Place(__Feature):
             a (list of) str representing place (geo)names.
         """
         super(Place,self).__init__(**kwargs)
-        self.__place = place if len(place)>1 else place[0]
+        self.__place = place
         self.__lat, self.__lon = None, None
 
     #/************************************************************************/
@@ -113,7 +112,7 @@ class Place(__Feature):
     def place(self):
         """
         """
-        return self.__place
+        return self.__place  if len(self.__place)>1 else self.__place[0]
    
     #/************************************************************************/
     def __repr__(self):
@@ -220,16 +219,21 @@ class Place(__Feature):
         pass
 
     #/************************************************************************/
-    @_geoDecorators.parse_place_or_coordinate
-    def route(self, **kwargs):
-        pass
+    @_geoDecorators.parse_place
+    def route(self, place, **kwargs):
+        lat, lon = self.serv.place2coord(place)
+        lat = self.__lat if len(self.__lat)>1 else [self.__lat,]    \
+            + lat if len(lat)>1 else [lat,]
+        lon = self.__lon if len(self.__lon)>1 else [self.__lon,]    \
+            + lon if len(lon)>1 else [lon,]
+        return self.serv.coord2route(lat, lon, **kwargs)
      
     #/************************************************************************/
-    def is_contained(self, layer, **kwargs):
+    def iscontained(self, layer, **kwargs):
         pass
     
     #/************************************************************************/
-    def in_nuts(self, **kwargs):
+    def findnuts(self, **kwargs):
         return self.serv.place2nuts(self.place, **kwargs)
 
 #==============================================================================
@@ -249,9 +253,22 @@ class Location(__Feature):
         lat, lon : tuple, float
             a tuple representing (lat,Lon) coordinates coordinates.
         """
-        self.__lat, self.__lon = lat if len(lat)>1 else lat[0], lon if len(lon)>1 else lon[0]        
+        self.__lat, self.__lon = lat, lon        
         self.__place = ''
         super(Location,self).__init__(**kwargs)
+
+    #/************************************************************************/
+    @property
+    def lat(self):
+        """
+        """
+        return self.__lat if len(self.__lat)>1 else self.__lat[0]
+
+    @property
+    def lon(self):
+        """
+        """
+        return self.__lon if len(self.__lon)>1 else self.__lon[0]
     
     #/************************************************************************/
     def reverse(self, **kwargs):
@@ -285,7 +302,7 @@ class Location(__Feature):
         """
         # geocode may return no results if it is passed a  
         # non-existent address or a lat/lng in a remote location
-        # raise LocationError('unrecognised location argument')      
+        # raise LocationError('unrecognised location argument')  
         if self.__place in (None,''):
             try:
                 place = self.service.coord2place(lat=self.lat, lon=self.lon, **kwargs)
@@ -294,13 +311,24 @@ class Location(__Feature):
             else:
                 self.__place = place
         return self.__place
-    
+
     #/************************************************************************/
-    def is_contained(self, layer, **kwargs):
+    def transform(self,**kwargs):
         pass
     
     #/************************************************************************/
-    def in_nuts(self, **kwargs):
+    @_geoDecorators.parse_coordinate
+    def route(self, lat, lon, **kwargs):
+        lat = self.__lat + [lat if len(lat)>1 else [lat,]][0]
+        lon = self.__lon + [lon if len(lon)>1 else [lon,]][0]
+        return self.serv.coord2route(lat, lon, **kwargs)
+
+    #/************************************************************************/
+    def iscontained(self, layer, **kwargs):
+        pass
+    
+    #/************************************************************************/
+    def findnuts(self, **kwargs):
         return self.serv.coord2nuts(self.lat, self.lon, **kwargs)
 
 #==============================================================================
@@ -334,6 +362,8 @@ class NUTS(__Feature):
     
     @property
     def level(self):
+        """
+        """
         try:
             level = [int(n[_geoDecorators.parse_nuts.KW_ATTRIBUTES][_geoDecorators.parse_nuts.KW_LEVEL]) \
                     for n in self.__nuts]
@@ -344,6 +374,8 @@ class NUTS(__Feature):
     
     @property
     def id(self):
+        """
+        """
         try:
             _id = [n[_geoDecorators.parse_nuts.KW_ATTRIBUTES][_geoDecorators.parse_nuts.KW_NUTS_ID] \
                     for n in self.__nuts]
@@ -351,13 +383,40 @@ class NUTS(__Feature):
             return None
         else:
             return _id if len(_id)>1 else _id[0]
+    
+    @property
+    def name(self):
+        """
+        """
+        try:
+            name = [n[_geoDecorators.parse_nuts.KW_ATTRIBUTES][_geoDecorators.parse_nuts.KW_NUTS_NAME] \
+                    for n in self.__nuts]
+        except:
+            return None
+        else:
+            return name if len(name)>1 else name[0]
+    
+    @property
+    def value(self):
+        """
+        """
+        try:
+            value = [n[_geoDecorators.parse_nuts.KW_VALUE] for n in self.__nuts]
+        except:
+            return None
+        else:
+            return value if len(value)>1 else value[0]
         
     #/************************************************************************/
     def identify(self, place, **kwargs):
+        """
+        """
         pass
     
     #/************************************************************************/
     def contains(self, place, **kwargs):
+        """
+        """
         pass
 
 
