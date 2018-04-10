@@ -135,8 +135,8 @@ class GISCOService(object):
             assert GISCO_SERVICE is not False
         except:
             raise IOError('GISCO service not available')
-        self.__session = requests.Session()
-        self.__domain = kwargs.pop('domain', settings.GISCO_URL)
+        self.session = requests.Session()
+        self.domain = kwargs.pop('domain', settings.GISCO_URL)
 
     #/************************************************************************/
     @property
@@ -146,9 +146,9 @@ class GISCOService(object):
         return self.__domain
     @domain.setter#analysis:ignore
     def domain(self, domain):
-        if not isinstance(domain, str):
+        if domain is not None and not isinstance(domain, str):
             raise IOError('wrong type for DOMAIN parameter')
-        self.__domain = domain
+        self.__domain = domain or ''
         
     #/************************************************************************/
     @property
@@ -156,11 +156,11 @@ class GISCOService(object):
         """
         """
         return self.__session
-    #@session.setter#analysis:ignore
-    #def session(self, session):
-    #    if not isinstance(session, requests.sessions.Session):
-    #        raise IOError('wrong type for SESSION parameter')
-    #    self.__session = session
+    @session.setter#analysis:ignore
+    def session(self, session):
+        if session is not None and not isinstance(session, requests.sessions.Session):
+            raise IOError('wrong type for SESSION parameter')
+        self.__session = session
     
     #/************************************************************************/   
     def get_status(self, url):
@@ -754,13 +754,12 @@ class APIService(object):
     def place2coord(self, place, **kwargs):
         """
         """
-        lat, lon = self.coder.geocode(place)
         coord = [] 
         for p in place:   
             try:
                 lat, lon = self.coder.geocode(p)
+                assert lat not in ([],None) and lon not in ([],None)
                 coord.append([lat,lon])
-                assert coord is not None
             except:
                 coord.append(None)
                 nutsVerbose('\ncould not retrieve geolocation of %s' % p)
@@ -769,6 +768,31 @@ class APIService(object):
                 # nutsVerbose('%s => %s' % (p, coord))
                 pass
         return coord #{'lat':lat, 'lon': lon}
+
+    #/************************************************************************/
+    @_geoDecorators.parse_coordinate
+    def coord2place(self, lat, lon, **kwargs):
+        """
+        """
+        places = self.coder.reverse(lat, lon)
+        places = [] 
+        for i in range(len(lat)):   
+            try:
+                p = self.coder.reverse(lat[i],lon[i])
+                assert p not in ('',None)
+                places.append(p)
+            except:
+                places.append(None)
+                nutsVerbose('\ncould not retrieve place name for geolocation %s' % (lat[i],lon[i]))
+                # continue
+            else:
+                # nutsVerbose('%s => %s' % (p, coord))
+                pass
+        return places 
+    
+    #/************************************************************************/
+    def coord2nuts(self, lat, lon, **kwargs):
+        pass
 
 #%%
 #==============================================================================

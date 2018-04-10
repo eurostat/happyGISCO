@@ -168,7 +168,7 @@ class _geoDecorators(object):
         def __call__(self, *args, **kwargs):
             if args not in (None,()):      
                 if all([isinstance(a,str) for a in args]):
-                    place = args
+                    place = list(args)
                 elif len(args) == 1 and isinstance(args[0],(tuple,list)):
                     place = args[0]
                 else:   
@@ -192,7 +192,7 @@ class _geoDecorators(object):
             coord, lat, lon = None, None, None
             if args not in (None,()):      
                 if all([isinstance(a,dict) for a in args]):
-                    coord = args
+                    coord = list(args)
                 elif len(args) == 1 and isinstance(args[0],(tuple,list)):
                     if len(args[0])==2 and all([isinstance(args[0][i],(tuple,list)) for i in (0,1)]):
                         lat, lon = args[0]
@@ -230,7 +230,8 @@ class _geoDecorators(object):
                     raise IOError('wrong input coordinate argument passed')
             if lat is None or lon is None:
                 raise IOError('wrong geographical coordinates')
-            lat, lon = [lat,], [lon,]
+            if not isinstance(lat,(list,tuple)):  
+                lat, lon = [lat,], [lon,]
             if not len(lat) == len(lon):
                 raise IOError('incompatible geographical coordinates')
             return self.func(lat, lon, **kwargs)
@@ -270,29 +271,53 @@ class _geoDecorators(object):
         """
         KW_RESULTS      = 'results'
         KW_ATTRIBUTES   = 'attributes'
+        KW_FIELDNAME    = 'displayFieldName' 
+        KW_LAYERID      = 'layerId'
+        KW_LAYERNAME    = 'layerName'
+        KW_VALUE        = 'value'
         KW_LEVEL        = 'LEVL_CODE'
+        KW_NUTS_ID      = 'NUTS_ID' # nuts[self.KW_FIELDNAME]
+        KW_CNTR_CODE    = 'CNTR_CODE'
+        KW_NUTS_NAME    = 'NUTS_NAME'
+        KW_OBJECTID     = 'OBJECTID'
         def __call__(self, *args, **kwargs):
             level = kwargs.pop('level',None)
-            nuts = None
+            nuts, items = None, {}
             if args not in (None,()):      
                 if all([isinstance(a,dict) for a in args]):
-                    nuts = args
+                    nuts = list(args)
                 elif len(args) == 1 and isinstance(args[0],(tuple,list)):
                     if all([isinstance(args[0][i],dict) for i in range(len(args[0]))]):
                         nuts = args[0]
             else:   
-                nuts = kwargs.pop('nuts', None)                  
-            if nuts is None:
+                nuts = kwargs.pop('nuts', {})   
+                items = {self.KW_ATTRIBUTES: kwargs.pop(self.KW_ATTRIBUTES, None),
+                         self.KW_FIELDNAME: kwargs.pop(self.KW_FIELDNAME, None),
+                         self.KW_LAYERID: kwargs.pop(self.KW_LAYERID, None),
+                         self.KW_LAYERNAME: kwargs.pop(self.KW_LAYERNAME, None),
+                         self.KW_VALUE: kwargs.pop(self.KW_VALUE, None)}
+            try:
+                assert not(nuts in ({},None) and all([v in ([],None) for v in items.values()]))
+            except AssertionError:
+                # raise IOError('no input NUTS parsed')
+                return self.func(None, *args, **kwargs)
+            try:
+                assert nuts in ({},None) or all([v in ([],None) for v in items.values()])
+            except AssertionError:
+                raise IOError('too many input file arguments')
+            else:
+                nuts = items if nuts in ({},None) else nuts
+            if nuts in ((),[],None) or                                              \
+                (isinstance(nuts,dict) and all([n in ([],None) for n in nuts.values()])):
                 # raise IOError('no NUTS parsed')
                 return self.func(*args, **kwargs)
             if not isinstance(nuts,(list,tuple)):
                 nuts = [nuts,]
             if not all([isinstance(n,dict) and self.KW_ATTRIBUTES in n for n in nuts]): 
-                raise IOError('NUTS attribtues not recognised')
+                raise IOError('NUTS attributes not recognised')
             if level is not None:
                 nuts = [n for n in nuts if n[self.KW_ATTRIBUTES][self.KW_LEVEL] == str(level)]
-            kwargs.update({'nuts': nuts}) 
-            return self.func(**kwargs)
+            return self.func(nuts, **kwargs)
 
     #/************************************************************************/
     class parse_geometry(__parse):
@@ -342,6 +367,8 @@ class _geoDecorators(object):
                            'LAEA': 3035, 3035: 3035}
         def __call__(self, *args, **kwargs):
             proj = kwargs.pop('proj', 'WGS84')
+            if proj in ('',None):
+                return self.func(None,*args, **kwargs)
             if proj not in list(self.PROJECTION.keys() | self.PROJECTION.values()):
                 raise IOError('projection %s not supported' % proj)
             kwargs.update({'proj': self.PROJECTION[proj]})                  
@@ -356,6 +383,8 @@ class _geoDecorators(object):
                       ]
         def __call__(self, *args, **kwargs):
             year = kwargs.pop('year', 2013)
+            if year in ([],None):
+                return self.func(None, *args, **kwargs)
             if year not in tuple(self.YEARS):
                 raise IOError('year %s not supported' % year)
             kwargs.update({'year': year})                  
