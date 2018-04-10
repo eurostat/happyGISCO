@@ -94,6 +94,8 @@ class __Feature(object):
 class Place(__Feature):
     """
     """
+
+    #/************************************************************************/
     @_geoDecorators.parse_place
     def __init__(self, place, **kwargs):
         """
@@ -103,21 +105,21 @@ class Place(__Feature):
             a (list of) str representing place (geo)names.
         """
         super(Place,self).__init__(**kwargs)
-        self.__place = place
+        self.__place = place if len(place)>1 else place[0]
         self.__lat, self.__lon = None, None
 
+    #/************************************************************************/
     @property
     def place(self):
         """
         """
         return self.__place
    
-    def tourl(self):
-        return ['+'.join(p.replace(',',' ').split()) for p in self.place]
-
+    #/************************************************************************/
     def __repr__(self):
         return [','.join(p.replace(',',' ').split()) for p in self.place]
 
+    #/************************************************************************/
     def geocode(self, **kwargs):   
         """Convert place names to geographic coordinates (default) and reciprocally, 
         depending on the type of input arguments passed.
@@ -169,6 +171,7 @@ class Place(__Feature):
                 self.__lat, self.__lon = lat, lon
         return self.__lat, self.__lon
     
+    #/************************************************************************/
     def distance(self, *args, **kwargs):            
         """Method used for computing pairwise distances between given locations, 
         passed indifferently as places names or geographic coordinates.
@@ -216,23 +219,34 @@ class Place(__Feature):
         """
         pass
      
+    #/************************************************************************/
     def is_contained(self, layer, **kwargs):
         pass
+    
+    #/************************************************************************/
+    def in_nuts(self, **kwargs):
+        return self.serv.place2nuts(self.place, **kwargs)
+
+#==============================================================================
+# CLASS Location
+#==============================================================================
    
 class Location(__Feature):
     """
     """
+
+    #/************************************************************************/
     @_geoDecorators.parse_coordinate
-    def __init__self(self, lat, lon, **kwargs):
+    def __init__(self, lat, lon, **kwargs):
         """
         Arguments
         ---------
         lat, lon : tuple, float
             a tuple representing (lat,Lon) coordinates coordinates.
         """
-        super(Location,self).__init__(**kwargs)
-        self.__lat, self.__lon = lat, lon        
+        self.__lat, self.__lon = lat if len(lat)>1 else lat[0], lon if len(lon)>1 else lon[0]        
         self.__place = ''
+        super(Location,self).__init__(**kwargs)
     
     #/************************************************************************/
     def reverse(self, **kwargs):
@@ -276,20 +290,68 @@ class Location(__Feature):
                 self.__place = place
         return self.__place
     
+    #/************************************************************************/
     def is_contained(self, layer, **kwargs):
         pass
     
+    #/************************************************************************/
+    def in_nuts(self, **kwargs):
+        return self.serv.coord2nuts(self.lat, self.lon, **kwargs)
+
+#==============================================================================
+# CLASS NUTS
+#==============================================================================
+       
 class NUTS(__Feature):
     """
     """
+
+    #/************************************************************************/
     @_geoDecorators.parse_nuts
-    def __init__self(self, nuts, **kwargs):
-        super(NUTS,self).__init__(**kwargs)
+    def __init__(self, nuts, **kwargs):
         self.__nuts = nuts
+        super(NUTS,self).__init__(**kwargs)
     
+    #/************************************************************************/
+    def __getattr__(self, attr_name): 
+        try:
+            return super().__getattribute__(attr_name) 
+        except AttributeError:
+            attr = [n[attr_name] for n in self.__nuts]
+            return attr if len(attr)>1 else attr[0]
+
+    #/************************************************************************/
+    @property
+    def nuts(self):
+        """
+        """
+        return self.__nuts if len(self.__nuts)>1 else self.__nuts[0]
+    
+    @property
+    def level(self):
+        try:
+            level = [int(n[_geoDecorators.parse_nuts.KW_ATTRIBUTES][_geoDecorators.parse_nuts.KW_LEVEL]) \
+                    for n in self.__nuts]
+        except:
+            return None
+        else:
+            return level if len(level)>1 else level[0]
+    
+    @property
+    def id(self):
+        try:
+            _id = [n[_geoDecorators.parse_nuts.KW_ATTRIBUTES][_geoDecorators.parse_nuts.KW_NUTS_ID] \
+                    for n in self.__nuts]
+        except:
+            return None
+        else:
+            return _id if len(_id)>1 else _id[0]
+        
+    #/************************************************************************/
     def identify(self, place, **kwargs):
         pass
     
+    #/************************************************************************/
     def contains(self, place, **kwargs):
         pass
 
