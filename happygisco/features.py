@@ -8,7 +8,7 @@ Module for place/location entities definition
 
 **About**
 
-*credits*:      `grazzja <jacopo.grazzini@ec.europa.eu>`_ 
+*credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
 
 *version*:      1
 --
@@ -37,9 +37,9 @@ import functools#analysis:ignore
 
 # local imports
 from . import settings
-from .settings import happyVerbose, _geoDecorators
+from .settings import happyWarning, happyVerbose, _geoDecorators
 from . import services     
-from .services import GISCO_SERVICE, API_SERVICE
+from .services import GISCO_SERVICE, API_SERVICE, GDAL_SERVICE
 
 # requirements
 
@@ -54,37 +54,51 @@ class __Feature(object):
     def __init__(self, *args, **kwargs):
         """
         """
-        self.__service = None
+        self.__service, self.__geolib, self.__arcgis = None, None, None
+        try:
+            assert GDAL_SERVICE
+        except:
+            happyWarning('GDAL services not available')
+            pass
+        else:
+            self.__geolib = services.GDALService()
         try:
             assert API_SERVICE or GISCO_SERVICE
         except:
-            raise IOError('external API and GISCO services not available')
-        service = kwargs.pop('serv', settings.CODER_GISCO)
-        if service is None: # whatever works
-            try:
-                assert GISCO_SERVICE is True
-                self.__service = services.GISCOService(coder=service)
-            except:
+            happyWarning('external API and GISCO services not available')
+        else:
+            service = kwargs.pop('serv', settings.CODER_GISCO)
+            if service is None: # whatever works
                 try:
-                    assert API_SERVICE is True
-                    self.__service = services.APIService(coder=service)
+                    assert GISCO_SERVICE is True
+                    self.__service = services.GISCOService(coder=service)
                 except:
-                    raise IOError('no service available')
-        elif isinstance(service,str):
-            if service in services.GISCOService.CODER:
-                self.__service = services.GISCOService(coder=service)
-            elif service in services.APIService.CODER:
-                self.__service = services.APIService(coder=service)
-            else:
-                raise IOError('service %s not available' % service)
-        if not isinstance(self.__service,(services.GISCOService,services.APIService)):
-            raise IOError('service %s not supported' % service)
+                    try:
+                        assert API_SERVICE is True
+                        self.__service = services.APIService(coder=service)
+                    except:
+                        raise IOError('no service available')
+            elif isinstance(service,str):
+                if service in services.GISCOService.CODER:
+                    self.__service = services.GISCOService(coder=service)
+                elif service in services.APIService.CODER:
+                    self.__service = services.APIService(coder=service)
+                else:
+                    raise IOError('service %s not available' % service)
+            if not isinstance(self.__service,(services.GISCOService,services.APIService)):
+                raise IOError('service %s not supported' % service)
        
     @property
     def service(self):
         """
         """
         return self.__service
+       
+    @property
+    def geolib(self):
+        """
+        """
+        return self.__geolib
 
 #==============================================================================
 # CLASS Place
@@ -221,12 +235,10 @@ class Place(__Feature):
     #/************************************************************************/
     @_geoDecorators.parse_place
     def route(self, place, **kwargs):
-        lat, lon = self.serv.place2coord(place)
-        lat = self.__lat if len(self.__lat)>1 else [self.__lat,]    \
-            + lat if len(lat)>1 else [lat,]
-        lon = self.__lon if len(self.__lon)>1 else [self.__lon,]    \
-            + lon if len(lon)>1 else [lon,]
-        return self.serv.coord2route(lat, lon, **kwargs)
+        lat, lon = self.service.place2coord(place)
+        lat = self.__lat + [lat if len(lat)>1 else [lat,]][0]
+        lon = self.__lon + [lon if len(lon)>1 else [lon,]][0]
+        return self.service.coord2route(lat, lon, **kwargs)
      
     #/************************************************************************/
     def iscontained(self, layer, **kwargs):
@@ -234,7 +246,7 @@ class Place(__Feature):
     
     #/************************************************************************/
     def findnuts(self, **kwargs):
-        return self.serv.place2nuts(self.place, **kwargs)
+        return self.service.place2nuts(self.place, **kwargs)
 
 #==============================================================================
 # CLASS Location
@@ -321,7 +333,7 @@ class Location(__Feature):
     def route(self, lat, lon, **kwargs):
         lat = self.__lat + [lat if len(lat)>1 else [lat,]][0]
         lon = self.__lon + [lon if len(lon)>1 else [lon,]][0]
-        return self.serv.coord2route(lat, lon, **kwargs)
+        return self.service.coord2route(lat, lon, **kwargs)
 
     #/************************************************************************/
     def iscontained(self, layer, **kwargs):
@@ -329,7 +341,7 @@ class Location(__Feature):
     
     #/************************************************************************/
     def findnuts(self, **kwargs):
-        return self.serv.coord2nuts(self.lat, self.lon, **kwargs)
+        return self.service.coord2nuts(self.lat, self.lon, **kwargs)
 
 #==============================================================================
 # CLASS NUTS

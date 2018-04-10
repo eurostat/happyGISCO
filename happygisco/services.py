@@ -8,7 +8,7 @@ Module for place/location identification and NUTS identifier retrieval.
 
 **About**
 
-*credits*:      `grazzja <jacopo.grazzini@ec.europa.eu>`_ 
+*credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
 
 *version*:      1
 --

@@ -8,7 +8,7 @@ Basic definitions for NUTS datasets and webservices.
 
 **About**
 
-*credits*:      `grazzja <jacopo.grazzini@ec.europa.eu>`_ 
+*credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
 
 *version*:      1
 --
