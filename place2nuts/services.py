@@ -300,6 +300,29 @@ class GISCOService(object):
                                **{k:v for k,v in kwargs.items() if k in keys})
         nutsVerbose('output url:\n            %s' % url)
         return url
+
+    #/************************************************************************/
+    def url_route(self, **kwargs):
+        """
+        http(s)://europa.eu/webtools/rest/gisco/route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219?overview=false
+        """
+        keys = ['overview', ] # ?
+        nutsVerbose('\n            * '.join(['input filters used for routing service:',]+[attr + '='+ str(kwargs[attr]) \
+                                            for attr in kwargs.keys() if attr in keys]))
+        coordinates = kwargs.pop('coordinates','')
+        url = self.__build_url(domain=self.domain, 
+                               query='route/v1/driving/%s' % coordinates, 
+                               **{k:v for k,v in kwargs.items() if k in keys})
+        nutsVerbose('output url:\n            %s' % url)
+        return url
+        # test: 
+        # url_route(lat=[13.388860, 13.397634, 13.428555],lon=[52.517037,52.529407,52.523219])
+    #/************************************************************************/
+    def url_transform(self, **kwargs):
+        """
+        https://webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/Utilities/Geometry/GeometryServer/project?inSR=4326&outSR=3035&geometries=-9.1630%2C38.7775&transformation=&transformForward=true&f=json
+        """
+        pass
     
     #/************************************************************************/
     @_geoDecorators.parse_projection
@@ -454,6 +477,38 @@ class GISCOService(object):
         return nuts[0] if len(nuts)==1 else nuts
         #res = _geoDecorators.parse_nuts(lambda **kw: kw.get('nuts'))(nuts, **kwargs)
         #return res[0] if len(res)==1 else res
+
+    #/************************************************************************/
+    @_geoDecorators.parse_coordinate
+    def coordtrans(self, lat, lon, **kwargs):
+        pass
+
+    #/************************************************************************/
+    @_geoDecorators.parse_coordinate
+    def coordroute(self, lat, lon, **kwargs):
+        coordinates = ';'.join(','.join([str(_) for _ in [lL for lL in [coord for coord in zip(lat,lon)]]]))
+        kwargs.update({'coordinates': coordinates})
+        try:
+            url = self.url_route(**kwargs)
+            assert self.get_status(url) is not None
+        except:
+            raise IOError('error route request')
+        else:
+            response = self.get_response(url)
+        pass
+        try:
+            data = json.loads(response.text)
+            assert data is not None
+        except:
+            raise IOError('route not available')
+        try:
+            assert _geoDecorators.parse_route.KW_CODE in data     \
+                and data[_geoDecorators.parse_route.KW_CODE].upper() == "OK"
+        except:
+            raise IOError('route  not recognised')      
+        else:
+            routes = data.get(_geoDecorators.parse_route.KW_ROUTES)
+        return routes
     
 #%%
 #/****************************************************************************/

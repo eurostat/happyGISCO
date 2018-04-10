@@ -3,7 +3,7 @@
 """
 .. _mod_tests_test_main_
 
-Unit test of module :mod:`nuts2place.settings`
+Unit test of module :mod:`happygisco.settings`
 """
 
 from pytest import raises

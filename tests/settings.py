@@ -4,7 +4,7 @@
 """
 .. _mod_tests_settings_
 
-Unit test of module :mod:`nuts2place.settings`
+Unit test of module :mod:`happygisco.settings`
 
 **About**
 
@@ -23,7 +23,7 @@ Unit test of module :mod:`nuts2place.settings`
     
 **Dependencies**
 
-*call*:         :mod:`nuts2place.tests.base`, :mod:`nuts2place.settings`
+*call*:         :mod:`happygisco.tests.base`, :mod:`happygisco.settings`
                 
 *require*:      :mod:`unittest`, :mod:`warnings`
 """
@@ -32,7 +32,7 @@ Unit test of module :mod:`nuts2place.settings`
 # PROGRAM METADATA
 #==============================================================================
 
-from nuts2place.metadata import metadata
+from happygisco.metadata import metadata
 
 metadata = metadata.copy()
 metadata.update({ 
@@ -48,7 +48,7 @@ metadata.update({
 import unittest
 import warnings
 
-from nuts2place.settings import _geoDecorators
+from happygisco.settings import _geoDecorators
 
 #==============================================================================
 # GLOBAL VARIABLES/METHODS

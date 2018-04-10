@@ -19,7 +19,7 @@ Testing units for API to Eurostat GISCO web-services.
 
 **Usage**
 
-    >>> from place2nuts import tests
+    >>> from happygisco import tests
     
 """
 

@@ -4,7 +4,7 @@
 """
 .. _mod_tests_services_
 
-Unit test of module :mod:`nuts2place.services`
+Unit test of module :mod:`happygisco.services`
 
 **About**
 
@@ -23,7 +23,7 @@ Unit test of module :mod:`nuts2place.services`
     
 **Dependencies**
 
-*call*:         :mod:`nuts2place.tests.base`, :mod:`nuts2place.services`
+*call*:         :mod:`happygisco.tests.base`, :mod:`happygisco.services`
                 
 *require*:      :mod:`unittest`, :mod:`warnings`, :mod:`numpy`
 """
@@ -33,7 +33,7 @@ Unit test of module :mod:`nuts2place.services`
 # PROGRAM METADATA
 #==============================================================================
 
-from nuts2place.metadata import metadata
+from happygisco.metadata import metadata
 
 metadata = metadata.copy()
 metadata.update({ 
@@ -58,8 +58,8 @@ try:
 except ImportError:
     raise IOError
 
-from nuts2place import settings
-from nuts2place.services import GISCOService, APIService, GDALservice
+from happygisco import settings
+from happygisco.services import GISCOService, APIService, GDALservice
 
 #==============================================================================
 # GLOBAL VARIABLES/METHODS

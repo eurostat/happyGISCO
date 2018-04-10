@@ -218,6 +218,11 @@ class Place(__Feature):
             7338.5353364838438
         """
         pass
+
+    #/************************************************************************/
+    @_geoDecorators.parse_place_or_coordinate
+    def route(self, **kwargs):
+        pass
      
     #/************************************************************************/
     def is_contained(self, layer, **kwargs):

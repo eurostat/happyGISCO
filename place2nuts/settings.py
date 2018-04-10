@@ -429,6 +429,15 @@ class _geoDecorators(object):
             if not isinstance(filename,str):
                 filename = [filename,]
             return self.func(filename, **kwargs)
+
+    #/************************************************************************/
+    class parse_route(__parse):
+        """
+        """
+        KW_CODE         = 'code'
+        KW_ROUTES       = 'routes'
+        def __call__(self, *args, **kwargs):
+            pass
     
         
 

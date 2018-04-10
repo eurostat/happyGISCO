@@ -4,7 +4,7 @@
 """
 ..  _tests_base
 
-Utility functions for `place2nuts` unit test module.
+Utility functions for `happygisco` unit test module.
 
 **About**
 
@@ -16,7 +16,7 @@ Utility functions for `place2nuts` unit test module.
     
 **Dependencies**
 
-*call*:         :mod:`place2nuts`
+*call*:         :mod:`happygisco`
     
 *require*:      :mod:`unittest`, :mod:`os`, :mod:`sys`, :mod:`re`, :mod:`warnings`, 
                 :mod:`datetime`
@@ -27,7 +27,7 @@ Utility functions for `place2nuts` unit test module.
 # PROGRAM METADATA
 #==============================================================================
 
-from place2nuts.__metadata__ import metadata as __metadata__
+from happygisco.__metadata__ import metadata as __metadata__
 metadata = __metadata__.copy()
 # metadata.update({'date': 'Sun Apr  8 18:41:05 2018'})
 
@@ -40,12 +40,11 @@ import unittest
 import re#analysis:ignore
 import datetime, time#analysis:ignore
 
-
 #==============================================================================
 # GLOBAL VARIABLES
 #==============================================================================
 
-assert metadata.project == 'place2nuts' and metadata.package == 'place2nuts'
+assert metadata.project == 'happygisco' and metadata.package == 'happygisco'
 
 #==============================================================================
 # METHODS
