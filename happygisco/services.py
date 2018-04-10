@@ -10,7 +10,7 @@ Module for place/location identification and NUTS identifier retrieval.
 
 *credits*:      `grazzja <jacopo.grazzini@ec.europa.eu>`_ 
 
-*version*:      0.1
+*version*:      1
 --
 *since*:        Sat Apr  7 01:46:51 2018
 
@@ -40,16 +40,19 @@ locations and their NUTS identifiers.
 
 # generic import
 import os, sys#analysis:ignore
-import warnings
 
 import functools#analysis:ignore
+
+# local imports
+from . import settings
+from .settings import happyVerbose, happyWarning, _geoDecorators
 
 # requirements
 try:                                
     GISCO_SERVICE = True
     import requests # urllib2
 except ImportError:                 
-    warnings.warn('REQUESTS package (https://pypi.python.org/pypi/requests/) not loaded - GISCO ONLINE service will not be accessed')
+    happyWarning('REQUESTS package (https://pypi.python.org/pypi/requests/) not loaded - GISCO ONLINE service will not be accessed')
     GISCO_SERVICE = False
 
 try:
@@ -57,7 +60,7 @@ try:
     from osgeo import ogr
 except ImportError:
     GDAL_SERVICE = False
-    warnings.warn('GDAL package (https://pypi.python.org/pypi/GDAL) not loaded - Inline resources not available')
+    happyWarning('GDAL package (https://pypi.python.org/pypi/GDAL) not loaded - Inline resources not available')
 else:
     print('GDAL help: https://pcjericks.github.io/py-gdalogr-cookbook/index.html')
     
@@ -66,14 +69,14 @@ try:
     import googlemaps
 except ImportError:
     API_SERVICE = False
-    warnings.warn('GOOGLEMAPS package (https://pypi.python.org/pypi/googlemaps/) not loaded')
+    happyWarning('GOOGLEMAPS package (https://pypi.python.org/pypi/googlemaps/) not loaded')
 else:
     print('GOOGLEMAPS help: https://github.com/googlemaps/google-maps-services-python')
 
 try:
     import googleplaces
 except ImportError:
-    warnings.warn('GOOGLEPLACES package (https://github.com/slimkrazy/python-google-places) not loaded')   
+    happyWarning('GOOGLEPLACES package (https://github.com/slimkrazy/python-google-places) not loaded')   
 else:
     API_SERVICE = True
     print('GOOGLEPLACES help: https://github.com/slimkrazy/python-google-places')
@@ -81,7 +84,7 @@ else:
 try:
     import geopy
 except ImportError:
-    warnings.warn('GEOPY package (https://github.com/geopy/geopy) not loaded')   
+    happyWarning('GEOPY package (https://github.com/geopy/geopy) not loaded')   
 else:
     API_SERVICE = True
     print('GEOPY help: http://geopy.readthedocs.io/en/latest/')
@@ -90,16 +93,16 @@ try:
     assert geopy or googlemaps or googleplaces
 except:
     API_SERVICE = False
-    warnings.warn('external API service not available')
+    happyWarning('external API service not available')
     
 try:                                
     import simplejson as json
 except ImportError:
-    warnings.warn("missing SIMPLEJSON package (https://pypi.python.org/pypi/simplejson/)", ImportWarning)
+    happyWarning("missing SIMPLEJSON package (https://pypi.python.org/pypi/simplejson/)", ImportWarning)
     try:                                
         import json
     except ImportError: 
-        warnings.warn("JSON module missing in Python Standard Library", ImportWarning)
+        happyWarning("JSON module missing in Python Standard Library", ImportWarning)
         class json:
             def loads(arg):  return '%s' % arg
 
@@ -107,11 +110,6 @@ try:
     import numpy as np
 except ImportError:
     pass
-
-# local imports
-import settings
-from settings import nutsVerbose, _geoDecorators
-      
 
 #%%
 #==============================================================================
@@ -137,6 +135,7 @@ class GISCOService(object):
             raise IOError('GISCO service not available')
         self.session = requests.Session()
         self.domain = kwargs.pop('domain', settings.GISCO_URL)
+        self.arcgis = kwargs.pop('arcgis', settings.GISCO_ARCGIS)
 
     #/************************************************************************/
     @property
@@ -168,10 +167,10 @@ class GISCOService(object):
         """ 
         try:
             response = self.session.head(url)
-        except: # ConnectionError:
+        except requests.ConnectionError:
             raise IOError('connection failed')  
         else:
-            nutsVerbose('response status from web-service: %s' % response.status_code)
+            happyVerbose('response status from web-service: %s' % response.status_code)
         try:
             response.raise_for_status()
         except:
@@ -190,7 +189,7 @@ class GISCOService(object):
         except:
             raise IOError('wrong request formulated')  
         else:
-            # nutsVerbose('response reason from web-service: %s' % response.reason)
+            # happyVerbose('response reason from web-service: %s' % response.reason)
             pass
         try:
             response.raise_for_status()
@@ -213,7 +212,7 @@ class GISCOService(object):
         if 'path' in kwargs:      
             url = "%s/%s" % (url, kwargs.pop('path'))
         if 'query' in kwargs:      
-            url = "%s/%s?" % (url, kwargs.pop('query'))
+            url = "%s/%s" % (url, kwargs.pop('query'))
         if kwargs != {}:
             #_izip_replicate = lambda d : [(k,i) if isinstance(d[k], (tuple,list))        \
             #        else (k, d[k]) for k in d for i in d[k]]
@@ -221,11 +220,13 @@ class GISCOService(object):
                 else (k, d[k])  for k in d]          
             filters = '&'.join(['{k}={v}'.format(k=k, v=v) for (k, v) in _izip_replicate(kwargs)])
             # filters = '&'.join(map("=".join,kwargs.items()))
+            sep = '?'
             try:        
                 last = url.rsplit('/',1)[1]
-                if any([last.endswith(c) for c in ('?', '/')]):     sep = ''
             except:     
-                sep = '?'
+                pass
+            else:
+                if any([last.endswith(c) for c in ('?', '/')]):     sep = ''
             url = "%s%s%s" % (url, sep, filters)
         return url
 
@@ -249,7 +250,7 @@ class GISCOService(object):
 
         Note
         ----
-        The generic url formatting is: domain/api?{filters}
+        The generic url formatting is: {domain}/api?{filters}
         
         Example
         -------
@@ -257,12 +258,12 @@ class GISCOService(object):
             'http://europa.eu/webtools/rest/gisco/api?q=paris+France'
         """
         keys = ['q', 'lat', 'lon', 'distance_sort', 'limit', 'osm_tag', 'lang']
-        nutsVerbose('\n            * '.join(['input filters used for geocoding service :',]+[attr + '='+ str(kwargs[attr]) \
+        happyVerbose('\n            * '.join(['input filters used for geocoding service :',]+[attr + '='+ str(kwargs[attr]) \
                                             for attr in kwargs.keys() if attr in keys]))
         url = self.__build_url(domain=self.domain, 
                                query='api', 
                                **{k:v for k,v in kwargs.items() if k in keys})
-        nutsVerbose('output url:\n            %s' % url)
+        happyVerbose('output url:\n            %s' % url)
         return url
     
     #/************************************************************************/
@@ -285,7 +286,7 @@ class GISCOService(object):
 
         Note
         ----
-        The generic url formatting is: domain/reverse?{filters}.
+        The generic url formatting is: {domain}/reverse?{filters}.
         
         Example
         -------
@@ -293,12 +294,12 @@ class GISCOService(object):
             'http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52'
         """
         keys = ['lat', 'lon', 'radius', 'distance_sort', 'limit', 'lang']
-        nutsVerbose('\n            * '.join(['input filters used for reverse geocoding service:',]+[attr + '='+ str(kwargs[attr]) \
+        happyVerbose('\n            * '.join(['input filters used for reverse geocoding service:',]+[attr + '='+ str(kwargs[attr]) \
                                             for attr in kwargs.keys() if attr in keys]))
         url = self.__build_url(domain=self.domain, 
                                query='reverse', 
                                **{k:v for k,v in kwargs.items() if k in keys})
-        nutsVerbose('output url:\n            %s' % url)
+        happyVerbose('output url:\n            %s' % url)
         return url
 
     #/************************************************************************/
@@ -307,22 +308,37 @@ class GISCOService(object):
         http(s)://europa.eu/webtools/rest/gisco/route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219?overview=false
         """
         keys = ['overview', ] # ?
-        nutsVerbose('\n            * '.join(['input filters used for routing service:',]+[attr + '='+ str(kwargs[attr]) \
+        happyVerbose('\n            * '.join(['input filters used for routing service:',]+[attr + '='+ str(kwargs[attr]) \
                                             for attr in kwargs.keys() if attr in keys]))
         coordinates = kwargs.pop('coordinates','')
+        polyline = kwargs.pop(_geoDecorators.parse_coordinate.KW_POLYLINE,None)
+        polyline = 'polyline(' + polyline + ')' if polyline else ''
         url = self.__build_url(domain=self.domain, 
-                               query='route/v1/driving/%s' % coordinates, 
+                               query='route/v1/driving/%s' % coordinates or polyline, 
                                **{k:v for k,v in kwargs.items() if k in keys})
-        nutsVerbose('output url:\n            %s' % url)
+        happyVerbose('output url:\n            %s' % url)
         return url
         # test: 
         # url_route(lat=[13.388860, 13.397634, 13.428555],lon=[52.517037,52.529407,52.523219])
     #/************************************************************************/
     def url_transform(self, **kwargs):
         """
+
+        Note
+        ----
+        The generic url formatting is: {arcgis}/Utilities/Geometry/GeometryServer/project?{filters}.
+        
+        Example
+        -------
+        >>> print GISCOService.url_reverse(lon=10, lat=52)
         https://webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/Utilities/Geometry/GeometryServer/project?inSR=4326&outSR=3035&geometries=-9.1630%2C38.7775&transformation=&transformForward=true&f=json
         """
-        pass
+        keys = ['inSR', 'outSR', 'geometries', 'transformation', 'transformForward', 'f'] # ?
+        url = self.__build_url(domain=self.arcgis, 
+                               query='Utilities/Geometry/GeometryServer/project', 
+                               **{k:v for k,v in kwargs.items() if k in keys})
+        happyVerbose('output url:\n            %s' % url)
+        return url
     
     #/************************************************************************/
     @_geoDecorators.parse_projection
@@ -353,13 +369,13 @@ class GISCOService(object):
         The generic url formatting is: domain/nuts/find-nuts.py?{filters}
         """
         keys = ['x', 'y', 'f', 'year', 'proj', 'geometry']
-        nutsVerbose('\n            * '.join(['input filters used for NUTS identification service:',]+[attr + '='+ str(kwargs[attr]) \
+        happyVerbose('\n            * '.join(['input filters used for NUTS identification service:',]+[attr + '='+ str(kwargs[attr]) \
                                             for attr in kwargs.keys() if attr in keys]))
         url = self.__build_url(domain=self.domain, 
                                path='nuts', 
                                query='find-nuts.py', 
                                **{k:v for k,v in kwargs.items() if k in keys})
-        nutsVerbose('output url:\n            %s' % url)
+        happyVerbose('output url:\n            %s' % url)
         return url
         
     #/************************************************************************/
@@ -456,15 +472,18 @@ class GISCOService(object):
                 data = json.loads(response.text)
                 assert data is not None
             except:
-                raise IOError('NUTS of location (%s,%s) not loaded' % (lat[i], lon[i]))
+                happyWarning('NUTS of location (%s,%s) not loaded' % (lat[i], lon[i]))
+                nuts.append(None)
             try:
                 # assert 'results' in data and data['results'] != [] 
                 assert _geoDecorators.parse_nuts.KW_RESULTS in data     \
                     and data[_geoDecorators.parse_nuts.KW_RESULTS] != []
             except:
-                raise IOError('NUTS of location (%s,%s) not recognised' % (lat[i], lon[i]))      
+                happyWarning('NUTS of location (%s,%s) not recognised' % (lat[i], lon[i]))      
+                nuts.append(None)
             else:
-                nuts = data.get(_geoDecorators.parse_nuts.KW_RESULTS)
+                n = data.get(_geoDecorators.parse_nuts.KW_RESULTS)
+                nuts.append(n if len(n)>1 else n[0])
         return nuts[0] if len(nuts)==1 else nuts
 
     #/************************************************************************/
@@ -479,14 +498,17 @@ class GISCOService(object):
         #return res[0] if len(res)==1 else res
 
     #/************************************************************************/
-    @_geoDecorators.parse_coordinate
-    def coordtrans(self, lat, lon, **kwargs):
+    def geomtrans(self, *args, **kwargs):
         pass
 
     #/************************************************************************/
     @_geoDecorators.parse_coordinate
-    def coordroute(self, lat, lon, **kwargs):
-        coordinates = ';'.join(','.join([str(_) for _ in [lL for lL in [coord for coord in zip(lat,lon)]]]))
+    def coord2route(self, lat, lon, **kwargs):
+        routes, waypoints = None, None
+        if not (lat in([],None) or lon in ([],None)):
+            coordinates = ';'.join([','.join([str(l), str(L)]) for (l,L) in zip(lat,lon)])
+        elif kwargs.get():
+            coordinates = kwargs.pop(_geoDecorators.parse_coordinate.KW_POLYLINE)
         kwargs.update({'coordinates': coordinates})
         try:
             url = self.url_route(**kwargs)
@@ -502,13 +524,14 @@ class GISCOService(object):
         except:
             raise IOError('route not available')
         try:
-            assert _geoDecorators.parse_route.KW_CODE in data     \
+            assert _geoDecorators.parse_route.KW_CODE in data       \
                 and data[_geoDecorators.parse_route.KW_CODE].upper() == "OK"
         except:
             raise IOError('route  not recognised')      
         else:
             routes = data.get(_geoDecorators.parse_route.KW_ROUTES)
-        return routes
+            waypoints = data.get(_geoDecorators.parse_route.KW_WAYPOITNS)
+        return routes[0], waypoints
     
 #%%
 #/****************************************************************************/
@@ -817,10 +840,10 @@ class APIService(object):
                 coord.append([lat,lon])
             except:
                 coord.append(None)
-                nutsVerbose('\ncould not retrieve geolocation of %s' % p)
+                happyVerbose('\ncould not retrieve geolocation of %s' % p)
                 # continue
             else:
-                # nutsVerbose('%s => %s' % (p, coord))
+                # happyVerbose('%s => %s' % (p, coord))
                 pass
         return coord #{'lat':lat, 'lon': lon}
 
@@ -838,16 +861,12 @@ class APIService(object):
                 places.append(p)
             except:
                 places.append(None)
-                nutsVerbose('\ncould not retrieve place name for geolocation %s' % (lat[i],lon[i]))
+                happyVerbose('\ncould not retrieve place name for geolocation %s' % (lat[i],lon[i]))
                 # continue
             else:
-                # nutsVerbose('%s => %s' % (p, coord))
+                # happyVerbose('%s => %s' % (p, coord))
                 pass
         return places 
-    
-    #/************************************************************************/
-    def coord2nuts(self, lat, lon, **kwargs):
-        pass
 
 #%%
 #==============================================================================
@@ -934,7 +953,7 @@ class GDALService(object):
                 pt = ogr.Geometry(ogr.wkbPoint)
                 pt.AddPoint(lon[i], lat[i]) 
             except:
-                nutsVerbose('\ncould not add geolocation')
+                happyVerbose('\ncould not add geolocation')
             else:
                 vector.AddGeometry(pt)
         return vector
@@ -945,7 +964,7 @@ class GDALService(object):
         """
         answer = [] # will be same lenght as self.vector
         featureCount = layer.GetFeatureCount()
-        nutsVerbose('\nnumber of features in %s: %d' % (layer,featureCount))
+        happyVerbose('\nnumber of features in %s: %d' % (layer,featureCount))
         # iterate through points
         for i in range(0, vector.GetGeometryCount()): # because it is a MULTIPOINT
             pt = vector.GetGeometryRef(i)
