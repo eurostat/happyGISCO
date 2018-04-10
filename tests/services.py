@@ -48,6 +48,7 @@ metadata.update({
 
 import unittest
 import warnings
+import requests
 
 try:                               
     import numpy as np
@@ -57,6 +58,7 @@ try:
 except ImportError:
     raise IOError
 
+from nuts2place import settings
 from nuts2place.services import GISCOService, APIService, GDALservice
 
 #==============================================================================
@@ -70,8 +72,8 @@ PARIS = {'place': 'Paris, France',
                  'lon':  2.3515, # 2.3514992
                  'woe_id': 615702} 
 BERLIN = {'place': 'Berlin, Germany',
-                 'lat':   None, 
-                 'lon':   None,
+                 'lat':   52.5170, # 52.5170365
+                 'lon':   13.3888, # 13.3888599
                  'woe_id': None}
 BRUXELLES = {'place': 'Bruxelles, Belgium',
                  'lat':   None, 
@@ -96,8 +98,37 @@ class GISCOServiceTestCase(unittest.TestCase):
         self.paris = PARIS
         self.berlin = BERLIN
         self.bruxelles = BRUXELLES
+        self.delta = 0.0001
+        self.serv = GISCOService()
 
+    #/************************************************************************/
+    def test__init__(self):
+        self.assertEqual(GISCOService().domain.domain, 
+                         settings.GISCO_URL)
+        self.assertEqual(GISCOService(domain='A').domain, 
+                         'A')
+        self.assertRaises(IOError, 
+                          GISCOService, domain='A')
+        self.assertIsInstance(GISCOService().session,
+                         requests.sessions.Session)
 
+    #/************************************************************************/
+    def test_place2coord(self):
+        self.assertRaises(IOError, 
+                          self.serv.place2coord, 'averyunlikelynameforacity, inanunknowncountry')
+        lat, lon = self.serv.place2coord(self.paris['place'])
+        self.assertAlmostEqual(lat, self.paris['lat'], delta = self.delta)
+        self.assertAlmostEqual(lon, self.paris['lon'], delta = self.delta)
+
+    #/************************************************************************/
+    def test_coord2place(self):
+        self.assertRaises(IOError, 
+                          self.serv.coord2place, [-1000, 1000])
+        place = self.serv.coord2place(self.berlin['lat'], self.berlin['lon'])
+        self.assertTrue('geometry' in place)
+        self.assertEqual(', '.join(place['geometry']['city'],place['geometry']['city']),
+                         self.berlin['place'])
+        
 #/****************************************************************************/
 # APIServiceTestCase
 #/****************************************************************************/
