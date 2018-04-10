@@ -1,11 +1,10 @@
-place2nuts
-==========
+happygisco
+=========
 
-Identifying NUTS regions associated to a given place or geolocation.
+Simple microservice (API) on top of _Eurostat_ GISCO web-services.
 ---
 
 **About**
-
 
 <table align="center">
     <tr> <td align="left"><i>documentation</i></td> <td align="left"><strike>available at: https://eurostat.github.io/place2nuts/</strike></td> </tr> 
