@@ -10,7 +10,7 @@ Basic definitions for NUTS datasets and webservices.
 
 *credits*:      `grazzja <jacopo.grazzini@ec.europa.eu>`_ 
 
-*version*:      0.1
+*version*:      1
 --
 *since*:        Sat Mar 31 21:54:08 2018
 
@@ -19,13 +19,14 @@ Basic definitions for NUTS datasets and webservices.
 
 import os, sys#analysis:ignore
 import inspect#analysis:ignore
+import warnings
 
 #%%
 #==============================================================================
 # CLASSES Error/Warning/Verbose
 #==============================================================================
 
-class nutsError(Exception):
+class happyError(Exception):
     """Base class for exceptions in this module."""
     def __init__(self, msg, expr=None):    
         self.msg = msg
@@ -33,16 +34,17 @@ class nutsError(Exception):
         Exception.__init__(self, msg)
     def __str__(self):              return repr(self.msg)
 
-class nutsWarning(Warning):
+class happyWarning(Warning):
     """Base class for warnings in this module."""
     def __init__(self, msg, expr=None):    
         self.msg = msg
         if expr is not None:    self.expr = expr
         # logging.warning(self.msg)
+        warnings.warn(self.msg)
     def __repr__(self):             return self.msg
     def __str__(self):              return repr(self.msg)
-
-class nutsVerbose(object):
+    
+class happyVerbose(object):
     """Base class for verbose printing mode in this module."""
     def __init__(self, msg, expr=None, verb=True):    
         self.msg = msg
@@ -57,7 +59,7 @@ class nutsVerbose(object):
 # GLOBAL VARIABLES
 #==============================================================================
 
-PACKAGE             = "place2nuts"
+PACKAGE             = "happygisco"
 
 PROTOCOLS           = ('http', 'https', 'ftp')
 """
@@ -90,6 +92,10 @@ GISCO_URL           = '%s/%s' % (EC_URL, GISCO_DOMAIN)
 GISCO complete URL.
 """
 
+GISCO_ARCGIS        = 'webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/'
+"""GISCO ArcGIS server.
+"""
+
 CODER_GISCO         = 'gisco'
 KEY_GISCO           = None
 CHECK_TYPE          = True
@@ -110,6 +116,7 @@ CODER_PROJ          = {CODER_GISCO: 'WGS84',
 
 DRIVER_NAME         = '' # 'ESRI Shapefile'
                        
+POLYLINE            = False
 VERBOSE             = True
 
 #%%
@@ -188,13 +195,25 @@ class _geoDecorators(object):
         """Generic class decorator used to parse (positional,keyword) arguments 
         with :literal:`(lat,lng)` geographical coordinates to functions and methods.
         """
+        KW_POLYLINE      = 'polyline'
+        try:
+            if POLYLINE:    import polyline
+            else:           polyline = True
+            assert polyline
+        except:
+            polyline = False
+            happyWarning('POLYLINE (https://pypi.python.org/pypi/polyline/) not loaded')
+        else:
+            if POLYLINE:   print('POLYLINE help: https://github.com/hicsail/polyline')
+            pass
         def __call__(self, *args, **kwargs):
-            coord, lat, lon = None, None, None
+            coord, lat, lon, poly = None, None, None, None
             if args not in (None,()):      
                 if all([isinstance(a,dict) for a in args]):
                     coord = list(args)
                 elif len(args) == 1 and isinstance(args[0],(tuple,list)):
-                    if len(args[0])==2 and all([isinstance(args[0][i],(tuple,list)) for i in (0,1)]):
+                    if len(args[0])==2                                      \
+                        and all([isinstance(args[0][i],(tuple,list)) or not hasattr(args[0][i],'__len__') for i in (0,1)]):
                         lat, lon = args[0]
                     elif all([isinstance(args[0][i],dict) for i in range(len(args[0]))]):
                         coord = args[0]
@@ -209,14 +228,18 @@ class _geoDecorators(object):
                 coord = kwargs.pop('coord', None)         
                 lat = kwargs.pop('lat', None) or kwargs.pop('x', None)
                 lon = kwargs.pop('lon', None) or kwargs.pop('y', None)
+                poly = self.polyline and kwargs.get(self.KW_POLYLINE)
             try:
-                assert not(coord is None and lat is None and lon is None) 
+                assert not(coord is None and lat is None and lon is None and poly in (False,None)) 
             except AssertionError:
                 raise IOError('no input coordinate arguments passed')
             try:
                 assert coord is None or (lat is None and lon is None)
             except AssertionError:
                 raise IOError('too many input coordinate arguments')
+            if poly not in (False,None):
+                # coord = self.polyline.decode(poly)
+                return self.func(None, None, **kwargs)
             if coord is not None:
                 if not isinstance(coord,(list,tuple)):  
                     coord = [coord]
@@ -436,6 +459,7 @@ class _geoDecorators(object):
         """
         KW_CODE         = 'code'
         KW_ROUTES       = 'routes'
+        KW_WAYPOITNS    = 'waypoints'
         def __call__(self, *args, **kwargs):
             pass
     

@@ -19,7 +19,7 @@ Simple API to Eurostat GISCO web-services.
 
 **Usage**
 
-    >>> import place2nuts
+    >>> import happygisco
     
 """
 
@@ -29,7 +29,7 @@ __all__ = ['settings', 'services', 'features']#analysis:ignore
 # PROGRAM METADATA
 #==============================================================================
 
-__project__     = 'nuts2place'
+__project__     = 'happygisco'
 __url__         = 'https://github.com/eurostat/nuts2place'
 __organization__ = 'European Commission (EC - DG ESTAT)'
 # note that neither __project__ nor __url__ ar __organization__ are special/protected 
