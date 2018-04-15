@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-.. _mod_place2nuts
+.. _mod_services
 
 Module for place/location identification and NUTS identifier retrieval.
 
@@ -23,7 +23,7 @@ locations and their NUTS identifiers.
 
 *require*:      :mod:`os`, :mod:`sys`, :mod:`json`
 
-*optional*:     :mod:`requests`, :mod:`osgeo`, :mod:`googlemaps`, :mod:`googleplaces`
+*optional*:     :mod:`requests`, :mod:`googlemaps`, :mod:`googleplaces`
 
 *call*:         :mod:`settings`         
 
@@ -54,15 +54,6 @@ try:
 except ImportError:                 
     happyWarning('REQUESTS package (https://pypi.python.org/pypi/requests/) not loaded - GISCO ONLINE service will not be accessed')
     GISCO_SERVICE = False
-
-try:
-    GDAL_SERVICE = True
-    from osgeo import ogr
-except ImportError:
-    GDAL_SERVICE = False
-    happyWarning('GDAL package (https://pypi.python.org/pypi/GDAL) not loaded - Inline resources not available')
-else:
-    print('GDAL help: https://pcjericks.github.io/py-gdalogr-cookbook/index.html')
     
 try:
     API_SERVICE = True
@@ -867,148 +858,6 @@ class APIService(object):
                 # happyVerbose('%s => %s' % (p, coord))
                 pass
         return places 
-
-#%%
-#==============================================================================
-# CLASS GDALService
-#==============================================================================
-    
-class GDALService(object):
-    """
-    """
-    
-    #/************************************************************************/
-    def __init__(self, **kwargs):
-        """Initialisation of a :class:`GDALService` instance.
-
-            >>> serv = GDALService(**kwargs)
-
-        Arguments
-        ---------
-        driver_name : str
-            name of the driver used for vector files
-        """
-        # initial settings
-        self.__driver, self.__drivername = None, ''
-        try:
-            assert GDAL_SERVICE is not False
-        except:
-            raise IOError('GDAL service not available')
-        self.__drivername   = kwargs.pop('driver_name', settings.DRIVER_NAME)
-        try:
-            self.__driver = ogr.GetDriverByName(self.driver_name)
-        except:
-            try:
-                self.__driver = ogr.GetDriver(0)
-            except:
-                raise IOError('driver not available')
-            
-    #/************************************************************************/    
-    @property
-    def driver(self):
-        return self.__driver
-            
-    @property
-    def driver_name(self):
-        return self.__driver_name
-    @driver_name.setter#analysis:ignore
-    def driver_name(self, driver_name):
-        if not isinstance(driver_name, str):
-            raise IOError('wrong type for DRIVER_NAME parameter')
-        self.__driver_name = driver_name
-
-    #/************************************************************************/
-    @_geoDecorators.parse_file
-    def file2layer(self, filename):
-        """
-        """
-        if not isinstance(filename, str):
-            raise IOError('wrong type for FILENAME parameter')
-        try:
-            assert self.driver is not None
-        except:
-            raise IOError('offline driver not available')
-        try:
-            data = self.driver.Open(filename, 0) # 0 means read-only
-            assert data is not None
-        except:
-            raise IOError('file %s not open' % filename)
-        else:
-            if settings.VERBOSE: print('file %s opened' % filename)
-        try:
-            layer = data.GetLayer()
-            assert layer is not None
-        except:
-            raise IOError('could not get vector layer')
-        return layer
-
-    #/************************************************************************/
-    @_geoDecorators.parse_coordinate
-    def coord2vec(self, lat, lon, **kwargs):
-        """
-        """
-        vector = ogr.Geometry(ogr.wkbMultiPoint)
-        for i in range(len(lat)):
-            try:
-                pt = ogr.Geometry(ogr.wkbPoint)
-                pt.AddPoint(lon[i], lat[i]) 
-            except:
-                happyVerbose('\ncould not add geolocation')
-            else:
-                vector.AddGeometry(pt)
-        return vector
-    
-    #/************************************************************************/
-    def vec2id(self, layer, vector):
-        """
-        """
-        answer = [] # will be same lenght as self.vector
-        featureCount = layer.GetFeatureCount()
-        happyVerbose('\nnumber of features in %s: %d' % (layer,featureCount))
-        # iterate through points
-        for i in range(0, vector.GetGeometryCount()): # because it is a MULTIPOINT
-            pt = vector.GetGeometryRef(i)
-            #print(pt.ExportToWkt())
-            # iterate through polygons in layer
-            for j in range(0, featureCount):
-                feature = layer.GetFeature(j)
-                if feature is None:
-                    continue    
-                #elif feature.geometry() and feature.geometry().Contains(pt):
-                #    Regions.append(feature)
-                ft = feature.GetGeometryRef()
-                if ft is not None and ft.Contains(pt):
-                    answer.append(feature)
-            if len(answer)<i+1:    
-                answer.append(None)
-        return answer
-
-    #/************************************************************************/
-    def coord2id(self, *args, **kwargs):
-        """
-        """
-        try:
-            lat, lon = _geoDecorators.parse_coordinate(lambda l, L: [l, L])(*args, **kwargs)
-            assert not (lat in ([], None) or lon in ([], None)) 
-        except:
-            raise IOError('could not retrieve coordinate')
-        try:
-            filename = _geoDecorators.parse_file(lambda f: f)(**kwargs) 
-            assert filename not in ('', None)
-        except:
-            raise IOError('could not retrieve filename')
-        try:
-            layer = self.file2layer(filename)
-            assert layer not in (None,[])
-        except:
-            raise IOError('could not load feature layer')
-        try:
-            vector = self.coord2vec(lat, lon)
-            assert vector not in (None,[])
-        except:
-            raise IOError('could not load geolocation vector')
-        return self.vec2id(layer, vector)
-
 
 
  #   http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52
