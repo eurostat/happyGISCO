@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-.. _mod_tests_services_
+.. _mod_tests_services
 
-Unit test of module :mod:`happygisco.services`
+Unit test of module :mod:`happygisco.services`.
 
 **About**
 
