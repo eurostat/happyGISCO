@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-.. _mod_entities
+.. _mod_features
 
-Module for place/location entities definition
+Module for place/location features definition and description.
 
 **About**
 
@@ -16,7 +16,8 @@ Module for place/location entities definition
 
 **Description**
 
-Define place and NUTS entities to which geotransformations are associated.
+Define the main classes for the representation of place/location features, as well 
+as NUTS regions, to which geotransformations are associated.
     
 **Dependencies**
 
@@ -43,7 +44,6 @@ from .services import GISCO_SERVICE, API_SERVICE, GDAL_SERVICE
 
 # requirements
 
-    
 #==============================================================================
 # CLASS __Feature
 #==============================================================================
@@ -90,7 +90,9 @@ class __Feature(object):
        
     @property
     def service(self):
-        """
+        """Service attribute (:data:`getter`) of a :class:`__Feature` instance. 
+        A `service` type is a :class:`~happygisco.services.GISCOService` 
+        or a :class:`~happygisco.services.APIService` object.
         """
         return self.__service
        
@@ -111,11 +113,23 @@ class Place(__Feature):
     #/************************************************************************/
     @_geoDecorators.parse_place
     def __init__(self, place, **kwargs):
-        """
-        Arguments
-        ---------
-        place : tuple, str
-            a (list of) str representing place (geo)names.
+        """Initialise an instance of :class:`Place` class.
+        
+            >>> P = Place(place, **kwargs)
+        
+        Argument
+        --------
+        place : tuple, tuple[str]
+            a string defining a location name, _e.g._ of the form :literal:`locatity, country`,
+            for instance :literal:`Paris, France`; possibly left empty, so as to consider the 
+            keyword argument :literal:`place` in :data:`kwargs` (see below), otherwise 
+            all keyword arguments are ignored.
+            
+        Keyword Argument
+        ----------------
+        place : str, tuple[str]
+            a string defining a location name; ignored when the argument :data:`place` above is
+            passed.
         """
         super(Place,self).__init__(**kwargs)
         self.__place = place
@@ -124,7 +138,8 @@ class Place(__Feature):
     #/************************************************************************/
     @property
     def place(self):
-        """
+        """Place attribute (:data:`getter`) of a :class:`Place` instance. 
+        A `place` type is  (a list of) :class:`str`\ .
         """
         return self.__place  if len(self.__place)>1 else self.__place[0]
    
@@ -255,15 +270,29 @@ class Place(__Feature):
 class Location(__Feature):
     """
     """
-
+        
     #/************************************************************************/
     @_geoDecorators.parse_coordinate
     def __init__(self, lat, lon, **kwargs):
-        """
+        """Initialise an instance of :class:`Place` class.
+        
+            >>> L = Location(lat, lon, **kwargs)
+            
         Arguments
         ---------
+        lat,Lon : float, tuple[float]
+            a pair of (tuple of) floats, defining the coordinates :literal:`(lat,Lon)`,
+            for instance 48.8566 and 2.3515 to locate Paris; possibly left empty, so as 
+            to consider the keyword argument :literal:`place` in :data:`kwargs`.
+            
+        Keyword Arguments
+        -----------------
         lat, lon : tuple, float
-            a tuple representing (lat,Lon) coordinates coordinates.
+            a tuple representing (lat,Lon) coordinates coordinates; ignored when the 
+            arguments :data:`[lat,Lon]` above are passed.
+        radius : float
+            accuracy radius around the geolocation :data:`[lat,Lon]`; default:
+            :data:`radius` is set to 0.001km, _i.e._ 1m.
         """
         self.__lat, self.__lon = lat, lon        
         self.__place = ''
@@ -272,16 +301,25 @@ class Location(__Feature):
     #/************************************************************************/
     @property
     def lat(self):
-        """
+        """Latitude attribute (:data:`getter`) of a :class:`Place`  instance. 
+        A `lat` type is (a list of) :class:`float`\ .
         """
         return self.__lat if len(self.__lat)>1 else self.__lat[0]
 
     @property
     def lon(self):
-        """
+        """Longitude attribute (:data:`getter`) of a :class:`Place` instance. 
+        A `lon` type is (a list of) :class:`float`\ .
         """
         return self.__lon if len(self.__lon)>1 else self.__lon[0]
     
+    @property
+    def coordinates(self):              
+        """Coordinates (latitude,longitude) attribute (:data:`getter`) of a 
+        :class:`Location` instance.
+        """ 
+        return [self.latitude, self.longitude]
+
     #/************************************************************************/
     def reverse(self, **kwargs):
         """Convert geographic location (passed as a tuple of coordinates or a string 
@@ -374,7 +412,8 @@ class NUTS(__Feature):
     
     @property
     def level(self):
-        """
+        """Level attribute (:data:`getter`/:data:`setter`) of a :class:`NUTS` 
+        instance. A `level` type is (a list of) :class:`int`\ .
         """
         try:
             level = [int(n[_geoDecorators.parse_nuts.KW_ATTRIBUTES][_geoDecorators.parse_nuts.KW_LEVEL]) \
@@ -398,7 +437,8 @@ class NUTS(__Feature):
     
     @property
     def name(self):
-        """
+        """Name attribute (:data:`getter`/:data:`setter`) of a :class:`NUTS` 
+        instance. A name type is :class:`str`.
         """
         try:
             name = [n[_geoDecorators.parse_nuts.KW_ATTRIBUTES][_geoDecorators.parse_nuts.KW_NUTS_NAME] \
