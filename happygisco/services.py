@@ -45,7 +45,7 @@ import functools#analysis:ignore
 
 # local imports
 from . import settings
-from .settings import happyVerbose, happyWarning, _geoDecorators
+from .settings import happyVerbose, happyWarning, happyError, _geoDecorators
 
 # requirements
 try:                                
@@ -97,11 +97,6 @@ except ImportError:
         class json:
             def loads(arg):  return '%s' % arg
 
-try:
-    import numpy as np
-except ImportError:
-    pass
-
 #%%
 #==============================================================================
 # CLASS GISCOService
@@ -131,7 +126,8 @@ class GISCOService(object):
     #/************************************************************************/
     @property
     def domain(self):
-        """
+        """Domain attribute (:data:`getter`/:data:`setter`) of a :class:`GISCOService` 
+        instance. A domain type is :class:`str`.
         """
         return self.__domain
     @domain.setter#analysis:ignore
@@ -143,7 +139,8 @@ class GISCOService(object):
     #/************************************************************************/
     @property
     def session(self):
-        """
+        """Session attribute (:data:`getter`/:data:`setter`) of a :class:`GISCOService` 
+        instance. A domain type is :class:`resquests.session.Session`.
         """
         return self.__session
     @session.setter#analysis:ignore
@@ -245,7 +242,7 @@ class GISCOService(object):
         
         Example
         -------
-        >>> print GISCOService.url_geocode(place='paris, France')
+        >>> print(GISCOService.url_geocode(place='paris, France'))
             'http://europa.eu/webtools/rest/gisco/api?q=paris+France'
         """
         keys = ['q', 'lat', 'lon', 'distance_sort', 'limit', 'osm_tag', 'lang']
@@ -281,7 +278,7 @@ class GISCOService(object):
         
         Example
         -------
-        >>> print GISCOService.url_reverse(lon=10, lat=52)
+        >>> print(GISCOService.url_reverse(lon=10, lat=52))
             'http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52'
         """
         keys = ['lat', 'lon', 'radius', 'distance_sort', 'limit', 'lang']
@@ -373,6 +370,24 @@ class GISCOService(object):
     @_geoDecorators.parse_place
     def place2geom(self, place, **kwargs): 
         """
+        
+            >>>  = serv.(, **kwargs)
+
+        Argument
+        --------
+        
+        Keyword arguments
+        -----------------
+        
+        Returns
+        -------
+        
+        Raises
+        ------
+        
+        See also
+        --------
+        :meth:``\ .
         """
         place = ['+'.join(p.replace(',',' ').split()) for p in place]
         geom = []
@@ -403,6 +418,26 @@ class GISCOService(object):
     @_geoDecorators.parse_place
     def place2coord(self, place, **kwargs): # specific use
         """
+        
+            >>>  coord = serv.place2coord(place, **kwargs)
+
+        Argument
+        --------
+        place : str or list[str]
+        
+        Keyword arguments
+        -----------------
+        
+        Returns
+        -------
+        coord :
+        
+        Raises
+        ------
+        
+        See also
+        --------
+        :meth:``\ .
         """
         geom = self.place2geom(place, **kwargs)
         return _geoDecorators.parse_geometry(lambda **kw: [kw.get('lat'), kw.get('lon')])(geom)
@@ -411,6 +446,26 @@ class GISCOService(object):
     @_geoDecorators.parse_coordinate
     def coord2place(self, lat, lon, **kwargs): # specific use
         """
+        
+            >>>  place = serv.coord2place(lat, lon, **kwargs)
+
+        Arguments
+        ---------
+        lat,lon : float or list[float]
+        
+        Keyword arguments
+        -----------------
+        
+        Returns
+        -------
+        place : str or list[str]
+        
+        Raises
+        ------
+        
+        See also
+        --------
+        :meth:``\ .
         """
         place = []
         for i in range(len(lat)):
@@ -444,6 +499,25 @@ class GISCOService(object):
     @_geoDecorators.parse_coordinate
     def coord2nuts(self, lat, lon, **kwargs):
         """
+        
+            >>> nuts = serv.(lat, lon, **kwargs)
+
+        Arguments
+        ---------
+        lat,lon : float or list[float]
+        
+        Keyword arguments
+        -----------------
+        
+        Returns
+        -------
+        
+        Raises
+        ------
+        
+        See also
+        --------
+        :meth:``\ .
         """
         kwargs.update({#'year': kwargs.pop('year',2013), 
                        # 'proj': kwargs.pop('proj',4326),
@@ -456,7 +530,7 @@ class GISCOService(object):
                 url = self.url_nuts(**kwargs)
                 assert self.get_status(url) is not None
             except:
-                raise IOError('error NUTS request')
+                raise happyError('error NUTS request')
             else:
                 response = self.get_response(url)
             try:
@@ -482,6 +556,29 @@ class GISCOService(object):
     @_geoDecorators.parse_projection
     @_geoDecorators.parse_place
     def place2nuts(self, place, **kwargs): # specific use
+        """
+            >>> nuts = serv.place2nuts(place, **kwargs)
+
+        Argument
+        --------
+        place : str or list[str]
+        
+        Keyword arguments
+        -----------------
+        
+        Returns
+        -------
+        nuts :
+        
+        Raises
+        ------
+        happyError :
+            
+        
+        See also
+        --------
+        :meth:`place2coord`, :meth:`coord2nuts`\ .
+        """
         lat, lon = self.place2coord(place, **kwargs)
         nuts = self.coord2nuts(lat, lon, **kwargs)
         return nuts[0] if len(nuts)==1 else nuts
@@ -495,6 +592,27 @@ class GISCOService(object):
     #/************************************************************************/
     @_geoDecorators.parse_coordinate
     def coord2route(self, lat, lon, **kwargs):
+        """
+            >>>  route = serv.coord2route(lat, lon, **kwargs)
+
+        Argument
+        --------
+        lat,lon : list[float]
+        
+        Keyword arguments
+        -----------------
+        route : 
+        
+        Returns
+        -------
+        
+        Raises
+        ------
+        
+        See also
+        --------
+        :meth:``\ .
+        """
         routes, waypoints = None, None
         if not (lat in([],None) or lon in ([],None)):
             coordinates = ';'.join([','.join([str(l), str(L)]) for (l,L) in zip(lat,lon)])
@@ -505,7 +623,7 @@ class GISCOService(object):
             url = self.url_route(**kwargs)
             assert self.get_status(url) is not None
         except:
-            raise IOError('error route request')
+            raise happyError('error route request')
         else:
             response = self.get_response(url)
         pass
@@ -513,12 +631,12 @@ class GISCOService(object):
             data = json.loads(response.text)
             assert data is not None
         except:
-            raise IOError('route not available')
+            raise happyError('route not available')
         try:
             assert _geoDecorators.parse_route.KW_CODE in data       \
                 and data[_geoDecorators.parse_route.KW_CODE].upper() == "OK"
         except:
-            raise IOError('route  not recognised')      
+            raise happyError('route  not recognised')      
         else:
             routes = data.get(_geoDecorators.parse_route.KW_ROUTES)
             waypoints = data.get(_geoDecorators.parse_route.KW_WAYPOITNS)
@@ -555,13 +673,6 @@ else:
                  'LiveAddress':      'token',# Valid authentication token; LiveAddress geocoder provided by SmartyStreets
                  'Nominatim':        None,       # Nominatim geocoder for OpenStreetMap servers
                  } 
-
-        DIST_FUNC = {'great_circle':'GreatCircleDistance',
-                           'vincenty': 'VincentyDistance'}
-        DIST_UNIT = {'km':'kilometers',
-                           'mi': 'miles',
-                           'm': 'meters',
-                           'ft': 'feet'}
      
         #/********************************************************************/
         def __init__(self, **kwargs):
@@ -609,42 +720,6 @@ else:
                 gc = getattr(geopy.geocoders, coder) 
                 self._gc = gc(**kwargs) 
 
-        #/********************************************************************/
-        def distance(self, *args, **kwargs):            
-            if args in (None,()):           return
-            else:                           locs = list(args)    
-            nlocs = len(locs)
-            code = kwargs.pop('dist', 'great_circle')
-            unit = kwargs.pop('unit', 'km')
-            if unit not in self.DIST_UNIT.keys():
-                raise IOError('wrong unit for geodesic distance')
-            if code not in self.DIST_FUNC.keys():
-                raise IOError('wrong code for geodesic distance')
-            try:    
-                # in order to accept the 'getattr' below, the geopy.distance needs
-                # to be loaded in the first place
-                import geopy.distance
-            except: 
-                raise IOError('distance calculation not available')
-            code = self.DIST_FUNC[code]
-            distance = getattr(geopy.distance, code) 
-            cunit = lambda d: getattr(d, self.DIST_UNIT[unit])
-            for i in range(nlocs):
-                if isinstance(locs[i],str):
-                    try:        locs[i] = self.geocode(locs[i])
-                    except:     
-                        try:        locs[i] = self.geocode(locs[i], reverse=True)
-                        except:     raise IOError('unable to find locations; enter lat/long')
-                elif not(isinstance(locs[i],(list,tuple)) and len(locs[i])==2):
-                    raise IOError('unexpected variable for lat/long')
-            dist = np.zeros([nlocs,nlocs])
-            np.fill_diagonal(dist, 0.)
-            for i in range(nlocs):
-                for j in range(i+1,nlocs):
-                    dist[i][j] = dist[j][i] = cunit(distance(locs[i],locs[j]))
-            if nlocs==2:        dist = dist[1][0]
-            return dist
-
 #==============================================================================
 # CLASS _googleMapsAPI
 # Class emulating googlemaps.GoogleMaps API.
@@ -657,10 +732,11 @@ except (NameError,AssertionError):
         CODER = {}
 else:   
     class _googleMapsAPI(googlemaps.Client):
-        """Class emulating :class:`googlemaps.Client` API.
+        """Class emulating :class:`~googlemaps.Client` API.
 
         Most of the :class:`googlemaps.Client` methods will be inherited by the
-        :class:`OfflineService` class through composition and embedding in container attributes. 
+        :class:`~happygisco.services.APIService` class through composition and 
+        embedding in container attributes. 
         """
 
         CODER = {settings.CODER_GOOGLE_MAPS: settings.KEY_GOOGLE}
@@ -807,10 +883,19 @@ class APIService(object):
     #/************************************************************************/
     @property
     def coder(self):
+        """Coder attribute (:data:`getter`) of a :class:`APIService` instance. 
+        A `coder` type is a either :class:`~happygisco.services._googlePlacesAPI`,  
+        or a :class:`~happygisco.services._googleMapsAPI`, or  
+        :class:`~happygisco.services._geoCoderAPI` object.
+        """
         return self.__coder
             
     @property
     def coder_key(self):
+        """Service attribute (:data:`getter`/:data:`setter`) of a :class:`APIService` 
+        instance. 
+        A `coder_key` type is a :class:`str` object.
+        """
         return self.__coder_key
     @coder_key.setter#analysis:ignore
     def coder_key(self, key):
@@ -821,7 +906,26 @@ class APIService(object):
     #/************************************************************************/
     @_geoDecorators.parse_place
     def place2coord(self, place, **kwargs):
-        """
+        """Retrieve the geographical coordinates associated to a (a list of) 
+        toponame(s).
+        
+            >>> coord = serv.place2coord(place, **kwargs)
+
+        Argument
+        --------
+        
+        Keyword arguments
+        -----------------
+        
+        Returns
+        -------
+        
+        Raises
+        ------
+        
+        See also
+        --------
+        :meth:``\ .
         """
         coord = [] 
         for p in place:   
@@ -841,7 +945,26 @@ class APIService(object):
     #/************************************************************************/
     @_geoDecorators.parse_coordinate
     def coord2place(self, lat, lon, **kwargs):
-        """
+        """Associate a (list of) toponame(s) with a (set of) given geographical
+        coordinates.
+        
+            >>>  = serv.(, **kwargs)
+
+        Argument
+        --------
+        
+        Keyword arguments
+        -----------------
+        
+        Returns
+        -------
+        
+        Raises
+        ------
+        
+        See also
+        --------
+        :meth:``\ .
         """
         places = self.coder.reverse(lat, lon)
         places = [] 
