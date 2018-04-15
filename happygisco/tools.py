@@ -15,6 +15,9 @@ Library of simple tools for geolocation and geocoordinate handling.
 *since*:        Sat Apr 14 20:23:34 2018
 
 **Description**
+
+Perform various types of geographical transformations and 'conversions' in order 
+to represent equivalently and uniquely geographical locations.
    
 **Dependencies**
 
@@ -31,6 +34,8 @@ Library of simple tools for geolocation and geocoordinate handling.
 .. _gdal: https://pypi.python.org/pypi/GDAL
 .. |gdal| replace:: `gdal <gdal_>`_
 """
+
+__all__         = ['GeoDistance', 'GeoAngle', 'GeoCoordinate', 'GDALTool']
 
 # generic import
 import os, sys#analysis:ignore
@@ -63,7 +68,7 @@ except ImportError:
  
 ## class _GeoLocation:
 # we get rid of the 'old-style' class to enable inheritance with 'super()' method
-# so that issubclass(geolocation.GeoLocation, object) is True
+# so that issubclass(GeoCoordinate, object) is True
 class _GeoLocation(object):
     """Class used to represent coordinates on a sphere, most likely Earth, as suggested  
     in http://janmatuschek.de/LatitudeLongitudeBoundingCoordinates
@@ -112,6 +117,7 @@ class _GeoLocation(object):
         
     #/************************************************************************/
     def __init__(self, rad_lat, rad_lon, deg_lat, deg_lon):
+        # initialise an instance of _GeoLocation
         self.rad_lat = float(rad_lat)
         self.rad_lon = float(rad_lon)
         self.deg_lat = float(deg_lat)
@@ -134,24 +140,10 @@ class _GeoLocation(object):
             
     #/************************************************************************/
     def distance_to(self, other, radius=EARTH_RADIUS):
-        """Compute the great circle distance between this :class:`_GeoLocation` 
-        instance and the other.
-         
-            >>> dist = geo.distance_to(other, radius=EARTH_RADIUS)
-            
-        Arguments
-        ---------       
-        other : :class:`~happygisco.tools._GeoLocation`
-            a geolocation to compute a distance from.
-        radius :
-            radius of the sphere; defaults to Earth's radius.
-            
-        Returns
-        -------
-        dist : float
-            distance from the geolocation represented by the current instance to
-            the :literal:`other` geolocation.
-        """
+        #compute the great circle distance between this _GeoLocation instance and 
+        # the other.
+        # returns the distance from the geolocation represented by the current 
+        # instance to other geolocation
         return radius * math.acos(
                 math.sin(self.rad_lat) * math.sin(other.rad_lat) +
                 math.cos(self.rad_lat) * 
@@ -161,38 +153,17 @@ class _GeoLocation(object):
             
     #/************************************************************************/
     def bounding_locations(self, distance, radius=EARTH_RADIUS):
-        """Compute the bounding coordinates of all points on the surface of a 
-        sphere that has a great circle distance to the point represented by this 
-        :class:`_GeoLocation` instance that is less or equal to the distance 
-        argument.
-        
-            >>> loc = geo.bounding_locations(dist, radius=EARTH_RADIUS)
-            
-        Arguments
-        ---------        
-        dist : float
-            the distance from the point represented by this :class:`_GeoLocation`
-            instance; must be measured in the same unit as the radius argument 
-            (which is kilometers by default).            
-        radius :
-            radius of the sphere; defaults to Earth's radius.
-            
-        Returns
-        -------
-        loc : list(:class:`~happygisco.tools._GeoLocation`)
-            a list of two geolocations - the SW corner and the NE corner - that
-            represents the bounding box defined by the distance :literal:`dist`.
-        """
-        
+        # compute the bounding coordinates of all points on the surface of a 
+        # sphere that has a great circle distance to the point represented by this 
+        # _GeoLocation` instance that is less or equal to the distance argument
+        # returns a list of two geolocations - the SW corner and the NE corner - that
+        # represents the bounding box defined by the distance :literal:`dist`
         if radius < 0 or distance < 0:
             raise Exception('illegal arguments')
-            
         # angular distance in radians on a great circle
         rad_dist = distance / radius
-        
         min_lat = self.rad_lat - rad_dist
         max_lat = self.rad_lat + rad_dist
-        
         if min_lat > _GeoLocation.MIN_LAT and max_lat < _GeoLocation.MAX_LAT:
             delta_lon = math.asin(math.sin(rad_dist) / math.cos(self.rad_lat))
             
@@ -215,39 +186,24 @@ class _GeoLocation(object):
 
 #%%
 #==============================================================================
-# CLASS GeoTools
+# CLASS GeoDistance
 #==============================================================================
 
-class GeoTool(_GeoLocation):
-    """Implement various tools for geolocation and location representation.
-    
-    This class emulates :class:`~happygisco.tools._GeoLocation`.
-    Inherit for instance methods :meth:`_check_bounds` from original class to check 
-    for (`lat`, `Long`) coordinates consistency; instead, methods :meth:`distance_to`
-    (computation of great circle distance between geolocations) and 
-    :meth:`bounding_locations` (computation of the bounding coordinates of all 
-    points) are overriden.
+class GeoDistance(object):
+    """
  
     Attributes
     ----------     
-    MIN_LATITUDE : 
-        dummy min latitude value in degree: -90.
-    MAX_LATITUDE : 
-        ibid for max latitude: 90.
-    MIN_LONGITUDE : 
-        dummy min longitude value in degree: -180. 
-    MAX_LONGITUDE : 
-        ibid for max longitude: 180. 
     EARTH_RADIUS_EQUATOR : 
         Equatorial radius: 6378.1370 km.
     EARTH_RADIUS_POLAR : 
         Polar radius: 6356.7523 km.
     WGS84_SEMIAXIS_a :         
-        major semi-axis of WGS-84 geoidal  reference equal to :literal:`EARTH_RADIUS_EQUATOR`.
+        major semi-axis of WGS-84 geoidal  reference equal to :data:`EARTH_RADIUS_EQUATOR`.
     WGS84_SEMIAXIS_b :
-        ibid, minor semi-axis equal to :literal:`EARTH_RADIUS_POLAR`.
+        ibid, minor semi-axis equal to :data:`EARTH_RADIUS_POLAR`.
     EARTH_RADIUS_MEAN :          
-        mean radius defined by IUGG, set to :literal:`(2*WGS84_SEMIAXIS_a + WGS84_SEMIAXIS_b)/3`, 
+        mean radius defined by IUGG, set to :data:`(2*WGS84_SEMIAXIS_a + WGS84_SEMIAXIS_b)/3`, 
         equal to 6371.0087 km.
     EARTH_RADIUS_AVERAGE :          
         average radius: 6372.7950 km.
@@ -259,12 +215,6 @@ class GeoTool(_GeoLocation):
     KM_TO,MI_TO,FT_TO :
         ibid for **1 km**, **1 mi** (mile) and **1 ft** (foot) respectively.
     """
-
-    #/************************************************************************/
-    # dummy...
-    MIN_LATITUDE, MAX_LATITUDE = -90., 90.
-    MIN_LONGITUDE, MAX_LONGITUDE = -180., 180. 
-    # or shall we consider over Europe only?
         
     #/************************************************************************/
     # Earth radius: http://en.wikipedia.org/wiki/Earth_radius
@@ -284,11 +234,7 @@ class GeoTool(_GeoLocation):
     EARTH_RADIUS_AVERAGE    = 6372.7950 # geodist.EARTH_RADIUS
 
     #/************************************************************************/
-    # units an measures
-    DEG_ANG_UNIT, RAD_ANG_UNIT, DPS_ANG_UNIT = 'deg', 'rad', 'dps'
-    ANG_UNITS           = {DEG_ANG_UNIT:'degrees',
-                           RAD_ANG_UNIT: 'radians',
-                           DPS_ANG_UNIT: 'degrees/primes/seconds'} 
+    # units and measures
     M_DIST_UNIT, KM_DIST_UNIT, MI_DIST_UNIT, FT_DIST_UNIT = 'm', 'km', 'mi', 'ft'
     DIST_UNITS          = {KM_DIST_UNIT:'kilometers',
                            MI_DIST_UNIT: 'miles',
@@ -299,124 +245,15 @@ class GeoTool(_GeoLocation):
     MI_TO    = {M_DIST_UNIT: 1609.34, KM_DIST_UNIT: 1.60934,   MI_DIST_UNIT: 1.,          FT_DIST_UNIT:5280.}
     FT_TO    = {M_DIST_UNIT: 0.3048,  KM_DIST_UNIT: 0.0003048, MI_DIST_UNIT:0.000189394,  FT_DIST_UNIT:1.}
 
-    DECIMAL_PRECISION   = 5 #10
     RESOLUTION          = {'unit': KM_DIST_UNIT, 'value': 0.001}
     # RESOLUTION      = 0.001 # we mean 1 meter
-    
-    #/************************************************************************/
-    @classmethod 
-    def from_radians(cls, rad_lat, rad_lon):
-        """Return a geolocation instance from (lat, Lon) coordinates expressed 
-        in degrees.
-        
-            >>> x = GeoTool.from_radians(rad_lat, rad_lon)
-         
-        Arguments
-        ---------        
-        rad_lat,rad_lon : tuple
-            latitude and longitude (respectively) expressed in radians.
-
-        Returns
-        -------
-        x : :class:`~happygisco.tools.GeoTool`
-            a :class:`GeoTool` instance from expressed (lat, Lon) coordinates.
-
-        See also
-        --------
-        :meth:`from_dps`, :meth:`from_degrees`         
-        """
-        return cls(rad_lat, rad_lon, unit_angle=cls.RAD_ANG_UNIT)
-    
-    #/************************************************************************/
-    @classmethod 
-    def from_degrees(cls, deg_lat, deg_lon):
-        """Return a geolocation instance from (lat, Lon) coordinates expressed 
-        in degrees.
-        
-            >>> x = GeoTool.from_degrees(deg_lat, deg_lon)
-         
-        Arguments
-        ---------        
-        deg_lat,deg_lon : tuple
-            latitude and longitude (respectively) expressed in degrees.
-
-        Returns
-        -------
-        x : :class:`~happygisco.tools.GeoTool`
-            a :class:`GeoTools` instance from expressed (lat, Lon) coordinates.
-
-        See also
-        --------
-        :meth:`from_dps`, :meth:`from_radians`         
-        """
-        return cls(deg_lat, deg_lon, unit_angle=cls.DEG_ANG_UNIT)
-   
-    #/************************************************************************/
-    @classmethod 
-    def from_dps(cls, dps_lat, dps_lon): # new generator
-        """Return a geolocation instance from (lat, Lon) coordinates expressed 
-        in DPS format.
-        
-            >>> x = GeoTool.from_dps(dps_lat, dps_lon)
-         
-        Arguments
-        ---------        
-        dps_lat,dps_lon : tuple
-            latitude and longitude (respectively) expressed in DPS format: 
-            (degrees, primes, seconds).
-
-        Returns
-        -------
-        x : :class:`~happygisco.tools.GeoTool`
-            a :class:`GeoTool` instance from expressed (lat, Lon) coordinates.
-
-        See also
-        --------
-        :meth:`from_degrees`, :meth:`from_radians`         
-        """
-        ## deg_lat = cls.dps2deg(dps_lat)
-        ## deg_lon = cls.dps2deg(dps_lon)
-        ## return cls(deg_lat, deg_lon, unit_angle=cls.DEG_ANG_UNIT)
-        return cls(dps_lat, dps_lon, unit_angle=cls.DPS_ANG_UNIT)
-    
-    #/************************************************************************/
-    def __init__(self, *args, **kwargs):
-        """Initialization overriding :class:`~happygisco.tools._GeoLocation` super 
-        initialization method.
-
-            >>> x = GeoTool(*args, **kwargs)
-        """
-        deg = dps = [None, None]
-        if args in((),(None,)):
-            return
-        elif len(args)==2:
-            unit = kwargs.pop('unit_angle', GeoTool.DEG_ANG_UNIT)
-            for i in range(2): # convert to degrees whatever th input is
-                try:    
-                    dps[i] = self.convert_angle_units(GeoTool.DPS_ANG_UNIT, **{unit: args[i]})
-                    deg[i] = self.convert_angle_units(GeoTool.DEG_ANG_UNIT, **{unit: args[i]})
-                except: raise happyError('unit {} not implemented'.format(unit))
-            args = [self.deg2rad(l) for l in deg] + deg
-        elif len(args)!=4:
-            raise happyError('wrong number of input arguments')
-        super(GeoTool,self).__init__(*args)
-        self.dps_lat, self.dps_lon = dps
-        
-    #/************************************************************************/
-    def __str__(self):
-        """String printing method.
-        """
-        try:
-            return super(GeoTool,self).__str__()
-        except:
-            return ''
 
     #/************************************************************************/
     @classmethod
     def units_to(cls, from_, to, dist=1.):            
         """Perform simple distance units conversion.
         
-            >>> d = GeoTool.units_to(from, to, dist)
+            >>> d = GeoDistance.units_to(from, to, dist)
 
         Arguments
         ---------
@@ -428,7 +265,8 @@ class GeoTool(_GeoLocation):
 
         Example
         -------
-        >>> assert GeoTool.units_to('mi', 'ft',  10.) == 52800.0
+        >>> GeoDistance.units_to('mi', 'ft',  10.)
+            52800.0
         """
         # if from_==to:     return dist
         # simple variable used in distance conversions
@@ -443,30 +281,36 @@ class GeoTool(_GeoLocation):
     def convert_distance_units(cls, to=None, **kwargs):
         """Convert composed distance units to a single one.
         
-            >>> d = GeoTool.convert_distance_units(to='km', **kwargs)
+            >>> d = GeoDistance.convert_distance_units(to='km', **kwargs)
 
         Arguments
         ---------
         to : str
-            desired 'destination' unit: any string from the list :literal:`['m','km','mi','ft']`; 
-            default to :literal:`'km'`.
+            desired 'destination' unit: any string in the list :literal:`['m','km','mi','ft']`; 
+            default to :literal:`'km'`\ .
         
         Keyword Arguments
         -----------------
         kwargs : dict
-            dictionary of composed distances indexed by their unit, which can
-            be any string in :literal:`['m','km','mi','ft']`.
+            dictionary of composed distances indexed by their unit, which can be
+            any string in the list :literal:`['m','km','mi','ft']`\ .
 
         Examples
         --------
         Use indifferently dictionaries or positional arguments to pass the quantities 
         to convert:  
         
-        >>> assert GeoTool.convert_distance_units('m', **{'km':1, 'm':10}) == 1010
-        >>> print GeoTool.convert_distance_units(to='m', mi=2,  ft=10, km=0.5)
+        >>> GeoDistance.convert_distance_units('m', **{'km':1, 'm':10}) 
+            1010
+        >>> GeoDistance.convert_distance_units(to='m', mi=2,  ft=10, km=0.5)
             3721.7279999999996
-        >>> print  2*GeoTool.MI_TO['m'] + 10.*GeoTools.FT_TO['m'] + 0.5*GeoTools.KM_TO['m']
+        >>> 2*GeoDistance.MI_TO['m'] + 10.*GeoDistance.FT_TO['m'] + 0.5*GeoDistance.KM_TO['m']
             3721.7279999999996
+            
+        Raises
+        ------
+        happyError :
+            when unable to recognize any of the distance units in :data:`kwargs`.
         """
         if to is None:
             to = cls.KM_DIST_UNIT
@@ -476,13 +320,71 @@ class GeoTool(_GeoLocation):
         for u in cls.DIST_UNITS.keys():
             if u in kwargs: dist += cls.units_to(u, to, kwargs.get(u))
         return dist
+
+    #/************************************************************************/
+    @classmethod
+    def estimate_radius_WGS84(cls, lat, **kwargs):
+        """Calculate the Earth radius at a given latitude, according to the WGS-84 
+        ellipsoid [m].
+        
+            >>> R = GeoDistance.estimate_radius_WGS84(lat, **kwargs)
+            
+        Example
+        -------
+        The Earth radius at Paris, France latitude is approximately:
+            
+        >>> GeoDistance.estimate_radius_WGS84(48.864716)
+            6357.369614537118
+            
+        Raises
+        ------
+        happyError :
+            when unable to recognize the distance unit.
+        """
+        a = cls.WGS84_SEMIAXIS_a  # major semiaxis
+        b = cls.WGS84_SEMIAXIS_b  # minor semiaxis 
+        An, Bn = a*a * math.cos(lat), b*b * math.sin(lat)
+        Ad, Bd = a * math.cos(lat), b * math.sin(lat)
+        res = math.sqrt( (An*An + Bn*Bn)/(Ad*Ad + Bd*Bd) )            
+        unit = kwargs.pop('unit', cls.KM_DIST_UNIT)
+        try:    return res * cls.KM_TO[unit]
+        except: raise happyError('unit {} not implemented'.format(unit))
+
+#%%
+#==============================================================================
+# CLASS GeoAngle
+#==============================================================================
+
+class GeoAngle(object):
+    """
+    """
+
+    #/************************************************************************/
+    # units and measures
+    DEG_ANG_UNIT, RAD_ANG_UNIT, DPS_ANG_UNIT = 'deg', 'rad', 'dps'
+    ANG_UNITS           = {DEG_ANG_UNIT: 'degrees',
+                           RAD_ANG_UNIT: 'radians',
+                           DPS_ANG_UNIT: 'degrees/primes/seconds'} 
+    DECIMAL_PRECISION   = 5
         
     #/************************************************************************/
     @classmethod
     def dps2deg(cls, dps):
         """Convert (degrees, primes, seconds) format to degrees.
         
-            >>> degrees = GeoTool.dps2deg(dps)
+            >>> degrees = GeoAngle.dps2deg(dps)
+            
+        Example
+        -------
+        Paris, France latitude in DPS format is: 48° 51' 52.9776'' N. Let us convert 
+        it to degrees:
+        
+        >>> GeoAngle.dps2deg([48, 51, 52.9776])
+            48.864716
+            
+        See also
+        --------
+        :meth:`~GeoAngle.deg2dps`, :meth:`~GeoAngle.dps2rad`\ .
         """
         degrees, primes, seconds = dps
         return degrees + primes/60.0 + seconds/3600.0    
@@ -492,21 +394,42 @@ class GeoTool(_GeoLocation):
     def deg2dps(cls, degrees): 
         """Convert degrees format to (degrees, primes, seconds).
         
-            >>> dps = GeoTool.deg2dps(degrees)
+            >>> dps = GeoAngle.deg2dps(degrees)
+            
+        Example
+        -------
+        Let us convert Paris, France latitude (48.864716 degrees) into DPS format:
+        
+        >>> GeoAngle.deg2dps(48.864716) 
+            (48, 51, 52.9776)
+            
+        See also
+        --------
+        :meth:`~GeoAngle.dps2deg`, :meth:`~GeoAngle.deg2rad`\ .
         """
         intdeg = math.floor(degrees)
         primes = (degrees - intdeg)*60.0
         intpri = math.floor(primes)
         seconds = (primes - intpri)*60.0
-        intsec = round(seconds)
-        return (int(intdeg), int(intpri), int(intsec))
+        seconds = round(seconds, cls.DECIMAL_PRECISION)
+        return (int(intdeg), int(intpri), seconds)
  
     #/************************************************************************/
     @classmethod
     def deg2rad(cls, degrees): 
         """Convert degrees format to radians.
         
-            >>> radians = GeoTool.deg2rad(degrees)
+            >>> radians = GeoAngle.deg2rad(degrees)
+            
+        Example
+        -------
+        >>> import math
+        >>> GeoAngle.deg2rad(90) == math.pi/2
+            True
+            
+        See also
+        --------
+        :meth:`~GeoAngle.rad2deg`, :meth:`~GeoAngle.deg2dps`\ .
         """
         return math.radians(degrees) # math.pi*degrees/180.0   
 
@@ -515,135 +438,100 @@ class GeoTool(_GeoLocation):
     def rad2deg(cls, radians): 
         """Convert radians format to degrees.
         
-            >>> degrees = GeoTool.rad2deg(radians)
+            >>> degrees = GeoAngle.rad2deg(radians)
+            
+        Example
+        -------
+        >>> import math
+        >>> GeoAngle.rad2deg(math.pi) == 180
+            True
+            
+        See also
+        --------
+        :meth:`~GeoAngle.deg2rad`, :meth:`~GeoAngle.rad2dps`\ .
         """
         return math.degrees(radians) # 180.0*radians/math.pi    
+
+    #/************************************************************************/
+    @classmethod
+    def dps2rad(cls, dps):  
+        """Convert (degrees, primes, seconds) format to radians.
+        
+            >>> radians = GeoAngle.dps2rad(dps)
+            
+        Examples
+        --------
+        >>> import math
+        >>> GeoAngle.dps2rad([45,0,0]) == math.pi/4
+            True
+        >>> GeoAngle.dps2rad([48, 51, 52.9776])
+            0.8528501822519535
+                
+        Note
+        ----
+        Compose the methods :meth:`~GeoAngle.dps2deg` and :meth:`~GeoAngle.deg2rad`\ .
+            
+        See also
+        --------
+        :meth:`~GeoAngle.rad2dps`, :meth:`~GeoAngle.dps2deg`\ .
+        """
+        return cls.deg2rad(cls.dps2deg(dps))
 
     #/************************************************************************/
     @classmethod
     def rad2dps(cls, rad):  
         """Convert radians format to (degrees, primes, seconds).
         
-            >>> dps = GeoTool.rad2dps(radians)
+            >>> dps = GeoAngle.rad2dps(radians)
+            
+        Example
+        -------
+        >>> import math
+        >>> GeoAngle.rad2dps(math.pi)
+            (180, 0, 0.0)
+        >>> GeoAngle.rad2dps(GeoAngle.dps2rad([48, 51, 52.9776])) == (48, 51, 52.9776)
+            True
+                
+        Note
+        ----
+        Compose the methods :meth:`~GeoAngle.rad2deg` and :meth:`~GeoAngle.deg2dps`\ .
+        
+        See also
+        --------
+        :meth:`~GeoAngle.dps2rad`, :meth:`~GeoAngle.rad2deg`\ .
         """
         return cls.deg2dps(cls.rad2deg(rad))
-    @classmethod
-    def dps2rad(cls, dps):  
-        """Convert (degrees, primes, seconds) format to radians.
-        
-            >>> radians = GeoTool.dps2rad(dps)
-        """
-        return cls.deg2rad(cls.dps2deg(dps))
-        
-    #/************************************************************************/
-    @classmethod
-    def latdeg2m(cls, dlat, alat):
-        """Convert latitude difference in degrees into meters at given average
-        latitude.
-        
-            >>> dy = GeoTool.latdeg2m(dlat, alat)
-
-        Arguments
-        ---------
-        dlat : float
-            latitude difference in degrees.
-        alat : float
-            average latitude at which the distance is calculated (between the two fixes).
-            
-        Returns
-        -------
-        dy : float
-            latitude difference in meters.
-        """
-        rlat = cls.deg2rad(alat) 
-        p = 111132.09 - 566.05 * math.cos(2 * rlat) + 1.2 * math.cos(4 * rlat)
-        return dlat * p        
-
-    #/************************************************************************/
-    @classmethod
-    def lngdeg2m(cls, dlng, alat):
-        """Convert longitude difference in degrees into meters at given average
-        latitude.
-        
-            >>> dx = GeoTool.lngdeg2m(dlng, alat)
-
-        Arguments
-        ---------
-        dlng : float
-            longitude difference in degrees.
-        alat : float
-            average latitude at which the distance is calculated (between the two fixes).
-            
-        Returns
-        -------
-        dx : float
-            longitude difference in meters.
-        """
-        rlat = cls.deg2rad(alat) 
-        p = 111415.13 * math.cos(rlat) - 94.55 * math.cos(3 * rlat)
-        return dlng * p
-
-    #/************************************************************************/
-    @classmethod
-    def latm2deg(cls, dy, alat):
-        """Convert latitude difference in meters into degrees at given average
-        latitude.
-        
-            >>> dlat = GeoTool.latm2deg(dy, alat)
-
-        Arguments
-        ---------
-        dy : float
-            latitude difference in meters.
-        alat : float
-            average latitude at which the distance is calculated (between the two fixes).
-            
-        Returns
-        -------
-        dlat : float
-            latitude difference in degrees.
-        """
-        rlat = cls.deg2rad(alat) 
-        p = 111132.09 - 566.05 * math.cos(2 * rlat) + 1.2 * math.cos(4 * rlat)
-        return dy / p        
-
-    #/************************************************************************/
-    @classmethod
-    def lngm2deg(cls, dx, alat):
-        """Convert longitude difference in degrees into meters at given average
-        latitude.
-        
-            >>> dlng = GeoTool.lngdeg2m(dx, alat)
-
-        Arguments
-        ---------
-        dx : float
-            longitude difference in meters.
-        alat : float
-            average latitude at which the distance is calculated (between the two fixes).
-            
-        Returns
-        -------
-        dlng : float
-            longitude difference in degrees.
-        """
-        rlat = cls.deg2rad(alat) 
-        p = 111415.13 * math.cos(rlat) - 94.55 * math.cos(3 * rlat)
-        return dx / p
 
     #/********************************************************************/
     @classmethod
     def ang_units_to(cls, from_, to, ang=0.):            
         """Perform simple angular units conversion.
         
-            >>> u = GeoTool.ang_units_to(from, to, ang=0.)
+            >>> u = GeoAngle.ang_units_to(from, to, ang=0.)
 
         Arguments
         ---------
         from,to : str
-            'origin' and 'destination' units: any strings in :literal:`['deg','rad','dps']`.
+            'origin' and 'destination' units: any strings in :literal:`['deg','rad','dps']`\ .
         ang : float
             angle value to convert; default to 0.
+            
+        Example
+        -------
+        Here is another way to convert Paris, France latitude (48.864716 degrees) 
+        into DPS format:
+        
+        >>> GeoAngle.ang_units_to('deg','dps',48.864716)
+            (48, 51, 52.9776)
+            
+        Note
+        ----
+        This is just a single method wrapping all angle conversion methods.
+            
+        See also
+        --------
+        :meth:`~GeoAngle.dps2deg`, :meth:`~GeoAngle.dps2rad`, :meth:`~GeoAngle.deg2rad`, 
+        :meth:`~GeoAngle.deg2dps`, :meth:`~GeoAngle.rad2deg`, :meth:`~GeoAngle.rad2dps`\ .
         """
         # if from_==to:     return ang
         deg_to = {cls.RAD_ANG_UNIT: cls.deg2rad, 
@@ -662,19 +550,28 @@ class GeoTool(_GeoLocation):
     def convert_angle_units(cls, to=None, **kwargs):
         """Convert composed angular units to a single one.
         
-            >>> u = GeoTool.convert_angle_units(to='deg', **kwargs)
+            >>> u = GeoAngle.convert_angle_units(to='deg', **kwargs)
 
         Arguments
         ---------
         to : str
             desired 'final' unit: any string in :literal:`['deg','rad','dps']`; default
-            to :literal:`'deg'`.
+            to :literal:`'deg'`\ .
         
         Keyword Arguments
         -----------------
         kwargs : dict
             dictionary of composed angles indexed by their unit, which can be, again,
-            any string in :literal:`['deg','rad','dps']`.
+            any string in :literal:`['deg','rad','dps']`\ .
+            
+        Note
+        ----
+        This is very unlikely that one will use a composition of angular units.
+            
+        Raises
+        ------
+        happyError :
+            when unable to recognize the distance unit :data:`to`\ .
         """
         if to is None:
             to = cls.DEG_ANG_UNIT
@@ -691,42 +588,293 @@ class GeoTool(_GeoLocation):
         if dps is True: # we convert back the sum in dps
             ang = cls.ang_units_to(cls.DEG_ANG_UNIT, cls.DPS_ANG_UNIT, ang)
         return ang
+
+#%%
+#==============================================================================
+# CLASS GeoCoordinate
+#==============================================================================
+
+class GeoCoordinate(_GeoLocation):
+    """Class of geographic/location attributes and methods used to define, describe 
+    and represent the geospatial status of an object.
+    
+    The term _"location"_ in geography is used to identify a point or an area on 
+    the Earth's surface or elsewhere. 
+    
+    This class emulates :class:`~happygisco.tools._GeoLocation`.
+    Inherit for instance methods :meth:`_check_bounds` from original class to check 
+    for (`lat`, `Long`) coordinates consistency; instead, methods :meth:`distance_to`
+    (computation of great circle distance between geolocations) and 
+    :meth:`bounding_locations` (computation of the bounding coordinates of all 
+    points) are overriden.
+ 
+    Attributes
+    ----------     
+    MIN_LATITUDE : 
+        dummy min latitude value in degree: -90.
+    MAX_LATITUDE : 
+        ibid for max latitude: 90.
+    MIN_LONGITUDE : 
+        dummy min longitude value in degree: -180. 
+    MAX_LONGITUDE : 
+        ibid for max longitude: 180. 
+    """
+
+    #/************************************************************************/
+    # dummy...
+    MIN_LATITUDE, MAX_LATITUDE = -90., 90.
+    MIN_LONGITUDE, MAX_LONGITUDE = -180., 180. 
+    # or shall we consider over Europe only?
+
+    DIST_FUNCS = {'great_circle':'GreatCircleDistance',
+                 'vincenty': 'VincentyDistance'} # names used in geopy
+
+    DECIMAL_PRECISION   = 5 #10
+    
+    #/************************************************************************/
+    @classmethod 
+    def from_radians(cls, rad_lat, rad_lon):
+        """Return a geolocation instance from (lat, Lon) coordinates expressed 
+        in degrees.
+        
+            >>> x = GeoCoordinate.from_radians(rad_lat, rad_lon)
+         
+        Arguments
+        ---------        
+        rad_lat,rad_lon : tuple
+            latitude and longitude (respectively) expressed in radians.
+
+        Returns
+        -------
+        x : :class:`~happygisco.tools.GeoCoordinate`
+            a :class:`GeoCoordinate` instance from expressed (lat, Lon) coordinates.
+            
+        Example
+        -------
+
+        See also
+        --------
+        :meth:`from_dps`, :meth:`from_degrees`\ .        
+        """
+        return cls(rad_lat, rad_lon, unit_angle=GeoAngle.RAD_ANG_UNIT)
+    
+    #/************************************************************************/
+    @classmethod 
+    def from_degrees(cls, deg_lat, deg_lon):
+        """Return a geolocation instance from (lat, Lon) coordinates expressed 
+        in degrees.
+        
+            >>> x = GeoCoordinate.from_degrees(deg_lat, deg_lon)
+         
+        Arguments
+        ---------        
+        deg_lat,deg_lon : tuple
+            latitude and longitude (respectively) expressed in degrees.
+
+        Returns
+        -------
+        x : :class:`~happygisco.tools.GeoCoordinate`
+            a :class:`GeoCoordinate` instance from expressed (lat, Lon) coordinates.
+            
+        Example
+        -------
+
+        See also
+        --------
+        :meth:`from_dps`, :meth:`from_radians`\ .         
+        """
+        return cls(deg_lat, deg_lon, unit_angle=GeoAngle.DEG_ANG_UNIT)
+   
+    #/************************************************************************/
+    @classmethod 
+    def from_dps(cls, dps_lat, dps_lon): # new generator
+        """Return a geolocation instance from (lat, Lon) coordinates expressed 
+        in DPS format.
+        
+            >>> x = GeoCoordinate.from_dps(dps_lat, dps_lon)
+         
+        Arguments
+        ---------        
+        dps_lat,dps_lon : tuple
+            latitude and longitude (respectively) expressed in DPS format: 
+            (degrees, primes, seconds).
+
+        Returns
+        -------
+        x : :class:`~happygisco.tools.GeoCoordinate`
+            a :class:`GeoCoordinate` instance from expressed (lat, Lon) coordinates.
+            
+        Example
+        -------
+
+        See also
+        --------
+        :meth:`from_degrees`, :meth:`from_radians`\ .         
+        """
+        ## deg_lat = cls.dps2deg(dps_lat)
+        ## deg_lon = cls.dps2deg(dps_lon)
+        ## return cls(deg_lat, deg_lon, unit_angle=GeoAngle.DEG_ANG_UNIT)
+        return cls(dps_lat, dps_lon, unit_angle=GeoAngle.DPS_ANG_UNIT)
+    
+    #/************************************************************************/
+    def __init__(self, *args, **kwargs):
+        """Initialization overriding :class:`~happygisco.tools._GeoLocation` super 
+        initialization method.
+
+            >>> x = GeoCoordinate(*args, **kwargs)
+        """
+        deg = dps = [None, None]
+        if args in((),(None,)):
+            return
+        elif len(args)==2:
+            unit = kwargs.pop('unit_angle', GeoAngle.DEG_ANG_UNIT)
+            for i in range(2): # convert to degrees whatever th input is
+                try:    
+                    dps[i] = GeoAngle.convert_angle_units(GeoAngle.DPS_ANG_UNIT, **{unit: args[i]})
+                    deg[i] = GeoAngle.convert_angle_units(GeoAngle.DEG_ANG_UNIT, **{unit: args[i]})
+                except: raise happyError('unit {} not implemented'.format(unit))
+            args = [GeoAngle.deg2rad(l) for l in deg] + deg
+        elif len(args)!=4:
+            raise happyError('wrong number of input arguments')
+        super(GeoCoordinate,self).__init__(*args)
+        self.dps_lat, self.dps_lon = dps
+        
+    #/************************************************************************/
+    def __str__(self):
+        """String printing method.
+        """
+        try:
+            return super(GeoCoordinate,self).__str__()
+        except:
+            return ''
+        
+    #/************************************************************************/
+    @classmethod
+    def latdeg2m(cls, dlat, alat):
+        """Convert latitude difference in degrees into meters at given average
+        latitude.
+        
+            >>> dy = GeoCoordinate.latdeg2m(dlat, alat)
+
+        Arguments
+        ---------
+        dlat : float
+            latitude difference in degrees.
+        alat : float
+            average latitude at which the distance is calculated (between the two fixes).
+            
+        Returns
+        -------
+        dy : float
+            latitude difference in meters.
+            
+        Example
+        -------
+        """
+        rlat = GeoAngle.deg2rad(alat) 
+        p = 111132.09 - 566.05 * math.cos(2 * rlat) + 1.2 * math.cos(4 * rlat)
+        return dlat * p        
+
+    #/************************************************************************/
+    @classmethod
+    def lngdeg2m(cls, dlng, alat):
+        """Convert longitude difference in degrees into meters at given average
+        latitude.
+        
+            >>> dx = GeoCoordinate.lngdeg2m(dlng, alat)
+
+        Arguments
+        ---------
+        dlng : float
+            longitude difference in degrees.
+        alat : float
+            average latitude at which the distance is calculated (between the two fixes).
+            
+        Returns
+        -------
+        dx : float
+            longitude difference in meters.
+            
+        Example
+        -------
+        """
+        rlat = GeoAngle.deg2rad(alat) 
+        p = 111415.13 * math.cos(rlat) - 94.55 * math.cos(3 * rlat)
+        return dlng * p
+
+    #/************************************************************************/
+    @classmethod
+    def latm2deg(cls, dy, alat):
+        """Convert latitude difference in meters into degrees at given average
+        latitude.
+        
+            >>> dlat = GeoCoordinate.latm2deg(dy, alat)
+
+        Arguments
+        ---------
+        dy : float
+            latitude difference in meters.
+        alat : float
+            average latitude at which the distance is calculated (between the two fixes).
+            
+        Returns
+        -------
+        dlat : float
+            latitude difference in degrees.
+            
+        Example
+        -------
+        """
+        rlat = GeoAngle.deg2rad(alat) 
+        p = 111132.09 - 566.05 * math.cos(2 * rlat) + 1.2 * math.cos(4 * rlat)
+        return dy / p        
+
+    #/************************************************************************/
+    @classmethod
+    def lngm2deg(cls, dx, alat):
+        """Convert longitude difference in degrees into meters at given average
+        latitude.
+        
+            >>> dlng = GeoCoordinate.lngdeg2m(dx, alat)
+
+        Arguments
+        ---------
+        dx : float
+            longitude difference in meters.
+        alat : float
+            average latitude at which the distance is calculated (between the two fixes).
+            
+        Returns
+        -------
+        dlng : float
+            longitude difference in degrees.
+            
+        Example
+        -------
+        """
+        rlat = GeoAngle.deg2rad(alat) 
+        p = 111415.13 * math.cos(rlat) - 94.55 * math.cos(3 * rlat)
+        return dx / p
     
     #/************************************************************************/
     # inherits:
     #   - _check_bounds: check lat,long coordinates
     #   - distance_to: compute the great circle distance between geolocations
     #   - bounding_locations: compute the bounding coordinates of all points
-
     #/************************************************************************/
-    @classmethod
-    def estimate_radius_WGS84(cls, lat, **kwargs):
-        """Calculate the Earth radius at a given latitude, according to the 
-        WGS-84 ellipsoid [m].
-        
-            >>> R = GeoTool.estimate_radius_WGS84(lat, **kwargs)
-        """
-        a = cls.WGS84_SEMIAXIS_a  # major semiaxis
-        b = cls.WGS84_SEMIAXIS_b  # minor semiaxis 
-        An, Bn = a*a * math.cos(lat), b*b * math.sin(lat)
-        Ad, Bd = a * math.cos(lat), b * math.sin(lat)
-        res = math.sqrt( (An*An + Bn*Bn)/(Ad*Ad + Bd*Bd) )            
-        unit = kwargs.pop('unit', cls.KM_DIST_UNIT)
-        try:    return res * cls.KM_TO[unit]
-        except: raise happyError('unit {} not implemented'.format(unit))
 
     #/************************************************************************/
     def bounding_locations(self, distance, **kwargs):
         """Method overriding super method from :class:`~happygisco.tools._GeoLocation`  
         for computing bounding coordinates of all points on the surface of a sphere 
-        that have a great circle distance to the point represented by this :class:`_GeoLocation` 
-        instance that is less or equal to the distance argument.
+        that have a great circle distance to the point represented by this 
+        :class:GeoLocation` instance that is less or equal to the distance argument.
         
-            >>> bbox = x.bounding_locations(distance, **kwargs)
+            >>> bbox = x.bounding_locations(dist, **kwargs)
 
         Arguments
         ---------
-        distance : float
+        dist : float
             distance to the location; it must be set in the unit defined by :data:`'unit'`
             (see below).
             
@@ -736,23 +884,31 @@ class GeoTool(_GeoLocation):
             distance measurement unit, i.e. distance unit of the input :data:`distance` 
             parameter; it can be any string from the list :literal:`['m','km','mi','ft']`; 
             default is :literal:`'km'`\ .
-        'earth_radius' : float
-            the radius of the sphere; defaults to Earth radius.
+        radius : float
+            the radius of the sphere; must be measured in the same unit as the 
+            :data:`dist` argument; defaults to Earth radius.
             
         Returns
         -------
         bbox : list
             a bounding box whose INcircle is the set of all points that have a great
-            circle distance to the point represented by the input GeoLocation that is
-            less or equal to the :data:`distance` argument.
+            circle distance to the point represented by the input geolocation that is
+            less or equal to the :data:`dist` argument.
+            
+        Example
+        -------
+            
+        See also
+        --------
+        :meth:`bounding_locations_from`\ .
         """
         # distance must be in the unit defined by 'unit'
-        radius = kwargs.pop('earth_radius', GeoTool.EARTH_RADIUS_EQUATOR) # self.EARTH_RADIUS
-        unit = kwargs.pop('unit', GeoTool.KM_DIST_UNIT)
-        try:    radius = radius * GeoTool.KM_TO[unit] 
+        radius = kwargs.pop('radius', GeoDistance.EARTH_RADIUS_EQUATOR) # self.EARTH_RADIUS
+        unit = kwargs.pop('unit', GeoDistance.KM_DIST_UNIT)
+        try:    radius = radius * GeoDistance.KM_TO[unit] 
         except: raise happyError('unit {} not implemented'.format(unit))
         # the result will depend on the unit defined by distance (in unit)
-        return super(GeoTool,self).bounding_locations(distance, radius=radius)
+        return super(GeoCoordinate,self).bounding_locations(distance, radius=radius)
         
     #/************************************************************************/
     @classmethod
@@ -761,7 +917,7 @@ class GeoTool(_GeoLocation):
         that have a great circle distance to a given point that is less or equal 
         to the distance argument. 
         
-            >>> bbox = GeoTool.bounding_locations_from(loc, distance, **kwargs)
+            >>> bbox = GeoCoordinate.bounding_locations_from(loc, distance, **kwargs)
     
         Arguments
         ---------
@@ -778,28 +934,35 @@ class GeoTool(_GeoLocation):
             angle measurement unit, i.e. unit of the input :data:`loc` parameter; 
             it can be any string in :literal:`['deg','rad','dps']`; default is 
             :literal:`'deg'`\ .                
-        unit, earth_radius : 
+        unit, radius : 
             see :meth:`bounding_locations`\ .
             
         Note
         ----
         Generalise the :meth:`~happygisco.tools._GeoLocation.bounding_locations` method.
+            
+        Example
+        -------
+            
+        See also
+        --------
+        :meth:`bounding_locations`\ .
         """
         # ang_unit is both the unit of input and output locations
-        ang_unit = kwargs.pop('unit_angle',cls.DEG_ANG_UNIT) 
+        ang_unit = kwargs.pop('unit_angle',GeoAngle.DEG_ANG_UNIT) 
         # dist_unit = kwargs.pop('unit', cls.KM_DIST_UNIT)
-        if ang_unit==cls.DEG_ANG_UNIT:          geoloc = cls.from_degrees(*loc)
-        elif ang_unit==cls.RAD_ANG_UNIT:        geoloc = cls.from_radians(*loc)
-        elif ang_unit==cls.DPS_ANG_UNIT:        geoloc = cls.from_dps(*loc)
+        if ang_unit==GeoAngle.DEG_ANG_UNIT:          geoloc = cls.from_degrees(*loc)
+        elif ang_unit==GeoAngle.RAD_ANG_UNIT:        geoloc = cls.from_radians(*loc)
+        elif ang_unit==GeoAngle.DPS_ANG_UNIT:        geoloc = cls.from_dps(*loc)
         else: raise happyError('unit angle {} not implemented'.format(ang_unit))
         #radius = kwargs.pop('earth_radius', None)
-        radius = kwargs.pop('earth_radius', cls.EARTH_RADIUS_EQUATOR) # cls.EARTH_RADIUS
+        radius = kwargs.pop('radius', GeoDistance.EARTH_RADIUS_EQUATOR) # GeoDistance.EARTH_RADIUS
         #if radius is None:
-        #    radius = cls.estimate_radius_WGS84(geoloc.deg_lat)
+        #    radius = GeoDistance.estimate_radius_WGS84(geoloc.deg_lat)
         kwargs.update({'radius': radius})
         bb_sw, bb_ne = geoloc.bounding_locations(distance, **kwargs)
         # extract bounding box in radians an reconvert in desired unit
-        bbox = map(lambda x: cls.ang_units_to(cls.RAD_ANG_UNIT,ang_unit,x), 
+        bbox = map(lambda x: GeoAngle.ang_units_to(GeoAngle.RAD_ANG_UNIT,ang_unit,x), 
                    [bb_sw.rad_lat, bb_sw.rad_lon, bb_ne.rad_lat, bb_ne.rad_lon])
         return list(bbox)
  
@@ -809,7 +972,7 @@ class GeoTool(_GeoLocation):
         """Retrieve the approximate centroid of a polygon (bounding box).
         Accuracy is not a major aspect here. 
         
-            >>> lat, Lon = GeoTool.centroid(*args)            
+            >>> lat, Lon = GeoCoordinate.centroid(*args)            
 
         Arguments
         ---------
@@ -821,6 +984,9 @@ class GeoTool(_GeoLocation):
         lat, Lon : tuple
             (lat,Lon) coordinates of the centroid point, in the same unit as the
             parameters in :data:`args`\ .
+            
+        Example
+        -------
             
         Note
         ----
@@ -842,30 +1008,37 @@ class GeoTool(_GeoLocation):
         Lon = float(Lon_list[0]) + ((float(Lon_list[len(Lon_list)-1]) - float(Lon_list[0])) / 2.)
         return (lat, Lon)
         
-    #/************************************************************************/
+     #/************************************************************************/
     def distance_to(self, other, **kwargs): # override method distance_to
         """Method overriding super method from :class:`~happygisco.tools._GeoLocation`
-        for computing the great circle distance between this :class:`_GeoLocation` instance 
+        for computing the great circle distance between this :class:`GeoLocation` instance 
         and another (where measurement unit is passed as an argument).
         
             >>> R = x.distance_to(other, **kwargs)
 
         Arguments
         ---------
-        other : :class:`~happygisco.tools.GeoTool`
-            a :class:`GeoTool` instance to which compute a distance to.
+        other : :class:`~happygisco.tools.GeoCoordinate`
+            a :class:`GeoCoordinate` instance to which compute a distance to.
             
         Keyword Arguments
         -----------------
-        unit,earth_radius : 
+        unit,radius : 
             see :meth:`bounding_locations`\ .
+            
+        Example
+        -------
+            
+        See also
+        --------
+        :meth:`~GeoCoordinate.distance`, :meth:`~GeoCoordinate.distance_to_from`\ .
         """
-        radius = kwargs.pop('earth_radius', GeoTool.EARTH_RADIUS_EQUATOR) # self.EARTH_RADIUS
-        res = super(GeoTool,self).distance_to(other, radius=radius)
+        radius = kwargs.pop('radius', GeoDistance.EARTH_RADIUS_EQUATOR) # GeoDistance.EARTH_RADIUS
+        res = super(GeoCoordinate,self).distance_to(other, radius=radius)
         # res = _GeoLocation.distance_to(self, other, radius=radius)
         # note: "super() cannot be used with old-style class":
-        unit = kwargs.pop('unit', GeoTool.KM_DIST_UNIT)
-        try:    return res * GeoTool.KM_TO[unit]
+        unit = kwargs.pop('unit', GeoDistance.KM_DIST_UNIT)
+        try:    return res * GeoDistance.KM_TO[unit]
         except: raise happyError('unit {} not implemented'.format(unit))
         
     #/************************************************************************/
@@ -875,7 +1048,7 @@ class GeoTool(_GeoLocation):
         on the Earth (specified in decimal degrees).
         Accuracy is not a major aspect here. 
         
-            >>> lat, Lon = GeoTool.distance_to_from(loc1, loc2, **kwargs)            
+            >>> lat, Lon = GeoCoordinate.distance_to_from(loc1, loc2, **kwargs)            
 
         Arguments
         ---------
@@ -887,18 +1060,25 @@ class GeoTool(_GeoLocation):
         -----------------
         unit_angle,unit : 
             see :meth:`bounding_locations_from`\ .
+            
+        Example
+        -------
          
         Note
         ----
         Generalise the :meth:`distance_to` method.
         Inspired by the code in: http://stackoverflow.com/a/4913653/983244
+            
+        See also
+        --------
+        :meth:`distance`, :meth:`distance_to`\ .
         """
         lat1, lng1 = loc1; lat2, lng2 = loc2
-        ang_unit = kwargs.pop('unit_angle',cls.DEG_ANG_UNIT)
+        ang_unit = kwargs.pop('unit_angle',GeoAngle.DEG_ANG_UNIT)
         # convert to radians 
         #lat1, lng1, lng2, lat2 = map(math.radians, [lng1, lat1, lng2, lat2])
-        lat1, lng1 = map(lambda x: cls.ang_units_to(ang_unit,cls.RAD_ANG_UNIT,x), [lat1, lng1])
-        lat2, lng2 = map(lambda x: cls.ang_units_to(ang_unit,cls.RAD_ANG_UNIT,x), [lat2, lng2])
+        lat1, lng1 = map(lambda x: GeoAngle.ang_units_to(ang_unit,GeoAngle.RAD_ANG_UNIT,x), [lat1, lng1])
+        lat2, lng2 = map(lambda x: GeoAngle.ang_units_to(ang_unit,GeoAngle.RAD_ANG_UNIT,x), [lat2, lng2])
         dlng, dlat = lng2 - lng1, lat2 - lat1 #analysis:ignore
         # for 'visual' consistency, we use the same formula as that of geolocation.distance_to,
         # but the results are obviously the same as the formula below
@@ -909,23 +1089,105 @@ class GeoTool(_GeoLocation):
         ## haversine formula 
         #a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlng / 2) ** 2
         #c = 2 * math.asin(math.sqrt(a2)) 
-        radius = kwargs.pop('earth_radius', cls.EARTH_RADIUS_EQUATOR) # cls.EARTH_RADIUS
-        unit = kwargs.pop('unit', cls.KM_DIST_UNIT)
-        try:    return c * radius * cls.KM_TO[unit] 
+        radius = kwargs.pop('earth_radius', GeoDistance.EARTH_RADIUS_EQUATOR) # GeoDistance.EARTH_RADIUS
+        unit = kwargs.pop('unit', GeoDistance.KM_DIST_UNIT)
+        try:    return c * radius * GeoDistance.KM_TO[unit] 
         except: raise happyError('unit {} not implemented'.format(unit))
+        
+    #/************************************************************************/
+    @classmethod
+    def distance(cls, *args, **kwargs):            
+        """Class method used for computing pairwise distances between given 
+        locations, passed as geographic coordinates.
+        
+            >>> D = GeoCoordinate.distance(*args, **kwargs)
+    
+        Arguments
+        ---------
+        args : tuple
+            a pair of locations represented as a tuple of (lat,Lon) coordinates.
+
+        Keyword Arguments
+        -----------------        
+        dist : str  
+            name of the geo-principle used to estimate the distance: it is any string
+            in :literal:`['great_circle','vincenty']` since they represente the Great
+            Circle distance and the Vincenty distance; see :meth:`geopy.distance` method; 
+            default to :literal:`'great_circle'`.
+        unit : str  
+            name of the unit used to return the result: any string from the list
+            :literal:`['m','km','mi','ft']`; default to 'km'.
+            
+        Returns
+        -------
+        D : :class:`np.array`
+            matrix of pairwise distances computed in :literal:`unit` unit.
+        
+        Raises
+        ------
+        happyError:
+            * when unexpected variable for lat/long;
+            * when wrong unit/code for geodesic distance.
+            
+        Examples
+        --------        
+        >>> GeoCoordinate.distance((26.062951, -80.238853), (26.060484,-80.207268), 
+        ...                        dist='vincenty', unit='m')
+            3172.3596179302895
+        >>> GeoCoordinate.distance((26.062951, -80.238853), (26.060484,-80.207268), 
+        ...                        dist='great_circle', unit='km')
+            3.167782321855102
+            
+        See also
+        --------
+        :meth:`distance_to`, :meth:`distance_to_from`\ .
+        """
+        if args in (None,()):           return
+        else:                           locs = list(args)    
+        nlocs = len(locs)
+        if not all([isinstance(locs[i],(list,tuple)) and len(locs[i])==2 for i in range(nlocs)]):
+            raise happyError('unexpected variable for lat/long')
+        unit = kwargs.pop('unit', GeoDistance.KM_DIST_UNIT)
+        if unit not in GeoDistance.DIST_UNITS.keys():
+            raise happyError('wrong unit for geodesic distance')
+        code = kwargs.get('dist')
+        if code is not None and code not in cls.DIST_FUNCS.keys():
+            raise happyError('wrong code for geodesic distance')
+        try:    
+            assert geopy#analysis:ignore
+            # in order to accept the 'getattr' below, the geopy.distance needs
+            # to be loaded in the first place
+            import geopy.distance
+        except: 
+            if code is not None and code!='great_circle':
+                code = 'great_circle'
+                happyWarning('great_circle distance is considered')
+            distance = lambda x,y:  cls.distance_to_from(x,y) 
+            cunit = lambda d: d * GeoDistance.KM_TO[unit]
+        else:   
+            code = code or 'great_circle'
+            distance = getattr(geopy.distance, GeoDistance.DIST_FUNCS[code]) 
+            cunit = lambda d: getattr(d, GeoDistance.DIST_UNITS[unit])
+        dist = np.zeros([nlocs,nlocs])
+        np.fill_diagonal(dist, 0.)
+        for i in range(nlocs):
+            for j in range(i+1,nlocs):
+                dist[i][j] = dist[j][i] = cunit(distance(locs[i],locs[j]))
+        if nlocs==2:        dist = dist[1][0]
+        return dist
             
     #/************************************************************************/
     @classmethod      
     def round(cls, coordinates):
         """Round coordinates up to an (internal, fixed) precision of 5 digits.
         
-            >>> coordinates = GeoTool.round(coordinates)
+            >>> coordinates = GeoCoordinate.round(coordinates)
             
         Examples
         -------- 
-        >>> print(GeoTool.round(2.216707433489782))
+        >>> GeoCoordinate.round(2.216707433489782)
             2.21671
-        >>> print(GeoTool.round([2.216707433489782, 48.72843804413901, 2.477292566510218, 48.98924195586099]))
+        >>> GeoCoordinate.round([2.216707433489782, 48.72843804413901, 2.477292566510218, 48.98924195586099])
             [2.21671, 48.72844, 2.47729, 48.98924]
         """
         if True:    
@@ -942,7 +1204,7 @@ class GeoTool(_GeoLocation):
     def bbox2latlon(cls, bbox): 
         """Convert an AOI bounding box into the corresponding (lat, Lon, rad) format.
         
-            >>> lat, Lon, rad = GeoTool.bbox2latlon(bbox)
+            >>> lat, Lon, rad = GeoCoordinate.bbox2latlon(bbox)
         
         Arguments
         ---------
@@ -954,35 +1216,35 @@ class GeoTool(_GeoLocation):
         -------
         lat,Lon,rad : float
             parameters defining the CIRCUMcircle of the input bounding box :data:`bbox`.
-            
-        Note
-        ----
-        This method and :meth:`GeoTool.latlon2bbox` are not idempotent (say it
-        otherwise :literal:`GeoTool.latlon2bbox(GeoTool.bbox2latlon(bbox)` does
-        not return :data:`bbox`): see comments on CIRCUMcircle and INcircle; however,
-        the centre of the bounding box :data:`box` (hence the tuple :data:`(lat,Lon)`) 
-        is preserved.
 
         Examples
         -------- 
         >>> bbox = [2.216707433489782, 48.72843804413901, 2.477292566510218, 48.98924195586099]
-        >>> lLr = GeoTool.bbox2latlon(bbox)
+        >>> lLr = GeoCoordinate.bbox2latlon(bbox)
         >>> print(lLr)
             (2.347, 48.85884, 14.50401801879798)
         
         As mentioned, no idempotence, but the centre of the bounding box is still preserved: 
         
-        >>> GeoTool.latlon2bbox(*lLr) == bbox
+        >>> GeoCoordinate.latlon2bbox(*lLr) == bbox
             False
-        >>> lLr_ = GeoTool.bbox2latlon(GeoTool.latlon2bbox(*lLr))
+        >>> lLr_ = GeoCoordinate.bbox2latlon(GeoCoordinate.latlon2bbox(*lLr))
         >>> print(lLr_)
             (2.347, 48.85884, 29.007998346748554)
         >>> lLr_[:2] == lLr[:2] # are the coordinates of the centre preserved?
             True
+            
+        Note
+        ----
+        This method and :meth:`latlon2bbox` are not idempotent (say it otherwise 
+        :data:`GeoCoordinate.latlon2bbox(GeoCoordinate.bbox2latlon(bbox)` does
+        not return :data:`bbox`): see comments on CIRCUMcircle and INcircle; however,
+        the centre of the bounding box :data:`box` (hence the tuple :data:`(lat,Lon)`) 
+        is preserved.
         
         See also
         --------
-        :meth:`GeoTool.latlon2bbox`
+        :meth:`latlon2bbox`, :meth:`centroid`, :meth:`distance_to_from`\ .
         """
         lat, Lon = cls.centroid(bbox[0:2], bbox[2:4])      
         rad = cls.distance_to_from(bbox[0:2], bbox[2:4])/2.
@@ -993,28 +1255,28 @@ class GeoTool(_GeoLocation):
     def latlon2bbox(cls, lat, Lon, rad, **kwargs): 
         """Convert an AOI in (lat, Lon, rad) format into the corresponding bounding box.
         
-            >>> bbox = GeoTool.latlon2bbox(lat, Lon, rad, **kwargs)
+            >>> bbox = GeoCoordinate.latlon2bbox(lat, Lon, rad, **kwargs)
         
         Arguments
         ---------
         lat,Lon,rad : float
-            see :meth:`~GeoTool.bbox2latlon`\ .
+            see :meth:`bbox2latlon`\ .
             
         Returns
         -------
         bbox : list
-            bounding box (see :meth:`~GeoTool.bbox2latlon`) whose INcircle is the 
+            bounding box (see :meth:`bbox2latlon`) whose INcircle is the 
             circle defined by the centre :data:`(lat,Lon)` and a radius :data:`rad`.
 
         Example
         ------- 
         >>> lLr = (2.347, 48.85884, 14.50401801879798)
-        >>> print GeoTool.latlon2bbox(*lLr)
+        >>> GeoCoordinate.latlon2bbox(*lLr)
             [2.216707433489782, 48.72843804413901, 2.477292566510218, 48.98924195586099]
         
         See also
         --------
-        :meth:`GeoTool.bbox2latlon`
+        :meth:`bbox2latlon`, :meth:`bounding_locations_from`\ .
         """
         return cls.bounding_locations_from([lat,Lon], rad, **kwargs)
             
@@ -1024,7 +1286,7 @@ class GeoTool(_GeoLocation):
         """Convert an AOI bounding box into the corresponding polygon of (lat, Lon) or 
         (Lon, lat) coordinates (the latter case is used in GeoJSON format).
         
-            >>> polygon = GeoTool.bbox2polygon(bbox, order='lL')
+            >>> polygon = GeoCoordinate.bbox2polygon(bbox, order='lL')
         
         Arguments
         ---------
@@ -1042,17 +1304,22 @@ class GeoTool(_GeoLocation):
         polygon : list
             a 4-lenght list of (lat,Lon) (or (Lon,lat) when :literal:`order=='Ll'`) 
             coordinates representing the input bounding box :data:`bbox`.
+        
+        Raises
+        ------
+        happyError:
+            when unrecognized order argument.
             
         Example
         ------- 
-        >>> print GeoTool.bbox2polygon([2.2241, 48.81554, 2.4699, 48.90214]) 
+        >>> GeoCoordinate.bbox2polygon([2.2241, 48.81554, 2.4699, 48.90214])
             [[2.2241, 48.81554], [2.4699, 48.81554], [2.4699, 48.90214], [2.2241, 48.90214]] 
-        >>> print GeoTool.bbox2polygon([2.2241, 48.81554, 2.4699, 48.90214],order='Ll') 
+        >>> GeoCoordinate.bbox2polygon([2.2241, 48.81554, 2.4699, 48.90214],order='Ll')
             [[48.81554, 2.2241], [48.81554, 2.4699], [48.90214, 2.4699], [48.90214, 2.2241]]
         
         See also
         --------
-        :meth:`GeoTool.polygon2bbox`
+        :meth:`~GeoCoordinate.polygon2bbox`
         """
         polygon = [[bbox[0],bbox[1]], [bbox[2],bbox[1]],
                    [bbox[2],bbox[3]], [bbox[0],bbox[3]] ]
@@ -1069,27 +1336,32 @@ class GeoTool(_GeoLocation):
         """Convert a polygon of (lat, Lon) or (Lon, lat) coordinates into an AOI
         bounding box.
         
-            >>> bbox = GeoTool.polygon2bbox(polygon, order='lL')
+            >>> bbox = GeoCoordinate.polygon2bbox(polygon, order='lL')
         
         Arguments
         ---------
         polygon,order : 
-            see :meth:`~GeoTool.bbox2polygon`\ .
+            see :meth:`bbox2polygon`\ .
         
         Returns
         -------
         bbox : list
-            see :meth:`~GeoTool.bbox2polygon`\ .
+            see :meth:`bbox2polygon`\ .
+        
+        Raises
+        ------
+        happyError:
+            when unrecognized order argument.
 
         Example
         ------- 
-        >>> print GeoTool.polygon2bbox([[2.2241, 48.81554], [2.4699, 48.81554],
-        ...                                [2.4699, 48.90214], [2.2241, 48.90214]])
+        >>> GeoCoordinate.polygon2bbox([[2.2241, 48.81554], [2.4699, 48.81554],
+        ...                            [2.4699, 48.90214], [2.2241, 48.90214]])
             [2.2241, 48.81554, 2.4699, 48.90214]) 
         
         See also
         --------
-        :meth:`GeoTool.bbox2polygon`
+        :meth:`bbox2polygon`\ .
         """
         bbox = [min([p[0] for p in polygon]), min([p[1] for p in polygon]),
                 max([p[0] for p in polygon]), max([p[1] for p in polygon])]
@@ -1105,14 +1377,21 @@ class GeoTool(_GeoLocation):
     def bboxintersects(cls, bbox1, bbox2): 
         """Determine if two AOI bounding boxes do intersect.
         
-            >>> resp = GeoTool.bboxintersects(bbox1, bbox2)
+            >>> resp = GeoCoordinate.bboxintersects(bbox1, bbox2)
         
         Returns
         -------
         resp : bool
             :literal:`True` if :data:`bbox1` and :data:`bbox2` intersect, 
             :literal:`False` otherwise.
-        """
+
+        Example
+        ------- 
+         
+        See also
+        --------
+        :meth:`GeoCoordinate.bbox2polygon`
+       """
         bbox = [max(bbox1[0],bbox2[0]), max(bbox1[1],bbox2[1]),
                 min(bbox1[2],bbox2[2]), min(bbox1[3],bbox2[3])]        
         if bbox[0]>bbox[2] or bbox[1]>bbox[3]:      return False
@@ -1123,7 +1402,7 @@ class GeoTool(_GeoLocation):
     def bboxwithin(cls, bbox1, bbox2):  
         """Determine if an AOI bounding box is contained in another one.
         
-            >>> resp = GeoTool.bboxwithin(bbox1, bbox2)
+            >>> resp = GeoCoordinate.bboxwithin(bbox1, bbox2)
         
         Returns
         -------    
@@ -1135,7 +1414,7 @@ class GeoTool(_GeoLocation):
         ------- 
         >>> bbox = [2.2241, 48.81554, 2.4699, 48.90214]
         >>> lLr = (2.347, 48.85884, 14.50401801879798)
-        >>> assert GeoTool.bboxwithin(bbox, GeoTool.latlon2bbox(*lLr))
+        >>> assert GeoCoordinate.bboxwithin(bbox, GeoCoordinate.latlon2bbox(*lLr))
         """
         return bbox1[0]>=bbox2[0] and bbox1[1]>=bbox2[1] and bbox1[2]<=bbox2[2] \
         and bbox1[3]<=bbox2[3]
@@ -1145,13 +1424,16 @@ class GeoTool(_GeoLocation):
     def bboxintersection(cls, bbox1, bbox2): 
         """Retrieve the intersection (None if null) of two AOI bounding boxes.
         
-            >>> bbox = GeoTool.bboxintersection(bbox1, bbox2)
+            >>> bbox = GeoCoordinate.bboxintersection(bbox1, bbox2)
         
         Returns
         -------
         bbox : list
             a bounding box representing the intersection of both :data:`bbox1` and 
             :data:`bbox2` bounding boxes. 
+
+        Example
+        ------- 
         """
         return [max(bbox1[0],bbox2[0]), max(bbox1[1],bbox2[1]),     \
                 min(bbox1[2],bbox2[2]), min(bbox1[3],bbox2[3])]     \
@@ -1162,13 +1444,16 @@ class GeoTool(_GeoLocation):
     def bboxunion(bbox1, bbox2):  # takes the largest envelop
         """Retrieve the union (largest encompassing) of two AOI bounding boxes.
         
-            >>> bbox = GeoTool.bboxunion(bbox1, bbox2)
+            >>> bbox = GeoCoordinate.bboxunion(bbox1, bbox2)
 
         Returns
         -------
         bbox : list
             a bounding box representing the union of both :data:`bbox1` and :data:`bbox2`
             bounding boxes. 
+
+        Example
+        ------- 
         """
         return [min(bbox1[0],bbox2[0]), min(bbox1[1],bbox2[1]),
                 max(bbox1[2],bbox2[2]), max(bbox1[3],bbox2[3])]
