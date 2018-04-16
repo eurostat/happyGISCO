@@ -27,6 +27,7 @@ Two variants of the geolocation service are made available through the implement
 * `APIService`: this uses external geo services (including  _Google maps_) to geolocate geographical features; it can be used together with [`gdal`](http://gdal.org) tools together and NUTS appropriate data sources. Note that it is a brute-force solution, since the program will explore sequentially all NUTS features so as to identify the correct region. This could be improved using a multithread process for instance, _e.g._ using [`multiprocessing`](https://docs.python.org/3.4/library/multiprocessing.html?highlight=process) module. Besides, the program does not check the validity of the result returned by _Google maps_ services, since this result can be ambiguous and/or inaccurate. On the simple examples tested (easily identified cities), the program provides with the outputs as expected.
 
 In addition, the GISCO service enables the users to retrieve the NUTS region at level 2 associated to a toponame (place), _e.g._ for the simple example considered herein:
+
     ~~~
     Bremen, Germany => NUTS ID: DE50 - NUTS name: Bremen
     Florence, Italy => NUTS ID: ITI1 - NUTS name: Toscana
