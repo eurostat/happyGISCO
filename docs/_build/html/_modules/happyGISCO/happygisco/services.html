@@ -1,0 +1,1150 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>happyGISCO.happygisco.services &#8212; happyGISCO 1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="author" title="About these documents" href="../../../about.html" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for happyGISCO.happygisco.services</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. _mod_services</span>
+
+<span class="sd">Module for place/location identification and NUTS identifier retrieval.</span>
+
+<span class="sd">**About**</span>
+
+<span class="sd">*credits*:      `gjacopo &lt;jacopo.grazzini@ec.europa.eu&gt;`_ </span>
+
+<span class="sd">*version*:      1</span>
+<span class="sd">--</span>
+<span class="sd">*since*:        Sat Apr  7 01:46:51 2018</span>
+
+<span class="sd">**Description**</span>
+
+<span class="sd">Perform offline or online queries in order to define unambiguously geographic </span>
+<span class="sd">locations and their NUTS identifiers.</span>
+<span class="sd">    </span>
+<span class="sd">**Dependencies**</span>
+
+<span class="sd">*require*:      :mod:`os`, :mod:`sys`, :mod:`json`</span>
+
+<span class="sd">*optional*:     :mod:`requests`, :mod:`googlemaps`, :mod:`googleplaces`</span>
+
+<span class="sd">*call*:         :mod:`settings`         </span>
+
+<span class="sd">**Contents**</span>
+
+<span class="sd">.. Links</span>
+
+<span class="sd">.. _Eurostat: http://ec.europa.eu/eurostat/web/main</span>
+<span class="sd">.. |Eurostat| replace:: `_Eurostat_ &lt;Eurostat_&gt;`_</span>
+<span class="sd">.. _GISCO: http://ec.europa.eu/eurostat/web/gisco</span>
+<span class="sd">.. |GISCO| replace:: `GISCO &lt;GISCO_&gt;`_</span>
+<span class="sd">.. _googlemaps: https://pypi.python.org/pypi/googlemaps</span>
+<span class="sd">.. |googlemaps| replace:: `googlemaps &lt;googlemaps_&gt;`_</span>
+<span class="sd">.. _googleplaces: https://github.com/slimkrazy/python-google-places</span>
+<span class="sd">.. |googleplaces| replace:: `googleplaces &lt;googleplaces_&gt;`_</span>
+<span class="sd">.. _geopy: https://github.com/geopy/geopy</span>
+<span class="sd">.. |geopy| replace:: `geopy &lt;geopy_&gt;`_</span>
+<span class="sd">.. _PyGeoTools: https://github.com/jfein/PyGeoTools/blob/master/geolocation.py</span>
+<span class="sd">.. |PyGeoTools| replace:: `PyGeoTools &lt;PyGeoTools_&gt;`_</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># generic import</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span><span class="c1">#analysis:ignore</span>
+
+<span class="kn">import</span> <span class="nn">functools</span><span class="c1">#analysis:ignore</span>
+
+<span class="c1"># local imports</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">settings</span>
+<span class="kn">from</span> <span class="nn">.settings</span> <span class="k">import</span> <span class="n">happyVerbose</span><span class="p">,</span> <span class="n">happyWarning</span><span class="p">,</span> <span class="n">happyError</span><span class="p">,</span> <span class="n">_geoDecorators</span>
+
+<span class="c1"># requirements</span>
+<span class="k">try</span><span class="p">:</span>                                
+    <span class="n">GISCO_SERVICE</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="kn">import</span> <span class="nn">requests</span> <span class="c1"># urllib2</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>                 
+    <span class="n">happyWarning</span><span class="p">(</span><span class="s1">&#39;REQUESTS package (https://pypi.python.org/pypi/requests/) not loaded - GISCO ONLINE service will not be accessed&#39;</span><span class="p">)</span>
+    <span class="n">GISCO_SERVICE</span> <span class="o">=</span> <span class="kc">False</span>
+    
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">API_SERVICE</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="kn">import</span> <span class="nn">googlemaps</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">API_SERVICE</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">happyWarning</span><span class="p">(</span><span class="s1">&#39;GOOGLEMAPS package (https://pypi.python.org/pypi/googlemaps/) not loaded&#39;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;GOOGLEMAPS help: https://github.com/googlemaps/google-maps-services-python&#39;</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">googleplaces</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">happyWarning</span><span class="p">(</span><span class="s1">&#39;GOOGLEPLACES package (https://github.com/slimkrazy/python-google-places) not loaded&#39;</span><span class="p">)</span>   
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">API_SERVICE</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;GOOGLEPLACES help: https://github.com/slimkrazy/python-google-places&#39;</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">geopy</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">happyWarning</span><span class="p">(</span><span class="s1">&#39;GEOPY package (https://github.com/geopy/geopy) not loaded&#39;</span><span class="p">)</span>   
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">API_SERVICE</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;GEOPY help: http://geopy.readthedocs.io/en/latest/&#39;</span><span class="p">)</span>
+   
+<span class="k">try</span><span class="p">:</span>
+    <span class="k">assert</span> <span class="n">geopy</span> <span class="ow">or</span> <span class="n">googlemaps</span> <span class="ow">or</span> <span class="n">googleplaces</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="n">API_SERVICE</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">happyWarning</span><span class="p">(</span><span class="s1">&#39;external API service not available&#39;</span><span class="p">)</span>
+    
+<span class="k">try</span><span class="p">:</span>                                
+    <span class="kn">import</span> <span class="nn">simplejson</span> <span class="k">as</span> <span class="nn">json</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">happyWarning</span><span class="p">(</span><span class="s2">&quot;missing SIMPLEJSON package (https://pypi.python.org/pypi/simplejson/)&quot;</span><span class="p">,</span> <span class="ne">ImportWarning</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>                                
+        <span class="kn">import</span> <span class="nn">json</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span> 
+        <span class="n">happyWarning</span><span class="p">(</span><span class="s2">&quot;JSON module missing in Python Standard Library&quot;</span><span class="p">,</span> <span class="ne">ImportWarning</span><span class="p">)</span>
+        <span class="k">class</span> <span class="nc">json</span><span class="p">:</span>
+            <span class="k">def</span> <span class="nf">loads</span><span class="p">(</span><span class="n">arg</span><span class="p">):</span>  <span class="k">return</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">arg</span>
+
+<span class="c1">#%%</span>
+<span class="c1">#==============================================================================</span>
+<span class="c1"># CLASS GISCOService</span>
+<span class="c1">#==============================================================================</span>
+    
+<div class="viewcode-block" id="GISCOService"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services.GISCOService">[docs]</a><span class="k">class</span> <span class="nc">GISCOService</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class providing geolocation methods based on GISCO online web-services.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">CODER</span> <span class="o">=</span> <span class="p">{</span><span class="n">settings</span><span class="o">.</span><span class="n">CODER_GISCO</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">KEY_GISCO</span><span class="p">}</span>
+    
+    <span class="c1">#/************************************************************************/</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialisation of a :class:`GISCOService` instance.</span>
+
+<span class="sd">            &gt;&gt;&gt; x = GISCOService(**kwargs)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__session</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__domain</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">GISCO_SERVICE</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;GISCO service not available&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">domain</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;domain&#39;</span><span class="p">,</span> <span class="n">settings</span><span class="o">.</span><span class="n">GISCO_URL</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">arcgis</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;arcgis&#39;</span><span class="p">,</span> <span class="n">settings</span><span class="o">.</span><span class="n">GISCO_ARCGIS</span><span class="p">)</span>
+
+    <span class="c1">#/************************************************************************/</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">domain</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Domain attribute (:data:`getter`/:data:`setter`) of a :class:`GISCOService` </span>
+<span class="sd">        instance. A domain type is :class:`str`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__domain</span>
+    <span class="nd">@domain</span><span class="o">.</span><span class="n">setter</span><span class="c1">#analysis:ignore</span>
+    <span class="k">def</span> <span class="nf">domain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">domain</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;wrong type for DOMAIN parameter&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__domain</span> <span class="o">=</span> <span class="n">domain</span> <span class="ow">or</span> <span class="s1">&#39;&#39;</span>
+        
+    <span class="c1">#/************************************************************************/</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">session</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Session attribute (:data:`getter`/:data:`setter`) of a :class:`GISCOService` </span>
+<span class="sd">        instance. A domain type is :class:`resquests.session.Session`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__session</span>
+    <span class="nd">@session</span><span class="o">.</span><span class="n">setter</span><span class="c1">#analysis:ignore</span>
+    <span class="k">def</span> <span class="nf">session</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">session</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">requests</span><span class="o">.</span><span class="n">sessions</span><span class="o">.</span><span class="n">Session</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;wrong type for SESSION parameter&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__session</span> <span class="o">=</span> <span class="n">session</span>
+    
+    <span class="c1">#/************************************************************************/   </span>
+<div class="viewcode-block" id="GISCOService.get_status"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services.GISCOService.get_status">[docs]</a>    <span class="k">def</span> <span class="nf">get_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieve the header of a URL and return the server&#39;s status code.</span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">ConnectionError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;connection failed&#39;</span><span class="p">)</span>  
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">happyVerbose</span><span class="p">(</span><span class="s1">&#39;response status from web-service: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;wrong request formulated&#39;</span><span class="p">)</span>  
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">status</span></div>
+    
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GISCOService.get_response"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services.GISCOService.get_response">[docs]</a>    <span class="k">def</span> <span class="nf">get_response</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieve the GET response of a URL.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>                
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;wrong request formulated&#39;</span><span class="p">)</span>  
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># happyVerbose(&#39;response reason from web-service: %s&#39; % response.reason)</span>
+            <span class="k">pass</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;wrong response retrieved&#39;</span><span class="p">)</span>  
+        <span class="k">return</span> <span class="n">response</span>   </div>
+    
+    <span class="c1">#/************************************************************************/</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__build_url</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># retrieve parameters/build url</span>
+        <span class="k">if</span> <span class="n">args</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,()):</span>       <span class="n">domain</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>                           <span class="n">domain</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;domain&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">domain</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+        <span class="n">protocol</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;protocol&#39;</span><span class="p">,</span> <span class="n">settings</span><span class="o">.</span><span class="n">DEF_PROTOCOL</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">protocol</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">settings</span><span class="o">.</span><span class="n">PROTOCOLS</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;web protocol not recognised&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">protocol</span><span class="p">):</span>  
+            <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">://</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">protocol</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;path&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>      
+            <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="s1">&#39;query&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>      
+            <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;query&#39;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">kwargs</span> <span class="o">!=</span> <span class="p">{}:</span>
+            <span class="c1">#_izip_replicate = lambda d : [(k,i) if isinstance(d[k], (tuple,list))        \</span>
+            <span class="c1">#        else (k, d[k]) for k in d for i in d[k]]</span>
+            <span class="n">_izip_replicate</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">d</span> <span class="p">:</span> <span class="p">[[(</span><span class="n">k</span><span class="p">,</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span><span class="nb">list</span><span class="p">))</span>        \
+                <span class="k">else</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>  <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">d</span><span class="p">]</span>          
+            <span class="n">filters</span> <span class="o">=</span> <span class="s1">&#39;&amp;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;</span><span class="si">{k}</span><span class="s1">=</span><span class="si">{v}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="o">=</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="ow">in</span> <span class="n">_izip_replicate</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)])</span>
+            <span class="c1"># filters = &#39;&amp;&#39;.join(map(&quot;=&quot;.join,kwargs.items()))</span>
+            <span class="n">sep</span> <span class="o">=</span> <span class="s1">&#39;?&#39;</span>
+            <span class="k">try</span><span class="p">:</span>        
+                <span class="n">last</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">except</span><span class="p">:</span>     
+                <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">last</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;?&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">)]):</span>     <span class="n">sep</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s%s%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">sep</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">url</span>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GISCOService.url_geocode"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services.GISCOService.url_geocode">[docs]</a>    <span class="k">def</span> <span class="nf">url_geocode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a query URL to be be submitted GISCO geolocation web-service.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; url = GISCOService.url_geocode(**filters)</span>
+<span class="sd">           </span>
+<span class="sd">        Keyword Arguments</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        filters : dict</span>
+<span class="sd">            define the parameters for web-service; allowed parameters are: </span>
+<span class="sd">            :literal:`q, lat, lon, distance_sort, limit, osm_tag`, and :literal:`lang`\ .</span>
+<span class="sd">                </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        url : str</span>
+<span class="sd">            link to GISCO web-service that returns the adequate &#39;geocode&#39; results</span>
+<span class="sd">            associated to a given place.</span>
+
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        The generic url formatting is: {domain}/api?{filters}</span>
+<span class="sd">        </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        &gt;&gt;&gt; print(GISCOService.url_geocode(place=&#39;paris, France&#39;))</span>
+<span class="sd">            &#39;http://europa.eu/webtools/rest/gisco/api?q=paris+France&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;q&#39;</span><span class="p">,</span> <span class="s1">&#39;lat&#39;</span><span class="p">,</span> <span class="s1">&#39;lon&#39;</span><span class="p">,</span> <span class="s1">&#39;distance_sort&#39;</span><span class="p">,</span> <span class="s1">&#39;limit&#39;</span><span class="p">,</span> <span class="s1">&#39;osm_tag&#39;</span><span class="p">,</span> <span class="s1">&#39;lang&#39;</span><span class="p">]</span>
+        <span class="n">happyVerbose</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">            * &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;input filters used for geocoding service :&#39;</span><span class="p">,]</span><span class="o">+</span><span class="p">[</span><span class="n">attr</span> <span class="o">+</span> <span class="s1">&#39;=&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="n">attr</span><span class="p">])</span> \
+                                            <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]))</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__build_url</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> 
+                               <span class="n">query</span><span class="o">=</span><span class="s1">&#39;api&#39;</span><span class="p">,</span> 
+                               <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">})</span>
+        <span class="n">happyVerbose</span><span class="p">(</span><span class="s1">&#39;output url:</span><span class="se">\n</span><span class="s1">            </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">url</span></div>
+    
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GISCOService.url_reverse"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services.GISCOService.url_reverse">[docs]</a>    <span class="k">def</span> <span class="nf">url_reverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a query URL to be be submitted GISCO geolocation web-service.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; url = GISCOService.url_reverse(**filters)</span>
+<span class="sd">           </span>
+<span class="sd">        Keyword Arguments</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        filters : dict</span>
+<span class="sd">            define the parameters for web-service; allowed parameters are: </span>
+<span class="sd">            :literal:`lat, lon, radius, distance_sort, limit`, and :literal:`lang`\ .</span>
+<span class="sd">                </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        url : str</span>
+<span class="sd">            link to GISCO web-service that returns the name results associated</span>
+<span class="sd">            to a given geolocation.</span>
+
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        The generic url formatting is: {domain}/reverse?{filters}.</span>
+<span class="sd">        </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        &gt;&gt;&gt; print(GISCOService.url_reverse(lon=10, lat=52))</span>
+<span class="sd">            &#39;http://europa.eu/webtools/rest/gisco/reverse?lon=10&amp;lat=52&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;lat&#39;</span><span class="p">,</span> <span class="s1">&#39;lon&#39;</span><span class="p">,</span> <span class="s1">&#39;radius&#39;</span><span class="p">,</span> <span class="s1">&#39;distance_sort&#39;</span><span class="p">,</span> <span class="s1">&#39;limit&#39;</span><span class="p">,</span> <span class="s1">&#39;lang&#39;</span><span class="p">]</span>
+        <span class="n">happyVerbose</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">            * &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;input filters used for reverse geocoding service:&#39;</span><span class="p">,]</span><span class="o">+</span><span class="p">[</span><span class="n">attr</span> <span class="o">+</span> <span class="s1">&#39;=&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="n">attr</span><span class="p">])</span> \
+                                            <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]))</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__build_url</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> 
+                               <span class="n">query</span><span class="o">=</span><span class="s1">&#39;reverse&#39;</span><span class="p">,</span> 
+                               <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">})</span>
+        <span class="n">happyVerbose</span><span class="p">(</span><span class="s1">&#39;output url:</span><span class="se">\n</span><span class="s1">            </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">url</span></div>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GISCOService.url_route"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services.GISCOService.url_route">[docs]</a>    <span class="k">def</span> <span class="nf">url_route</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        http(s)://europa.eu/webtools/rest/gisco/route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219?overview=false</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;overview&#39;</span><span class="p">,</span> <span class="p">]</span> <span class="c1"># ?</span>
+        <span class="n">happyVerbose</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">            * &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;input filters used for routing service:&#39;</span><span class="p">,]</span><span class="o">+</span><span class="p">[</span><span class="n">attr</span> <span class="o">+</span> <span class="s1">&#39;=&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="n">attr</span><span class="p">])</span> \
+                                            <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]))</span>
+        <span class="n">coordinates</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;coordinates&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">polyline</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">_geoDecorators</span><span class="o">.</span><span class="n">parse_coordinate</span><span class="o">.</span><span class="n">KW_POLYLINE</span><span class="p">,</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">polyline</span> <span class="o">=</span> <span class="s1">&#39;polyline(&#39;</span> <span class="o">+</span> <span class="n">polyline</span> <span class="o">+</span> <span class="s1">&#39;)&#39;</span> <span class="k">if</span> <span class="n">polyline</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__build_url</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> 
+                               <span class="n">query</span><span class="o">=</span><span class="s1">&#39;route/v1/driving/</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">coordinates</span> <span class="ow">or</span> <span class="n">polyline</span><span class="p">,</span> 
+                               <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">})</span>
+        <span class="n">happyVerbose</span><span class="p">(</span><span class="s1">&#39;output url:</span><span class="se">\n</span><span class="s1">            </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">url</span></div>
+        <span class="c1"># test: </span>
+        <span class="c1"># url_route(lat=[13.388860, 13.397634, 13.428555],lon=[52.517037,52.529407,52.523219])</span>
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GISCOService.url_transform"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services.GISCOService.url_transform">[docs]</a>    <span class="k">def</span> <span class="nf">url_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        The generic url formatting is: {arcgis}/Utilities/Geometry/GeometryServer/project?{filters}.</span>
+<span class="sd">        </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        &gt;&gt;&gt; print GISCOService.url_reverse(lon=10, lat=52)</span>
+<span class="sd">        https://webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/Utilities/Geometry/GeometryServer/project?inSR=4326&amp;outSR=3035&amp;geometries=-9.1630%2C38.7775&amp;transformation=&amp;transformForward=true&amp;f=json</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;inSR&#39;</span><span class="p">,</span> <span class="s1">&#39;outSR&#39;</span><span class="p">,</span> <span class="s1">&#39;geometries&#39;</span><span class="p">,</span> <span class="s1">&#39;transformation&#39;</span><span class="p">,</span> <span class="s1">&#39;transformForward&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">]</span> <span class="c1"># ?</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__build_url</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">arcgis</span><span class="p">,</span> 
+                               <span class="n">query</span><span class="o">=</span><span class="s1">&#39;Utilities/Geometry/GeometryServer/project&#39;</span><span class="p">,</span> 
+                               <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">})</span>
+        <span class="n">happyVerbose</span><span class="p">(</span><span class="s1">&#39;output url:</span><span class="se">\n</span><span class="s1">            </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">url</span></div>
+    
+    <span class="c1">#/************************************************************************/</span>
+    <span class="nd">@_geoDecorators</span><span class="o">.</span><span class="n">parse_projection</span>
+    <span class="k">def</span> <span class="nf">url_nuts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a query URL to be submitted to the GISCO (simple) web-service </span>
+<span class="sd">        for NUTS codes identification.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; url = GISCOService.url_nuts(**filters)</span>
+<span class="sd">           </span>
+<span class="sd">        Keyword Arguments</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        filters : dict</span>
+<span class="sd">            define the parameters for web-service; allowed parameters are: </span>
+<span class="sd">            :literal:`x, y, f, year, proj`, and :literal:`geometry`\ .</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        url : str</span>
+<span class="sd">            link to NUTS web service to submit the specified &#39;NUTS&#39; query that</span>
+<span class="sd">            identifies the NUTS code of a given geolocation.</span>
+<span class="sd">            </span>
+<span class="sd">        Usage</span>
+<span class="sd">        -----</span>
+<span class="sd">        x=&lt;lon&gt;&amp;y=&lt;lat&gt;&amp;f=&lt;JSON/XML&gt;&amp;year=&lt;2013/2010/2006&gt;&amp;proj=3035&amp;geometry=&lt;N/Y&gt;</span>
+
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        The generic url formatting is: domain/nuts/find-nuts.py?{filters}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;year&#39;</span><span class="p">,</span> <span class="s1">&#39;proj&#39;</span><span class="p">,</span> <span class="s1">&#39;geometry&#39;</span><span class="p">]</span>
+        <span class="n">happyVerbose</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">            * &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;input filters used for NUTS identification service:&#39;</span><span class="p">,]</span><span class="o">+</span><span class="p">[</span><span class="n">attr</span> <span class="o">+</span> <span class="s1">&#39;=&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="n">attr</span><span class="p">])</span> \
+                                            <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]))</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__build_url</span><span class="p">(</span><span class="n">domain</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> 
+                               <span class="n">path</span><span class="o">=</span><span class="s1">&#39;nuts&#39;</span><span class="p">,</span> 
+                               <span class="n">query</span><span class="o">=</span><span class="s1">&#39;find-nuts.py&#39;</span><span class="p">,</span> 
+                               <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">})</span>
+        <span class="n">happyVerbose</span><span class="p">(</span><span class="s1">&#39;output url:</span><span class="se">\n</span><span class="s1">            </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">url</span>
+        
+    <span class="c1">#/************************************************************************/</span>
+    <span class="nd">@_geoDecorators</span><span class="o">.</span><span class="n">parse_place</span>
+    <span class="k">def</span> <span class="nf">place2geom</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">place</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt;  = serv.(, **kwargs)</span>
+
+<span class="sd">        Argument</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">        Keyword arguments</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:``\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">place</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;+&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span><span class="s1">&#39; &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">place</span><span class="p">]</span>
+        <span class="n">geom</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">place</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;q&#39;</span><span class="p">:</span> <span class="n">p</span><span class="p">})</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">url_geocode</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_status</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;error geolocation request&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_response</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="n">data</span> <span class="ow">not</span> <span class="ow">in</span><span class="p">({},</span><span class="kc">None</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;geolocation for place </span><span class="si">%s</span><span class="s1"> not loaded&#39;</span> <span class="o">%</span> <span class="n">p</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="s1">&#39;features&#39;</span> <span class="ow">in</span> <span class="n">data</span> <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;features&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="p">[]</span> 
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;geolocation for place </span><span class="si">%s</span><span class="s1"> not recognised&#39;</span> <span class="o">%</span> <span class="n">p</span><span class="p">)</span>      
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">c</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;features&#39;</span><span class="p">)</span>
+                <span class="n">geom</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span> <span class="k">else</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">geom</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span> <span class="k">else</span> <span class="n">geom</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        
+    <span class="c1">#/************************************************************************/</span>
+    <span class="nd">@_geoDecorators</span><span class="o">.</span><span class="n">parse_place</span>
+    <span class="k">def</span> <span class="nf">place2coord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">place</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span> <span class="c1"># specific use</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt;  coord = serv.place2coord(place, **kwargs)</span>
+
+<span class="sd">        Argument</span>
+<span class="sd">        --------</span>
+<span class="sd">        place : str or list[str]</span>
+<span class="sd">        </span>
+<span class="sd">        Keyword arguments</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        coord :</span>
+<span class="sd">        </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:``\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">geom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">place2geom</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_geoDecorators</span><span class="o">.</span><span class="n">parse_geometry</span><span class="p">(</span><span class="k">lambda</span> <span class="o">**</span><span class="n">kw</span><span class="p">:</span> <span class="p">[</span><span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;lat&#39;</span><span class="p">),</span> <span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;lon&#39;</span><span class="p">)])(</span><span class="n">geom</span><span class="p">)</span>
+       
+    <span class="c1">#/************************************************************************/</span>
+    <span class="nd">@_geoDecorators</span><span class="o">.</span><span class="n">parse_coordinate</span>
+    <span class="k">def</span> <span class="nf">coord2place</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span> <span class="c1"># specific use</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt;  place = serv.coord2place(lat, lon, **kwargs)</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        lat,lon : float or list[float]</span>
+<span class="sd">        </span>
+<span class="sd">        Keyword arguments</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        place : str or list[str]</span>
+<span class="sd">        </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:``\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">place</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lat</span><span class="p">)):</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;lat&#39;</span><span class="p">:</span> <span class="n">lat</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s1">&#39;lon&#39;</span><span class="p">:</span> <span class="n">lon</span><span class="p">[</span><span class="n">i</span><span class="p">]})</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">url_reverse</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_status</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;error geolocation request&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_response</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="n">data</span> <span class="ow">not</span> <span class="ow">in</span><span class="p">({},</span><span class="kc">None</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;place for geolocation (</span><span class="si">%s</span><span class="s1">,</span><span class="si">%s</span><span class="s1">) not loaded&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">lon</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">_geoDecorators</span><span class="o">.</span><span class="n">parse_geometry</span><span class="o">.</span><span class="n">KW_FEATURES</span> <span class="ow">in</span> <span class="n">data</span>     \
+                    <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="n">_geoDecorators</span><span class="o">.</span><span class="n">parse_geometry</span><span class="o">.</span><span class="n">KW_FEATURES</span><span class="p">]</span> <span class="o">!=</span> <span class="p">[]</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;place for geolocation (</span><span class="si">%s</span><span class="s1">,</span><span class="si">%s</span><span class="s1">) not recognised&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">lon</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>      
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">_geoDecorators</span><span class="o">.</span><span class="n">parse_geometry</span><span class="o">.</span><span class="n">KW_FEATURES</span><span class="p">)</span>
+                <span class="n">place</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span> <span class="k">else</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">place</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">place</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span> <span class="k">else</span> <span class="n">place</span>
+    
+    <span class="c1">#/************************************************************************/</span>
+    <span class="nd">@_geoDecorators</span><span class="o">.</span><span class="n">parse_year</span>
+    <span class="nd">@_geoDecorators</span><span class="o">.</span><span class="n">parse_projection</span>
+    <span class="nd">@_geoDecorators</span><span class="o">.</span><span class="n">parse_geometry</span>
+    <span class="nd">@_geoDecorators</span><span class="o">.</span><span class="n">parse_coordinate</span>
+    <span class="k">def</span> <span class="nf">coord2nuts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; nuts = serv.(lat, lon, **kwargs)</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        lat,lon : float or list[float]</span>
+<span class="sd">        </span>
+<span class="sd">        Keyword arguments</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:``\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="c1">#&#39;year&#39;: kwargs.pop(&#39;year&#39;,2013), </span>
+                       <span class="c1"># &#39;proj&#39;: kwargs.pop(&#39;proj&#39;,4326),</span>
+                       <span class="s1">&#39;geometry&#39;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;geometry&#39;</span><span class="p">,</span><span class="s1">&#39;N&#39;</span><span class="p">),</span>
+                       <span class="s1">&#39;f&#39;</span><span class="p">:</span> <span class="s1">&#39;JSON&#39;</span><span class="p">})</span>
+        <span class="n">nuts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lat</span><span class="p">)):</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">lon</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">lat</span><span class="p">[</span><span class="n">i</span><span class="p">]})</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">url_nuts</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_status</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;error NUTS request&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_response</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">happyWarning</span><span class="p">(</span><span class="s1">&#39;NUTS of location (</span><span class="si">%s</span><span class="s1">,</span><span class="si">%s</span><span class="s1">) not loaded&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">lon</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+                <span class="n">nuts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># assert &#39;results&#39; in data and data[&#39;results&#39;] != [] </span>
+                <span class="k">assert</span> <span class="n">_geoDecorators</span><span class="o">.</span><span class="n">parse_nuts</span><span class="o">.</span><span class="n">KW_RESULTS</span> <span class="ow">in</span> <span class="n">data</span>     \
+                    <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="n">_geoDecorators</span><span class="o">.</span><span class="n">parse_nuts</span><span class="o">.</span><span class="n">KW_RESULTS</span><span class="p">]</span> <span class="o">!=</span> <span class="p">[]</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">happyWarning</span><span class="p">(</span><span class="s1">&#39;NUTS of location (</span><span class="si">%s</span><span class="s1">,</span><span class="si">%s</span><span class="s1">) not recognised&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">lon</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>      
+                <span class="n">nuts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">n</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">_geoDecorators</span><span class="o">.</span><span class="n">parse_nuts</span><span class="o">.</span><span class="n">KW_RESULTS</span><span class="p">)</span>
+                <span class="n">nuts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">n</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span> <span class="k">else</span> <span class="n">n</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">nuts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nuts</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span> <span class="k">else</span> <span class="n">nuts</span>
+
+    <span class="c1">#/************************************************************************/</span>
+    <span class="nd">@_geoDecorators</span><span class="o">.</span><span class="n">parse_year</span>
+    <span class="nd">@_geoDecorators</span><span class="o">.</span><span class="n">parse_projection</span>
+    <span class="nd">@_geoDecorators</span><span class="o">.</span><span class="n">parse_place</span>
+    <span class="k">def</span> <span class="nf">place2nuts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">place</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span> <span class="c1"># specific use</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            &gt;&gt;&gt; nuts = serv.place2nuts(place, **kwargs)</span>
+
+<span class="sd">        Argument</span>
+<span class="sd">        --------</span>
+<span class="sd">        place : str or list[str]</span>
+<span class="sd">        </span>
+<span class="sd">        Keyword arguments</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        nuts :</span>
+<span class="sd">        </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        happyError :</span>
+<span class="sd">            </span>
+<span class="sd">        </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`place2coord`, :meth:`coord2nuts`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">place2coord</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">nuts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coord2nuts</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">nuts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nuts</span><span class="p">)</span><span class="o">==</span><span class="mi">1</span> <span class="k">else</span> <span class="n">nuts</span>
+        <span class="c1">#res = _geoDecorators.parse_nuts(lambda **kw: kw.get(&#39;nuts&#39;))(nuts, **kwargs)</span>
+        <span class="c1">#return res[0] if len(res)==1 else res</span>
+
+    <span class="c1">#/************************************************************************/</span>
+    <span class="k">def</span> <span class="nf">geomtrans</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="c1">#/************************************************************************/</span>
+    <span class="nd">@_geoDecorators</span><span class="o">.</span><span class="n">parse_coordinate</span>
+    <span class="k">def</span> <span class="nf">coord2route</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            &gt;&gt;&gt;  route = serv.coord2route(lat, lon, **kwargs)</span>
+
+<span class="sd">        Argument</span>
+<span class="sd">        --------</span>
+<span class="sd">        lat,lon : list[float]</span>
+<span class="sd">        </span>
+<span class="sd">        Keyword arguments</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        route : </span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:``\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">routes</span><span class="p">,</span> <span class="n">waypoints</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">lat</span> <span class="ow">in</span><span class="p">([],</span><span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="n">lon</span> <span class="ow">in</span> <span class="p">([],</span><span class="kc">None</span><span class="p">)):</span>
+            <span class="n">coordinates</span> <span class="o">=</span> <span class="s1">&#39;;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">str</span><span class="p">(</span><span class="n">l</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">L</span><span class="p">)])</span> <span class="k">for</span> <span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">L</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span><span class="n">lon</span><span class="p">)])</span>
+        <span class="k">elif</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">():</span>
+            <span class="n">coordinates</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">_geoDecorators</span><span class="o">.</span><span class="n">parse_coordinate</span><span class="o">.</span><span class="n">KW_POLYLINE</span><span class="p">)</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;coordinates&#39;</span><span class="p">:</span> <span class="n">coordinates</span><span class="p">})</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">url_route</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_status</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;error route request&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_response</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">pass</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;route not available&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">_geoDecorators</span><span class="o">.</span><span class="n">parse_route</span><span class="o">.</span><span class="n">KW_CODE</span> <span class="ow">in</span> <span class="n">data</span>       \
+                <span class="ow">and</span> <span class="n">data</span><span class="p">[</span><span class="n">_geoDecorators</span><span class="o">.</span><span class="n">parse_route</span><span class="o">.</span><span class="n">KW_CODE</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;OK&quot;</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;route  not recognised&#39;</span><span class="p">)</span>      
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">routes</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">_geoDecorators</span><span class="o">.</span><span class="n">parse_route</span><span class="o">.</span><span class="n">KW_ROUTES</span><span class="p">)</span>
+            <span class="n">waypoints</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">_geoDecorators</span><span class="o">.</span><span class="n">parse_route</span><span class="o">.</span><span class="n">KW_WAYPOITNS</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">routes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">waypoints</span></div>
+    
+<span class="c1">#%%</span>
+<span class="c1">#/****************************************************************************/</span>
+<span class="c1"># CLASS _geoCoderAPI    </span>
+<span class="c1"># Class emulating :mod:`geopy` API.</span>
+<span class="c1"># Available when module :mod:`geopy` is installed.</span>
+<span class="c1">#/****************************************************************************/</span>
+<span class="k">try</span><span class="p">:</span>    
+    <span class="k">assert</span> <span class="n">API_SERVICE</span> <span class="ow">and</span> <span class="n">geopy</span>
+<span class="k">except</span> <span class="p">(</span><span class="ne">NameError</span><span class="p">,</span><span class="ne">AssertionError</span><span class="p">):</span> 
+    <span class="k">class</span> <span class="nc">_geoCoderAPI</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>     
+        <span class="n">CODER</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">else</span><span class="p">:</span>   
+<div class="viewcode-block" id="_geoCoderAPI"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services._geoCoderAPI">[docs]</a>    <span class="k">class</span> <span class="nc">_geoCoderAPI</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Class emulating :mod:`geopy` API.</span>
+
+<span class="sd">        Inherit all methods from original API.</span>
+<span class="sd">        </span>
+<span class="sd">        Most of the :class:`_geoCoderAPI` methods will be inherited by the class</span>
+<span class="sd">        :class:`OfflineService` through composition and embedding in container </span>
+<span class="sd">        attributes. Following, usages are presented using :class:`OfflineService`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">CODER</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;GoogleV3&#39;</span><span class="p">:</span>         <span class="kc">None</span><span class="p">,</span>   <span class="c1"># API authentication is only required for Google Maps Premier customers</span>
+                 <span class="s1">&#39;Bing&#39;</span><span class="p">:</span>             <span class="s1">&#39;key&#39;</span><span class="p">,</span>  <span class="c1"># valid Bing Maps API key</span>
+                 <span class="s1">&#39;GeoNames&#39;</span><span class="p">:</span>         <span class="s1">&#39;username&#39;</span><span class="p">,</span> <span class="c1"># username required for API access</span>
+                 <span class="s1">&#39;YahooPlaceFinder&#39;</span><span class="p">:</span> <span class="s1">&#39;key&#39;</span><span class="p">,</span>  <span class="c1"># Key provided by Yahoo</span>
+                 <span class="s1">&#39;OpenMapQuest&#39;</span><span class="p">:</span>     <span class="kc">None</span><span class="p">,</span>       <span class="c1"># No API Key is needed by the Nominatim based platform</span>
+                 <span class="s1">&#39;MapQuest&#39;</span><span class="p">:</span>         <span class="s1">&#39;key&#39;</span><span class="p">,</span>  <span class="c1"># API key provided by MapQuest</span>
+                 <span class="s1">&#39;LiveAddress&#39;</span><span class="p">:</span>      <span class="s1">&#39;token&#39;</span><span class="p">,</span><span class="c1"># Valid authentication token; LiveAddress geocoder provided by SmartyStreets</span>
+                 <span class="s1">&#39;Nominatim&#39;</span><span class="p">:</span>        <span class="kc">None</span><span class="p">,</span>       <span class="c1"># Nominatim geocoder for OpenStreetMap servers</span>
+                 <span class="p">}</span> 
+     
+        <span class="c1">#/********************************************************************/</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="c1"># call geocoder module geopy: https://github.com/geopy/geopy&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_gc</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">coder</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;geocoder&#39;</span><span class="p">,</span> <span class="s1">&#39;GeoNames&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">coder</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">CODER</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;geocoder </span><span class="si">%s</span><span class="s1"> not recognised&#39;</span> <span class="o">%</span> <span class="n">coder</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>        <span class="n">gc</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">geopy</span><span class="o">.</span><span class="n">geocoders</span><span class="p">,</span> <span class="n">coder</span><span class="p">)</span>   
+            <span class="k">except</span><span class="p">:</span>     <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;module geopy not available&#39;</span><span class="p">)</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CODER</span><span class="p">[</span><span class="n">coder</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>          
+                <span class="bp">self</span><span class="o">.</span><span class="n">client_key</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="kc">None</span><span class="p">)</span>
+                <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">client_key</span><span class="p">})</span>
+            <span class="k">else</span><span class="p">:</span>   
+                <span class="bp">self</span><span class="o">.</span><span class="n">client_key</span> <span class="o">=</span> <span class="kc">None</span>                
+            <span class="k">try</span><span class="p">:</span>    <span class="bp">self</span><span class="o">.</span><span class="n">_gc</span> <span class="o">=</span> <span class="n">gc</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  
+            <span class="k">except</span><span class="p">:</span> <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;geocoder not available&#39;</span><span class="p">)</span>
+
+        <span class="c1">#/********************************************************************/</span>
+        <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">):</span>
+            <span class="c1"># &#39;im_class&#39;: deal with &#39;im_class&#39; as an instance is NOT callable...</span>
+            <span class="c1"># &#39;__objclass__&#39;: dont&#39; ask for an explanation here: we just want to </span>
+            <span class="c1"># pass Sphinx Napoleon... </span>
+            <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;im_class&#39;</span><span class="p">,</span><span class="s1">&#39;__objclass__&#39;</span><span class="p">):</span> 
+                <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_gc</span><span class="p">,</span> <span class="s1">&#39;__class__&#39;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">method</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;__&#39;</span><span class="p">):</span>  <span class="c1"># to avoid some bug of the pylint editor</span>
+                <span class="k">try</span><span class="p">:</span>        <span class="k">return</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span> 
+                <span class="k">except</span><span class="p">:</span>     <span class="k">pass</span> 
+            <span class="c1"># try:        return object.__getattribute__(self.__call__, method) </span>
+            <span class="c1"># except:     pass </span>
+            <span class="c1"># finally, what we are really interested in</span>
+            <span class="k">try</span><span class="p">:</span>        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_gc</span><span class="p">,</span> <span class="n">method</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>     <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;method </span><span class="si">%s</span><span class="s1"> not implemented&#39;</span> <span class="o">%</span> <span class="n">method</span><span class="p">)</span>
+
+        <span class="c1"># THIS SHOULD NOT BE A CALLABLE!</span>
+        <span class="c1">#def __call__(self, *args, **kwargs):    pass</span>
+            
+        <span class="c1">#/********************************************************************/</span>
+        <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coder</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span> 
+            <span class="c1"># call method used for updating the default geocoder.</span>
+            <span class="k">pass</span>
+            <span class="c1"># self._gc = None</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gc</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="o">!=</span><span class="n">coder</span><span class="p">:</span>
+                <span class="n">gc</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">geopy</span><span class="o">.</span><span class="n">geocoders</span><span class="p">,</span> <span class="n">coder</span><span class="p">)</span> 
+                <span class="bp">self</span><span class="o">.</span><span class="n">_gc</span> <span class="o">=</span> <span class="n">gc</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> </div>
+
+<span class="c1">#==============================================================================</span>
+<span class="c1"># CLASS _googleMapsAPI</span>
+<span class="c1"># Class emulating googlemaps.GoogleMaps API.</span>
+<span class="c1"># Available when module googlemaps is installed.</span>
+<span class="c1">#==============================================================================</span>
+<span class="k">try</span><span class="p">:</span>    
+    <span class="k">assert</span> <span class="n">API_SERVICE</span> <span class="ow">and</span> <span class="n">googlemaps</span>
+<span class="k">except</span> <span class="p">(</span><span class="ne">NameError</span><span class="p">,</span><span class="ne">AssertionError</span><span class="p">):</span> 
+    <span class="k">class</span> <span class="nc">_googleMapsAPI</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>     
+        <span class="n">CODER</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">else</span><span class="p">:</span>   
+<div class="viewcode-block" id="_googleMapsAPI"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services._googleMapsAPI">[docs]</a>    <span class="k">class</span> <span class="nc">_googleMapsAPI</span><span class="p">(</span><span class="n">googlemaps</span><span class="o">.</span><span class="n">Client</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Class emulating :class:`~googlemaps.Client` API.</span>
+
+<span class="sd">        Most of the :class:`googlemaps.Client` methods will be inherited by the</span>
+<span class="sd">        :class:`~happygisco.services.APIService` class through composition and </span>
+<span class="sd">        embedding in container attributes. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">CODER</span> <span class="o">=</span> <span class="p">{</span><span class="n">settings</span><span class="o">.</span><span class="n">CODER_GOOGLE_MAPS</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">KEY_GOOGLE</span><span class="p">}</span>
+
+        <span class="c1">#/********************************************************************/</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="c1"># call Google Maps API: https://developers.google.com/maps/</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CODER</span><span class="p">[</span><span class="n">settings</span><span class="o">.</span><span class="n">CODER_GOOGLE_MAPS</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;Google client key not recognised&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">client_key</span> <span class="o">=</span> <span class="n">key</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">_googleMapsAPI</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client_key</span><span class="p">)</span>
+
+        <span class="c1">#/********************************************************************/</span>
+        <span class="k">def</span> <span class="nf">reverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">info</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;info&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">geoinfo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reverse_geocode</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="c1"># OLD: address_to_latlng</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;reverse geocoding method not found&#39;</span><span class="p">)</span> 
+            <span class="k">if</span> <span class="n">info</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">geoinfo</span>
+            <span class="n">location</span> <span class="o">=</span> <span class="n">geoinfo</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;address_components&#39;</span><span class="p">]</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">location</span><span class="p">]</span>
+                        
+         <span class="c1">#/********************************************************************/</span>
+<div class="viewcode-block" id="_googleMapsAPI.geocode"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services._googleMapsAPI.geocode">[docs]</a>        <span class="k">def</span> <span class="nf">geocode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">info</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;info&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">geoinfo</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">_googleMapsAPI</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">geocode</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="c1"># OLD: address_to_latlng</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;geocoding method not found&#39;</span><span class="p">)</span> 
+            <span class="k">if</span> <span class="n">info</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">geoinfo</span>
+            <span class="n">location</span> <span class="o">=</span> <span class="n">geoinfo</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;geometry&#39;</span><span class="p">][</span><span class="s1">&#39;location&#39;</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">location</span><span class="p">[</span><span class="s1">&#39;lat&#39;</span><span class="p">],</span> <span class="n">location</span><span class="p">[</span><span class="s1">&#39;lng&#39;</span><span class="p">]</span></div>
+            
+         <span class="c1">#/********************************************************************/</span>
+        <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">info</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;info&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="n">dist</span><span class="p">,</span> <span class="n">time</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;dist&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">),</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">dst_mx</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">_googleMapsAPI</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">distance_matrix</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> 
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;geocoding method not found&#39;</span><span class="p">)</span> 
+            <span class="k">if</span> <span class="n">info</span><span class="p">:</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="n">dst_mx</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dst_mx</span> <span class="o">=</span> <span class="n">dst_mx</span><span class="p">[</span><span class="s1">&#39;rows&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;elements&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">time</span><span class="p">:</span>                 
+                    <span class="n">res</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;duration&#39;</span><span class="p">:</span> <span class="n">dst_mx</span><span class="p">[</span><span class="s1">&#39;duration&#39;</span><span class="p">]})</span> <span class="c1"># &#39;text&#39; or &#39;value&#39;</span>
+                <span class="k">if</span> <span class="n">dist</span><span class="p">:</span> 
+                    <span class="n">res</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;distance&#39;</span><span class="p">:</span> <span class="n">dst_mx</span><span class="p">[</span><span class="s1">&#39;distance&#39;</span><span class="p">]})</span> <span class="c1"># &#39;text&#39; or &#39;value&#39;</span>
+            <span class="k">return</span> <span class="n">res</span></div>
+
+<span class="c1">#==============================================================================</span>
+<span class="c1"># CLASS _googlePlacesAPI</span>
+<span class="c1"># Class emulating googleplaces.GooglePlaces API.</span>
+<span class="c1"># Available when module googleplaces is installed.</span>
+<span class="c1">#==============================================================================</span>
+<span class="k">try</span><span class="p">:</span>    
+    <span class="k">assert</span> <span class="n">API_SERVICE</span> <span class="ow">and</span> <span class="n">googleplaces</span>
+<span class="k">except</span> <span class="p">(</span><span class="ne">NameError</span><span class="p">,</span><span class="ne">AssertionError</span><span class="p">):</span> 
+    <span class="k">class</span> <span class="nc">_googlePlacesAPI</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>  
+        <span class="n">CODER</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">else</span><span class="p">:</span> 
+    <span class="k">class</span> <span class="nc">_googlePlacesAPI</span><span class="p">(</span><span class="n">googleplaces</span><span class="o">.</span><span class="n">GooglePlaces</span><span class="p">):</span>
+        
+        <span class="n">CODER</span> <span class="o">=</span> <span class="p">{</span><span class="n">settings</span><span class="o">.</span><span class="n">CODER_GOOGLE_PLACES</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">KEY_GOOGLE</span><span class="p">}</span>
+
+        <span class="c1">#/********************************************************************/</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="c1"># call Google Places API: https://developers.google.com/places</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CODER</span><span class="p">[</span><span class="n">settings</span><span class="o">.</span><span class="n">CODER_GOOGLE_PLACES</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;GOoogle client key not recognised&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">client_key</span> <span class="o">=</span> <span class="n">key</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">_googlePlacesAPI</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client_key</span><span class="p">)</span>
+
+        <span class="c1">#/********************************************************************/</span>
+        <span class="n">geocode</span> <span class="o">=</span> <span class="nb">classmethod</span><span class="p">(</span><span class="n">googleplaces</span><span class="o">.</span><span class="n">geocode_location</span><span class="p">)</span>
+        <span class="c1"># nearby_search, text_search, get_place are regular attributes</span>
+
+<span class="c1">#==============================================================================</span>
+<span class="c1"># CLASS APIService</span>
+<span class="c1">#==============================================================================</span>
+     
+<span class="c1">#%%</span>
+<div class="viewcode-block" id="APIService"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services.APIService">[docs]</a><span class="k">class</span> <span class="nc">APIService</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">CODER</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">_googlePlacesAPI</span><span class="o">.</span><span class="n">CODER</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                 <span class="o">|</span> <span class="n">_googleMapsAPI</span><span class="o">.</span><span class="n">CODER</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> 
+                 <span class="o">|</span> <span class="n">_geoCoderAPI</span><span class="o">.</span><span class="n">CODER</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="c1"># we know there is no duplicate, so ok...</span>
+    
+    <span class="c1">#/************************************************************************/</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialisation of a :class:`APIService` instance.</span>
+
+<span class="sd">            &gt;&gt;&gt; serv = APIService(**kwargs)</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        coder : str</span>
+<span class="sd">            identifier of the geocoder, _e.g._ _Google Maps_, _Google Places_, </span>
+<span class="sd">            _etc_... used for geolocation queries.</span>
+<span class="sd">        key/token/username : str</span>
+<span class="sd">            key (depending on the :literal:`coder actually chosen) used to connect </span>
+<span class="sd">            to the geolocation API.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># initial settings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__coder</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__coder_key</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">API_SERVICE</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;external API service not available&#39;</span><span class="p">)</span>
+        <span class="c1"># read the arguments              </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__coder</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;coder&#39;</span><span class="p">,</span> <span class="n">settings</span><span class="o">.</span><span class="n">CODER_GOOGLE_MAPS</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__coder_key</span>  <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CODER</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">__coder</span><span class="p">])</span> <span class="c1"># it is a get!!! maybe None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__coder</span> <span class="ow">in</span> <span class="n">_googleMapsAPI</span><span class="o">.</span><span class="n">CODER</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># geomapper defined as an instance of _googleMapsAPI class derived</span>
+                <span class="c1"># from googlemaps.GoogleMaps</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__coder</span> <span class="o">=</span> <span class="n">_googleMapsAPI</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> 
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;Google Maps geocoder not available&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">__coder</span> <span class="ow">in</span> <span class="n">_googlePlacesAPI</span><span class="o">.</span><span class="n">CODER</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># geolocator defined as an instance of _googlePlacesAPI class</span>
+                <span class="c1"># derived from googleplaces.GooglePlaces</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__coder</span> <span class="o">=</span> <span class="n">_googlePlacesAPI</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> 
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;Google Places geocoder not available&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">__coder</span> <span class="ow">in</span> <span class="n">_geoCoderAPI</span><span class="o">.</span><span class="n">CODER</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># geocoder defined as an instance of _geoCoderAPI class derived from </span>
+                <span class="c1"># geopy.geocoders</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__coder</span> <span class="o">=</span> <span class="n">_geoCoderAPI</span><span class="p">(</span><span class="n">geocoder</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__coder</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> 
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;geopy geocoder not available&#39;</span><span class="p">)</span>
+            
+    <span class="c1">#/************************************************************************/</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">coder</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Coder attribute (:data:`getter`) of a :class:`APIService` instance. </span>
+<span class="sd">        A `coder` type is a either :class:`~happygisco.services._googlePlacesAPI`,  </span>
+<span class="sd">        or a :class:`~happygisco.services._googleMapsAPI`, or  </span>
+<span class="sd">        :class:`~happygisco.services._geoCoderAPI` object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__coder</span>
+            
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">coder_key</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Service attribute (:data:`getter`/:data:`setter`) of a :class:`APIService` </span>
+<span class="sd">        instance. </span>
+<span class="sd">        A `coder_key` type is a :class:`str` object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__coder_key</span>
+    <span class="nd">@coder_key</span><span class="o">.</span><span class="n">setter</span><span class="c1">#analysis:ignore</span>
+    <span class="k">def</span> <span class="nf">coder_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;wrong type for CODER_KEY parameter&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__coder_key</span> <span class="o">=</span> <span class="n">key</span>
+
+    <span class="c1">#/************************************************************************/</span>
+    <span class="nd">@_geoDecorators</span><span class="o">.</span><span class="n">parse_place</span>
+    <span class="k">def</span> <span class="nf">place2coord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">place</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieve the geographical coordinates associated to a (a list of) </span>
+<span class="sd">        toponame(s).</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; coord = serv.place2coord(place, **kwargs)</span>
+
+<span class="sd">        Argument</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">        Keyword arguments</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:``\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coord</span> <span class="o">=</span> <span class="p">[]</span> 
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">place</span><span class="p">:</span>   
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coder</span><span class="o">.</span><span class="n">geocode</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="n">lat</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">([],</span><span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="n">lon</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">([],</span><span class="kc">None</span><span class="p">)</span>
+                <span class="n">coord</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">lat</span><span class="p">,</span><span class="n">lon</span><span class="p">])</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">coord</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+                <span class="n">happyVerbose</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">could not retrieve geolocation of </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">p</span><span class="p">)</span>
+                <span class="c1"># continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># happyVerbose(&#39;%s =&gt; %s&#39; % (p, coord))</span>
+                <span class="k">pass</span>
+        <span class="k">return</span> <span class="n">coord</span> <span class="c1">#{&#39;lat&#39;:lat, &#39;lon&#39;: lon}</span>
+
+    <span class="c1">#/************************************************************************/</span>
+    <span class="nd">@_geoDecorators</span><span class="o">.</span><span class="n">parse_coordinate</span>
+    <span class="k">def</span> <span class="nf">coord2place</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Associate a (list of) toponame(s) with a (set of) given geographical</span>
+<span class="sd">        coordinates.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt;  = serv.(, **kwargs)</span>
+
+<span class="sd">        Argument</span>
+<span class="sd">        --------</span>
+<span class="sd">        </span>
+<span class="sd">        Keyword arguments</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:``\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">places</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coder</span><span class="o">.</span><span class="n">reverse</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">)</span>
+        <span class="n">places</span> <span class="o">=</span> <span class="p">[]</span> 
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lat</span><span class="p">)):</span>   
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coder</span><span class="o">.</span><span class="n">reverse</span><span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">lon</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="k">assert</span> <span class="n">p</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="kc">None</span><span class="p">)</span>
+                <span class="n">places</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">places</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+                <span class="n">happyVerbose</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">could not retrieve place name for geolocation </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">lat</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">lon</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+                <span class="c1"># continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># happyVerbose(&#39;%s =&gt; %s&#39; % (p, coord))</span>
+                <span class="k">pass</span>
+        <span class="k">return</span> <span class="n">places</span> </div>
+
+
+ <span class="c1">#   http://europa.eu/webtools/rest/gisco/reverse?lon=10&amp;lat=52</span>
+ <span class="c1">#   http://europa.eu/webtools/rest/gisco/reverse?lat=2.3514992&amp;lon=48.8566101</span>
+ <span class="c1">#   http://europa.eu/webtools/rest/gisco/reverse?lat=2&amp;lon=48</span>
+
+<span class="c1">#def place2nuts(*args, **kwargs):</span>
+<span class="c1">#    place = Place(*args, **kwargs)</span>
+<span class="c1">#    nuts = NUTS(place.tonuts())</span>
+<span class="c1">#    return nuts</span>
+<span class="c1">#    </span>
+<span class="c1">#    </span>
+<span class="c1">#PLACES      = [&#39;Bremen, Germany&#39;, &#39;Florence, Italy&#39;, &#39;Brussels, Belgium&#39;]</span>
+<span class="c1">#GOOGLE_KEY  = &#39;&#39; # you need to provide your own API key here</span>
+<span class="c1">#NUTSDIR     = &#39;ref-nuts-2013-01m&#39;</span>
+<span class="c1">#NUTSFILE    = &#39;NUTS_RG_01M_2013_4326_LEVL_2.shp&#39; # region</span>
+<span class="c1">#</span>
+<span class="c1">#gmaps = googlemaps.Client(key=GOOGLE_KEY) </span>
+<span class="c1">#Locations = ogr.Geometry(ogr.wkbMultiPoint)</span>
+<span class="c1">#</span>
+<span class="c1">#try:</span>
+<span class="c1">#    assert Locations is not None</span>
+<span class="c1">#except:</span>
+<span class="c1">#    print(&#39;\nCould not retrieve any geolocation&#39;)</span>
+<span class="c1">#    raise IOError</span>
+<span class="c1">#else:</span>
+<span class="c1">#    print(Locations.ExportToWkt())</span>
+<span class="c1">#</span>
+<span class="c1">#try:</span>
+<span class="c1">#    driver = ogr.GetDriverByName(&#39;ESRI Shapefile&#39;)</span>
+<span class="c1">#    Nuts = driver.Open(os.path.join(NUTSDIR,NUTSFILE), 0) # 0 means read-only</span>
+<span class="c1">#    assert Nuts is not None</span>
+<span class="c1">#except:</span>
+<span class="c1">#    print(&#39;\nCould not open %s&#39; % NUTSFILE)</span>
+<span class="c1">#    print(&#39;visit: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-01m.shp.zip&#39;)</span>
+<span class="c1">#    raise IOError</span>
+<span class="c1">#else:</span>
+<span class="c1">#    print(&#39;\nOpened %s&#39; % NUTSFILE)</span>
+<span class="c1">#    print(&#39;NUTS help: http://ec.europa.eu/eurostat/documents/4311134/4366152/guidelines-geographic-data.pdf&#39;)</span>
+<span class="c1">#    </span>
+<span class="c1">#try:</span>
+<span class="c1">#    layer = Nuts.GetLayer()</span>
+<span class="c1">#    assert layer is not None</span>
+<span class="c1">#except:</span>
+<span class="c1">#    print(&#39;\nCould not get vector layer&#39;)</span>
+<span class="c1">#    raise IOError</span>
+<span class="c1">#else:</span>
+<span class="c1">#    featureCount = layer.GetFeatureCount()</span>
+<span class="c1">#    print(&#39;\nNumber of features in %s: %d&#39; % (os.path.basename(NUTSFILE),featureCount))</span>
+<span class="c1">#    </span>
+<span class="c1">#Regions = []</span>
+<span class="c1">#</span>
+<span class="c1">## iterate through points</span>
+<span class="c1">#for i in range(0, Locations.GetGeometryCount()): # because it is a MULTIPOINT</span>
+<span class="c1">#    pt = Locations.GetGeometryRef(i)</span>
+<span class="c1">#    #print(pt.ExportToWkt())</span>
+<span class="c1">#    # iterate through polygons in layer</span>
+<span class="c1">#    for j in range(0, featureCount):</span>
+<span class="c1">#        feature = layer.GetFeature(j)</span>
+<span class="c1">#        if feature is None:</span>
+<span class="c1">#            continue    </span>
+<span class="c1">#        #elif feature.geometry() and feature.geometry().Contains(pt):</span>
+<span class="c1">#        #    Regions.append(feature)</span>
+<span class="c1">#        ft = feature.GetGeometryRef()</span>
+<span class="c1">#        if ft is not None and ft.Contains(pt):</span>
+<span class="c1">#            Regions.append(feature)</span>
+<span class="c1">#    if len(Regions)&lt;i+1:    </span>
+<span class="c1">#        Regions.append(None)</span>
+<span class="c1">#</span>
+<span class="c1">#try:</span>
+<span class="c1">#    assert not all([region is None for region in Regions])</span>
+<span class="c1">#except:</span>
+<span class="c1">#    print(&#39;\nNUTS regions (level 2) not found&#39;)</span>
+<span class="c1">#else:</span>
+<span class="c1">#    print(&#39;\nNUTS regions (level 2) identified&#39;)</span>
+<span class="c1">#    for i, place in enumerate(PLACES):</span>
+<span class="c1">#        items = Regions[i].items()</span>
+<span class="c1">#        print(&#39;%s =&gt; NUTS ID: %s - NUTS name: %s&#39; % (place, items[&#39;NUTS_ID&#39;],items[&#39;NUTS_NAME&#39;]))</span>
+<span class="c1">## will display:</span>
+<span class="c1">## Bremen, Germany =&gt; NUTS ID: DE50 - NUTS name: Bremen</span>
+<span class="c1">## Florence, Italy =&gt; NUTS ID: ITI1 - NUTS name: Toscana</span>
+<span class="c1">## Brussels, Belgium =&gt; NUTS ID: BE10 - NUTS name: Région de Bruxelles-Capitale / Brussels Hoofdstedelijk Gewest	</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Jacopo Grazzini @European Commission.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

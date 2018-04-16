@@ -1,0 +1,1681 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>happyGISCO.happygisco.tools &#8212; happyGISCO 1.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="author" title="About these documents" href="../../../about.html" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for happyGISCO.happygisco.tools</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. _mod_tools</span>
+
+<span class="sd">Library of simple tools for simple geographical data (geolocations and geocoordinates)</span>
+<span class="sd">handling and processin.</span>
+
+<span class="sd">**About**</span>
+
+<span class="sd">*credits*:      `gjacopo &lt;jacopo.grazzini@ec.europa.eu&gt;`_ </span>
+
+<span class="sd">*version*:      1</span>
+<span class="sd">--</span>
+<span class="sd">*since*:        Sat Apr 14 20:23:34 2018</span>
+
+<span class="sd">**Description**</span>
+
+<span class="sd">Perform various types of geographical transformations and &#39;conversions&#39; in order </span>
+<span class="sd">to represent equivalently and uniquely geographical locations/toponames.</span>
+<span class="sd">   </span>
+<span class="sd">**Dependencies**</span>
+
+<span class="sd">*require*:      :mod:`os`, :mod:`sys`, :mod:`math`, :mod:`np`</span>
+
+<span class="sd">*optional*:     :mod:`osgeo`</span>
+
+<span class="sd">*call*:         :mod:`settings`         </span>
+
+<span class="sd">**Contents**</span>
+
+<span class="sd">.. Links</span>
+
+<span class="sd">.. _gdal: https://pypi.python.org/pypi/GDAL</span>
+<span class="sd">.. |gdal| replace:: `gdal &lt;gdal_&gt;`_</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">__all__</span>         <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;GeoDistance&#39;</span><span class="p">,</span> <span class="s1">&#39;GeoAngle&#39;</span><span class="p">,</span> <span class="s1">&#39;GeoCoordinate&#39;</span><span class="p">,</span> <span class="s1">&#39;GDALTool&#39;</span><span class="p">]</span>
+
+<span class="c1"># generic import</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span><span class="c1">#analysis:ignore</span>
+<span class="kn">import</span> <span class="nn">math</span>
+
+<span class="kn">import</span> <span class="nn">functools</span><span class="c1">#analysis:ignore</span>
+
+<span class="c1"># local imports</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">settings</span>
+<span class="kn">from</span> <span class="nn">.settings</span> <span class="k">import</span> <span class="n">happyVerbose</span><span class="p">,</span> <span class="n">happyWarning</span><span class="p">,</span> <span class="n">happyError</span><span class="p">,</span> <span class="n">_geoDecorators</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">GDAL_SERVICE</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="kn">from</span> <span class="nn">osgeo</span> <span class="k">import</span> <span class="n">ogr</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">GDAL_SERVICE</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">happyWarning</span><span class="p">(</span><span class="s1">&#39;GDAL package (https://pypi.python.org/pypi/GDAL) not loaded - Inline resources not available&#39;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;GDAL help: https://pcjericks.github.io/py-gdalogr-cookbook/index.html&#39;</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="c1">#%%</span>
+<span class="c1">#==============================================================================</span>
+<span class="c1"># CLASS _GeoLocation</span>
+<span class="c1">#==============================================================================</span>
+ 
+<span class="c1">## class _GeoLocation:</span>
+<span class="c1"># we get rid of the &#39;old-style&#39; class to enable inheritance with &#39;super()&#39; method</span>
+<span class="c1"># so that issubclass(GeoCoordinate, object) is True</span>
+<span class="k">class</span> <span class="nc">_GeoLocation</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class used to represent coordinates on a sphere, most likely Earth, as suggested  </span>
+<span class="sd">    in http://janmatuschek.de/LatitudeLongitudeBoundingCoordinates</span>
+
+<span class="sd">    Library forked from https://github.com/jfein/PyGeoTools/blob/master/geolocation.py.</span>
+
+<span class="sd">    Description</span>
+<span class="sd">    </span>
+<span class="sd">    See https://github.com/jfein/PyGeoTools.</span>
+<span class="sd">    </span>
+<span class="sd">    **License**</span>
+<span class="sd">    </span>
+<span class="sd">    |       # This class is based from the code smaple in this paper:</span>
+<span class="sd">    |       #     http://janmatuschek.de/LatitudeLongitudeBoundingCoordinates        </span>
+<span class="sd">    |       # The owner of that website, Jan Philip Matuschek, is the full owner of </span>
+<span class="sd">    |       # his intellectual property. This class is simply a Python port of his very</span>
+<span class="sd">    |       # useful Java code. All code written by Jan Philip Matuschek and ported herein </span>
+<span class="sd">    |       # (which is all of this class) is owned by Jan Philip Matuschek.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+ 
+    <span class="n">MIN_LAT</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">)</span>
+    <span class="n">MAX_LAT</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mi">90</span><span class="p">)</span>
+    <span class="n">MIN_LON</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">)</span>
+    <span class="n">MAX_LON</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mi">180</span><span class="p">)</span>
+    
+    <span class="c1">## EARTH_RADIUS = 6378.1  # kilometers</span>
+    <span class="c1"># Equatorial radius 6378137 m </span>
+    <span class="n">EARTH_RADIUS</span>    <span class="o">=</span> <span class="mf">6378.1370</span> <span class="c1"># in km, for consistency with EARTH_RADIUS </span>
+      
+    <span class="c1">#/************************************************************************/</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_degrees</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">deg_lat</span><span class="p">,</span> <span class="n">deg_lon</span><span class="p">):</span>
+        <span class="n">rad_lat</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">deg_lat</span><span class="p">)</span>
+        <span class="n">rad_lon</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">deg_lon</span><span class="p">)</span>
+        <span class="c1">## return GeoLocation(rad_lat, rad_lon, deg_lat, deg_lon)</span>
+        <span class="c1"># to ensure inheritance</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">rad_lat</span><span class="p">,</span> <span class="n">rad_lon</span><span class="p">,</span> <span class="n">deg_lat</span><span class="p">,</span> <span class="n">deg_lon</span><span class="p">)</span>
+        
+    <span class="c1">#/************************************************************************/</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_radians</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">rad_lat</span><span class="p">,</span> <span class="n">rad_lon</span><span class="p">):</span>
+        <span class="n">deg_lat</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">rad_lat</span><span class="p">)</span>
+        <span class="n">deg_lon</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">rad_lon</span><span class="p">)</span>
+        <span class="c1">## return GeoLocation(rad_lat, rad_lon, deg_lat, deg_lon)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">rad_lat</span><span class="p">,</span> <span class="n">rad_lon</span><span class="p">,</span> <span class="n">deg_lat</span><span class="p">,</span> <span class="n">deg_lon</span><span class="p">)</span>
+        
+    <span class="c1">#/************************************************************************/</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rad_lat</span><span class="p">,</span> <span class="n">rad_lon</span><span class="p">,</span> <span class="n">deg_lat</span><span class="p">,</span> <span class="n">deg_lon</span><span class="p">):</span>
+        <span class="c1"># initialise an instance of _GeoLocation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rad_lat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">rad_lat</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rad_lon</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">rad_lon</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">deg_lat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">deg_lat</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">deg_lon</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">deg_lon</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_bounds</span><span class="p">()</span>
+        
+    <span class="c1">#/************************************************************************/</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1">## degree_sign= u&#39;\N{DEGREE SIGN}&#39;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;(</span><span class="si">{0:.4f}</span><span class="s2">deg, </span><span class="si">{1:.4f}</span><span class="s2">deg) = (</span><span class="si">{2:.6f}</span><span class="s2">rad, </span><span class="si">{3:.6f}</span><span class="s2">rad)&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">deg_lat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">deg_lon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rad_lat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rad_lon</span><span class="p">)</span>
+        
+    <span class="c1">#/************************************************************************/</span>
+    <span class="k">def</span> <span class="nf">_check_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rad_lat</span> <span class="o">&lt;</span> <span class="n">_GeoLocation</span><span class="o">.</span><span class="n">MIN_LAT</span> 
+                <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">rad_lat</span> <span class="o">&gt;</span> <span class="n">_GeoLocation</span><span class="o">.</span><span class="n">MAX_LAT</span> 
+                <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">rad_lon</span> <span class="o">&lt;</span> <span class="n">_GeoLocation</span><span class="o">.</span><span class="n">MIN_LON</span> 
+                <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">rad_lon</span> <span class="o">&gt;</span> <span class="n">_GeoLocation</span><span class="o">.</span><span class="n">MAX_LON</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Illegal arguments&quot;</span><span class="p">)</span>
+            
+    <span class="c1">#/************************************************************************/</span>
+    <span class="k">def</span> <span class="nf">distance_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="n">EARTH_RADIUS</span><span class="p">):</span>
+        <span class="c1">#compute the great circle distance between this _GeoLocation instance and </span>
+        <span class="c1"># the other.</span>
+        <span class="c1"># returns the distance from the geolocation represented by the current </span>
+        <span class="c1"># instance to other geolocation</span>
+        <span class="k">return</span> <span class="n">radius</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">acos</span><span class="p">(</span>
+                <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rad_lat</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">rad_lat</span><span class="p">)</span> <span class="o">+</span>
+                <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rad_lat</span><span class="p">)</span> <span class="o">*</span> 
+                <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">rad_lat</span><span class="p">)</span> <span class="o">*</span> 
+                <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rad_lon</span> <span class="o">-</span> <span class="n">other</span><span class="o">.</span><span class="n">rad_lon</span><span class="p">)</span>
+            <span class="p">)</span>
+            
+    <span class="c1">#/************************************************************************/</span>
+    <span class="k">def</span> <span class="nf">bounding_locations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="n">EARTH_RADIUS</span><span class="p">):</span>
+        <span class="c1"># compute the bounding coordinates of all points on the surface of a </span>
+        <span class="c1"># sphere that has a great circle distance to the point represented by this </span>
+        <span class="c1"># _GeoLocation` instance that is less or equal to the distance argument</span>
+        <span class="c1"># returns a list of two geolocations - the SW corner and the NE corner - that</span>
+        <span class="c1"># represents the bounding box defined by the distance :literal:`dist`</span>
+        <span class="k">if</span> <span class="n">radius</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">distance</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;illegal arguments&#39;</span><span class="p">)</span>
+        <span class="c1"># angular distance in radians on a great circle</span>
+        <span class="n">rad_dist</span> <span class="o">=</span> <span class="n">distance</span> <span class="o">/</span> <span class="n">radius</span>
+        <span class="n">min_lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rad_lat</span> <span class="o">-</span> <span class="n">rad_dist</span>
+        <span class="n">max_lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rad_lat</span> <span class="o">+</span> <span class="n">rad_dist</span>
+        <span class="k">if</span> <span class="n">min_lat</span> <span class="o">&gt;</span> <span class="n">_GeoLocation</span><span class="o">.</span><span class="n">MIN_LAT</span> <span class="ow">and</span> <span class="n">max_lat</span> <span class="o">&lt;</span> <span class="n">_GeoLocation</span><span class="o">.</span><span class="n">MAX_LAT</span><span class="p">:</span>
+            <span class="n">delta_lon</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">asin</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">rad_dist</span><span class="p">)</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rad_lat</span><span class="p">))</span>
+            
+            <span class="n">min_lon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rad_lon</span> <span class="o">-</span> <span class="n">delta_lon</span>
+            <span class="k">if</span> <span class="n">min_lon</span> <span class="o">&lt;</span> <span class="n">_GeoLocation</span><span class="o">.</span><span class="n">MIN_LON</span><span class="p">:</span>
+                <span class="n">min_lon</span> <span class="o">+=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span>
+                
+            <span class="n">max_lon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rad_lon</span> <span class="o">+</span> <span class="n">delta_lon</span>
+            <span class="k">if</span> <span class="n">max_lon</span> <span class="o">&gt;</span> <span class="n">_GeoLocation</span><span class="o">.</span><span class="n">MAX_LON</span><span class="p">:</span>
+                <span class="n">max_lon</span> <span class="o">-=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span>
+        <span class="c1"># a pole is within the distance</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">min_lat</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">min_lat</span><span class="p">,</span> <span class="n">_GeoLocation</span><span class="o">.</span><span class="n">MIN_LAT</span><span class="p">)</span>
+            <span class="n">max_lat</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_lat</span><span class="p">,</span> <span class="n">_GeoLocation</span><span class="o">.</span><span class="n">MAX_LAT</span><span class="p">)</span>
+            <span class="n">min_lon</span> <span class="o">=</span> <span class="n">_GeoLocation</span><span class="o">.</span><span class="n">MIN_LON</span>
+            <span class="n">max_lon</span> <span class="o">=</span> <span class="n">_GeoLocation</span><span class="o">.</span><span class="n">MAX_LON</span>
+        
+        <span class="k">return</span> <span class="p">[</span> <span class="n">_GeoLocation</span><span class="o">.</span><span class="n">from_radians</span><span class="p">(</span><span class="n">min_lat</span><span class="p">,</span> <span class="n">min_lon</span><span class="p">),</span> 
+            <span class="n">_GeoLocation</span><span class="o">.</span><span class="n">from_radians</span><span class="p">(</span><span class="n">max_lat</span><span class="p">,</span> <span class="n">max_lon</span><span class="p">)</span> <span class="p">]</span>
+
+<span class="c1">#%%</span>
+<span class="c1">#==============================================================================</span>
+<span class="c1"># CLASS GeoDistance</span>
+<span class="c1">#==============================================================================</span>
+
+<div class="viewcode-block" id="GeoDistance"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoDistance">[docs]</a><span class="k">class</span> <span class="nc">GeoDistance</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd"> </span>
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------     </span>
+<span class="sd">    EARTH_RADIUS_EQUATOR : </span>
+<span class="sd">        Equatorial radius: 6378.1370 km.</span>
+<span class="sd">    EARTH_RADIUS_POLAR : </span>
+<span class="sd">        Polar radius: 6356.7523 km.</span>
+<span class="sd">    WGS84_SEMIAXIS_a :         </span>
+<span class="sd">        major semi-axis of WGS-84 geoidal  reference equal to :data:`EARTH_RADIUS_EQUATOR`.</span>
+<span class="sd">    WGS84_SEMIAXIS_b :</span>
+<span class="sd">        ibid, minor semi-axis equal to :data:`EARTH_RADIUS_POLAR`.</span>
+<span class="sd">    EARTH_RADIUS_MEAN :          </span>
+<span class="sd">        mean radius defined by IUGG, set to :data:`(2*WGS84_SEMIAXIS_a + WGS84_SEMIAXIS_b)/3`, </span>
+<span class="sd">        equal to 6371.0087 km.</span>
+<span class="sd">    EARTH_RADIUS_AVERAGE :          </span>
+<span class="sd">        average radius: 6372.7950 km.</span>
+<span class="sd">    DECIMAL_PRECISION : </span>
+<span class="sd">        define the precision in location coordinates; default to :data:`5`\ .        </span>
+<span class="sd">    M_TO :</span>
+<span class="sd">        dictionary of equivalent distances expressed in :literal:`[&#39;m&#39;, &#39;km&#39;, &#39;mi&#39;, &#39;ft&#39;]` </span>
+<span class="sd">        units that are equivalent to **1 m**.</span>
+<span class="sd">    KM_TO,MI_TO,FT_TO :</span>
+<span class="sd">        ibid for **1 km**, **1 mi** (mile) and **1 ft** (foot) respectively.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+        
+    <span class="c1">#/************************************************************************/</span>
+    <span class="c1"># Earth radius: http://en.wikipedia.org/wiki/Earth_radius</span>
+    <span class="c1"># EARTH_RADIUS defined in ExtGeoLocation</span>
+    <span class="c1"># distances from points on the surface to the center range from 6,353 km </span>
+    <span class="c1"># to 6,384 km </span>
+    <span class="c1"># Equatorial radius 6378137 m </span>
+    <span class="n">EARTH_RADIUS_EQUATOR</span>    <span class="o">=</span> <span class="n">_GeoLocation</span><span class="o">.</span><span class="n">EARTH_RADIUS</span> <span class="c1"># 6378.1370 km </span>
+    <span class="c1"># Polar radius 6356752.3 m</span>
+    <span class="n">EARTH_RADIUS_POLAR</span>      <span class="o">=</span> <span class="mf">6356.7523</span> 
+    <span class="c1"># Semi-axes of WGS-84 geoidal reference</span>
+    <span class="n">WGS84_SEMIAXIS_a</span>        <span class="o">=</span> <span class="n">EARTH_RADIUS_EQUATOR</span>  <span class="c1"># Major semiaxis </span>
+    <span class="n">WGS84_SEMIAXIS_b</span>        <span class="o">=</span> <span class="n">EARTH_RADIUS_POLAR</span>  <span class="c1"># Minor semiaxis</span>
+    <span class="c1"># Mean radius defined by IUGG</span>
+    <span class="n">EARTH_RADIUS_MEAN</span>       <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">WGS84_SEMIAXIS_a</span> <span class="o">+</span> <span class="n">WGS84_SEMIAXIS_b</span><span class="p">)</span><span class="o">/</span><span class="mf">3.</span> <span class="c1"># 6371008.766 m</span>
+    <span class="c1"># Average radius: 6372795 m </span>
+    <span class="n">EARTH_RADIUS_AVERAGE</span>    <span class="o">=</span> <span class="mf">6372.7950</span> <span class="c1"># geodist.EARTH_RADIUS</span>
+
+    <span class="c1">#/************************************************************************/</span>
+    <span class="c1"># units and measures</span>
+    <span class="n">M_DIST_UNIT</span><span class="p">,</span> <span class="n">KM_DIST_UNIT</span><span class="p">,</span> <span class="n">MI_DIST_UNIT</span><span class="p">,</span> <span class="n">FT_DIST_UNIT</span> <span class="o">=</span> <span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="s1">&#39;km&#39;</span><span class="p">,</span> <span class="s1">&#39;mi&#39;</span><span class="p">,</span> <span class="s1">&#39;ft&#39;</span>
+    <span class="n">DIST_UNITS</span>          <span class="o">=</span> <span class="p">{</span><span class="n">KM_DIST_UNIT</span><span class="p">:</span><span class="s1">&#39;kilometers&#39;</span><span class="p">,</span>
+                           <span class="n">MI_DIST_UNIT</span><span class="p">:</span> <span class="s1">&#39;miles&#39;</span><span class="p">,</span>
+                           <span class="n">M_DIST_UNIT</span><span class="p">:</span> <span class="s1">&#39;meters&#39;</span><span class="p">,</span>
+                           <span class="n">FT_DIST_UNIT</span><span class="p">:</span> <span class="s1">&#39;feet&#39;</span><span class="p">}</span> 
+    <span class="n">KM_TO</span>    <span class="o">=</span> <span class="p">{</span><span class="n">M_DIST_UNIT</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>    <span class="n">KM_DIST_UNIT</span><span class="p">:</span> <span class="mf">1.</span><span class="p">,</span>        <span class="n">MI_DIST_UNIT</span><span class="p">:</span> <span class="mf">0.621371</span><span class="p">,</span>    <span class="n">FT_DIST_UNIT</span><span class="p">:</span><span class="mf">3280.84</span><span class="p">}</span>
+    <span class="n">M_TO</span>     <span class="o">=</span> <span class="p">{</span><span class="n">M_DIST_UNIT</span><span class="p">:</span> <span class="mf">1.</span><span class="p">,</span>      <span class="n">KM_DIST_UNIT</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">,</span>     <span class="n">MI_DIST_UNIT</span><span class="p">:</span> <span class="mf">0.000621371</span><span class="p">,</span> <span class="n">FT_DIST_UNIT</span><span class="p">:</span><span class="mf">3.28084</span><span class="p">}</span>
+    <span class="n">MI_TO</span>    <span class="o">=</span> <span class="p">{</span><span class="n">M_DIST_UNIT</span><span class="p">:</span> <span class="mf">1609.34</span><span class="p">,</span> <span class="n">KM_DIST_UNIT</span><span class="p">:</span> <span class="mf">1.60934</span><span class="p">,</span>   <span class="n">MI_DIST_UNIT</span><span class="p">:</span> <span class="mf">1.</span><span class="p">,</span>          <span class="n">FT_DIST_UNIT</span><span class="p">:</span><span class="mf">5280.</span><span class="p">}</span>
+    <span class="n">FT_TO</span>    <span class="o">=</span> <span class="p">{</span><span class="n">M_DIST_UNIT</span><span class="p">:</span> <span class="mf">0.3048</span><span class="p">,</span>  <span class="n">KM_DIST_UNIT</span><span class="p">:</span> <span class="mf">0.0003048</span><span class="p">,</span> <span class="n">MI_DIST_UNIT</span><span class="p">:</span><span class="mf">0.000189394</span><span class="p">,</span>  <span class="n">FT_DIST_UNIT</span><span class="p">:</span><span class="mf">1.</span><span class="p">}</span>
+
+    <span class="n">RESOLUTION</span>          <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;unit&#39;</span><span class="p">:</span> <span class="n">KM_DIST_UNIT</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mf">0.001</span><span class="p">}</span>
+    <span class="c1"># RESOLUTION      = 0.001 # we mean 1 meter</span>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoDistance.units_to"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoDistance.units_to">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">units_to</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">from_</span><span class="p">,</span> <span class="n">to</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>            
+        <span class="sd">&quot;&quot;&quot;Perform simple distance units conversion.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; d = GeoDistance.units_to(from, to, dist)</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        from,to : str</span>
+<span class="sd">            &#39;origin&#39; and &#39;destination&#39; units: any strings from the list </span>
+<span class="sd">            :literal:`[&#39;m&#39;,&#39;km&#39;,&#39;mi&#39;,&#39;ft&#39;]`\ .</span>
+<span class="sd">        dist : float</span>
+<span class="sd">            distance value to convert; default to 1.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        &gt;&gt;&gt; GeoDistance.units_to(&#39;mi&#39;, &#39;ft&#39;,  10.)</span>
+<span class="sd">            52800.0</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># if from_==to:     return dist</span>
+        <span class="c1"># simple variable used in distance conversions</span>
+        <span class="n">UNITS_TO</span> <span class="o">=</span>  <span class="p">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">M_DIST_UNIT</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">M_TO</span><span class="p">,</span>     
+                     <span class="bp">cls</span><span class="o">.</span><span class="n">KM_DIST_UNIT</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">KM_TO</span><span class="p">,</span> 
+                     <span class="bp">cls</span><span class="o">.</span><span class="n">MI_DIST_UNIT</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">MI_TO</span><span class="p">,</span>   
+                     <span class="bp">cls</span><span class="o">.</span><span class="n">FT_DIST_UNIT</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">FT_TO</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">UNITS_TO</span><span class="p">[</span><span class="n">from_</span><span class="p">][</span><span class="n">to</span><span class="p">]</span> <span class="o">*</span> <span class="n">dist</span>            </div>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoDistance.convert_distance_units"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoDistance.convert_distance_units">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">convert_distance_units</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">to</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert composed distance units to a single one.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; d = GeoDistance.convert_distance_units(to=&#39;km&#39;, **kwargs)</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        to : str</span>
+<span class="sd">            desired &#39;destination&#39; unit: any string in the list :literal:`[&#39;m&#39;,&#39;km&#39;,&#39;mi&#39;,&#39;ft&#39;]`; </span>
+<span class="sd">            default to :literal:`&#39;km&#39;`\ .</span>
+<span class="sd">        </span>
+<span class="sd">        Keyword Arguments</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        kwargs : dict</span>
+<span class="sd">            dictionary of composed distances indexed by their unit, which can be</span>
+<span class="sd">            any string in the list :literal:`[&#39;m&#39;,&#39;km&#39;,&#39;mi&#39;,&#39;ft&#39;]`\ .</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Use indifferently dictionaries or positional arguments to pass the quantities </span>
+<span class="sd">        to convert:  </span>
+<span class="sd">        </span>
+<span class="sd">        &gt;&gt;&gt; GeoDistance.convert_distance_units(&#39;m&#39;, **{&#39;km&#39;:1, &#39;m&#39;:10}) </span>
+<span class="sd">            1010</span>
+<span class="sd">        &gt;&gt;&gt; GeoDistance.convert_distance_units(to=&#39;m&#39;, mi=2,  ft=10, km=0.5)</span>
+<span class="sd">            3721.7279999999996</span>
+<span class="sd">        &gt;&gt;&gt; 2*GeoDistance.MI_TO[&#39;m&#39;] + 10.*GeoDistance.FT_TO[&#39;m&#39;] + 0.5*GeoDistance.KM_TO[&#39;m&#39;]</span>
+<span class="sd">            3721.7279999999996</span>
+<span class="sd">            </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        happyError :</span>
+<span class="sd">            when unable to recognize any of the distance units in :data:`kwargs`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">to</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">to</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">KM_DIST_UNIT</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">to</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">DIST_UNITS</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;unit </span><span class="si">{}</span><span class="s1"> not implemented&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">to</span><span class="p">))</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">DIST_UNITS</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span> <span class="n">dist</span> <span class="o">+=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">units_to</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">to</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">dist</span></div>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoDistance.estimate_radius_WGS84"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoDistance.estimate_radius_WGS84">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">estimate_radius_WGS84</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate the Earth radius at a given latitude, according to the WGS-84 </span>
+<span class="sd">        ellipsoid [m].</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; R = GeoDistance.estimate_radius_WGS84(lat, **kwargs)</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        The Earth radius at Paris, France latitude is approximately:</span>
+<span class="sd">            </span>
+<span class="sd">        &gt;&gt;&gt; GeoDistance.estimate_radius_WGS84(48.864716)</span>
+<span class="sd">            6357.369614537118</span>
+<span class="sd">            </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        happyError :</span>
+<span class="sd">            when unable to recognize the distance unit.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">WGS84_SEMIAXIS_a</span>  <span class="c1"># major semiaxis</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">WGS84_SEMIAXIS_b</span>  <span class="c1"># minor semiaxis </span>
+        <span class="n">An</span><span class="p">,</span> <span class="n">Bn</span> <span class="o">=</span> <span class="n">a</span><span class="o">*</span><span class="n">a</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat</span><span class="p">),</span> <span class="n">b</span><span class="o">*</span><span class="n">b</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span>
+        <span class="n">Ad</span><span class="p">,</span> <span class="n">Bd</span> <span class="o">=</span> <span class="n">a</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat</span><span class="p">),</span> <span class="n">b</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="p">(</span><span class="n">An</span><span class="o">*</span><span class="n">An</span> <span class="o">+</span> <span class="n">Bn</span><span class="o">*</span><span class="n">Bn</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">Ad</span><span class="o">*</span><span class="n">Ad</span> <span class="o">+</span> <span class="n">Bd</span><span class="o">*</span><span class="n">Bd</span><span class="p">)</span> <span class="p">)</span>            
+        <span class="n">unit</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;unit&#39;</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">KM_DIST_UNIT</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>    <span class="k">return</span> <span class="n">res</span> <span class="o">*</span> <span class="bp">cls</span><span class="o">.</span><span class="n">KM_TO</span><span class="p">[</span><span class="n">unit</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span> <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;unit </span><span class="si">{}</span><span class="s1"> not implemented&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span></div></div>
+
+<span class="c1">#%%</span>
+<span class="c1">#==============================================================================</span>
+<span class="c1"># CLASS GeoAngle</span>
+<span class="c1">#==============================================================================</span>
+
+<div class="viewcode-block" id="GeoAngle"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoAngle">[docs]</a><span class="k">class</span> <span class="nc">GeoAngle</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1">#/************************************************************************/</span>
+    <span class="c1"># units and measures</span>
+    <span class="n">DEG_ANG_UNIT</span><span class="p">,</span> <span class="n">RAD_ANG_UNIT</span><span class="p">,</span> <span class="n">DPS_ANG_UNIT</span> <span class="o">=</span> <span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="s1">&#39;rad&#39;</span><span class="p">,</span> <span class="s1">&#39;dps&#39;</span>
+    <span class="n">ANG_UNITS</span>           <span class="o">=</span> <span class="p">{</span><span class="n">DEG_ANG_UNIT</span><span class="p">:</span> <span class="s1">&#39;degrees&#39;</span><span class="p">,</span>
+                           <span class="n">RAD_ANG_UNIT</span><span class="p">:</span> <span class="s1">&#39;radians&#39;</span><span class="p">,</span>
+                           <span class="n">DPS_ANG_UNIT</span><span class="p">:</span> <span class="s1">&#39;degrees/primes/seconds&#39;</span><span class="p">}</span> 
+    <span class="n">DECIMAL_PRECISION</span>   <span class="o">=</span> <span class="mi">5</span>
+        
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoAngle.dps2deg"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoAngle.dps2deg">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">dps2deg</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dps</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert (degrees, primes, seconds) format to degrees.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; degrees = GeoAngle.dps2deg(dps)</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        Paris, France latitude in DPS format is: 48° 51&#39; 52.9776&#39;&#39; N. Let us convert </span>
+<span class="sd">        it to degrees:</span>
+<span class="sd">        </span>
+<span class="sd">        &gt;&gt;&gt; GeoAngle.dps2deg([48, 51, 52.9776])</span>
+<span class="sd">            48.864716</span>
+<span class="sd">            </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~GeoAngle.deg2dps`, :meth:`~GeoAngle.dps2rad`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">degrees</span><span class="p">,</span> <span class="n">primes</span><span class="p">,</span> <span class="n">seconds</span> <span class="o">=</span> <span class="n">dps</span>
+        <span class="k">return</span> <span class="n">degrees</span> <span class="o">+</span> <span class="n">primes</span><span class="o">/</span><span class="mf">60.0</span> <span class="o">+</span> <span class="n">seconds</span><span class="o">/</span><span class="mf">3600.0</span>    </div>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoAngle.deg2dps"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoAngle.deg2dps">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">deg2dps</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">degrees</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot;Convert degrees format to (degrees, primes, seconds).</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; dps = GeoAngle.deg2dps(degrees)</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        Let us convert Paris, France latitude (48.864716 degrees) into DPS format:</span>
+<span class="sd">        </span>
+<span class="sd">        &gt;&gt;&gt; GeoAngle.deg2dps(48.864716) </span>
+<span class="sd">            (48, 51, 52.9776)</span>
+<span class="sd">            </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~GeoAngle.dps2deg`, :meth:`~GeoAngle.deg2rad`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">intdeg</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">degrees</span><span class="p">)</span>
+        <span class="n">primes</span> <span class="o">=</span> <span class="p">(</span><span class="n">degrees</span> <span class="o">-</span> <span class="n">intdeg</span><span class="p">)</span><span class="o">*</span><span class="mf">60.0</span>
+        <span class="n">intpri</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">primes</span><span class="p">)</span>
+        <span class="n">seconds</span> <span class="o">=</span> <span class="p">(</span><span class="n">primes</span> <span class="o">-</span> <span class="n">intpri</span><span class="p">)</span><span class="o">*</span><span class="mf">60.0</span>
+        <span class="n">seconds</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">seconds</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">DECIMAL_PRECISION</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">intdeg</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">intpri</span><span class="p">),</span> <span class="n">seconds</span><span class="p">)</span></div>
+ 
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoAngle.deg2rad"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoAngle.deg2rad">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">deg2rad</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">degrees</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot;Convert degrees format to radians.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; radians = GeoAngle.deg2rad(degrees)</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        &gt;&gt;&gt; import math</span>
+<span class="sd">        &gt;&gt;&gt; GeoAngle.deg2rad(90) == math.pi/2</span>
+<span class="sd">            True</span>
+<span class="sd">            </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~GeoAngle.rad2deg`, :meth:`~GeoAngle.deg2dps`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">degrees</span><span class="p">)</span> <span class="c1"># math.pi*degrees/180.0   </span></div>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoAngle.rad2deg"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoAngle.rad2deg">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">rad2deg</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">radians</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot;Convert radians format to degrees.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; degrees = GeoAngle.rad2deg(radians)</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        &gt;&gt;&gt; import math</span>
+<span class="sd">        &gt;&gt;&gt; GeoAngle.rad2deg(math.pi) == 180</span>
+<span class="sd">            True</span>
+<span class="sd">            </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~GeoAngle.deg2rad`, :meth:`~GeoAngle.rad2dps`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">radians</span><span class="p">)</span> <span class="c1"># 180.0*radians/math.pi    </span></div>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoAngle.dps2rad"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoAngle.dps2rad">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">dps2rad</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dps</span><span class="p">):</span>  
+        <span class="sd">&quot;&quot;&quot;Convert (degrees, primes, seconds) format to radians.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; radians = GeoAngle.dps2rad(dps)</span>
+<span class="sd">            </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; import math</span>
+<span class="sd">        &gt;&gt;&gt; GeoAngle.dps2rad([45,0,0]) == math.pi/4</span>
+<span class="sd">            True</span>
+<span class="sd">        &gt;&gt;&gt; GeoAngle.dps2rad([48, 51, 52.9776])</span>
+<span class="sd">            0.8528501822519535</span>
+<span class="sd">                </span>
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        Compose the methods :meth:`~GeoAngle.dps2deg` and :meth:`~GeoAngle.deg2rad`\ .</span>
+<span class="sd">            </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~GeoAngle.rad2dps`, :meth:`~GeoAngle.dps2deg`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">dps2deg</span><span class="p">(</span><span class="n">dps</span><span class="p">))</span></div>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoAngle.rad2dps"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoAngle.rad2dps">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">rad2dps</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">rad</span><span class="p">):</span>  
+        <span class="sd">&quot;&quot;&quot;Convert radians format to (degrees, primes, seconds).</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; dps = GeoAngle.rad2dps(radians)</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        &gt;&gt;&gt; import math</span>
+<span class="sd">        &gt;&gt;&gt; GeoAngle.rad2dps(math.pi)</span>
+<span class="sd">            (180, 0, 0.0)</span>
+<span class="sd">        &gt;&gt;&gt; GeoAngle.rad2dps(GeoAngle.dps2rad([48, 51, 52.9776])) == (48, 51, 52.9776)</span>
+<span class="sd">            True</span>
+<span class="sd">                </span>
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        Compose the methods :meth:`~GeoAngle.rad2deg` and :meth:`~GeoAngle.deg2dps`\ .</span>
+<span class="sd">        </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~GeoAngle.dps2rad`, :meth:`~GeoAngle.rad2deg`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">deg2dps</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">rad</span><span class="p">))</span></div>
+
+    <span class="c1">#/********************************************************************/</span>
+<div class="viewcode-block" id="GeoAngle.ang_units_to"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoAngle.ang_units_to">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">ang_units_to</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">from_</span><span class="p">,</span> <span class="n">to</span><span class="p">,</span> <span class="n">ang</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>            
+        <span class="sd">&quot;&quot;&quot;Perform simple angular units conversion.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; u = GeoAngle.ang_units_to(from, to, ang=0.)</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        from,to : str</span>
+<span class="sd">            &#39;origin&#39; and &#39;destination&#39; units: any strings in :literal:`[&#39;deg&#39;,&#39;rad&#39;,&#39;dps&#39;]`\ .</span>
+<span class="sd">        ang : float</span>
+<span class="sd">            angle value to convert; default to 0.</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        Here is another way to convert Paris, France latitude (48.864716 degrees) </span>
+<span class="sd">        into DPS format:</span>
+<span class="sd">        </span>
+<span class="sd">        &gt;&gt;&gt; GeoAngle.ang_units_to(&#39;deg&#39;,&#39;dps&#39;,48.864716)</span>
+<span class="sd">            (48, 51, 52.9776)</span>
+<span class="sd">            </span>
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        This is just a single method wrapping all angle conversion methods.</span>
+<span class="sd">            </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~GeoAngle.dps2deg`, :meth:`~GeoAngle.dps2rad`, :meth:`~GeoAngle.deg2rad`, </span>
+<span class="sd">        :meth:`~GeoAngle.deg2dps`, :meth:`~GeoAngle.rad2deg`, :meth:`~GeoAngle.rad2dps`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># if from_==to:     return ang</span>
+        <span class="n">deg_to</span> <span class="o">=</span> <span class="p">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">RAD_ANG_UNIT</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">,</span> 
+                  <span class="bp">cls</span><span class="o">.</span><span class="n">DEG_ANG_UNIT</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">,</span>   
+                  <span class="bp">cls</span><span class="o">.</span><span class="n">DPS_ANG_UNIT</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">deg2dps</span><span class="p">}</span>
+        <span class="n">rad_to</span> <span class="o">=</span> <span class="p">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">RAD_ANG_UNIT</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">,</span>  
+                  <span class="bp">cls</span><span class="o">.</span><span class="n">DEG_ANG_UNIT</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">,</span>  
+                  <span class="bp">cls</span><span class="o">.</span><span class="n">DPS_ANG_UNIT</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">rad2dps</span><span class="p">}</span>
+        <span class="n">dps_to</span> <span class="o">=</span> <span class="p">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">RAD_ANG_UNIT</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dps2rad</span><span class="p">,</span>  
+                  <span class="bp">cls</span><span class="o">.</span><span class="n">DEG_ANG_UNIT</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">dps2deg</span><span class="p">,</span> 
+                  <span class="bp">cls</span><span class="o">.</span><span class="n">DPS_ANG_UNIT</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="p">}</span>
+        <span class="k">return</span> <span class="p">{</span><span class="bp">cls</span><span class="o">.</span><span class="n">RAD_ANG_UNIT</span><span class="p">:</span> <span class="n">rad_to</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">DEG_ANG_UNIT</span><span class="p">:</span> <span class="n">deg_to</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">DPS_ANG_UNIT</span><span class="p">:</span> <span class="n">dps_to</span><span class="p">}[</span><span class="n">from_</span><span class="p">][</span><span class="n">to</span><span class="p">](</span><span class="n">ang</span><span class="p">)</span>       </div>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoAngle.convert_angle_units"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoAngle.convert_angle_units">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">convert_angle_units</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">to</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert composed angular units to a single one.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; u = GeoAngle.convert_angle_units(to=&#39;deg&#39;, **kwargs)</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        to : str</span>
+<span class="sd">            desired &#39;final&#39; unit: any string in :literal:`[&#39;deg&#39;,&#39;rad&#39;,&#39;dps&#39;]`; default</span>
+<span class="sd">            to :literal:`&#39;deg&#39;`\ .</span>
+<span class="sd">        </span>
+<span class="sd">        Keyword Arguments</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        kwargs : dict</span>
+<span class="sd">            dictionary of composed angles indexed by their unit, which can be, again,</span>
+<span class="sd">            any string in :literal:`[&#39;deg&#39;,&#39;rad&#39;,&#39;dps&#39;]`\ .</span>
+<span class="sd">            </span>
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        This is very unlikely that one will use a composition of angular units.</span>
+<span class="sd">            </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        happyError :</span>
+<span class="sd">            when unable to recognize the distance unit :data:`to`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">to</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">to</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">DEG_ANG_UNIT</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">to</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">ANG_UNITS</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;unit </span><span class="si">{}</span><span class="s1"> not implemented&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">to</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">to</span><span class="o">==</span><span class="bp">cls</span><span class="o">.</span><span class="n">DPS_ANG_UNIT</span><span class="p">:</span> <span class="c1"># we will convert first the different values in degrees</span>
+            <span class="n">dps</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">to</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">DEG_ANG_UNIT</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dps</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">ang</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">ANG_UNITS</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span> <span class="n">ang</span> <span class="o">+=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">ang_units_to</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">to</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">u</span><span class="p">,</span><span class="mf">0.</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">dps</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span> <span class="c1"># we convert back the sum in dps</span>
+            <span class="n">ang</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">ang_units_to</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">DEG_ANG_UNIT</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">DPS_ANG_UNIT</span><span class="p">,</span> <span class="n">ang</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ang</span></div></div>
+
+<span class="c1">#%%</span>
+<span class="c1">#==============================================================================</span>
+<span class="c1"># CLASS GeoCoordinate</span>
+<span class="c1">#==============================================================================</span>
+
+<div class="viewcode-block" id="GeoCoordinate"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate">[docs]</a><span class="k">class</span> <span class="nc">GeoCoordinate</span><span class="p">(</span><span class="n">_GeoLocation</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Class of geographic/location attributes and methods used to define, describe </span>
+<span class="sd">    and represent the geospatial status of an object.</span>
+<span class="sd">    </span>
+<span class="sd">    The term _&quot;location&quot;_ in geography is used to identify a point or an area on </span>
+<span class="sd">    the Earth&#39;s surface or elsewhere. </span>
+<span class="sd">    </span>
+<span class="sd">    This class emulates :class:`~happygisco.tools._GeoLocation`.</span>
+<span class="sd">    Inherit for instance methods :meth:`_check_bounds` from original class to check </span>
+<span class="sd">    for (`lat`, `Long`) coordinates consistency; instead, methods :meth:`distance_to`</span>
+<span class="sd">    (computation of great circle distance between geolocations) and </span>
+<span class="sd">    :meth:`bounding_locations` (computation of the bounding coordinates of all </span>
+<span class="sd">    points) are overriden.</span>
+<span class="sd"> </span>
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------     </span>
+<span class="sd">    MIN_LATITUDE : </span>
+<span class="sd">        dummy min latitude value in degree: -90.</span>
+<span class="sd">    MAX_LATITUDE : </span>
+<span class="sd">        ibid for max latitude: 90.</span>
+<span class="sd">    MIN_LONGITUDE : </span>
+<span class="sd">        dummy min longitude value in degree: -180. </span>
+<span class="sd">    MAX_LONGITUDE : </span>
+<span class="sd">        ibid for max longitude: 180. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1">#/************************************************************************/</span>
+    <span class="c1"># dummy...</span>
+    <span class="n">MIN_LATITUDE</span><span class="p">,</span> <span class="n">MAX_LATITUDE</span> <span class="o">=</span> <span class="o">-</span><span class="mf">90.</span><span class="p">,</span> <span class="mf">90.</span>
+    <span class="n">MIN_LONGITUDE</span><span class="p">,</span> <span class="n">MAX_LONGITUDE</span> <span class="o">=</span> <span class="o">-</span><span class="mf">180.</span><span class="p">,</span> <span class="mf">180.</span> 
+    <span class="c1"># or shall we consider over Europe only?</span>
+
+    <span class="n">DIST_FUNCS</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;great_circle&#39;</span><span class="p">:</span><span class="s1">&#39;GreatCircleDistance&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;vincenty&#39;</span><span class="p">:</span> <span class="s1">&#39;VincentyDistance&#39;</span><span class="p">}</span> <span class="c1"># names used in geopy</span>
+
+    <span class="n">DECIMAL_PRECISION</span>   <span class="o">=</span> <span class="mi">5</span> <span class="c1">#10</span>
+    
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.from_radians"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.from_radians">[docs]</a>    <span class="nd">@classmethod</span> 
+    <span class="k">def</span> <span class="nf">from_radians</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">rad_lat</span><span class="p">,</span> <span class="n">rad_lon</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a geolocation instance from (lat, Lon) coordinates expressed </span>
+<span class="sd">        in degrees.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; x = GeoCoordinate.from_radians(rad_lat, rad_lon)</span>
+<span class="sd">         </span>
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------        </span>
+<span class="sd">        rad_lat,rad_lon : tuple</span>
+<span class="sd">            latitude and longitude (respectively) expressed in radians.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        x : :class:`~happygisco.tools.GeoCoordinate`</span>
+<span class="sd">            a :class:`GeoCoordinate` instance from expressed (lat, Lon) coordinates.</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`from_dps`, :meth:`from_degrees`\ .        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">rad_lat</span><span class="p">,</span> <span class="n">rad_lon</span><span class="p">,</span> <span class="n">unit_angle</span><span class="o">=</span><span class="n">GeoAngle</span><span class="o">.</span><span class="n">RAD_ANG_UNIT</span><span class="p">)</span></div>
+    
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.from_degrees"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.from_degrees">[docs]</a>    <span class="nd">@classmethod</span> 
+    <span class="k">def</span> <span class="nf">from_degrees</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">deg_lat</span><span class="p">,</span> <span class="n">deg_lon</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a geolocation instance from (lat, Lon) coordinates expressed </span>
+<span class="sd">        in degrees.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; x = GeoCoordinate.from_degrees(deg_lat, deg_lon)</span>
+<span class="sd">         </span>
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------        </span>
+<span class="sd">        deg_lat,deg_lon : tuple</span>
+<span class="sd">            latitude and longitude (respectively) expressed in degrees.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        x : :class:`~happygisco.tools.GeoCoordinate`</span>
+<span class="sd">            a :class:`GeoCoordinate` instance from expressed (lat, Lon) coordinates.</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`from_dps`, :meth:`from_radians`\ .         </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">deg_lat</span><span class="p">,</span> <span class="n">deg_lon</span><span class="p">,</span> <span class="n">unit_angle</span><span class="o">=</span><span class="n">GeoAngle</span><span class="o">.</span><span class="n">DEG_ANG_UNIT</span><span class="p">)</span></div>
+   
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.from_dps"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.from_dps">[docs]</a>    <span class="nd">@classmethod</span> 
+    <span class="k">def</span> <span class="nf">from_dps</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dps_lat</span><span class="p">,</span> <span class="n">dps_lon</span><span class="p">):</span> <span class="c1"># new generator</span>
+        <span class="sd">&quot;&quot;&quot;Return a geolocation instance from (lat, Lon) coordinates expressed </span>
+<span class="sd">        in DPS format.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; x = GeoCoordinate.from_dps(dps_lat, dps_lon)</span>
+<span class="sd">         </span>
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------        </span>
+<span class="sd">        dps_lat,dps_lon : tuple</span>
+<span class="sd">            latitude and longitude (respectively) expressed in DPS format: </span>
+<span class="sd">            (degrees, primes, seconds).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        x : :class:`~happygisco.tools.GeoCoordinate`</span>
+<span class="sd">            a :class:`GeoCoordinate` instance from expressed (lat, Lon) coordinates.</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`from_degrees`, :meth:`from_radians`\ .         </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">## deg_lat = cls.dps2deg(dps_lat)</span>
+        <span class="c1">## deg_lon = cls.dps2deg(dps_lon)</span>
+        <span class="c1">## return cls(deg_lat, deg_lon, unit_angle=GeoAngle.DEG_ANG_UNIT)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">dps_lat</span><span class="p">,</span> <span class="n">dps_lon</span><span class="p">,</span> <span class="n">unit_angle</span><span class="o">=</span><span class="n">GeoAngle</span><span class="o">.</span><span class="n">DPS_ANG_UNIT</span><span class="p">)</span></div>
+    
+    <span class="c1">#/************************************************************************/</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialization overriding :class:`~happygisco.tools._GeoLocation` super </span>
+<span class="sd">        initialization method.</span>
+
+<span class="sd">            &gt;&gt;&gt; x = GeoCoordinate(*args, **kwargs)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">deg</span> <span class="o">=</span> <span class="n">dps</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">args</span> <span class="ow">in</span><span class="p">((),(</span><span class="kc">None</span><span class="p">,)):</span>
+            <span class="k">return</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
+            <span class="n">unit</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;unit_angle&#39;</span><span class="p">,</span> <span class="n">GeoAngle</span><span class="o">.</span><span class="n">DEG_ANG_UNIT</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span> <span class="c1"># convert to degrees whatever th input is</span>
+                <span class="k">try</span><span class="p">:</span>    
+                    <span class="n">dps</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">GeoAngle</span><span class="o">.</span><span class="n">convert_angle_units</span><span class="p">(</span><span class="n">GeoAngle</span><span class="o">.</span><span class="n">DPS_ANG_UNIT</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="n">unit</span><span class="p">:</span> <span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="p">]})</span>
+                    <span class="n">deg</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">GeoAngle</span><span class="o">.</span><span class="n">convert_angle_units</span><span class="p">(</span><span class="n">GeoAngle</span><span class="o">.</span><span class="n">DEG_ANG_UNIT</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="n">unit</span><span class="p">:</span> <span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="p">]})</span>
+                <span class="k">except</span><span class="p">:</span> <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;unit </span><span class="si">{}</span><span class="s1"> not implemented&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">GeoAngle</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">deg</span><span class="p">]</span> <span class="o">+</span> <span class="n">deg</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="o">!=</span><span class="mi">4</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;wrong number of input arguments&#39;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">GeoCoordinate</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dps_lat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dps_lon</span> <span class="o">=</span> <span class="n">dps</span>
+        
+    <span class="c1">#/************************************************************************/</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;String printing method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">GeoCoordinate</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;&#39;</span>
+        
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.latdeg2m"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.latdeg2m">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">latdeg2m</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dlat</span><span class="p">,</span> <span class="n">alat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert latitude difference in degrees into meters at given average</span>
+<span class="sd">        latitude.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; dy = GeoCoordinate.latdeg2m(dlat, alat)</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        dlat : float</span>
+<span class="sd">            latitude difference in degrees.</span>
+<span class="sd">        alat : float</span>
+<span class="sd">            average latitude at which the distance is calculated (between the two fixes).</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dy : float</span>
+<span class="sd">            latitude difference in meters.</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rlat</span> <span class="o">=</span> <span class="n">GeoAngle</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">alat</span><span class="p">)</span> 
+        <span class="n">p</span> <span class="o">=</span> <span class="mf">111132.09</span> <span class="o">-</span> <span class="mf">566.05</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">rlat</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1.2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">rlat</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dlat</span> <span class="o">*</span> <span class="n">p</span>        </div>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.lngdeg2m"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.lngdeg2m">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">lngdeg2m</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dlng</span><span class="p">,</span> <span class="n">alat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert longitude difference in degrees into meters at given average</span>
+<span class="sd">        latitude.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; dx = GeoCoordinate.lngdeg2m(dlng, alat)</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        dlng : float</span>
+<span class="sd">            longitude difference in degrees.</span>
+<span class="sd">        alat : float</span>
+<span class="sd">            average latitude at which the distance is calculated (between the two fixes).</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dx : float</span>
+<span class="sd">            longitude difference in meters.</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rlat</span> <span class="o">=</span> <span class="n">GeoAngle</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">alat</span><span class="p">)</span> 
+        <span class="n">p</span> <span class="o">=</span> <span class="mf">111415.13</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">rlat</span><span class="p">)</span> <span class="o">-</span> <span class="mf">94.55</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="n">rlat</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dlng</span> <span class="o">*</span> <span class="n">p</span></div>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.latm2deg"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.latm2deg">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">latm2deg</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dy</span><span class="p">,</span> <span class="n">alat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert latitude difference in meters into degrees at given average</span>
+<span class="sd">        latitude.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; dlat = GeoCoordinate.latm2deg(dy, alat)</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        dy : float</span>
+<span class="sd">            latitude difference in meters.</span>
+<span class="sd">        alat : float</span>
+<span class="sd">            average latitude at which the distance is calculated (between the two fixes).</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dlat : float</span>
+<span class="sd">            latitude difference in degrees.</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rlat</span> <span class="o">=</span> <span class="n">GeoAngle</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">alat</span><span class="p">)</span> 
+        <span class="n">p</span> <span class="o">=</span> <span class="mf">111132.09</span> <span class="o">-</span> <span class="mf">566.05</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">rlat</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1.2</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">rlat</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dy</span> <span class="o">/</span> <span class="n">p</span>        </div>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.lngm2deg"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.lngm2deg">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">lngm2deg</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dx</span><span class="p">,</span> <span class="n">alat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert longitude difference in degrees into meters at given average</span>
+<span class="sd">        latitude.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; dlng = GeoCoordinate.lngdeg2m(dx, alat)</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        dx : float</span>
+<span class="sd">            longitude difference in meters.</span>
+<span class="sd">        alat : float</span>
+<span class="sd">            average latitude at which the distance is calculated (between the two fixes).</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dlng : float</span>
+<span class="sd">            longitude difference in degrees.</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rlat</span> <span class="o">=</span> <span class="n">GeoAngle</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">alat</span><span class="p">)</span> 
+        <span class="n">p</span> <span class="o">=</span> <span class="mf">111415.13</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">rlat</span><span class="p">)</span> <span class="o">-</span> <span class="mf">94.55</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">3</span> <span class="o">*</span> <span class="n">rlat</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dx</span> <span class="o">/</span> <span class="n">p</span></div>
+    
+    <span class="c1">#/************************************************************************/</span>
+    <span class="c1"># inherits:</span>
+    <span class="c1">#   - _check_bounds: check lat,long coordinates</span>
+    <span class="c1">#   - distance_to: compute the great circle distance between geolocations</span>
+    <span class="c1">#   - bounding_locations: compute the bounding coordinates of all points</span>
+    <span class="c1">#/************************************************************************/</span>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.bounding_locations"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.bounding_locations">[docs]</a>    <span class="k">def</span> <span class="nf">bounding_locations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Method overriding super method from :class:`~happygisco.tools._GeoLocation`  </span>
+<span class="sd">        for computing bounding coordinates of all points on the surface of a sphere </span>
+<span class="sd">        that have a great circle distance to the point represented by this </span>
+<span class="sd">        :class:GeoLocation` instance that is less or equal to the distance argument.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; bbox = x.bounding_locations(dist, **kwargs)</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        dist : float</span>
+<span class="sd">            distance to the location; it must be set in the unit defined by :data:`&#39;unit&#39;`</span>
+<span class="sd">            (see below).</span>
+<span class="sd">            </span>
+<span class="sd">        Keyword Arguments</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        unit : str</span>
+<span class="sd">            distance measurement unit, i.e. distance unit of the input :data:`distance` </span>
+<span class="sd">            parameter; it can be any string from the list :literal:`[&#39;m&#39;,&#39;km&#39;,&#39;mi&#39;,&#39;ft&#39;]`; </span>
+<span class="sd">            default is :literal:`&#39;km&#39;`\ .</span>
+<span class="sd">        radius : float</span>
+<span class="sd">            the radius of the sphere; must be measured in the same unit as the </span>
+<span class="sd">            :data:`dist` argument; defaults to Earth radius.</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bbox : list</span>
+<span class="sd">            a bounding box whose INcircle is the set of all points that have a great</span>
+<span class="sd">            circle distance to the point represented by the input geolocation that is</span>
+<span class="sd">            less or equal to the :data:`dist` argument.</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">            </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`bounding_locations_from`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># distance must be in the unit defined by &#39;unit&#39;</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;radius&#39;</span><span class="p">,</span> <span class="n">GeoDistance</span><span class="o">.</span><span class="n">EARTH_RADIUS_EQUATOR</span><span class="p">)</span> <span class="c1"># self.EARTH_RADIUS</span>
+        <span class="n">unit</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;unit&#39;</span><span class="p">,</span> <span class="n">GeoDistance</span><span class="o">.</span><span class="n">KM_DIST_UNIT</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>    <span class="n">radius</span> <span class="o">=</span> <span class="n">radius</span> <span class="o">*</span> <span class="n">GeoDistance</span><span class="o">.</span><span class="n">KM_TO</span><span class="p">[</span><span class="n">unit</span><span class="p">]</span> 
+        <span class="k">except</span><span class="p">:</span> <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;unit </span><span class="si">{}</span><span class="s1"> not implemented&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span>
+        <span class="c1"># the result will depend on the unit defined by distance (in unit)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">GeoCoordinate</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">bounding_locations</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="n">radius</span><span class="p">)</span></div>
+        
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.bounding_locations_from"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.bounding_locations_from">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">bounding_locations_from</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">loc</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute bounding coordinates of all points on the surface of a sphere </span>
+<span class="sd">        that have a great circle distance to a given point that is less or equal </span>
+<span class="sd">        to the distance argument. </span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; bbox = GeoCoordinate.bounding_locations_from(loc, distance, **kwargs)</span>
+<span class="sd">    </span>
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        loc : list, tuple</span>
+<span class="sd">            a tuple of lenght 2 defining the :data:`(lat,Lon)` coordinates of a </span>
+<span class="sd">            location; it must be set in the unit defined by :data:`unit_angle`</span>
+<span class="sd">            (see below).</span>
+<span class="sd">        distance : float</span>
+<span class="sd">            in between-locations distance, see :meth:`bounding_locations`\ .</span>
+<span class="sd">            </span>
+<span class="sd">        Keyword Arguments</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        unit_angle : str</span>
+<span class="sd">            angle measurement unit, i.e. unit of the input :data:`loc` parameter; </span>
+<span class="sd">            it can be any string in :literal:`[&#39;deg&#39;,&#39;rad&#39;,&#39;dps&#39;]`; default is </span>
+<span class="sd">            :literal:`&#39;deg&#39;`\ .                </span>
+<span class="sd">        unit, radius : </span>
+<span class="sd">            see :meth:`bounding_locations`\ .</span>
+<span class="sd">            </span>
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        Generalise the :meth:`~happygisco.tools._GeoLocation.bounding_locations` method.</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">            </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`bounding_locations`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># ang_unit is both the unit of input and output locations</span>
+        <span class="n">ang_unit</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;unit_angle&#39;</span><span class="p">,</span><span class="n">GeoAngle</span><span class="o">.</span><span class="n">DEG_ANG_UNIT</span><span class="p">)</span> 
+        <span class="c1"># dist_unit = kwargs.pop(&#39;unit&#39;, cls.KM_DIST_UNIT)</span>
+        <span class="k">if</span> <span class="n">ang_unit</span><span class="o">==</span><span class="n">GeoAngle</span><span class="o">.</span><span class="n">DEG_ANG_UNIT</span><span class="p">:</span>          <span class="n">geoloc</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_degrees</span><span class="p">(</span><span class="o">*</span><span class="n">loc</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ang_unit</span><span class="o">==</span><span class="n">GeoAngle</span><span class="o">.</span><span class="n">RAD_ANG_UNIT</span><span class="p">:</span>        <span class="n">geoloc</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_radians</span><span class="p">(</span><span class="o">*</span><span class="n">loc</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ang_unit</span><span class="o">==</span><span class="n">GeoAngle</span><span class="o">.</span><span class="n">DPS_ANG_UNIT</span><span class="p">:</span>        <span class="n">geoloc</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_dps</span><span class="p">(</span><span class="o">*</span><span class="n">loc</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;unit angle </span><span class="si">{}</span><span class="s1"> not implemented&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ang_unit</span><span class="p">))</span>
+        <span class="c1">#radius = kwargs.pop(&#39;earth_radius&#39;, None)</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;radius&#39;</span><span class="p">,</span> <span class="n">GeoDistance</span><span class="o">.</span><span class="n">EARTH_RADIUS_EQUATOR</span><span class="p">)</span> <span class="c1"># GeoDistance.EARTH_RADIUS</span>
+        <span class="c1">#if radius is None:</span>
+        <span class="c1">#    radius = GeoDistance.estimate_radius_WGS84(geoloc.deg_lat)</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;radius&#39;</span><span class="p">:</span> <span class="n">radius</span><span class="p">})</span>
+        <span class="n">bb_sw</span><span class="p">,</span> <span class="n">bb_ne</span> <span class="o">=</span> <span class="n">geoloc</span><span class="o">.</span><span class="n">bounding_locations</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># extract bounding box in radians an reconvert in desired unit</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">GeoAngle</span><span class="o">.</span><span class="n">ang_units_to</span><span class="p">(</span><span class="n">GeoAngle</span><span class="o">.</span><span class="n">RAD_ANG_UNIT</span><span class="p">,</span><span class="n">ang_unit</span><span class="p">,</span><span class="n">x</span><span class="p">),</span> 
+                   <span class="p">[</span><span class="n">bb_sw</span><span class="o">.</span><span class="n">rad_lat</span><span class="p">,</span> <span class="n">bb_sw</span><span class="o">.</span><span class="n">rad_lon</span><span class="p">,</span> <span class="n">bb_ne</span><span class="o">.</span><span class="n">rad_lat</span><span class="p">,</span> <span class="n">bb_ne</span><span class="o">.</span><span class="n">rad_lon</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">bbox</span><span class="p">)</span></div>
+ 
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.centroid"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.centroid">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">centroid</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieve the approximate centroid of a polygon (bounding box).</span>
+<span class="sd">        Accuracy is not a major aspect here. </span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; lat, Lon = GeoCoordinate.centroid(*args)            </span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        args : list of list/tuple</span>
+<span class="sd">            a list of (lat,Lon) coordinates representing the vertices of a polygon.</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        ------- </span>
+<span class="sd">        lat, Lon : tuple</span>
+<span class="sd">            (lat,Lon) coordinates of the centroid point, in the same unit as the</span>
+<span class="sd">            parameters in :data:`args`\ .</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">            </span>
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        Convert the polygon to a rectangle by selecting the points with: </span>
+
+<span class="sd">            - lowest/highest latitude,</span>
+<span class="sd">            - lowest/highest longitude,</span>
+<span class="sd">            </span>
+<span class="sd">        among all (lat,Lon) vertex coordinates passed as arguments, then get</span>
+<span class="sd">        the center of this rectangle as the centroid point.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">lat_list</span><span class="p">,</span> <span class="n">Lon_list</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+            <span class="n">lat_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">Lon_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">Lon_list</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="n">lat_list</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="n">lat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">lat_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="p">((</span><span class="nb">float</span><span class="p">(</span><span class="n">lat_list</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">lat_list</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="nb">float</span><span class="p">(</span><span class="n">lat_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">)</span>
+        <span class="n">Lon</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">Lon_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="p">((</span><span class="nb">float</span><span class="p">(</span><span class="n">Lon_list</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">Lon_list</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="nb">float</span><span class="p">(</span><span class="n">Lon_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">Lon</span><span class="p">)</span></div>
+        
+     <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.distance_to"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.distance_to">[docs]</a>    <span class="k">def</span> <span class="nf">distance_to</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span> <span class="c1"># override method distance_to</span>
+        <span class="sd">&quot;&quot;&quot;Method overriding super method from :class:`~happygisco.tools._GeoLocation`</span>
+<span class="sd">        for computing the great circle distance between this :class:`GeoLocation` instance </span>
+<span class="sd">        and another (where measurement unit is passed as an argument).</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; R = x.distance_to(other, **kwargs)</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        other : :class:`~happygisco.tools.GeoCoordinate`</span>
+<span class="sd">            a :class:`GeoCoordinate` instance to which compute a distance to.</span>
+<span class="sd">            </span>
+<span class="sd">        Keyword Arguments</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        unit,radius : </span>
+<span class="sd">            see :meth:`bounding_locations`\ .</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">            </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~GeoCoordinate.distance`, :meth:`~GeoCoordinate.distance_to_from`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;radius&#39;</span><span class="p">,</span> <span class="n">GeoDistance</span><span class="o">.</span><span class="n">EARTH_RADIUS_EQUATOR</span><span class="p">)</span> <span class="c1"># GeoDistance.EARTH_RADIUS</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">GeoCoordinate</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">distance_to</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="n">radius</span><span class="p">)</span>
+        <span class="c1"># res = _GeoLocation.distance_to(self, other, radius=radius)</span>
+        <span class="c1"># note: &quot;super() cannot be used with old-style class&quot;:</span>
+        <span class="n">unit</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;unit&#39;</span><span class="p">,</span> <span class="n">GeoDistance</span><span class="o">.</span><span class="n">KM_DIST_UNIT</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>    <span class="k">return</span> <span class="n">res</span> <span class="o">*</span> <span class="n">GeoDistance</span><span class="o">.</span><span class="n">KM_TO</span><span class="p">[</span><span class="n">unit</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span> <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;unit </span><span class="si">{}</span><span class="s1"> not implemented&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span></div>
+        
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.distance_to_from"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.distance_to_from">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">distance_to_from</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">loc1</span><span class="p">,</span> <span class="n">loc2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute the (approximate) great circle distance between two points</span>
+<span class="sd">        on the Earth (specified in decimal degrees).</span>
+<span class="sd">        Accuracy is not a major aspect here. </span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; lat, Lon = GeoCoordinate.distance_to_from(loc1, loc2, **kwargs)            </span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        loc1,loc2 : tuple, list</span>
+<span class="sd">            (lat,Lon) coordinates of the two location points, in the same unit </span>
+<span class="sd">            as the parameters in :data:`args`\ .</span>
+<span class="sd">            </span>
+<span class="sd">        Keyword Arguments</span>
+<span class="sd">        -----------------</span>
+<span class="sd">        unit_angle,unit : </span>
+<span class="sd">            see :meth:`bounding_locations_from`\ .</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">         </span>
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        Generalise the :meth:`distance_to` method.</span>
+<span class="sd">        Inspired by the code in: http://stackoverflow.com/a/4913653/983244</span>
+<span class="sd">            </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`distance`, :meth:`distance_to`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">lat1</span><span class="p">,</span> <span class="n">lng1</span> <span class="o">=</span> <span class="n">loc1</span><span class="p">;</span> <span class="n">lat2</span><span class="p">,</span> <span class="n">lng2</span> <span class="o">=</span> <span class="n">loc2</span>
+        <span class="n">ang_unit</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;unit_angle&#39;</span><span class="p">,</span><span class="n">GeoAngle</span><span class="o">.</span><span class="n">DEG_ANG_UNIT</span><span class="p">)</span>
+        <span class="c1"># convert to radians </span>
+        <span class="c1">#lat1, lng1, lng2, lat2 = map(math.radians, [lng1, lat1, lng2, lat2])</span>
+        <span class="n">lat1</span><span class="p">,</span> <span class="n">lng1</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">GeoAngle</span><span class="o">.</span><span class="n">ang_units_to</span><span class="p">(</span><span class="n">ang_unit</span><span class="p">,</span><span class="n">GeoAngle</span><span class="o">.</span><span class="n">RAD_ANG_UNIT</span><span class="p">,</span><span class="n">x</span><span class="p">),</span> <span class="p">[</span><span class="n">lat1</span><span class="p">,</span> <span class="n">lng1</span><span class="p">])</span>
+        <span class="n">lat2</span><span class="p">,</span> <span class="n">lng2</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">GeoAngle</span><span class="o">.</span><span class="n">ang_units_to</span><span class="p">(</span><span class="n">ang_unit</span><span class="p">,</span><span class="n">GeoAngle</span><span class="o">.</span><span class="n">RAD_ANG_UNIT</span><span class="p">,</span><span class="n">x</span><span class="p">),</span> <span class="p">[</span><span class="n">lat2</span><span class="p">,</span> <span class="n">lng2</span><span class="p">])</span>
+        <span class="n">dlng</span><span class="p">,</span> <span class="n">dlat</span> <span class="o">=</span> <span class="n">lng2</span> <span class="o">-</span> <span class="n">lng1</span><span class="p">,</span> <span class="n">lat2</span> <span class="o">-</span> <span class="n">lat1</span> <span class="c1">#analysis:ignore</span>
+        <span class="c1"># for &#39;visual&#39; consistency, we use the same formula as that of geolocation.distance_to,</span>
+        <span class="c1"># but the results are obviously the same as the formula below</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat2</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">lat1</span><span class="p">)</span> <span class="o">+</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat2</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">lat1</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">dlng</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">a</span><span class="o">&gt;</span><span class="mf">1.0</span><span class="p">:</span>       <span class="n">a</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="k">elif</span> <span class="n">a</span><span class="o">&lt;-</span><span class="mf">1.0</span><span class="p">:</span>    <span class="n">a</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">acos</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+        <span class="c1">## haversine formula </span>
+        <span class="c1">#a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlng / 2) ** 2</span>
+        <span class="c1">#c = 2 * math.asin(math.sqrt(a2)) </span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;earth_radius&#39;</span><span class="p">,</span> <span class="n">GeoDistance</span><span class="o">.</span><span class="n">EARTH_RADIUS_EQUATOR</span><span class="p">)</span> <span class="c1"># GeoDistance.EARTH_RADIUS</span>
+        <span class="n">unit</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;unit&#39;</span><span class="p">,</span> <span class="n">GeoDistance</span><span class="o">.</span><span class="n">KM_DIST_UNIT</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>    <span class="k">return</span> <span class="n">c</span> <span class="o">*</span> <span class="n">radius</span> <span class="o">*</span> <span class="n">GeoDistance</span><span class="o">.</span><span class="n">KM_TO</span><span class="p">[</span><span class="n">unit</span><span class="p">]</span> 
+        <span class="k">except</span><span class="p">:</span> <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;unit </span><span class="si">{}</span><span class="s1"> not implemented&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unit</span><span class="p">))</span></div>
+        
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.distance"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.distance">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>            
+        <span class="sd">&quot;&quot;&quot;Class method used for computing pairwise distances between given </span>
+<span class="sd">        locations, passed as geographic coordinates.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; D = GeoCoordinate.distance(*args, **kwargs)</span>
+<span class="sd">    </span>
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        args : tuple</span>
+<span class="sd">            a pair of locations represented as a tuple of (lat,Lon) coordinates.</span>
+
+<span class="sd">        Keyword Arguments</span>
+<span class="sd">        -----------------        </span>
+<span class="sd">        dist : str  </span>
+<span class="sd">            name of the geo-principle used to estimate the distance: it is any string</span>
+<span class="sd">            in :literal:`[&#39;great_circle&#39;,&#39;vincenty&#39;]` since they represente the Great</span>
+<span class="sd">            Circle distance and the Vincenty distance; see :meth:`geopy.distance` method; </span>
+<span class="sd">            default to :literal:`&#39;great_circle&#39;`.</span>
+<span class="sd">        unit : str  </span>
+<span class="sd">            name of the unit used to return the result: any string from the list</span>
+<span class="sd">            :literal:`[&#39;m&#39;,&#39;km&#39;,&#39;mi&#39;,&#39;ft&#39;]`; default to &#39;km&#39;.</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        D : :class:`np.array`</span>
+<span class="sd">            matrix of pairwise distances computed in :literal:`unit` unit.</span>
+<span class="sd">        </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        happyError:</span>
+<span class="sd">            * when unexpected variable for lat/long;</span>
+<span class="sd">            * when wrong unit/code for geodesic distance.</span>
+<span class="sd">            </span>
+<span class="sd">        Examples</span>
+<span class="sd">        --------        </span>
+<span class="sd">        &gt;&gt;&gt; GeoCoordinate.distance((26.062951, -80.238853), (26.060484,-80.207268), </span>
+<span class="sd">        ...                        dist=&#39;vincenty&#39;, unit=&#39;m&#39;)</span>
+<span class="sd">            3172.3596179302895</span>
+<span class="sd">        &gt;&gt;&gt; GeoCoordinate.distance((26.062951, -80.238853), (26.060484,-80.207268), </span>
+<span class="sd">        ...                        dist=&#39;great_circle&#39;, unit=&#39;km&#39;)</span>
+<span class="sd">            3.167782321855102</span>
+<span class="sd">            </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`distance_to`, :meth:`distance_to_from`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">args</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,()):</span>           <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>                           <span class="n">locs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>    
+        <span class="n">nlocs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">locs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">locs</span><span class="p">[</span><span class="n">i</span><span class="p">],(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">locs</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">==</span><span class="mi">2</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nlocs</span><span class="p">)]):</span>
+            <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;unexpected variable for lat/long&#39;</span><span class="p">)</span>
+        <span class="n">unit</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;unit&#39;</span><span class="p">,</span> <span class="n">GeoDistance</span><span class="o">.</span><span class="n">KM_DIST_UNIT</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">unit</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">GeoDistance</span><span class="o">.</span><span class="n">DIST_UNITS</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;wrong unit for geodesic distance&#39;</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dist&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">code</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">code</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">DIST_FUNCS</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;wrong code for geodesic distance&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>    
+            <span class="k">assert</span> <span class="n">geopy</span><span class="c1">#analysis:ignore</span>
+            <span class="c1"># in order to accept the &#39;getattr&#39; below, the geopy.distance needs</span>
+            <span class="c1"># to be loaded in the first place</span>
+            <span class="kn">import</span> <span class="nn">geopy.distance</span>
+        <span class="k">except</span><span class="p">:</span> 
+            <span class="k">if</span> <span class="n">code</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">code</span><span class="o">!=</span><span class="s1">&#39;great_circle&#39;</span><span class="p">:</span>
+                <span class="n">code</span> <span class="o">=</span> <span class="s1">&#39;great_circle&#39;</span>
+                <span class="n">happyWarning</span><span class="p">(</span><span class="s1">&#39;great_circle distance is considered&#39;</span><span class="p">)</span>
+            <span class="n">distance</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">:</span>  <span class="bp">cls</span><span class="o">.</span><span class="n">distance_to_from</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span> 
+            <span class="n">cunit</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="n">d</span> <span class="o">*</span> <span class="n">GeoDistance</span><span class="o">.</span><span class="n">KM_TO</span><span class="p">[</span><span class="n">unit</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>   
+            <span class="n">code</span> <span class="o">=</span> <span class="n">code</span> <span class="ow">or</span> <span class="s1">&#39;great_circle&#39;</span>
+            <span class="n">distance</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">geopy</span><span class="o">.</span><span class="n">distance</span><span class="p">,</span> <span class="n">GeoDistance</span><span class="o">.</span><span class="n">DIST_FUNCS</span><span class="p">[</span><span class="n">code</span><span class="p">])</span> 
+            <span class="n">cunit</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">GeoDistance</span><span class="o">.</span><span class="n">DIST_UNITS</span><span class="p">[</span><span class="n">unit</span><span class="p">])</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">nlocs</span><span class="p">,</span><span class="n">nlocs</span><span class="p">])</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">fill_diagonal</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="mf">0.</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nlocs</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">nlocs</span><span class="p">):</span>
+                <span class="n">dist</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">dist</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">cunit</span><span class="p">(</span><span class="n">distance</span><span class="p">(</span><span class="n">locs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">locs</span><span class="p">[</span><span class="n">j</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="n">nlocs</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>        <span class="n">dist</span> <span class="o">=</span> <span class="n">dist</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">dist</span></div>
+            
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.round"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.round">[docs]</a>    <span class="nd">@classmethod</span>      
+    <span class="k">def</span> <span class="nf">round</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">coordinates</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Round coordinates up to an (internal, fixed) precision of 5 digits.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; coordinates = GeoCoordinate.round(coordinates)</span>
+<span class="sd">            </span>
+<span class="sd">        Examples</span>
+<span class="sd">        -------- </span>
+<span class="sd">        &gt;&gt;&gt; GeoCoordinate.round(2.216707433489782)</span>
+<span class="sd">            2.21671</span>
+<span class="sd">        &gt;&gt;&gt; GeoCoordinate.round([2.216707433489782, 48.72843804413901, 2.477292566510218, 48.98924195586099])</span>
+<span class="sd">            [2.21671, 48.72844, 2.47729, 48.98924]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="kc">True</span><span class="p">:</span>    
+            <span class="n">around</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="bp">cls</span><span class="o">.</span><span class="n">DECIMAL_PRECISION</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># np.around issue with floating precision       </span>
+            <span class="n">around</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">decimals</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">DECIMAL_PRECISION</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>        <span class="k">return</span> <span class="p">[</span><span class="n">around</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coordinates</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>    <span class="k">return</span> <span class="n">around</span><span class="p">(</span><span class="n">coordinates</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span> <span class="k">return</span> <span class="n">coordinates</span></div>
+            
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.bbox2latlon"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.bbox2latlon">[docs]</a>    <span class="nd">@classmethod</span>      
+    <span class="k">def</span> <span class="nf">bbox2latlon</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">bbox</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot;Convert an AOI bounding box into the corresponding (lat, Lon, rad) format.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; lat, Lon, rad = GeoCoordinate.bbox2latlon(bbox)</span>
+<span class="sd">        </span>
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        bbox : list</span>
+<span class="sd">            a bounding box represented as a 4-lenght list with the (lat,Lon) coordinates</span>
+<span class="sd">            of the South-West and North-East corners of the input polygon. </span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        lat,Lon,rad : float</span>
+<span class="sd">            parameters defining the CIRCUMcircle of the input bounding box :data:`bbox`.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        -------- </span>
+<span class="sd">        &gt;&gt;&gt; bbox = [2.216707433489782, 48.72843804413901, 2.477292566510218, 48.98924195586099]</span>
+<span class="sd">        &gt;&gt;&gt; lLr = GeoCoordinate.bbox2latlon(bbox)</span>
+<span class="sd">        &gt;&gt;&gt; print(lLr)</span>
+<span class="sd">            (2.347, 48.85884, 14.50401801879798)</span>
+<span class="sd">        </span>
+<span class="sd">        As mentioned, no idempotence, but the centre of the bounding box is still preserved: </span>
+<span class="sd">        </span>
+<span class="sd">        &gt;&gt;&gt; GeoCoordinate.latlon2bbox(*lLr) == bbox</span>
+<span class="sd">            False</span>
+<span class="sd">        &gt;&gt;&gt; lLr_ = GeoCoordinate.bbox2latlon(GeoCoordinate.latlon2bbox(*lLr))</span>
+<span class="sd">        &gt;&gt;&gt; print(lLr_)</span>
+<span class="sd">            (2.347, 48.85884, 29.007998346748554)</span>
+<span class="sd">        &gt;&gt;&gt; lLr_[:2] == lLr[:2] # are the coordinates of the centre preserved?</span>
+<span class="sd">            True</span>
+<span class="sd">            </span>
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        This method and :meth:`latlon2bbox` are not idempotent (say it otherwise </span>
+<span class="sd">        :data:`GeoCoordinate.latlon2bbox(GeoCoordinate.bbox2latlon(bbox)` does</span>
+<span class="sd">        not return :data:`bbox`): see comments on CIRCUMcircle and INcircle; however,</span>
+<span class="sd">        the centre of the bounding box :data:`box` (hence the tuple :data:`(lat,Lon)`) </span>
+<span class="sd">        is preserved.</span>
+<span class="sd">        </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`latlon2bbox`, :meth:`centroid`, :meth:`distance_to_from`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">lat</span><span class="p">,</span> <span class="n">Lon</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">centroid</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">])</span>      
+        <span class="n">rad</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">distance_to_from</span><span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">])</span><span class="o">/</span><span class="mf">2.</span>
+        <span class="k">return</span> <span class="n">lat</span><span class="p">,</span> <span class="n">Lon</span><span class="p">,</span> <span class="n">rad</span></div>
+             
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.latlon2bbox"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.latlon2bbox">[docs]</a>    <span class="nd">@classmethod</span>      
+    <span class="k">def</span> <span class="nf">latlon2bbox</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">Lon</span><span class="p">,</span> <span class="n">rad</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot;Convert an AOI in (lat, Lon, rad) format into the corresponding bounding box.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; bbox = GeoCoordinate.latlon2bbox(lat, Lon, rad, **kwargs)</span>
+<span class="sd">        </span>
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        lat,Lon,rad : float</span>
+<span class="sd">            see :meth:`bbox2latlon`\ .</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bbox : list</span>
+<span class="sd">            bounding box (see :meth:`bbox2latlon`) whose INcircle is the </span>
+<span class="sd">            circle defined by the centre :data:`(lat,Lon)` and a radius :data:`rad`.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        ------- </span>
+<span class="sd">        &gt;&gt;&gt; lLr = (2.347, 48.85884, 14.50401801879798)</span>
+<span class="sd">        &gt;&gt;&gt; GeoCoordinate.latlon2bbox(*lLr)</span>
+<span class="sd">            [2.216707433489782, 48.72843804413901, 2.477292566510218, 48.98924195586099]</span>
+<span class="sd">        </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`bbox2latlon`, :meth:`bounding_locations_from`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">bounding_locations_from</span><span class="p">([</span><span class="n">lat</span><span class="p">,</span><span class="n">Lon</span><span class="p">],</span> <span class="n">rad</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+            
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.bbox2polygon"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.bbox2polygon">[docs]</a>    <span class="nd">@classmethod</span>    
+    <span class="k">def</span> <span class="nf">bbox2polygon</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">bbox</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;lL&#39;</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot;Convert an AOI bounding box into the corresponding polygon of (lat, Lon) or </span>
+<span class="sd">        (Lon, lat) coordinates (the latter case is used in GeoJSON format).</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; polygon = GeoCoordinate.bbox2polygon(bbox, order=&#39;lL&#39;)</span>
+<span class="sd">        </span>
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        bbox : list</span>
+<span class="sd">            a bounding box represented as a 4-lenght list with the (lat,Lon) coordinates</span>
+<span class="sd">            (or (Lon,lat); see :data:`order` below) of the South-West and North-East corners </span>
+<span class="sd">            of the input polygon. </span>
+<span class="sd">        order : str</span>
+<span class="sd">            a string specifying the order of the coordinates inside the bounding box:</span>
+<span class="sd">            it either &#39;lL&#39; when latitudes come first (hence (lat,Lon), default), or &#39;Ll&#39;</span>
+<span class="sd">            when longitudes come first (hence (Lon,lat)).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        polygon : list</span>
+<span class="sd">            a 4-lenght list of (lat,Lon) (or (Lon,lat) when :literal:`order==&#39;Ll&#39;`) </span>
+<span class="sd">            coordinates representing the input bounding box :data:`bbox`.</span>
+<span class="sd">        </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        happyError:</span>
+<span class="sd">            when unrecognized order argument.</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        ------- </span>
+<span class="sd">        &gt;&gt;&gt; GeoCoordinate.bbox2polygon([2.2241, 48.81554, 2.4699, 48.90214])</span>
+<span class="sd">            [[2.2241, 48.81554], [2.4699, 48.81554], [2.4699, 48.90214], [2.2241, 48.90214]] </span>
+<span class="sd">        &gt;&gt;&gt; GeoCoordinate.bbox2polygon([2.2241, 48.81554, 2.4699, 48.90214],order=&#39;Ll&#39;)</span>
+<span class="sd">            [[48.81554, 2.2241], [48.81554, 2.4699], [48.90214, 2.4699], [48.90214, 2.2241]]</span>
+<span class="sd">        </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`~GeoCoordinate.polygon2bbox`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">polygon</span> <span class="o">=</span> <span class="p">[[</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">[</span><span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
+                   <span class="p">[</span><span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">]],</span> <span class="p">[</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">]]</span> <span class="p">]</span>
+        <span class="k">if</span> <span class="n">order</span><span class="o">==</span><span class="s1">&#39;lL&#39;</span><span class="p">:</span> <span class="c1"># default: order (lat,Lon)      </span>
+            <span class="k">return</span> <span class="n">polygon</span>
+        <span class="k">elif</span> <span class="n">order</span><span class="o">==</span><span class="s1">&#39;Ll&#39;</span><span class="p">:</span>                   
+            <span class="k">return</span> <span class="p">[</span><span class="n">lL</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">lL</span> <span class="ow">in</span> <span class="n">polygon</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;unrecognized order argument&#39;</span><span class="p">)</span></div>
+            
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.polygon2bbox"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.polygon2bbox">[docs]</a>    <span class="nd">@classmethod</span>    
+    <span class="k">def</span> <span class="nf">polygon2bbox</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">polygon</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;lL&#39;</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot;Convert a polygon of (lat, Lon) or (Lon, lat) coordinates into an AOI</span>
+<span class="sd">        bounding box.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; bbox = GeoCoordinate.polygon2bbox(polygon, order=&#39;lL&#39;)</span>
+<span class="sd">        </span>
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        polygon,order : </span>
+<span class="sd">            see :meth:`bbox2polygon`\ .</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bbox : list</span>
+<span class="sd">            see :meth:`bbox2polygon`\ .</span>
+<span class="sd">        </span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        happyError:</span>
+<span class="sd">            when unrecognized order argument.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        ------- </span>
+<span class="sd">        &gt;&gt;&gt; GeoCoordinate.polygon2bbox([[2.2241, 48.81554], [2.4699, 48.81554],</span>
+<span class="sd">        ...                            [2.4699, 48.90214], [2.2241, 48.90214]])</span>
+<span class="sd">            [2.2241, 48.81554, 2.4699, 48.90214]) </span>
+<span class="sd">        </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`bbox2polygon`\ .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="p">[</span><span class="nb">min</span><span class="p">([</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">polygon</span><span class="p">]),</span> <span class="nb">min</span><span class="p">([</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">polygon</span><span class="p">]),</span>
+                <span class="nb">max</span><span class="p">([</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">polygon</span><span class="p">]),</span> <span class="nb">max</span><span class="p">([</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">polygon</span><span class="p">])]</span>
+        <span class="k">if</span> <span class="n">order</span><span class="o">==</span><span class="s1">&#39;lL&#39;</span><span class="p">:</span>                   
+            <span class="k">return</span> <span class="n">bbox</span> 
+        <span class="k">elif</span> <span class="n">order</span><span class="o">==</span><span class="s1">&#39;Ll&#39;</span><span class="p">:</span> <span class="c1"># default: order (lat,Lon)   </span>
+            <span class="k">return</span> <span class="n">bbox</span><span class="p">[:</span><span class="mi">2</span><span class="p">][::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">:][::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">happyError</span><span class="p">(</span><span class="s1">&#39;unrecognized order argument&#39;</span><span class="p">)</span></div>
+            
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.bboxintersects"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.bboxintersects">[docs]</a>    <span class="nd">@classmethod</span>      
+    <span class="k">def</span> <span class="nf">bboxintersects</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">bbox1</span><span class="p">,</span> <span class="n">bbox2</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot;Determine if two AOI bounding boxes do intersect.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; resp = GeoCoordinate.bboxintersects(bbox1, bbox2)</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        resp : bool</span>
+<span class="sd">            :literal:`True` if :data:`bbox1` and :data:`bbox2` intersect, </span>
+<span class="sd">            :literal:`False` otherwise.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        ------- </span>
+<span class="sd">         </span>
+<span class="sd">        See also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`GeoCoordinate.bbox2polygon`</span>
+<span class="sd">       &quot;&quot;&quot;</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="n">bbox1</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">bbox2</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">max</span><span class="p">(</span><span class="n">bbox1</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">bbox2</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                <span class="nb">min</span><span class="p">(</span><span class="n">bbox1</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">bbox2</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> <span class="nb">min</span><span class="p">(</span><span class="n">bbox1</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="n">bbox2</span><span class="p">[</span><span class="mi">3</span><span class="p">])]</span>        
+        <span class="k">if</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">&gt;</span><span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="ow">or</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">&gt;</span><span class="n">bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">]:</span>      <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>                                       <span class="k">return</span> <span class="kc">True</span>   </div>
+            
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.bboxwithin"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.bboxwithin">[docs]</a>    <span class="nd">@classmethod</span>      
+    <span class="k">def</span> <span class="nf">bboxwithin</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">bbox1</span><span class="p">,</span> <span class="n">bbox2</span><span class="p">):</span>  
+        <span class="sd">&quot;&quot;&quot;Determine if an AOI bounding box is contained in another one.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; resp = GeoCoordinate.bboxwithin(bbox1, bbox2)</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------    </span>
+<span class="sd">        resp : bool</span>
+<span class="sd">            :literal:`True` if :data:`bbox1` is included within :data:`bbox2`, </span>
+<span class="sd">            :literal:`False` otherwise.</span>
+<span class="sd">            </span>
+<span class="sd">        Example</span>
+<span class="sd">        ------- </span>
+<span class="sd">        &gt;&gt;&gt; bbox = [2.2241, 48.81554, 2.4699, 48.90214]</span>
+<span class="sd">        &gt;&gt;&gt; lLr = (2.347, 48.85884, 14.50401801879798)</span>
+<span class="sd">        &gt;&gt;&gt; assert GeoCoordinate.bboxwithin(bbox, GeoCoordinate.latlon2bbox(*lLr))</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">bbox1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">&gt;=</span><span class="n">bbox2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">bbox1</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">&gt;=</span><span class="n">bbox2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">bbox1</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">&lt;=</span><span class="n">bbox2</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> \
+        <span class="ow">and</span> <span class="n">bbox1</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">&lt;=</span><span class="n">bbox2</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span></div>
+            
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.bboxintersection"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.bboxintersection">[docs]</a>    <span class="nd">@classmethod</span>      
+    <span class="k">def</span> <span class="nf">bboxintersection</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">bbox1</span><span class="p">,</span> <span class="n">bbox2</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot;Retrieve the intersection (None if null) of two AOI bounding boxes.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; bbox = GeoCoordinate.bboxintersection(bbox1, bbox2)</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bbox : list</span>
+<span class="sd">            a bounding box representing the intersection of both :data:`bbox1` and </span>
+<span class="sd">            :data:`bbox2` bounding boxes. </span>
+
+<span class="sd">        Example</span>
+<span class="sd">        ------- </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="n">bbox1</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">bbox2</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">max</span><span class="p">(</span><span class="n">bbox1</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">bbox2</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>     \
+                <span class="nb">min</span><span class="p">(</span><span class="n">bbox1</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">bbox2</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> <span class="nb">min</span><span class="p">(</span><span class="n">bbox1</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="n">bbox2</span><span class="p">[</span><span class="mi">3</span><span class="p">])]</span>     \
+                <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">bboxintersects</span><span class="p">(</span><span class="n">bbox1</span><span class="p">,</span> <span class="n">bbox2</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span></div>
+            
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GeoCoordinate.bboxunion"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GeoCoordinate.bboxunion">[docs]</a>    <span class="nd">@classmethod</span>      
+    <span class="k">def</span> <span class="nf">bboxunion</span><span class="p">(</span><span class="n">bbox1</span><span class="p">,</span> <span class="n">bbox2</span><span class="p">):</span>  <span class="c1"># takes the largest envelop</span>
+        <span class="sd">&quot;&quot;&quot;Retrieve the union (largest encompassing) of two AOI bounding boxes.</span>
+<span class="sd">        </span>
+<span class="sd">            &gt;&gt;&gt; bbox = GeoCoordinate.bboxunion(bbox1, bbox2)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bbox : list</span>
+<span class="sd">            a bounding box representing the union of both :data:`bbox1` and :data:`bbox2`</span>
+<span class="sd">            bounding boxes. </span>
+
+<span class="sd">        Example</span>
+<span class="sd">        ------- </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="n">bbox1</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">bbox2</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">min</span><span class="p">(</span><span class="n">bbox1</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">bbox2</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                <span class="nb">max</span><span class="p">(</span><span class="n">bbox1</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">bbox2</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> <span class="nb">max</span><span class="p">(</span><span class="n">bbox1</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="n">bbox2</span><span class="p">[</span><span class="mi">3</span><span class="p">])]</span></div></div>
+
+
+<span class="c1">#%%</span>
+<span class="c1">#==============================================================================</span>
+<span class="c1"># CLASS GDALTool</span>
+<span class="c1">#==============================================================================</span>
+    
+<div class="viewcode-block" id="GDALTool"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GDALTool">[docs]</a><span class="k">class</span> <span class="nc">GDALTool</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1">#/************************************************************************/</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialisation of a :class:`GDALService` instance.</span>
+
+<span class="sd">            &gt;&gt;&gt; serv = GDALService(**kwargs)</span>
+
+<span class="sd">        Arguments</span>
+<span class="sd">        ---------</span>
+<span class="sd">        driver_name : str</span>
+<span class="sd">            name of the driver used for vector files</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># initial settings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__driver</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__drivername</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">GDAL_SERVICE</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;GDAL service not available&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__drivername</span>   <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;driver_name&#39;</span><span class="p">,</span> <span class="n">settings</span><span class="o">.</span><span class="n">DRIVER_NAME</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__driver</span> <span class="o">=</span> <span class="n">ogr</span><span class="o">.</span><span class="n">GetDriverByName</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">driver_name</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__driver</span> <span class="o">=</span> <span class="n">ogr</span><span class="o">.</span><span class="n">GetDriver</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;driver not available&#39;</span><span class="p">)</span>
+            
+    <span class="c1">#/************************************************************************/    </span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">driver</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__driver</span>
+            
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">driver_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__driver_name</span>
+    <span class="nd">@driver_name</span><span class="o">.</span><span class="n">setter</span><span class="c1">#analysis:ignore</span>
+    <span class="k">def</span> <span class="nf">driver_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">driver_name</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">driver_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;wrong type for DRIVER_NAME parameter&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__driver_name</span> <span class="o">=</span> <span class="n">driver_name</span>
+
+    <span class="c1">#/************************************************************************/</span>
+    <span class="nd">@_geoDecorators</span><span class="o">.</span><span class="n">parse_file</span>
+    <span class="k">def</span> <span class="nf">file2layer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;wrong type for FILENAME parameter&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">driver</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;offline driver not available&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">Open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="c1"># 0 means read-only</span>
+            <span class="k">assert</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;file </span><span class="si">%s</span><span class="s1"> not open&#39;</span> <span class="o">%</span> <span class="n">filename</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">settings</span><span class="o">.</span><span class="n">VERBOSE</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;file </span><span class="si">%s</span><span class="s1"> opened&#39;</span> <span class="o">%</span> <span class="n">filename</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">layer</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">GetLayer</span><span class="p">()</span>
+            <span class="k">assert</span> <span class="n">layer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;could not get vector layer&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">layer</span>
+
+    <span class="c1">#/************************************************************************/</span>
+    <span class="nd">@_geoDecorators</span><span class="o">.</span><span class="n">parse_coordinate</span>
+    <span class="k">def</span> <span class="nf">coord2vec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">vector</span> <span class="o">=</span> <span class="n">ogr</span><span class="o">.</span><span class="n">Geometry</span><span class="p">(</span><span class="n">ogr</span><span class="o">.</span><span class="n">wkbMultiPoint</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lat</span><span class="p">)):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">pt</span> <span class="o">=</span> <span class="n">ogr</span><span class="o">.</span><span class="n">Geometry</span><span class="p">(</span><span class="n">ogr</span><span class="o">.</span><span class="n">wkbPoint</span><span class="p">)</span>
+                <span class="n">pt</span><span class="o">.</span><span class="n">AddPoint</span><span class="p">(</span><span class="n">lon</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">lat</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> 
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">happyVerbose</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">could not add geolocation&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">vector</span><span class="o">.</span><span class="n">AddGeometry</span><span class="p">(</span><span class="n">pt</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">vector</span>
+    
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GDALTool.vec2id"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GDALTool.vec2id">[docs]</a>    <span class="k">def</span> <span class="nf">vec2id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">layer</span><span class="p">,</span> <span class="n">vector</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">answer</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># will be same lenght as self.vector</span>
+        <span class="n">featureCount</span> <span class="o">=</span> <span class="n">layer</span><span class="o">.</span><span class="n">GetFeatureCount</span><span class="p">()</span>
+        <span class="n">happyVerbose</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">number of features in </span><span class="si">%s</span><span class="s1">: </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">layer</span><span class="p">,</span><span class="n">featureCount</span><span class="p">))</span>
+        <span class="c1"># iterate through points</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">vector</span><span class="o">.</span><span class="n">GetGeometryCount</span><span class="p">()):</span> <span class="c1"># because it is a MULTIPOINT</span>
+            <span class="n">pt</span> <span class="o">=</span> <span class="n">vector</span><span class="o">.</span><span class="n">GetGeometryRef</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="c1">#print(pt.ExportToWkt())</span>
+            <span class="c1"># iterate through polygons in layer</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">featureCount</span><span class="p">):</span>
+                <span class="n">feature</span> <span class="o">=</span> <span class="n">layer</span><span class="o">.</span><span class="n">GetFeature</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">feature</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>    
+                <span class="c1">#elif feature.geometry() and feature.geometry().Contains(pt):</span>
+                <span class="c1">#    Regions.append(feature)</span>
+                <span class="n">ft</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">GetGeometryRef</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">ft</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ft</span><span class="o">.</span><span class="n">Contains</span><span class="p">(</span><span class="n">pt</span><span class="p">):</span>
+                    <span class="n">answer</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span><span class="o">&lt;</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span>    
+                <span class="n">answer</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">answer</span></div>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="GDALTool.coord2id"><a class="viewcode-back" href="../../../tools.html#happyGISCO.happygisco.tools.GDALTool.coord2id">[docs]</a>    <span class="k">def</span> <span class="nf">coord2id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span> <span class="o">=</span> <span class="n">_geoDecorators</span><span class="o">.</span><span class="n">parse_coordinate</span><span class="p">(</span><span class="k">lambda</span> <span class="n">l</span><span class="p">,</span> <span class="n">L</span><span class="p">:</span> <span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">L</span><span class="p">])(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="ow">not</span> <span class="p">(</span><span class="n">lat</span> <span class="ow">in</span> <span class="p">([],</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="n">lon</span> <span class="ow">in</span> <span class="p">([],</span> <span class="kc">None</span><span class="p">))</span> 
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;could not retrieve coordinate&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">_geoDecorators</span><span class="o">.</span><span class="n">parse_file</span><span class="p">(</span><span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="n">f</span><span class="p">)(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> 
+            <span class="k">assert</span> <span class="n">filename</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;could not retrieve filename&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">layer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file2layer</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">layer</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,[])</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;could not load feature layer&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">vector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coord2vec</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">vector</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,[])</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;could not load geolocation vector&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vec2id</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">vector</span><span class="p">)</span></div></div>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Jacopo Grazzini @European Commission.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
