@@ -30,7 +30,7 @@ __all__ = ['settings', 'services', 'tools', 'features']#analysis:ignore
 #==============================================================================
 
 __project__     = 'happyGISCO'
-__url__         = 'https://github.com/eurostat/nuts2place'
+__url__         = 'https://github.com/eurostat/happyGISCO'
 __organization__ = 'European Commission (EC - DG ESTAT)'
 # note that neither __project__ nor __url__ ar __organization__ are special/protected 
 # variables in python language, unlike the other fields below

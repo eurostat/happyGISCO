@@ -21,21 +21,33 @@ except:
         import json#analysis:ignore
     except:
         pass
-    
-this = os.path.dirname(os.path.abspath(__file__))
 
+DEF_HAPPYGISCO      = 'happyGISCO'
 DIRHAPPYGISCO       = '../../'
 DIRHAPPYGISCO       = os.path.abspath(DIRHAPPYGISCO)
 
+DEF_METADATA        = {'project'     : DEF_HAPPYGISCO,
+                       'description' : 'Simple API to Eurostat GISCO web-services',
+                       'package'     : DEF_HAPPYGISCO.lower(),
+                       'version'     : '1.0',
+                       'author'      : 'J. Grazzini',
+                       'contact'     : 'jacopo.grazzini@ec.europa.eu',
+                       'license'     : 'European Union Public Licence (EUPL)',
+                       'copyright'   : 'European Union',
+                       'organization':'European Commission (EC - DG ESTAT)',
+                       'url'         : 'https://github.com/eurostat/happyGISCO'
+                       }
 METADATA            = 'metadata.json' # 'metadata.py'
 METADATA            = os.path.join(DIRHAPPYGISCO, METADATA)
+    
+this = os.path.dirname(os.path.abspath(__file__))
 
 # import project metadata
 try:    
     assert json and os.path.exists(METADATA) and os.path.isfile(METADATA)
 except:
     # raise IOError('metadata file not loaded')
-    metadata = {}
+    metadata = {'project': DEF_HAPPYGISCO}
 else:
     ## metadata = imp.load_source('metadata', file_metadata) 
     ## # for consistency when using keys [''] to retrieve the fields
@@ -59,6 +71,7 @@ project             = project.strip()
 try:
     package         = metadata['package']
 except KeyError:
+    
     package         = project.lower()
 package = "".join(package.split())
 
@@ -68,10 +81,24 @@ package = "".join(package.split())
 sys.path.insert(0, os.path.join(DIRHAPPYGISCO,package))
 # sys.path.insert(0, os.path.abspath(os.path.join(DIRHAPPYGISCO,'../',project)))
 
-# author            = 'Jacopo Grazzini'
+# spoiler: we cheat here!!! we load the package so that automodule actually works
+try:
+    assert True
+    import imp
+    imp.load_module(package, *imp.find_module(package, path=[DIRHAPPYGISCO,]))#analysis:ignore
+except AssertionError:
+    # cheating again...
+    metadata.update(DEF_METADATA)
+except ImportError:
+    raise IOError('environment not set to import {package} - short doc only'.format(package=package))
+else:
+    try:
+        assert metadata['package']
+    except KeyError: 
+        metadata.update(getattr(package,'metadata'))
+
 author              = str(metadata.get('author',''))
 
-# copyright = '2018, Jacopo Grazzini @European Commission'
 try:
     copyright       = metadata['copyright']
 except KeyError:
@@ -87,27 +114,20 @@ except KeyError:
     pass 
 copyright           = str(copyright.strip())
 
+# description
 description         = metadata.get('description','')
-
-# spoiler: we cheat here!!! we load the package so that automodule actually works
+    
+# the short X.Y version
 try:
-    assert True
-    import imp
-    imp.load_module(package, *imp.find_module(package, path=[DIRHAPPYGISCO,]))#analysis:ignore
-except AssertionError:
-    pass
-except ImportError:
-    raise IOError('environment not set to import {package} - short doc only'.format(package=package))
-
-# The short X.Y version
-# version             = '1.0'
-try:
-    version         = metadata['release']
+    version         = metadata['version']
 except:
-    version         = project.lower()
+    version         = '1.0'
 
-# The full version, including alpha/beta/rc tags
-release             = version
+# the full version, including alpha/beta/rc tags
+try:
+    release         = metadata['release']
+except:
+    release         = version
 
 # -- General configuration ---------------------------------------------------
 
