@@ -1,0 +1,588 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>happygisco.settings &#8212; happyGISCO happygisco documentation</title>
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">happyGISCO happygisco documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for happygisco.settings</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. _mod_settings.py</span>
+
+<span class="sd">Basic definitions for the use of various geolocation web-services.</span>
+
+<span class="sd">**About**</span>
+
+<span class="sd">*credits*:      `gjacopo &lt;jacopo.grazzini@ec.europa.eu&gt;`_ </span>
+
+<span class="sd">*version*:      1</span>
+<span class="sd">--</span>
+<span class="sd">*since*:        Sat Mar 31 21:54:08 2018</span>
+
+<span class="sd">**Description**</span>
+
+<span class="sd">This module contains some basic definitions (classes and variables) that are used</span>
+<span class="sd">for:</span>
+
+<span class="sd">* query and collection through _Eurostat_ GISCO webservices,</span>
+<span class="sd">* query and collection through external GIS webservices,</span>
+<span class="sd">* simple geographical data handling and processing.</span>
+
+<span class="sd">**Contents**</span>
+
+<span class="sd">.. Links</span>
+
+<span class="sd">.. _Eurostat: http://ec.europa.eu/eurostat/web/main</span>
+<span class="sd">.. |Eurostat| replace:: `_Eurostat_ &lt;Eurostat_&gt;`_</span>
+<span class="sd">.. _GISCO: http://ec.europa.eu/eurostat/web/gisco</span>
+<span class="sd">.. |GISCO| replace:: `GISCO &lt;GISCO_&gt;`_</span>
+<span class="sd">.. _googlemaps: https://pypi.python.org/pypi/googlemaps</span>
+<span class="sd">.. |googlemaps| replace:: `googlemaps &lt;googlemaps_&gt;`_</span>
+<span class="sd">.. _googleplaces: https://github.com/slimkrazy/python-google-places</span>
+<span class="sd">.. |googleplaces| replace:: `googleplaces &lt;googleplaces_&gt;`_</span>
+<span class="sd">.. _geopy: https://github.com/geopy/geopy</span>
+<span class="sd">.. |geopy| replace:: `geopy &lt;geopy_&gt;`_</span>
+<span class="sd">.. _gdal: https://pypi.python.org/pypi/GDAL</span>
+<span class="sd">.. |gdal| replace:: `gdal &lt;gdal_&gt;`_</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span><span class="c1">#analysis:ignore</span>
+<span class="kn">import</span> <span class="nn">inspect</span><span class="c1">#analysis:ignore</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="c1">#%%</span>
+<span class="c1">#==============================================================================</span>
+<span class="c1"># CLASSES Error/Warning/Verbose</span>
+<span class="c1">#==============================================================================</span>
+
+<div class="viewcode-block" id="happyError"><a class="viewcode-back" href="../../settings.html#happygisco.services.happyError">[docs]</a><span class="k">class</span> <span class="nc">happyError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for exceptions in this package.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">expr</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>    
+        <span class="bp">self</span><span class="o">.</span><span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span>
+        <span class="k">if</span> <span class="n">expr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>    <span class="bp">self</span><span class="o">.</span><span class="n">expr</span> <span class="o">=</span> <span class="n">expr</span>
+        <span class="ne">Exception</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>              <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">msg</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="happyWarning"><a class="viewcode-back" href="../../settings.html#happygisco.services.happyWarning">[docs]</a><span class="k">class</span> <span class="nc">happyWarning</span><span class="p">(</span><span class="ne">Warning</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for warnings in this package.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">expr</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>    
+        <span class="bp">self</span><span class="o">.</span><span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span>
+        <span class="k">if</span> <span class="n">expr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>    <span class="bp">self</span><span class="o">.</span><span class="n">expr</span> <span class="o">=</span> <span class="n">expr</span>
+        <span class="c1"># logging.warning(self.msg)</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">msg</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">msg</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>              <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">msg</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="happyVerbose"><a class="viewcode-back" href="../../settings.html#happygisco.services.happyVerbose">[docs]</a><span class="k">class</span> <span class="nc">happyVerbose</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for verbose printing mode in this package.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">expr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verb</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>    
+        <span class="bp">self</span><span class="o">.</span><span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span>
+        <span class="k">if</span> <span class="n">verb</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">[verbose] - </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">expr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>    <span class="bp">self</span><span class="o">.</span><span class="n">expr</span> <span class="o">=</span> <span class="n">expr</span>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">msg</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>              <span class="k">return</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">msg</span><span class="p">)</span></div>
+
+<span class="c1">#%%</span>
+<span class="c1">#==============================================================================</span>
+<span class="c1"># GLOBAL VARIABLES</span>
+<span class="c1">#==============================================================================</span>
+
+<span class="n">PACKAGE</span>             <span class="o">=</span> <span class="s2">&quot;happygisco&quot;</span>
+
+<span class="n">PROTOCOLS</span>           <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;http&#39;</span><span class="p">,</span> <span class="s1">&#39;https&#39;</span><span class="p">,</span> <span class="s1">&#39;ftp&#39;</span><span class="p">)</span>
+<span class="sd">&quot;&quot;&quot;Recognised protocols (APIs, bulk downloads,...).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">DEF_PROTOCOL</span>        <span class="o">=</span> <span class="s1">&#39;http&#39;</span>
+<span class="n">PROTOCOL</span>            <span class="o">=</span> <span class="n">DEF_PROTOCOL</span>
+<span class="sd">&quot;&quot;&quot;Default protocol used by the APIs.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">LANGS</span>               <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;en&#39;</span><span class="p">,</span><span class="s1">&#39;de&#39;</span><span class="p">,</span><span class="s1">&#39;fr&#39;</span><span class="p">)</span>
+<span class="sd">&quot;&quot;&quot;Languages supported by this package.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">DEF_LANG</span>            <span class="o">=</span> <span class="s1">&#39;en&#39;</span>
+<span class="sd">&quot;&quot;&quot;Default language used when launching |Eurostat| |GISCO| API.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">EC_URL</span>              <span class="o">=</span> <span class="s1">&#39;europa.eu&#39;</span>
+<span class="sd">&quot;&quot;&quot;European Commission URL.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">GISCO_DOMAIN</span>        <span class="o">=</span> <span class="s1">&#39;webtools/rest/gisco/&#39;</span>
+<span class="sd">&quot;&quot;&quot;|GISCO| web-service domain under European Commission URL.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">GISCO_URL</span>           <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">EC_URL</span><span class="p">,</span> <span class="n">GISCO_DOMAIN</span><span class="p">)</span>
+<span class="sd">&quot;&quot;&quot;|GISCO| web-service complete URL.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">GISCO_ARCGIS</span>        <span class="o">=</span> <span class="s1">&#39;webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/&#39;</span>
+<span class="sd">&quot;&quot;&quot;|GISCO| ArcGIS server.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">CODER_GISCO</span>         <span class="o">=</span> <span class="s1">&#39;gisco&#39;</span>
+<span class="sd">&quot;&quot;&quot;Identifier of GISCO geocoder.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># key for using GISCO web-services.</span>
+<span class="n">KEY_GISCO</span>           <span class="o">=</span> <span class="kc">None</span>
+<span class="c1"># dummy variables</span>
+<span class="n">CHECK_TYPE</span>          <span class="o">=</span> <span class="kc">True</span>
+<span class="n">CHECK_OSM_KEY</span>       <span class="o">=</span> <span class="kc">True</span>
+
+<span class="n">CODER_GOOGLE</span>        <span class="o">=</span> <span class="s1">&#39;GoogleV3&#39;</span>
+<span class="sd">&quot;&quot;&quot;Identifier of GISCO geocoder.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">CODER_GOOGLE_MAPS</span>   <span class="o">=</span> <span class="s1">&#39;GMaps&#39;</span>
+<span class="sd">&quot;&quot;&quot;Identifier of |googlemaps| geocoder.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">CODER_GOOGLE_PLACES</span> <span class="o">=</span> <span class="s1">&#39;GPlace&#39;</span>
+<span class="sd">&quot;&quot;&quot;Identifier of |googleplaces| geocoder.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">KEY_GOOGLE</span>          <span class="o">=</span> <span class="s1">&#39;key&#39;</span>
+<span class="sd">&quot;&quot;&quot;Personal key used for connecting to the various Google web-services.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">CODER_GEONAME</span>       <span class="o">=</span> <span class="s1">&#39;GeoNames&#39;</span>
+<span class="sd">&quot;&quot;&quot;Default geocoder used when defined with the generic |geopy| package.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">CODER_LIST</span>          <span class="o">=</span> <span class="p">[</span><span class="n">CODER_GISCO</span><span class="p">,</span> <span class="n">CODER_GOOGLE</span><span class="p">,</span> <span class="n">CODER_GOOGLE_MAPS</span><span class="p">,</span> <span class="n">CODER_GOOGLE_PLACES</span><span class="p">]</span>
+<span class="sd">&quot;&quot;&quot;List of geocoders available.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">CODER_PROJ</span>          <span class="o">=</span> <span class="p">{</span><span class="n">CODER_GISCO</span><span class="p">:</span> <span class="s1">&#39;WGS84&#39;</span><span class="p">,</span>
+                       <span class="n">CODER_GOOGLE</span><span class="p">:</span> <span class="s1">&#39;EPSG3857&#39;</span><span class="p">,</span>
+                       <span class="n">CODER_GOOGLE_MAPS</span><span class="p">:</span> <span class="s1">&#39;EPSG3857&#39;</span><span class="p">,</span> 
+                       <span class="n">CODER_GOOGLE_PLACES</span><span class="p">:</span> <span class="s1">&#39;EPSG3857&#39;</span><span class="p">}</span>
+<span class="sd">&quot;&quot;&quot;Geographical projections available through the different geocoders.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">DRIVER_NAME</span>         <span class="o">=</span> <span class="s1">&#39;&#39;</span> <span class="c1"># &#39;ESRI Shapefile&#39;</span>
+<span class="sd">&quot;&quot;&quot;GDAL driver name.</span>
+<span class="sd">&quot;&quot;&quot;</span>                
+       
+<span class="n">POLYLINE</span>            <span class="o">=</span> <span class="kc">False</span>
+<span class="n">VERBOSE</span>             <span class="o">=</span> <span class="kc">True</span>
+
+<span class="c1">#%%</span>
+<span class="c1">#==============================================================================</span>
+<span class="c1"># CLASS _geoDecorators</span>
+<span class="c1">#==============================================================================</span>
+    
+<div class="viewcode-block" id="_geoDecorators"><a class="viewcode-back" href="../../settings.html#happygisco.services._geoDecorators">[docs]</a><span class="k">class</span> <span class="nc">_geoDecorators</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class with dummy decorators used to parse and check place and coordinate </span>
+<span class="sd">    arguments, and not only, used in the various methods of the geolocation services </span>
+<span class="sd">    classes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">KW_PLACE</span>        <span class="o">=</span> <span class="s1">&#39;place&#39;</span>
+    <span class="n">KW_LAT</span>          <span class="o">=</span> <span class="s1">&#39;lat&#39;</span>
+    <span class="n">KW_LON</span>          <span class="o">=</span> <span class="s1">&#39;lon&#39;</span>
+    <span class="n">KW_COORD</span>        <span class="o">=</span> <span class="s1">&#39;coord&#39;</span>
+    <span class="n">KW_PROJECTION</span>   <span class="o">=</span> <span class="s1">&#39;proj&#39;</span> 
+    
+    <span class="c1">#/************************************************************************/</span>
+    <span class="k">class</span> <span class="nc">__parse</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Base parsing class for geographical entities. All decorators in </span>
+<span class="sd">        :class:`_geoDecorators` will inherit from this class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">method_type</span><span class="o">=</span><span class="s1">&#39;function&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cls</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">method_type</span> <span class="o">=</span> <span class="n">func</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">method_type</span> 
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="s1">&#39;__doc__&#39;</span><span class="p">,</span><span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="s1">&#39;__doc__&#39;</span><span class="p">))</span>
+        <span class="k">def</span> <span class="nf">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj</span> <span class="o">==</span> <span class="n">obj</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cls</span> <span class="o">==</span> <span class="bp">cls</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span> 
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method_type</span><span class="o">==</span><span class="s1">&#39;property&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="fm">__get__</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span>
+            <span class="n">method_type</span> <span class="o">=</span> <span class="p">(</span> <span class="c1"># note that we added &#39;property&#39;</span>
+                <span class="s1">&#39;staticmethod&#39;</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">,</span> <span class="nb">staticmethod</span><span class="p">)</span> <span class="k">else</span>
+                <span class="s1">&#39;classmethod&#39;</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">,</span> <span class="nb">classmethod</span><span class="p">)</span> <span class="k">else</span>
+                <span class="s1">&#39;property&#39;</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">,</span> <span class="nb">property</span><span class="p">)</span> <span class="k">else</span> 
+                <span class="s1">&#39;instancemethod&#39;</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;__class__&#39;</span><span class="p">)(</span> 
+                <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="fm">__get__</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="bp">cls</span><span class="p">),</span> <span class="n">obj</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="n">method_type</span><span class="p">)</span> 
+        <span class="c1">#def __get__(self, obj, objtype):</span>
+        <span class="c1">#    # support instance methods</span>
+        <span class="c1">#    return functools.partial(self.__call__, obj)</span>
+        <span class="k">def</span> <span class="nf">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">):</span> 
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span> 
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="_geoDecorators.parse_place"><a class="viewcode-back" href="../../settings.html#happygisco.services._geoDecorators.parse_place">[docs]</a>    <span class="k">class</span> <span class="nc">parse_place</span><span class="p">(</span><span class="n">__parse</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generic class decorator used to parse (positional,keyword) arguments </span>
+<span class="sd">        with place (topo,geo) names to functions and methods.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">args</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,()):</span>      
+                <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">args</span><span class="p">]):</span>
+                    <span class="n">place</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],(</span><span class="nb">tuple</span><span class="p">,</span><span class="nb">list</span><span class="p">)):</span>
+                    <span class="n">place</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>   
+                    <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;input arguments not recognised&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>                           
+                <span class="n">place</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;place&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">place</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,[],</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;no input arguments passed&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">place</span><span class="p">,(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">)):</span>
+                <span class="n">place</span> <span class="o">=</span> <span class="p">[</span><span class="n">place</span><span class="p">,]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">place</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;wrong format for input place&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="_geoDecorators.parse_coordinate"><a class="viewcode-back" href="../../settings.html#happygisco.services._geoDecorators.parse_coordinate">[docs]</a>    <span class="k">class</span> <span class="nc">parse_coordinate</span><span class="p">(</span><span class="n">__parse</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generic class decorator used to parse (positional,keyword) arguments </span>
+<span class="sd">        with :literal:`(lat,lng)` geographical coordinates to functions and methods.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">KW_POLYLINE</span>      <span class="o">=</span> <span class="s1">&#39;polyline&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">POLYLINE</span><span class="p">:</span>    <span class="kn">import</span> <span class="nn">polyline</span>
+            <span class="k">else</span><span class="p">:</span>           <span class="n">polyline</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">assert</span> <span class="n">polyline</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">polyline</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">happyWarning</span><span class="p">(</span><span class="s1">&#39;POLYLINE (https://pypi.python.org/pypi/polyline/) not loaded&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">POLYLINE</span><span class="p">:</span>   <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;POLYLINE help: https://github.com/hicsail/polyline&#39;</span><span class="p">)</span>
+            <span class="k">pass</span>
+        <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">coord</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">poly</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">args</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,()):</span>      
+                <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="nb">dict</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">args</span><span class="p">]):</span>
+                    <span class="n">coord</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],(</span><span class="nb">tuple</span><span class="p">,</span><span class="nb">list</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">==</span><span class="mi">2</span>                                      \
+                        <span class="ow">and</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">],(</span><span class="nb">tuple</span><span class="p">,</span><span class="nb">list</span><span class="p">))</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">],</span><span class="s1">&#39;__len__&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)]):</span>
+                        <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">elif</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">],</span><span class="nb">dict</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))]):</span>
+                        <span class="n">coord</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],(</span><span class="nb">tuple</span><span class="p">,</span><span class="nb">list</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
+                    <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>                                         \
+                    <span class="ow">and</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="p">],(</span><span class="nb">tuple</span><span class="p">,</span><span class="nb">list</span><span class="p">))</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="s1">&#39;__len__&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)]):</span>    
+                    <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span> <span class="o">=</span> <span class="n">args</span>
+                <span class="k">else</span><span class="p">:</span>   
+                    <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;input coordinate arguments not recognised&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>   
+                <span class="n">coord</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;coord&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>         
+                <span class="n">lat</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;lat&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="n">lon</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;lon&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="n">poly</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">polyline</span> <span class="ow">and</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">KW_POLYLINE</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="ow">not</span><span class="p">(</span><span class="n">coord</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">lat</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">lon</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">poly</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">False</span><span class="p">,</span><span class="kc">None</span><span class="p">))</span> 
+            <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;no input coordinate arguments passed&#39;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">coord</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="p">(</span><span class="n">lat</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">lon</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;too many input coordinate arguments&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">poly</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">False</span><span class="p">,</span><span class="kc">None</span><span class="p">):</span>
+                <span class="c1"># coord = self.polyline.decode(poly)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">coord</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">coord</span><span class="p">,(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">)):</span>  
+                    <span class="n">coord</span> <span class="o">=</span> <span class="p">[</span><span class="n">coord</span><span class="p">]</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">assert</span> <span class="nb">all</span><span class="p">([</span><span class="s1">&#39;lat&#39;</span> <span class="ow">in</span> <span class="n">c</span> <span class="ow">and</span> <span class="s1">&#39;lon&#39;</span> <span class="ow">in</span> <span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coord</span><span class="p">])</span>
+                <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;wrong dictionary keys for input coordinate argument&#39;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span> <span class="o">=</span> <span class="p">[</span><span class="n">_</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="p">[(</span><span class="n">c</span><span class="p">[</span><span class="s1">&#39;lat&#39;</span><span class="p">],</span> <span class="n">c</span><span class="p">[</span><span class="s1">&#39;lon&#39;</span><span class="p">])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coord</span><span class="p">])]</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;wrong input coordinate argument passed&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">lat</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">lon</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;wrong geographical coordinates&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lat</span><span class="p">,(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">)):</span>  
+                <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span> <span class="o">=</span> <span class="p">[</span><span class="n">lat</span><span class="p">,],</span> <span class="p">[</span><span class="n">lon</span><span class="p">,]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">lon</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;incompatible geographical coordinates&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+       
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="_geoDecorators.parse_place_or_coordinate"><a class="viewcode-back" href="../../settings.html#happygisco.services._geoDecorators.parse_place_or_coordinate">[docs]</a>    <span class="k">class</span> <span class="nc">parse_place_or_coordinate</span><span class="p">(</span><span class="n">__parse</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">place</span> <span class="o">=</span> <span class="n">_geoDecorators</span><span class="o">.</span><span class="n">parse_place</span><span class="p">(</span><span class="k">lambda</span> <span class="n">p</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">:</span> <span class="n">p</span><span class="p">)(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">place</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;place&#39;</span><span class="p">:</span> <span class="n">place</span><span class="p">})</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span> <span class="o">=</span> <span class="n">_geoDecorators</span><span class="o">.</span><span class="n">parse_coordinate</span><span class="p">(</span><span class="k">lambda</span> <span class="n">l</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">:</span> <span class="p">[</span><span class="n">l</span><span class="p">,</span> <span class="n">L</span><span class="p">])(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">lat</span><span class="p">,</span> <span class="n">lon</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;lat&#39;</span><span class="p">:</span> <span class="n">lat</span><span class="p">,</span> <span class="s1">&#39;lon&#39;</span><span class="p">:</span> <span class="n">lon</span><span class="p">})</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="ow">not</span><span class="p">(</span><span class="n">place</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="n">lat</span> <span class="ow">in</span> <span class="p">([],</span><span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="n">lon</span> <span class="ow">in</span> <span class="p">([],</span><span class="kc">None</span><span class="p">))</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;no geographical entity parsed to define the place&#39;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">place</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">lat</span> <span class="ow">in</span> <span class="p">([],</span><span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="n">lon</span> <span class="ow">in</span> <span class="p">([],</span><span class="kc">None</span><span class="p">))</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;too many geographical entities parsed to define the place&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="_geoDecorators.parse_nuts"><a class="viewcode-back" href="../../settings.html#happygisco.services._geoDecorators.parse_nuts">[docs]</a>    <span class="k">class</span> <span class="nc">parse_nuts</span><span class="p">(</span><span class="n">__parse</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generic class decorator used to parse (positional,keyword) arguments </span>
+<span class="sd">        with NUTS information stored in GISCO-like formatted dictionary (from JSON </span>
+<span class="sd">        response) to functions and methods.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">KW_RESULTS</span>      <span class="o">=</span> <span class="s1">&#39;results&#39;</span>
+        <span class="n">KW_ATTRIBUTES</span>   <span class="o">=</span> <span class="s1">&#39;attributes&#39;</span>
+        <span class="n">KW_FIELDNAME</span>    <span class="o">=</span> <span class="s1">&#39;displayFieldName&#39;</span> 
+        <span class="n">KW_LAYERID</span>      <span class="o">=</span> <span class="s1">&#39;layerId&#39;</span>
+        <span class="n">KW_LAYERNAME</span>    <span class="o">=</span> <span class="s1">&#39;layerName&#39;</span>
+        <span class="n">KW_VALUE</span>        <span class="o">=</span> <span class="s1">&#39;value&#39;</span>
+        <span class="n">KW_LEVEL</span>        <span class="o">=</span> <span class="s1">&#39;LEVL_CODE&#39;</span>
+        <span class="n">KW_NUTS_ID</span>      <span class="o">=</span> <span class="s1">&#39;NUTS_ID&#39;</span> <span class="c1"># nuts[self.KW_FIELDNAME]</span>
+        <span class="n">KW_CNTR_CODE</span>    <span class="o">=</span> <span class="s1">&#39;CNTR_CODE&#39;</span>
+        <span class="n">KW_NUTS_NAME</span>    <span class="o">=</span> <span class="s1">&#39;NUTS_NAME&#39;</span>
+        <span class="n">KW_OBJECTID</span>     <span class="o">=</span> <span class="s1">&#39;OBJECTID&#39;</span>
+        <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">level</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;level&#39;</span><span class="p">,</span><span class="kc">None</span><span class="p">)</span>
+            <span class="n">nuts</span><span class="p">,</span> <span class="n">items</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="n">args</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,()):</span>      
+                <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="nb">dict</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">args</span><span class="p">]):</span>
+                    <span class="n">nuts</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],(</span><span class="nb">tuple</span><span class="p">,</span><span class="nb">list</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">],</span><span class="nb">dict</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))]):</span>
+                        <span class="n">nuts</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>   
+                <span class="n">nuts</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;nuts&#39;</span><span class="p">,</span> <span class="p">{})</span>   
+                <span class="n">items</span> <span class="o">=</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">KW_ATTRIBUTES</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">KW_ATTRIBUTES</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                         <span class="bp">self</span><span class="o">.</span><span class="n">KW_FIELDNAME</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">KW_FIELDNAME</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                         <span class="bp">self</span><span class="o">.</span><span class="n">KW_LAYERID</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">KW_LAYERID</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                         <span class="bp">self</span><span class="o">.</span><span class="n">KW_LAYERNAME</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">KW_LAYERNAME</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+                         <span class="bp">self</span><span class="o">.</span><span class="n">KW_VALUE</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">KW_VALUE</span><span class="p">,</span> <span class="kc">None</span><span class="p">)}</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="ow">not</span><span class="p">(</span><span class="n">nuts</span> <span class="ow">in</span> <span class="p">({},</span><span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">([</span><span class="n">v</span> <span class="ow">in</span> <span class="p">([],</span><span class="kc">None</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">items</span><span class="o">.</span><span class="n">values</span><span class="p">()]))</span>
+            <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+                <span class="c1"># raise IOError(&#39;no input NUTS parsed&#39;)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">nuts</span> <span class="ow">in</span> <span class="p">({},</span><span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">all</span><span class="p">([</span><span class="n">v</span> <span class="ow">in</span> <span class="p">([],</span><span class="kc">None</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">items</span><span class="o">.</span><span class="n">values</span><span class="p">()])</span>
+            <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;too many input file arguments&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">nuts</span> <span class="o">=</span> <span class="n">items</span> <span class="k">if</span> <span class="n">nuts</span> <span class="ow">in</span> <span class="p">({},</span><span class="kc">None</span><span class="p">)</span> <span class="k">else</span> <span class="n">nuts</span>
+            <span class="k">if</span> <span class="n">nuts</span> <span class="ow">in</span> <span class="p">((),[],</span><span class="kc">None</span><span class="p">)</span> <span class="ow">or</span>                                              \
+                <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">nuts</span><span class="p">,</span><span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">([</span><span class="n">n</span> <span class="ow">in</span> <span class="p">([],</span><span class="kc">None</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">nuts</span><span class="o">.</span><span class="n">values</span><span class="p">()])):</span>
+                <span class="c1"># raise IOError(&#39;no NUTS parsed&#39;)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">nuts</span><span class="p">,(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">)):</span>
+                <span class="n">nuts</span> <span class="o">=</span> <span class="p">[</span><span class="n">nuts</span><span class="p">,]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">KW_ATTRIBUTES</span> <span class="ow">in</span> <span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">nuts</span><span class="p">]):</span> 
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;NUTS attributes not recognised&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">nuts</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">nuts</span> <span class="k">if</span> <span class="n">n</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">KW_ATTRIBUTES</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">KW_LEVEL</span><span class="p">]</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">level</span><span class="p">)]</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="n">nuts</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="_geoDecorators.parse_geometry"><a class="viewcode-back" href="../../settings.html#happygisco.services._geoDecorators.parse_geometry">[docs]</a>    <span class="k">class</span> <span class="nc">parse_geometry</span><span class="p">(</span><span class="n">__parse</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generic class decorator used to parse (positional,keyword) arguments </span>
+<span class="sd">        with :literal:`(lat,lng)` geographical coordinates stored in GISCO-like</span>
+<span class="sd">        formatted dictionary (from JSON response) to functions and methods.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">KW_FEATURES</span>     <span class="o">=</span> <span class="s1">&#39;features&#39;</span>
+        <span class="n">KW_GEOMETRY</span>     <span class="o">=</span> <span class="s1">&#39;geometry&#39;</span>
+        <span class="n">KW_PROPERTIES</span>   <span class="o">=</span> <span class="s1">&#39;properties&#39;</span>
+        <span class="n">KW_TYPE</span>         <span class="o">=</span> <span class="s1">&#39;type&#39;</span>
+        <span class="n">KW_OSM_KEY</span>      <span class="o">=</span> <span class="s1">&#39;osm_key&#39;</span>
+        <span class="n">KW_COORDINATES</span>  <span class="o">=</span> <span class="s1">&#39;coordinates&#39;</span>
+        <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">coord</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">args</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,()):</span>      
+                <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="nb">dict</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">args</span><span class="p">]):</span>
+                    <span class="n">coord</span> <span class="o">=</span> <span class="n">args</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],(</span><span class="nb">tuple</span><span class="p">,</span><span class="nb">list</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">],</span><span class="nb">dict</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))]):</span>
+                        <span class="n">coord</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>   
+                <span class="n">coord</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;coord&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>        
+            <span class="k">if</span> <span class="n">coord</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">coord</span><span class="p">,(</span><span class="nb">list</span><span class="p">,</span><span class="nb">tuple</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="nb">dict</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coord</span><span class="p">]):</span>      
+                    <span class="n">coord_</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coord</span>                                                               \
+                       <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">KW_GEOMETRY</span> <span class="ow">in</span> <span class="n">c</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">KW_PROPERTIES</span> <span class="ow">in</span> <span class="n">c</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">KW_TYPE</span> <span class="ow">in</span> <span class="n">c</span>                 \
+                       <span class="ow">and</span> <span class="n">c</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">KW_TYPE</span><span class="p">]</span><span class="o">==</span><span class="s1">&#39;Feature&#39;</span>                                                 \
+                       <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span><span class="p">(</span><span class="n">CHECK_TYPE</span><span class="p">)</span> <span class="ow">or</span> <span class="n">c</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">KW_GEOMETRY</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">KW_TYPE</span><span class="p">]</span><span class="o">==</span><span class="s1">&#39;Point&#39;</span><span class="p">)</span>         \
+                       <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span><span class="p">(</span><span class="n">CHECK_OSM_KEY</span><span class="p">)</span> <span class="ow">or</span> <span class="n">c</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">KW_PROPERTIES</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">KW_OSM_KEY</span><span class="p">]</span><span class="o">==</span><span class="s1">&#39;place&#39;</span><span class="p">)</span> \
+                       <span class="p">]</span>
+                    <span class="n">coord</span> <span class="o">=</span> <span class="n">coord</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">coord_</span><span class="o">==</span><span class="p">[]</span> <span class="k">else</span> <span class="n">coord_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  
+                    <span class="n">coord</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">([</span><span class="s1">&#39;lon&#39;</span><span class="p">,</span><span class="s1">&#39;lat&#39;</span><span class="p">],</span><span class="n">coord</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">KW_GEOMETRY</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">KW_COORDINATES</span><span class="p">]))</span>
+                <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">coord</span><span class="p">)</span> 
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="_geoDecorators.parse_projection"><a class="viewcode-back" href="../../settings.html#happygisco.services._geoDecorators.parse_projection">[docs]</a>    <span class="k">class</span> <span class="nc">parse_projection</span><span class="p">(</span><span class="n">__parse</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generic class decorator used to parse keyword argument with projection </span>
+<span class="sd">        information to functions and methods.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">PROJECTION</span>      <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;WGS84&#39;</span><span class="p">:</span> <span class="mi">4326</span><span class="p">,</span> <span class="mi">4326</span><span class="p">:</span> <span class="mi">4326</span><span class="p">,</span>
+                           <span class="mi">4258</span><span class="p">:</span> <span class="mi">4258</span><span class="p">,</span>
+                           <span class="s1">&#39;EPSG3857&#39;</span><span class="p">:</span> <span class="mi">3857</span><span class="p">,</span> <span class="mi">3857</span><span class="p">:</span> <span class="mi">3857</span><span class="p">,</span> 
+                           <span class="s1">&#39;LAEA&#39;</span><span class="p">:</span> <span class="mi">3035</span><span class="p">,</span> <span class="mi">3035</span><span class="p">:</span> <span class="mi">3035</span><span class="p">}</span>
+        <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">proj</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;proj&#39;</span><span class="p">,</span> <span class="s1">&#39;WGS84&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">proj</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="kc">None</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">proj</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">PROJECTION</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">PROJECTION</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;projection </span><span class="si">%s</span><span class="s1"> not supported&#39;</span> <span class="o">%</span> <span class="n">proj</span><span class="p">)</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;proj&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">PROJECTION</span><span class="p">[</span><span class="n">proj</span><span class="p">]})</span>                  
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="_geoDecorators.parse_year"><a class="viewcode-back" href="../../settings.html#happygisco.services._geoDecorators.parse_year">[docs]</a>    <span class="k">class</span> <span class="nc">parse_year</span><span class="p">(</span><span class="n">__parse</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generic class decorator used to parse keyword year argument used for  </span>
+<span class="sd">        NUTS definition.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">YEARS</span>      <span class="o">=</span> <span class="p">[</span><span class="mi">2006</span><span class="p">,</span> <span class="mi">2013</span><span class="p">,</span> <span class="mi">2010</span><span class="p">,</span> <span class="c1"># 2016 ?</span>
+                      <span class="p">]</span>
+        <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">year</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;year&#39;</span><span class="p">,</span> <span class="mi">2013</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">year</span> <span class="ow">in</span> <span class="p">([],</span><span class="kc">None</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">year</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">YEARS</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;year </span><span class="si">%s</span><span class="s1"> not supported&#39;</span> <span class="o">%</span> <span class="n">year</span><span class="p">)</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;year&#39;</span><span class="p">:</span> <span class="n">year</span><span class="p">})</span>                  
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="_geoDecorators.parse_file"><a class="viewcode-back" href="../../settings.html#happygisco.services._geoDecorators.parse_file">[docs]</a>    <span class="k">class</span> <span class="nc">parse_file</span><span class="p">(</span><span class="n">__parse</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">dirname</span><span class="p">,</span> <span class="n">basename</span><span class="p">,</span> <span class="n">filename</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">args</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,()):</span>      
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],(</span><span class="nb">tuple</span><span class="p">,</span><span class="nb">list</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">==</span><span class="mi">2</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">],</span><span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)]):</span>
+                        <span class="n">dirname</span><span class="p">,</span> <span class="n">basename</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">elif</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">],</span><span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))]):</span>
+                        <span class="n">filename</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
+                    <span class="n">dirname</span><span class="p">,</span> <span class="n">basename</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>                                         \
+                    <span class="ow">and</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="s1">&#39;__len__&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)]):</span>    
+                    <span class="n">dirname</span><span class="p">,</span> <span class="n">basename</span> <span class="o">=</span> <span class="n">args</span>
+                <span class="k">else</span><span class="p">:</span>   
+                    <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;input file arguments not recognised&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>   
+                <span class="n">dirname</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;dir&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>         
+                <span class="n">basename</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;base&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;file&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="ow">not</span><span class="p">(</span><span class="n">filename</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="n">basename</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="kc">None</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;no input file arguments passed&#39;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="n">filename</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="n">basename</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="kc">None</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">AssertionError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;too many input file arguments&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">dirname</span> <span class="ow">or</span> <span class="s1">&#39;&#39;</span><span class="p">),</span> <span class="n">basename</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;wrong input file argument passed&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
+                <span class="n">filename</span> <span class="o">=</span> <span class="p">[</span><span class="n">filename</span><span class="p">,]</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+    <span class="c1">#/************************************************************************/</span>
+<div class="viewcode-block" id="_geoDecorators.parse_route"><a class="viewcode-back" href="../../settings.html#happygisco.services._geoDecorators.parse_route">[docs]</a>    <span class="k">class</span> <span class="nc">parse_route</span><span class="p">(</span><span class="n">__parse</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">KW_CODE</span>         <span class="o">=</span> <span class="s1">&#39;code&#39;</span>
+        <span class="n">KW_ROUTES</span>       <span class="o">=</span> <span class="s1">&#39;routes&#39;</span>
+        <span class="n">KW_WAYPOITNS</span>    <span class="o">=</span> <span class="s1">&#39;waypoints&#39;</span>
+        <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">pass</span></div></div>
+    
+        
+
+
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">happyGISCO happygisco documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Jacopo Grazzini -- European Union.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.2.
+    </div>
+  </body>
+</html>
