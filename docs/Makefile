@@ -6,9 +6,9 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = happyGISCO
 # input directory where conf.py is located
-SOURCEDIR     = ../rst
+SOURCEDIR     = ./
 # output directory where doctree and html/latex/... docs will be stored
-BUILDDIR      = ../
+BUILDDIR      = ./
 
 WEBBROWSER=firefox
 
