@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-.. _mod_services
+.. _mod_tools
 
-Library of simple tools for geolocation and geocoordinate handling.
+Library of simple tools for simple geographical data (geolocations and geocoordinates)
+handling and processin.
 
 **About**
 
@@ -17,7 +18,7 @@ Library of simple tools for geolocation and geocoordinate handling.
 **Description**
 
 Perform various types of geographical transformations and 'conversions' in order 
-to represent equivalently and uniquely geographical locations.
+to represent equivalently and uniquely geographical locations/toponames.
    
 **Dependencies**
 

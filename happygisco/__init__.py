@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-.. __init__.py
+.. __init__
 
 Simple API to Eurostat GISCO web-services.
 
@@ -29,7 +29,7 @@ __all__ = ['settings', 'services', 'tools', 'features']#analysis:ignore
 # PROGRAM METADATA
 #==============================================================================
 
-__project__     = 'happygisco'
+__project__     = 'happyGISCO'
 __url__         = 'https://github.com/eurostat/nuts2place'
 __organization__ = 'European Commission (EC - DG ESTAT)'
 # note that neither __project__ nor __url__ ar __organization__ are special/protected 

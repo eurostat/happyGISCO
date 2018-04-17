@@ -6,14 +6,6 @@
 
 Module for place/location features definition and description.
 
-**About**
-
-*credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
-
-*version*:      1
---
-*since*:        Sat Apr  7 01:34:07 2018
-
 **Description**
 
 Define the main classes for the representation of place/location features, as well 
@@ -21,15 +13,16 @@ as NUTS regions, to which geotransformations are associated.
     
 **Dependencies**
 
-*require*:      :mod:`os`, :mod:`sys`, :mod:`json`
+*require*      :mod:`os`, :mod:`sys`
 
-*optional*:     :mod:`requests`, :mod:`osgeo`, :mod:`googlemaps`, :mod:`googleplaces`
-
-*call*:         :mod:`settings`, :mod:`services`         
+*call*         :mod:`happygisco.settings`, :mod:`happygisco.services`, :mod:`happygisco.tools`         
 
 **Contents**
 
 """
+
+# *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
+# *since*:        Sat Apr  7 01:34:07 2018
 
 # generic import
 import os, sys#analysis:ignore
@@ -40,7 +33,8 @@ import functools#analysis:ignore
 from . import settings
 from .settings import happyWarning, happyVerbose, _geoDecorators
 from . import services     
-from .services import GISCO_SERVICE, API_SERVICE, GDAL_SERVICE
+from .services import GISCO_SERVICE, API_SERVICE
+from .tools import GDAL_SERVICE
 
 # requirements
 

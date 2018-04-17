@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-.. settings.py
+.. _mod_settings.py
 
-Basic definitions for NUTS datasets and webservices.
+Basic definitions for the use of various geolocation web-services.
 
 **About**
 
@@ -14,7 +14,31 @@ Basic definitions for NUTS datasets and webservices.
 --
 *since*:        Sat Mar 31 21:54:08 2018
 
+**Description**
+
+This module contains some basic definitions (classes and variables) that are used
+for:
+
+* query and collection through _Eurostat_ GISCO webservices,
+* query and collection through external GIS webservices,
+* simple geographical data handling and processing.
+
 **Contents**
+
+.. Links
+
+.. _Eurostat: http://ec.europa.eu/eurostat/web/main
+.. |Eurostat| replace:: `_Eurostat_ <Eurostat_>`_
+.. _GISCO: http://ec.europa.eu/eurostat/web/gisco
+.. |GISCO| replace:: `GISCO <GISCO_>`_
+.. _googlemaps: https://pypi.python.org/pypi/googlemaps
+.. |googlemaps| replace:: `googlemaps <googlemaps_>`_
+.. _googleplaces: https://github.com/slimkrazy/python-google-places
+.. |googleplaces| replace:: `googleplaces <googleplaces_>`_
+.. _geopy: https://github.com/geopy/geopy
+.. |geopy| replace:: `geopy <geopy_>`_
+.. _gdal: https://pypi.python.org/pypi/GDAL
+.. |gdal| replace:: `gdal <gdal_>`_
 """
 
 import os, sys#analysis:ignore
@@ -27,7 +51,7 @@ import warnings
 #==============================================================================
 
 class happyError(Exception):
-    """Base class for exceptions in this module."""
+    """Base class for exceptions in this package."""
     def __init__(self, msg, expr=None):    
         self.msg = msg
         if expr is not None:    self.expr = expr
@@ -35,7 +59,7 @@ class happyError(Exception):
     def __str__(self):              return repr(self.msg)
 
 class happyWarning(Warning):
-    """Base class for warnings in this module."""
+    """Base class for warnings in this package."""
     def __init__(self, msg, expr=None):    
         self.msg = msg
         if expr is not None:    self.expr = expr
@@ -45,7 +69,7 @@ class happyWarning(Warning):
     def __str__(self):              return repr(self.msg)
     
 class happyVerbose(object):
-    """Base class for verbose printing mode in this module."""
+    """Base class for verbose printing mode in this package."""
     def __init__(self, msg, expr=None, verb=True):    
         self.msg = msg
         if verb is True:
@@ -62,60 +86,73 @@ class happyVerbose(object):
 PACKAGE             = "happygisco"
 
 PROTOCOLS           = ('http', 'https', 'ftp')
-"""
-Recognised protocols (API, bulk downloads,...).
+"""Recognised protocols (APIs, bulk downloads,...).
 """
 DEF_PROTOCOL        = 'http'
 PROTOCOL            = DEF_PROTOCOL
-"""
-Default protocol used by the API.
+"""Default protocol used by the APIs.
 """
 LANGS               = ('en','de','fr')
-"""
-Languages supported by this package.
+"""Languages supported by this package.
 """
 DEF_LANG            = 'en'
-"""
-Default language used when launching Eurostat API.
+"""Default language used when launching |Eurostat| |GISCO| API.
 """
 
 EC_URL              = 'europa.eu'
-"""
-European Commission URL.
+"""European Commission URL.
 """
 GISCO_DOMAIN        = 'webtools/rest/gisco/'
-"""
-GISCO domain under European Commission URL.
+"""|GISCO| web-service domain under European Commission URL.
 """
 GISCO_URL           = '%s/%s' % (EC_URL, GISCO_DOMAIN)
-"""
-GISCO complete URL.
+"""|GISCO| web-service complete URL.
 """
 
 GISCO_ARCGIS        = 'webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/'
-"""GISCO ArcGIS server.
+"""|GISCO| ArcGIS server.
 """
 
 CODER_GISCO         = 'gisco'
+"""Identifier of GISCO geocoder.
+"""
+# key for using GISCO web-services.
 KEY_GISCO           = None
+# dummy variables
 CHECK_TYPE          = True
 CHECK_OSM_KEY       = True
 
 CODER_GOOGLE        = 'GoogleV3'
+"""Identifier of GISCO geocoder.
+"""
 CODER_GOOGLE_MAPS   = 'GMaps'
+"""Identifier of |googlemaps| geocoder.
+"""
 CODER_GOOGLE_PLACES = 'GPlace'
+"""Identifier of |googleplaces| geocoder.
+"""
 KEY_GOOGLE          = 'key'
+"""Personal key used for connecting to the various Google web-services.
+"""
 
 CODER_GEONAME       = 'GeoNames'
+"""Default geocoder used when defined with the generic |geopy| package.
+"""
 
 CODER_LIST          = [CODER_GISCO, CODER_GOOGLE, CODER_GOOGLE_MAPS, CODER_GOOGLE_PLACES]
+"""List of geocoders available.
+"""
 CODER_PROJ          = {CODER_GISCO: 'WGS84',
                        CODER_GOOGLE: 'EPSG3857',
                        CODER_GOOGLE_MAPS: 'EPSG3857', 
                        CODER_GOOGLE_PLACES: 'EPSG3857'}
+"""Geographical projections available through the different geocoders.
+"""
 
 DRIVER_NAME         = '' # 'ESRI Shapefile'
-                       
+"""GDAL driver name.
+"""                
+       
 POLYLINE            = False
 VERBOSE             = True
 
@@ -142,7 +179,8 @@ class _geoDecorators(object):
         :class:`_geoDecorators` will inherit from this class.
         """
         def __init__(self, func, obj=None, cls=None, method_type='function'):
-            self.func, self.obj, self.cls, self.method_type = func, obj, cls, method_type     
+            self.func, self.obj, self.cls, self.method_type = func, obj, cls, method_type 
+            setattr(self,'__doc__',object.__getattribute__(func, '__doc__'))
         def __get__(self, obj=None, cls=None):
             if self.obj == obj and self.cls == cls:
                 return self 

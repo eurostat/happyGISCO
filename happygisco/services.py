@@ -31,11 +31,18 @@ locations and their NUTS identifiers.
 
 .. Links
 
+.. _Eurostat: http://ec.europa.eu/eurostat/web/main
+.. |Eurostat| replace:: `_Eurostat_ <Eurostat_>`_
+.. _GISCO: http://ec.europa.eu/eurostat/web/gisco
+.. |GISCO| replace:: `GISCO <GISCO_>`_
 .. _googlemaps: https://pypi.python.org/pypi/googlemaps
 .. |googlemaps| replace:: `googlemaps <googlemaps_>`_
 .. _googleplaces: https://github.com/slimkrazy/python-google-places
 .. |googleplaces| replace:: `googleplaces <googleplaces_>`_
-
+.. _geopy: https://github.com/geopy/geopy
+.. |geopy| replace:: `geopy <geopy_>`_
+.. _PyGeoTools: https://github.com/jfein/PyGeoTools/blob/master/geolocation.py
+.. |PyGeoTools| replace:: `PyGeoTools <PyGeoTools_>`_
 """
 
 # generic import
@@ -308,6 +315,7 @@ class GISCOService(object):
         return url
         # test: 
         # url_route(lat=[13.388860, 13.397634, 13.428555],lon=[52.517037,52.529407,52.523219])
+
     #/************************************************************************/
     def url_transform(self, **kwargs):
         """
