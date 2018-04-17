@@ -1,7 +1,7 @@
 :mod:`services` module: APIs to web-services
 --------------------------------------------
 
-.. automodule:: happygisco.services
+.. automodule:: happyGISCO.happygisco.services
     :members:
     :inherited-members:
     :exclude-members: _googleMapsAPI, _googlePlacesAPI, _geoCoderAPI

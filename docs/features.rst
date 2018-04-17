@@ -1,7 +1,7 @@
 :mod:`features` module
 ----------------------
 
-.. automodule:: happygisco.features
+.. automodule:: features
     :members:
     :inherited-members:
     :show-inheritance:
