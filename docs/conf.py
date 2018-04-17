@@ -23,9 +23,15 @@ except:
     except:
         pass
 
+IS_READTHEDOCS      = True
+
 DEF_HAPPYGISCO      = 'happyGISCO'
-DIRHAPPYGISCO       = '../../'
-DIRHAPPYGISCO       = os.path.abspath(DIRHAPPYGISCO)
+DIRHAPPYGISCO       = '../'
+try:
+    assert not IS_READTHEDOCS
+    DIRHAPPYGISCO   = os.path.abspath(DIRHAPPYGISCO)
+except AssertionError:
+    pass
 
 DEF_METADATA        = {'project'     : DEF_HAPPYGISCO,
                        'description' : 'Simple API to Eurostat GISCO web-services',
@@ -77,16 +83,20 @@ except KeyError:
 package = "".join(package.split())
 
 # at this stage, we can simplofy the search exercise...
-#sys.path.insert(0, os.path.abspath('.'))
+#sys.path.insert(0, '.')
 #sys.path.insert(0, DIRHAPPYGISCO)
 sys.path.insert(0, os.path.join(DIRHAPPYGISCO,package))
 # sys.path.insert(0, os.path.abspath(os.path.join(DIRHAPPYGISCO,'../',project)))
 
 # spoiler: we cheat here!!! we load the package so that automodule actually works
 try:
-    assert False
-    import imp
-    imp.load_module(package, *imp.find_module(package, path=[DIRHAPPYGISCO,]))#analysis:ignore
+    assert not IS_READTHEDOCS
+    ## deprecated: import importlib
+    ## deprecated: imp.load_module(package, *imp.find_module(package, path=[DIRHAPPYGISCO,]))#analysis:ignore
+    import importlib
+    # importlib.find_loader(DIRHAPPYGISCO)
+    __package = importlib.import_module(package)#analysis:ignore
+    # [importlib.import_module(m, package=package) for m in __package.__all__]
 except AssertionError:
     # cheating again...
     metadata.update(DEF_METADATA)
@@ -94,9 +104,9 @@ except ImportError:
     raise IOError('environment not set to import {package} - short doc only'.format(package=package))
 else:
     try:
-        assert metadata['package']
-    except KeyError: 
-        metadata.update(getattr(package,'metadata'))
+        assert 'package' in metadata
+    except AssertionError: 
+        metadata.update(getattr(__package,'metadata'))
 
 author              = str(metadata.get('author',''))
 
