@@ -9,8 +9,8 @@ Simple microservice (API) on top of _Eurostat_ GISCO web-services.
 This project implements a `Python` interface of the API to GISCO services. Further, it encapsulates the interface within a container so as to be distributed... 
 
 <table align="center">
-    <tr> <td align="left"><i>documentation</i></td> <td align="left"><strike>available at: https://eurostat.github.io/place2nuts/</strike></td> </tr> 
-    <tr> <td align="left"><i>status</i></td> <td align="left">since 2017 &ndash; <b>in construction</b></td></tr> 
+    <tr> <td align="left"><i>documentation</i></td> <td align="left">available at: https://eurostat.github.io/happyGISCO/</td> </tr> 
+    <tr> <td align="left"><i>status</i></td> <td align="left">since 2018 &ndash; <b>in construction</b></td></tr> 
     <tr> <td align="left"><i>contributors</i></td> 
     <td align="left" valign="middle">
 <a href="https://github.com/gjacopo"><img src="https://github.com/gjacopo.png" width="40"></a>
