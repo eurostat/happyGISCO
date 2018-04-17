@@ -6,31 +6,37 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>happyGISCO.happygisco.features &#8212; happyGISCO 1.0 documentation</title>
-    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
-    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <link rel="author" title="About these documents" href="../../../about.html" />
-    <link rel="index" title="Index" href="../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../search.html" />
-   
-  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <title>happygisco.features &#8212; happyGISCO happygisco documentation</title>
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
   </head><body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">happyGISCO happygisco documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <h1>Source code for happyGISCO.happygisco.features</h1><div class="highlight"><pre>
+  <h1>Source code for happygisco.features</h1><div class="highlight"><pre>
 <span></span><span class="ch">#!/usr/bin/env python3</span>
 <span class="c1"># -*- coding: utf-8 -*-</span>
 
@@ -39,14 +45,6 @@
 
 <span class="sd">Module for place/location features definition and description.</span>
 
-<span class="sd">**About**</span>
-
-<span class="sd">*credits*:      `gjacopo &lt;jacopo.grazzini@ec.europa.eu&gt;`_ </span>
-
-<span class="sd">*version*:      1</span>
-<span class="sd">--</span>
-<span class="sd">*since*:        Sat Apr  7 01:34:07 2018</span>
-
 <span class="sd">**Description**</span>
 
 <span class="sd">Define the main classes for the representation of place/location features, as well </span>
@@ -54,15 +52,16 @@
 <span class="sd">    </span>
 <span class="sd">**Dependencies**</span>
 
-<span class="sd">*require*:      :mod:`os`, :mod:`sys`, :mod:`json`</span>
+<span class="sd">*require*      :mod:`os`, :mod:`sys`</span>
 
-<span class="sd">*optional*:     :mod:`requests`, :mod:`osgeo`, :mod:`googlemaps`, :mod:`googleplaces`</span>
-
-<span class="sd">*call*:         :mod:`settings`, :mod:`services`         </span>
+<span class="sd">*call*         :mod:`happygisco.settings`, :mod:`happygisco.services`, :mod:`happygisco.tools`         </span>
 
 <span class="sd">**Contents**</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># *credits*:      `gjacopo &lt;jacopo.grazzini@ec.europa.eu&gt;`_ </span>
+<span class="c1"># *since*:        Sat Apr  7 01:34:07 2018</span>
 
 <span class="c1"># generic import</span>
 <span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span><span class="c1">#analysis:ignore</span>
@@ -82,7 +81,7 @@
 <span class="c1"># CLASS __Feature</span>
 <span class="c1">#==============================================================================</span>
             
-<div class="viewcode-block" id="__Feature"><a class="viewcode-back" href="../../../features.html#happyGISCO.happygisco.features.__Feature">[docs]</a><span class="k">class</span> <span class="nc">__Feature</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>    
+<div class="viewcode-block" id="__Feature"><a class="viewcode-back" href="../../features.html#happygisco.features.__Feature">[docs]</a><span class="k">class</span> <span class="nc">__Feature</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>    
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -140,7 +139,7 @@
 <span class="c1"># CLASS Place</span>
 <span class="c1">#==============================================================================</span>
             
-<div class="viewcode-block" id="Place"><a class="viewcode-back" href="../../../features.html#happyGISCO.happygisco.features.Place">[docs]</a><span class="k">class</span> <span class="nc">Place</span><span class="p">(</span><span class="n">__Feature</span><span class="p">):</span>
+<div class="viewcode-block" id="Place"><a class="viewcode-back" href="../../features.html#happygisco.features.Place">[docs]</a><span class="k">class</span> <span class="nc">Place</span><span class="p">(</span><span class="n">__Feature</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -182,7 +181,7 @@
         <span class="k">return</span> <span class="p">[</span><span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span><span class="s1">&#39; &#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">place</span><span class="p">]</span>
 
     <span class="c1">#/************************************************************************/</span>
-<div class="viewcode-block" id="Place.geocode"><a class="viewcode-back" href="../../../features.html#happyGISCO.happygisco.features.Place.geocode">[docs]</a>    <span class="k">def</span> <span class="nf">geocode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>   
+<div class="viewcode-block" id="Place.geocode"><a class="viewcode-back" href="../../features.html#happygisco.features.Place.geocode">[docs]</a>    <span class="k">def</span> <span class="nf">geocode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>   
         <span class="sd">&quot;&quot;&quot;Convert place names to geographic coordinates (default) and reciprocally, </span>
 <span class="sd">        depending on the type of input arguments passed.</span>
 <span class="sd">        </span>
@@ -234,7 +233,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__lat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__lon</span></div>
     
     <span class="c1">#/************************************************************************/</span>
-<div class="viewcode-block" id="Place.distance"><a class="viewcode-back" href="../../../features.html#happyGISCO.happygisco.features.Place.distance">[docs]</a>    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>            
+<div class="viewcode-block" id="Place.distance"><a class="viewcode-back" href="../../features.html#happygisco.features.Place.distance">[docs]</a>    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>            
         <span class="sd">&quot;&quot;&quot;Method used for computing pairwise distances between given locations, </span>
 <span class="sd">        passed indifferently as places names or geographic coordinates.</span>
 <span class="sd">        </span>
@@ -301,7 +300,7 @@
 <span class="c1"># CLASS Location</span>
 <span class="c1">#==============================================================================</span>
    
-<div class="viewcode-block" id="Location"><a class="viewcode-back" href="../../../features.html#happyGISCO.happygisco.features.Location">[docs]</a><span class="k">class</span> <span class="nc">Location</span><span class="p">(</span><span class="n">__Feature</span><span class="p">):</span>
+<div class="viewcode-block" id="Location"><a class="viewcode-back" href="../../features.html#happygisco.features.Location">[docs]</a><span class="k">class</span> <span class="nc">Location</span><span class="p">(</span><span class="n">__Feature</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
         
@@ -355,7 +354,7 @@
         <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">longitude</span><span class="p">]</span>
 
     <span class="c1">#/************************************************************************/</span>
-<div class="viewcode-block" id="Location.reverse"><a class="viewcode-back" href="../../../features.html#happyGISCO.happygisco.features.Location.reverse">[docs]</a>    <span class="k">def</span> <span class="nf">reverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Location.reverse"><a class="viewcode-back" href="../../features.html#happygisco.features.Location.reverse">[docs]</a>    <span class="k">def</span> <span class="nf">reverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Convert geographic location (passed as a tuple of coordinates or a string </span>
 <span class="sd">        with those coordinates). </span>
 <span class="sd">        </span>
@@ -419,7 +418,7 @@
 <span class="c1"># CLASS NUTS</span>
 <span class="c1">#==============================================================================</span>
        
-<div class="viewcode-block" id="NUTS"><a class="viewcode-back" href="../../../features.html#happyGISCO.happygisco.features.NUTS">[docs]</a><span class="k">class</span> <span class="nc">NUTS</span><span class="p">(</span><span class="n">__Feature</span><span class="p">):</span>
+<div class="viewcode-block" id="NUTS"><a class="viewcode-back" href="../../features.html#happygisco.features.NUTS">[docs]</a><span class="k">class</span> <span class="nc">NUTS</span><span class="p">(</span><span class="n">__Feature</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -494,13 +493,13 @@
             <span class="k">return</span> <span class="n">value</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">1</span> <span class="k">else</span> <span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         
     <span class="c1">#/************************************************************************/</span>
-<div class="viewcode-block" id="NUTS.identify"><a class="viewcode-back" href="../../../features.html#happyGISCO.happygisco.features.NUTS.identify">[docs]</a>    <span class="k">def</span> <span class="nf">identify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">place</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="NUTS.identify"><a class="viewcode-back" href="../../features.html#happygisco.features.NUTS.identify">[docs]</a>    <span class="k">def</span> <span class="nf">identify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">place</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
     
     <span class="c1">#/************************************************************************/</span>
-<div class="viewcode-block" id="NUTS.contains"><a class="viewcode-back" href="../../../features.html#happyGISCO.happygisco.features.NUTS.contains">[docs]</a>    <span class="k">def</span> <span class="nf">contains</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">place</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="NUTS.contains"><a class="viewcode-back" href="../../features.html#happygisco.features.NUTS.contains">[docs]</a>    <span class="k">def</span> <span class="nf">contains</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">place</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div></div>
@@ -592,19 +591,11 @@
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="../../../index.html">Documentation overview</a><ul>
-  <li><a href="../../index.html">Module code</a><ul>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <div class="searchformwrapper">
-    <form class="search" action="../../../search.html" method="get">
+    <form class="search" action="../../search.html" method="get">
       <input type="text" name="q" />
       <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
@@ -617,17 +608,22 @@
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2018, Jacopo Grazzini @European Commission.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">happyGISCO happygisco documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Jacopo Grazzini -- European Union.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.2.
+    </div>
   </body>
 </html>

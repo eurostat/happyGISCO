@@ -1,7 +1,7 @@
-:mod:`tools` Module
+:mod:`tools` module
 -------------------
 
-.. automodule:: happyGISCO.happygisco.tools
+.. automodule:: happygisco.tools
     :members:
     :inherited-members:
     :show-inheritance:

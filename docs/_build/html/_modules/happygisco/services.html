@@ -6,31 +6,37 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>happyGISCO.happygisco.services &#8212; happyGISCO 1.0 documentation</title>
-    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
-    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../../../_static/documentation_options.js"></script>
-    <script type="text/javascript" src="../../../_static/jquery.js"></script>
-    <script type="text/javascript" src="../../../_static/underscore.js"></script>
-    <script type="text/javascript" src="../../../_static/doctools.js"></script>
-    <link rel="author" title="About these documents" href="../../../about.html" />
-    <link rel="index" title="Index" href="../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../search.html" />
-   
-  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <title>happygisco.services &#8212; happyGISCO happygisco documentation</title>
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
   </head><body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">happyGISCO happygisco documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <h1>Source code for happyGISCO.happygisco.services</h1><div class="highlight"><pre>
+  <h1>Source code for happygisco.services</h1><div class="highlight"><pre>
 <span></span><span class="ch">#!/usr/bin/env python3</span>
 <span class="c1"># -*- coding: utf-8 -*-</span>
 
@@ -142,7 +148,7 @@
 <span class="c1"># CLASS GISCOService</span>
 <span class="c1">#==============================================================================</span>
     
-<div class="viewcode-block" id="GISCOService"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services.GISCOService">[docs]</a><span class="k">class</span> <span class="nc">GISCOService</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="GISCOService"><a class="viewcode-back" href="../../services.html#happygisco.services.GISCOService">[docs]</a><span class="k">class</span> <span class="nc">GISCOService</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Class providing geolocation methods based on GISCO online web-services.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
@@ -190,7 +196,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">__session</span> <span class="o">=</span> <span class="n">session</span>
     
     <span class="c1">#/************************************************************************/   </span>
-<div class="viewcode-block" id="GISCOService.get_status"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services.GISCOService.get_status">[docs]</a>    <span class="k">def</span> <span class="nf">get_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
+<div class="viewcode-block" id="GISCOService.get_status"><a class="viewcode-back" href="../../services.html#happygisco.services.GISCOService.get_status">[docs]</a>    <span class="k">def</span> <span class="nf">get_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Retrieve the header of a URL and return the server&#39;s status code.</span>
 <span class="sd">        &quot;&quot;&quot;</span> 
         <span class="k">try</span><span class="p">:</span>
@@ -209,7 +215,7 @@
         <span class="k">return</span> <span class="n">status</span></div>
     
     <span class="c1">#/************************************************************************/</span>
-<div class="viewcode-block" id="GISCOService.get_response"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services.GISCOService.get_response">[docs]</a>    <span class="k">def</span> <span class="nf">get_response</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="GISCOService.get_response"><a class="viewcode-back" href="../../services.html#happygisco.services.GISCOService.get_response">[docs]</a>    <span class="k">def</span> <span class="nf">get_response</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Retrieve the GET response of a URL.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
@@ -259,7 +265,7 @@
         <span class="k">return</span> <span class="n">url</span>
 
     <span class="c1">#/************************************************************************/</span>
-<div class="viewcode-block" id="GISCOService.url_geocode"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services.GISCOService.url_geocode">[docs]</a>    <span class="k">def</span> <span class="nf">url_geocode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="GISCOService.url_geocode"><a class="viewcode-back" href="../../services.html#happygisco.services.GISCOService.url_geocode">[docs]</a>    <span class="k">def</span> <span class="nf">url_geocode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Create a query URL to be be submitted GISCO geolocation web-service.</span>
 <span class="sd">        </span>
 <span class="sd">            &gt;&gt;&gt; url = GISCOService.url_geocode(**filters)</span>
@@ -295,7 +301,7 @@
         <span class="k">return</span> <span class="n">url</span></div>
     
     <span class="c1">#/************************************************************************/</span>
-<div class="viewcode-block" id="GISCOService.url_reverse"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services.GISCOService.url_reverse">[docs]</a>    <span class="k">def</span> <span class="nf">url_reverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="GISCOService.url_reverse"><a class="viewcode-back" href="../../services.html#happygisco.services.GISCOService.url_reverse">[docs]</a>    <span class="k">def</span> <span class="nf">url_reverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Create a query URL to be be submitted GISCO geolocation web-service.</span>
 <span class="sd">        </span>
 <span class="sd">            &gt;&gt;&gt; url = GISCOService.url_reverse(**filters)</span>
@@ -331,7 +337,7 @@
         <span class="k">return</span> <span class="n">url</span></div>
 
     <span class="c1">#/************************************************************************/</span>
-<div class="viewcode-block" id="GISCOService.url_route"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services.GISCOService.url_route">[docs]</a>    <span class="k">def</span> <span class="nf">url_route</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="GISCOService.url_route"><a class="viewcode-back" href="../../services.html#happygisco.services.GISCOService.url_route">[docs]</a>    <span class="k">def</span> <span class="nf">url_route</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        http(s)://europa.eu/webtools/rest/gisco/route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219?overview=false</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -348,8 +354,9 @@
         <span class="k">return</span> <span class="n">url</span></div>
         <span class="c1"># test: </span>
         <span class="c1"># url_route(lat=[13.388860, 13.397634, 13.428555],lon=[52.517037,52.529407,52.523219])</span>
+
     <span class="c1">#/************************************************************************/</span>
-<div class="viewcode-block" id="GISCOService.url_transform"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services.GISCOService.url_transform">[docs]</a>    <span class="k">def</span> <span class="nf">url_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="GISCOService.url_transform"><a class="viewcode-back" href="../../services.html#happygisco.services.GISCOService.url_transform">[docs]</a>    <span class="k">def</span> <span class="nf">url_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="sd">        Note</span>
@@ -694,7 +701,7 @@
     <span class="k">class</span> <span class="nc">_geoCoderAPI</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>     
         <span class="n">CODER</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="k">else</span><span class="p">:</span>   
-<div class="viewcode-block" id="_geoCoderAPI"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services._geoCoderAPI">[docs]</a>    <span class="k">class</span> <span class="nc">_geoCoderAPI</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="_geoCoderAPI"><a class="viewcode-back" href="../../services.html#happygisco.services._geoCoderAPI">[docs]</a>    <span class="k">class</span> <span class="nc">_geoCoderAPI</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Class emulating :mod:`geopy` API.</span>
 
 <span class="sd">        Inherit all methods from original API.</span>
@@ -771,7 +778,7 @@
     <span class="k">class</span> <span class="nc">_googleMapsAPI</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>     
         <span class="n">CODER</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="k">else</span><span class="p">:</span>   
-<div class="viewcode-block" id="_googleMapsAPI"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services._googleMapsAPI">[docs]</a>    <span class="k">class</span> <span class="nc">_googleMapsAPI</span><span class="p">(</span><span class="n">googlemaps</span><span class="o">.</span><span class="n">Client</span><span class="p">):</span>
+<div class="viewcode-block" id="_googleMapsAPI"><a class="viewcode-back" href="../../services.html#happygisco.services._googleMapsAPI">[docs]</a>    <span class="k">class</span> <span class="nc">_googleMapsAPI</span><span class="p">(</span><span class="n">googlemaps</span><span class="o">.</span><span class="n">Client</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Class emulating :class:`~googlemaps.Client` API.</span>
 
 <span class="sd">        Most of the :class:`googlemaps.Client` methods will be inherited by the</span>
@@ -803,7 +810,7 @@
             <span class="k">return</span> <span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">location</span><span class="p">]</span>
                         
          <span class="c1">#/********************************************************************/</span>
-<div class="viewcode-block" id="_googleMapsAPI.geocode"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services._googleMapsAPI.geocode">[docs]</a>        <span class="k">def</span> <span class="nf">geocode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="_googleMapsAPI.geocode"><a class="viewcode-back" href="../../services.html#happygisco.services._googleMapsAPI.geocode">[docs]</a>        <span class="k">def</span> <span class="nf">geocode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
             <span class="n">info</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;info&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">geoinfo</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">_googleMapsAPI</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">geocode</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="c1"># OLD: address_to_latlng</span>
@@ -844,7 +851,7 @@
     <span class="k">class</span> <span class="nc">_googlePlacesAPI</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>  
         <span class="n">CODER</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="k">else</span><span class="p">:</span> 
-    <span class="k">class</span> <span class="nc">_googlePlacesAPI</span><span class="p">(</span><span class="n">googleplaces</span><span class="o">.</span><span class="n">GooglePlaces</span><span class="p">):</span>
+<div class="viewcode-block" id="_googlePlacesAPI"><a class="viewcode-back" href="../../services.html#happygisco.services._googlePlacesAPI">[docs]</a>    <span class="k">class</span> <span class="nc">_googlePlacesAPI</span><span class="p">(</span><span class="n">googleplaces</span><span class="o">.</span><span class="n">GooglePlaces</span><span class="p">):</span>
         
         <span class="n">CODER</span> <span class="o">=</span> <span class="p">{</span><span class="n">settings</span><span class="o">.</span><span class="n">CODER_GOOGLE_PLACES</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">KEY_GOOGLE</span><span class="p">}</span>
 
@@ -858,7 +865,7 @@
             <span class="nb">super</span><span class="p">(</span><span class="n">_googlePlacesAPI</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">client_key</span><span class="p">)</span>
 
         <span class="c1">#/********************************************************************/</span>
-        <span class="n">geocode</span> <span class="o">=</span> <span class="nb">classmethod</span><span class="p">(</span><span class="n">googleplaces</span><span class="o">.</span><span class="n">geocode_location</span><span class="p">)</span>
+        <span class="n">geocode</span> <span class="o">=</span> <span class="nb">classmethod</span><span class="p">(</span><span class="n">googleplaces</span><span class="o">.</span><span class="n">geocode_location</span><span class="p">)</span></div>
         <span class="c1"># nearby_search, text_search, get_place are regular attributes</span>
 
 <span class="c1">#==============================================================================</span>
@@ -866,7 +873,7 @@
 <span class="c1">#==============================================================================</span>
      
 <span class="c1">#%%</span>
-<div class="viewcode-block" id="APIService"><a class="viewcode-back" href="../../../services.html#happyGISCO.happygisco.services.APIService">[docs]</a><span class="k">class</span> <span class="nc">APIService</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="APIService"><a class="viewcode-back" href="../../services.html#happygisco.services.APIService">[docs]</a><span class="k">class</span> <span class="nc">APIService</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     
@@ -1109,19 +1116,11 @@
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="../../../index.html">Documentation overview</a><ul>
-  <li><a href="../../index.html">Module code</a><ul>
-  </ul></li>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <div class="searchformwrapper">
-    <form class="search" action="../../../search.html" method="get">
+    <form class="search" action="../../search.html" method="get">
       <input type="text" name="q" />
       <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
@@ -1134,17 +1133,22 @@
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2018, Jacopo Grazzini @European Commission.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">happyGISCO happygisco documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Jacopo Grazzini -- European Union.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.2.
+    </div>
   </body>
 </html>

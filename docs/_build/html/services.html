@@ -6,8 +6,8 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>services Module: Interface to web-services &#8212; happyGISCO 1.0 documentation</title>
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <title>services module: APIs to web-services &#8212; happyGISCO happygisco documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
@@ -16,22 +16,35 @@
     <link rel="author" title="About these documents" href="about.html" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
-  
-  
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
+    <link rel="next" title="features module" href="features.html" />
+    <link rel="prev" title="tools module" href="tools.html" /> 
   </head><body>
-  
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="features.html" title="features module"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tools.html" title="tools module"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">happyGISCO happygisco documentation</a> &#187;</li> 
+      </ul>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="module-happyGISCO.happygisco.services">
-<span id="services-module-interface-to-web-services"></span><h1><code class="xref py py-mod docutils literal notranslate"><span class="pre">services</span></code> Module: Interface to web-services<a class="headerlink" href="#module-happyGISCO.happygisco.services" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-happygisco.services">
+<span id="services-module-apis-to-web-services"></span><h1><code class="xref py py-mod docutils literal notranslate"><span class="pre">services</span></code> module: APIs to web-services<a class="headerlink" href="#module-happygisco.services" title="Permalink to this headline">¶</a></h1>
 <p>Module for place/location identification and NUTS identifier retrieval.</p>
 <p><strong>About</strong></p>
 <p><em>credits</em>:      <a class="reference external" href="mailto:jacopo&#46;grazzini&#37;&#52;&#48;ec&#46;europa&#46;eu">gjacopo</a></p>
@@ -47,62 +60,230 @@ locations and their NUTS identifiers.</p>
 <p><em>call</em>:         <code class="xref py py-mod docutils literal notranslate"><span class="pre">settings</span></code></p>
 <p><strong>Contents</strong></p>
 <dl class="class">
-<dt id="happyGISCO.happygisco.services.APIService">
-<em class="property">class </em><code class="descclassname">happyGISCO.happygisco.services.</code><code class="descname">APIService</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happyGISCO/happygisco/services.html#APIService"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happyGISCO.happygisco.services.APIService" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dt id="happygisco.services.APIService">
+<em class="property">class </em><code class="descclassname">happygisco.services.</code><code class="descname">APIService</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happygisco/services.html#APIService"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happygisco.services.APIService" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialisation of a <a class="reference internal" href="#happygisco.services.APIService" title="happygisco.services.APIService"><code class="xref py py-class docutils literal notranslate"><span class="pre">APIService</span></code></a> instance.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">serv</span> <span class="o">=</span> <span class="n">APIService</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>coder</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – identifier of the geocoder, _e.g._ _Google <a href="#id17"><span class="problematic" id="id18">Maps_</span></a>, _Google <a href="#id19"><span class="problematic" id="id20">Places_</span></a>,
+_etc_… used for geolocation queries.</li>
+<li><strong>key/token/username</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a>) – key (depending on the :literal:<a href="#id1"><span class="problematic" id="id2">`</span></a>coder actually chosen) used to connect
+to the geolocation API.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 <dl class="attribute">
-<dt id="happyGISCO.happygisco.services.APIService.coder">
-<code class="descname">coder</code><a class="headerlink" href="#happyGISCO.happygisco.services.APIService.coder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Coder attribute (<code class="xref py py-data docutils literal notranslate"><span class="pre">getter</span></code>) of a <a class="reference internal" href="#happyGISCO.happygisco.services.APIService" title="happyGISCO.happygisco.services.APIService"><code class="xref py py-class docutils literal notranslate"><span class="pre">APIService</span></code></a> instance.
-A <cite>coder</cite> type is a either <code class="xref py py-class docutils literal notranslate"><span class="pre">_googlePlacesAPI</span></code>,
-or a <code class="xref py py-class docutils literal notranslate"><span class="pre">_googleMapsAPI</span></code>, or
-<code class="xref py py-class docutils literal notranslate"><span class="pre">_geoCoderAPI</span></code> object.</p>
+<dt id="happygisco.services.APIService.coder">
+<code class="descname">coder</code><a class="headerlink" href="#happygisco.services.APIService.coder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Coder attribute (<code class="xref py py-data docutils literal notranslate"><span class="pre">getter</span></code>) of a <a class="reference internal" href="#happygisco.services.APIService" title="happygisco.services.APIService"><code class="xref py py-class docutils literal notranslate"><span class="pre">APIService</span></code></a> instance.
+A <cite>coder</cite> type is a either <a class="reference internal" href="#happygisco.services._googlePlacesAPI" title="happygisco.services._googlePlacesAPI"><code class="xref py py-class docutils literal notranslate"><span class="pre">_googlePlacesAPI</span></code></a>,
+or a <a class="reference internal" href="#happygisco.services._googleMapsAPI" title="happygisco.services._googleMapsAPI"><code class="xref py py-class docutils literal notranslate"><span class="pre">_googleMapsAPI</span></code></a>, or
+<a class="reference internal" href="#happygisco.services._geoCoderAPI" title="happygisco.services._geoCoderAPI"><code class="xref py py-class docutils literal notranslate"><span class="pre">_geoCoderAPI</span></code></a> object.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="happyGISCO.happygisco.services.APIService.coder_key">
-<code class="descname">coder_key</code><a class="headerlink" href="#happyGISCO.happygisco.services.APIService.coder_key" title="Permalink to this definition">¶</a></dt>
-<dd><p>Service attribute (<code class="xref py py-data docutils literal notranslate"><span class="pre">getter</span></code>/<code class="xref py py-data docutils literal notranslate"><span class="pre">setter</span></code>) of a <a class="reference internal" href="#happyGISCO.happygisco.services.APIService" title="happyGISCO.happygisco.services.APIService"><code class="xref py py-class docutils literal notranslate"><span class="pre">APIService</span></code></a>
+<dt id="happygisco.services.APIService.coder_key">
+<code class="descname">coder_key</code><a class="headerlink" href="#happygisco.services.APIService.coder_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Service attribute (<code class="xref py py-data docutils literal notranslate"><span class="pre">getter</span></code>/<code class="xref py py-data docutils literal notranslate"><span class="pre">setter</span></code>) of a <a class="reference internal" href="#happygisco.services.APIService" title="happygisco.services.APIService"><code class="xref py py-class docutils literal notranslate"><span class="pre">APIService</span></code></a>
 instance.
 A <cite>coder_key</cite> type is a <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> object.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="happygisco.services.APIService.coord2place">
+<code class="descname">coord2place</code><a class="headerlink" href="#happygisco.services.APIService.coord2place" title="Permalink to this definition">¶</a></dt>
+<dd><p>Associate a (list of) toponame(s) with a (set of) given geographical
+coordinates.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="p">(,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last">:meth:<a href="#id3"><span class="problematic" id="id4">``</span></a>.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="happygisco.services.APIService.place2coord">
+<code class="descname">place2coord</code><a class="headerlink" href="#happygisco.services.APIService.place2coord" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the geographical coordinates associated to a (a list of)
+toponame(s).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">coord</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">place2coord</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last">:meth:<a href="#id5"><span class="problematic" id="id6">``</span></a>.</p>
+</div>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="class">
-<dt id="happyGISCO.happygisco.services.GISCOService">
-<em class="property">class </em><code class="descclassname">happyGISCO.happygisco.services.</code><code class="descname">GISCOService</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happyGISCO/happygisco/services.html#GISCOService"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happyGISCO.happygisco.services.GISCOService" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Class providing geolocation methods based on GISCO online web-services.</p>
+<dt id="happygisco.services.GISCOService">
+<em class="property">class </em><code class="descclassname">happygisco.services.</code><code class="descname">GISCOService</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happygisco/services.html#GISCOService"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happygisco.services.GISCOService" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class providing geolocation methods based on GISCO online web-services.</p>
+<p>Initialisation of a <a class="reference internal" href="#happygisco.services.GISCOService" title="happygisco.services.GISCOService"><code class="xref py py-class docutils literal notranslate"><span class="pre">GISCOService</span></code></a> instance.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">GISCOService</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
 <dl class="attribute">
-<dt id="happyGISCO.happygisco.services.GISCOService.domain">
-<code class="descname">domain</code><a class="headerlink" href="#happyGISCO.happygisco.services.GISCOService.domain" title="Permalink to this definition">¶</a></dt>
-<dd><p>Domain attribute (<code class="xref py py-data docutils literal notranslate"><span class="pre">getter</span></code>/<code class="xref py py-data docutils literal notranslate"><span class="pre">setter</span></code>) of a <a class="reference internal" href="#happyGISCO.happygisco.services.GISCOService" title="happyGISCO.happygisco.services.GISCOService"><code class="xref py py-class docutils literal notranslate"><span class="pre">GISCOService</span></code></a>
+<dt id="happygisco.services.GISCOService.coord2nuts">
+<code class="descname">coord2nuts</code><a class="headerlink" href="#happygisco.services.GISCOService.coord2nuts" title="Permalink to this definition">¶</a></dt>
+<dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">nuts</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>lat</strong><strong>,</strong><strong>lon</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a><em>]</em>) – </td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last">:meth:<a href="#id7"><span class="problematic" id="id8">``</span></a>.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="happygisco.services.GISCOService.coord2place">
+<code class="descname">coord2place</code><a class="headerlink" href="#happygisco.services.GISCOService.coord2place" title="Permalink to this definition">¶</a></dt>
+<dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span> <span class="n">place</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">coord2place</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>lat</strong><strong>,</strong><strong>lon</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.6)"><em>float</em></a><em>]</em>) – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>place</strong> (<em>str or list[str]</em>)</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last">:meth:<a href="#id9"><span class="problematic" id="id10">``</span></a>.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="happygisco.services.GISCOService.coord2route">
+<code class="descname">coord2route</code><a class="headerlink" href="#happygisco.services.GISCOService.coord2route" title="Permalink to this definition">¶</a></dt>
+<dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span> <span class="n">route</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">coord2route</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>lat,lon : list[float]</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"><strong>route</strong> – </td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last">:meth:<a href="#id11"><span class="problematic" id="id12">``</span></a>.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="happygisco.services.GISCOService.domain">
+<code class="descname">domain</code><a class="headerlink" href="#happygisco.services.GISCOService.domain" title="Permalink to this definition">¶</a></dt>
+<dd><p>Domain attribute (<code class="xref py py-data docutils literal notranslate"><span class="pre">getter</span></code>/<code class="xref py py-data docutils literal notranslate"><span class="pre">setter</span></code>) of a <a class="reference internal" href="#happygisco.services.GISCOService" title="happygisco.services.GISCOService"><code class="xref py py-class docutils literal notranslate"><span class="pre">GISCOService</span></code></a>
 instance. A domain type is <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="happyGISCO.happygisco.services.GISCOService.get_response">
-<code class="descname">get_response</code><span class="sig-paren">(</span><em>url</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happyGISCO/happygisco/services.html#GISCOService.get_response"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happyGISCO.happygisco.services.GISCOService.get_response" title="Permalink to this definition">¶</a></dt>
+<dt id="happygisco.services.GISCOService.get_response">
+<code class="descname">get_response</code><span class="sig-paren">(</span><em>url</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happygisco/services.html#GISCOService.get_response"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happygisco.services.GISCOService.get_response" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieve the GET response of a URL.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="happyGISCO.happygisco.services.GISCOService.get_status">
-<code class="descname">get_status</code><span class="sig-paren">(</span><em>url</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happyGISCO/happygisco/services.html#GISCOService.get_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happyGISCO.happygisco.services.GISCOService.get_status" title="Permalink to this definition">¶</a></dt>
+<dt id="happygisco.services.GISCOService.get_status">
+<code class="descname">get_status</code><span class="sig-paren">(</span><em>url</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happygisco/services.html#GISCOService.get_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happygisco.services.GISCOService.get_status" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieve the header of a URL and return the server’s status code.</p>
 </dd></dl>
 
 <dl class="attribute">
-<dt id="happyGISCO.happygisco.services.GISCOService.session">
-<code class="descname">session</code><a class="headerlink" href="#happyGISCO.happygisco.services.GISCOService.session" title="Permalink to this definition">¶</a></dt>
-<dd><p>Session attribute (<code class="xref py py-data docutils literal notranslate"><span class="pre">getter</span></code>/<code class="xref py py-data docutils literal notranslate"><span class="pre">setter</span></code>) of a <a class="reference internal" href="#happyGISCO.happygisco.services.GISCOService" title="happyGISCO.happygisco.services.GISCOService"><code class="xref py py-class docutils literal notranslate"><span class="pre">GISCOService</span></code></a>
+<dt id="happygisco.services.GISCOService.place2coord">
+<code class="descname">place2coord</code><a class="headerlink" href="#happygisco.services.GISCOService.place2coord" title="Permalink to this definition">¶</a></dt>
+<dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span> <span class="n">coord</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">place2coord</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>place : str or list[str]</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><em>coord</em></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last">:meth:<a href="#id13"><span class="problematic" id="id14">``</span></a>.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="happygisco.services.GISCOService.place2geom">
+<code class="descname">place2geom</code><a class="headerlink" href="#happygisco.services.GISCOService.place2geom" title="Permalink to this definition">¶</a></dt>
+<dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="p">(,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last">:meth:<a href="#id15"><span class="problematic" id="id16">``</span></a>.</p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="happygisco.services.GISCOService.place2nuts">
+<code class="descname">place2nuts</code><a class="headerlink" href="#happygisco.services.GISCOService.place2nuts" title="Permalink to this definition">¶</a></dt>
+<dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">nuts</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">place2nuts</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>place : str or list[str]</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><em>nuts</em></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body">happyError :</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#happygisco.services.GISCOService.place2coord" title="happygisco.services.GISCOService.place2coord"><code class="xref py py-meth docutils literal notranslate"><span class="pre">place2coord()</span></code></a>, <a class="reference internal" href="#happygisco.services.GISCOService.coord2nuts" title="happygisco.services.GISCOService.coord2nuts"><code class="xref py py-meth docutils literal notranslate"><span class="pre">coord2nuts()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="happygisco.services.GISCOService.session">
+<code class="descname">session</code><a class="headerlink" href="#happygisco.services.GISCOService.session" title="Permalink to this definition">¶</a></dt>
+<dd><p>Session attribute (<code class="xref py py-data docutils literal notranslate"><span class="pre">getter</span></code>/<code class="xref py py-data docutils literal notranslate"><span class="pre">setter</span></code>) of a <a class="reference internal" href="#happygisco.services.GISCOService" title="happygisco.services.GISCOService"><code class="xref py py-class docutils literal notranslate"><span class="pre">GISCOService</span></code></a>
 instance. A domain type is <code class="xref py py-class docutils literal notranslate"><span class="pre">resquests.session.Session</span></code>.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="happyGISCO.happygisco.services.GISCOService.url_geocode">
-<code class="descname">url_geocode</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happyGISCO/happygisco/services.html#GISCOService.url_geocode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happyGISCO.happygisco.services.GISCOService.url_geocode" title="Permalink to this definition">¶</a></dt>
+<dt id="happygisco.services.GISCOService.url_geocode">
+<code class="descname">url_geocode</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happygisco/services.html#GISCOService.url_geocode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happygisco.services.GISCOService.url_geocode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a query URL to be be submitted GISCO geolocation web-service.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">url</span> <span class="o">=</span> <span class="n">GISCOService</span><span class="o">.</span><span class="n">url_geocode</span><span class="p">(</span><span class="o">**</span><span class="n">filters</span><span class="p">)</span>
 </pre></div>
@@ -131,9 +312,42 @@ associated to a given place.</td>
 </div>
 </dd></dl>
 
+<dl class="attribute">
+<dt id="happygisco.services.GISCOService.url_nuts">
+<code class="descname">url_nuts</code><a class="headerlink" href="#happygisco.services.GISCOService.url_nuts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a query URL to be submitted to the GISCO (simple) web-service
+for NUTS codes identification.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">url</span> <span class="o">=</span> <span class="n">GISCOService</span><span class="o">.</span><span class="n">url_nuts</span><span class="p">(</span><span class="o">**</span><span class="n">filters</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"><strong>filters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a>) – define the parameters for web-service; allowed parameters are:
+<code class="docutils literal notranslate"><span class="pre">x,</span> <span class="pre">y,</span> <span class="pre">f,</span> <span class="pre">year,</span> <span class="pre">proj</span></code>, and <code class="docutils literal notranslate"><span class="pre">geometry</span></code>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
+<li><strong>url</strong> (<em>str</em>) – link to NUTS web service to submit the specified ‘NUTS’ query that
+identifies the NUTS code of a given geolocation.</li>
+<li><em>Usage</em></li>
+<li><em>—–</em></li>
+<li><em>x=&lt;lon&gt;&amp;y=&lt;lat&gt;&amp;f=&lt;JSON/XML&gt;&amp;year=&lt;2013/2010/2006&gt;&amp;proj=3035&amp;geometry=&lt;N/Y&gt;</em></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The generic url formatting is: domain/nuts/find-nuts.py?{filters}</p>
+</div>
+</dd></dl>
+
 <dl class="method">
-<dt id="happyGISCO.happygisco.services.GISCOService.url_reverse">
-<code class="descname">url_reverse</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happyGISCO/happygisco/services.html#GISCOService.url_reverse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happyGISCO.happygisco.services.GISCOService.url_reverse" title="Permalink to this definition">¶</a></dt>
+<dt id="happygisco.services.GISCOService.url_reverse">
+<code class="descname">url_reverse</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happygisco/services.html#GISCOService.url_reverse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happygisco.services.GISCOService.url_reverse" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a query URL to be be submitted GISCO geolocation web-service.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">url</span> <span class="o">=</span> <span class="n">GISCOService</span><span class="o">.</span><span class="n">url_reverse</span><span class="p">(</span><span class="o">**</span><span class="n">filters</span><span class="p">)</span>
 </pre></div>
@@ -163,14 +377,14 @@ to a given geolocation.</td>
 </dd></dl>
 
 <dl class="method">
-<dt id="happyGISCO.happygisco.services.GISCOService.url_route">
-<code class="descname">url_route</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happyGISCO/happygisco/services.html#GISCOService.url_route"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happyGISCO.happygisco.services.GISCOService.url_route" title="Permalink to this definition">¶</a></dt>
+<dt id="happygisco.services.GISCOService.url_route">
+<code class="descname">url_route</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happygisco/services.html#GISCOService.url_route"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happygisco.services.GISCOService.url_route" title="Permalink to this definition">¶</a></dt>
 <dd><p>http(s)://europa.eu/webtools/rest/gisco/route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219?overview=false</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="happyGISCO.happygisco.services.GISCOService.url_transform">
-<code class="descname">url_transform</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happyGISCO/happygisco/services.html#GISCOService.url_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happyGISCO.happygisco.services.GISCOService.url_transform" title="Permalink to this definition">¶</a></dt>
+<dt id="happygisco.services.GISCOService.url_transform">
+<code class="descname">url_transform</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happygisco/services.html#GISCOService.url_transform"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happygisco.services.GISCOService.url_transform" title="Permalink to this definition">¶</a></dt>
 <dd><div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">The generic url formatting is: {arcgis}/Utilities/Geometry/GeometryServer/project?{filters}.</p>
@@ -185,239 +399,15 @@ to a given geolocation.</td>
 </dd></dl>
 
 <dl class="class">
-<dt id="happyGISCO.happygisco.services._geoCoderAPI">
-<em class="property">class </em><code class="descclassname">happyGISCO.happygisco.services.</code><code class="descname">_geoCoderAPI</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happyGISCO/happygisco/services.html#_geoCoderAPI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happyGISCO.happygisco.services._geoCoderAPI" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.6)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Class emulating <code class="xref py py-mod docutils literal notranslate"><span class="pre">geopy</span></code> API.</p>
-<p>Inherit all methods from original API.</p>
-<p>Most of the <a class="reference internal" href="#happyGISCO.happygisco.services._geoCoderAPI" title="happyGISCO.happygisco.services._geoCoderAPI"><code class="xref py py-class docutils literal notranslate"><span class="pre">_geoCoderAPI</span></code></a> methods will be inherited by the class
-<code class="xref py py-class docutils literal notranslate"><span class="pre">OfflineService</span></code> through composition and embedding in container
-attributes. Following, usages are presented using <code class="xref py py-class docutils literal notranslate"><span class="pre">OfflineService</span></code>.</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI">
-<em class="property">class </em><code class="descclassname">happyGISCO.happygisco.services.</code><code class="descname">_googleMapsAPI</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happyGISCO/happygisco/services.html#_googleMapsAPI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">googlemaps.client.Client</span></code></p>
-<p>Class emulating <code class="xref py py-class docutils literal notranslate"><span class="pre">Client</span></code> API.</p>
+<dt id="happygisco.services._googleMapsAPI">
+<em class="property">class </em><code class="descclassname">happygisco.services.</code><code class="descname">_googleMapsAPI</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happygisco/services.html#_googleMapsAPI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happygisco.services._googleMapsAPI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class emulating <code class="xref py py-class docutils literal notranslate"><span class="pre">Client</span></code> API.</p>
 <p>Most of the <code class="xref py py-class docutils literal notranslate"><span class="pre">googlemaps.Client</span></code> methods will be inherited by the
-<code class="xref py py-class docutils literal notranslate"><span class="pre">APIService</span></code> class through composition and
+<a class="reference internal" href="#happygisco.services.APIService" title="happygisco.services.APIService"><code class="xref py py-class docutils literal notranslate"><span class="pre">APIService</span></code></a> class through composition and
 embedding in container attributes.</p>
 <dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI._generate_auth_url">
-<code class="descname">_generate_auth_url</code><span class="sig-paren">(</span><em>path</em>, <em>params</em>, <em>accepts_clientid</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI._generate_auth_url" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the path and query string portion of the request URL, first
-adding any necessary parameters.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>path</strong> (<em>string</em>) – The path portion of the URL.</li>
-<li><strong>params</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em> or </em><em>list of key/value tuples</em>) – URL parameters.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">string</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI._request">
-<code class="descname">_request</code><span class="sig-paren">(</span><em>url</em>, <em>params</em>, <em>first_request_time=None</em>, <em>retry_counter=0</em>, <em>base_url='https://maps.googleapis.com'</em>, <em>accepts_clientid=True</em>, <em>extract_body=None</em>, <em>requests_kwargs=None</em>, <em>post_json=None</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI._request" title="Permalink to this definition">¶</a></dt>
-<dd><p>Performs HTTP GET/POST with credentials, returning the body as
-JSON.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>url</strong> (<em>string</em>) – URL path for the request. Should begin with a slash.</li>
-<li><strong>params</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em> or </em><em>list of key/value tuples</em>) – HTTP GET parameters.</li>
-<li><strong>first_request_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.6)"><em>datetime.datetime</em></a>) – The time of the first request (None if no
-retries have occurred).</li>
-<li><strong>retry_counter</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – The number of this retry, or zero for first attempt.</li>
-<li><strong>base_url</strong> (<em>string</em>) – The base URL for the request. Defaults to the Maps API
-server. Should not have a trailing slash.</li>
-<li><strong>accepts_clientid</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – Whether this call supports the client/signature
-params. Some APIs require API keys (e.g. Roads).</li>
-<li><strong>extract_body</strong> (<em>function</em>) – A function that extracts the body from the request.
-If the request was not successful, the function should raise a
-googlemaps.HTTPError or googlemaps.ApiError as appropriate.</li>
-<li><strong>requests_kwargs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a>) – Same extra keywords arg for requests as per
-__init__, but provided here to allow overriding internally on a
-per-request basis.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><strong>ApiError</strong> – when the API returns an error.</li>
-<li><strong>Timeout</strong> – if the request timed out.</li>
-<li><strong>TransportError</strong> – when something went wrong while trying to
-exceute a request.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.directions">
-<code class="descname">directions</code><span class="sig-paren">(</span><em>origin</em>, <em>destination</em>, <em>mode=None</em>, <em>waypoints=None</em>, <em>alternatives=False</em>, <em>avoid=None</em>, <em>language=None</em>, <em>units=None</em>, <em>region=None</em>, <em>departure_time=None</em>, <em>arrival_time=None</em>, <em>optimize_waypoints=False</em>, <em>transit_mode=None</em>, <em>transit_routing_preference=None</em>, <em>traffic_model=None</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.directions" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get directions between an origin point and a destination point.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>origin</strong> (<em>string</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) – The address or latitude/longitude value from which you wish
-to calculate directions.</li>
-<li><strong>destination</strong> (<em>string</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) – The address or latitude/longitude value from which
-you wish to calculate directions.</li>
-<li><strong>mode</strong> (<em>string</em>) – Specifies the mode of transport to use when calculating
-directions. One of “driving”, “walking”, “bicycling” or “transit”</li>
-<li><strong>waypoints</strong> (<em>a single location</em><em>, or </em><em>a list of locations</em><em>, </em><em>where a
-location is a string</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) – Specifies an array of waypoints. Waypoints alter a
-route by routing it through the specified location(s).</li>
-<li><strong>alternatives</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – If True, more than one route may be returned in the
-response.</li>
-<li><strong>avoid</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em> or </em><em>string</em>) – Indicates that the calculated route(s) should avoid the
-indicated features.</li>
-<li><strong>language</strong> (<em>string</em>) – The language in which to return results.</li>
-<li><strong>units</strong> (<em>string</em>) – Specifies the unit system to use when displaying results.
-“metric” or “imperial”</li>
-<li><strong>region</strong> (<em>string</em>) – The region code, specified as a ccTLD (“top-level domain”
-two-character value.</li>
-<li><strong>departure_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.6)"><em>datetime.datetime</em></a>) – Specifies the desired time of departure.</li>
-<li><strong>arrival_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.6)"><em>datetime.datetime</em></a>) – Specifies the desired time of arrival for transit
-directions. Note: you can’t specify both departure_time and
-arrival_time.</li>
-<li><strong>optimize_waypoints</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – Optimize the provided route by rearranging the
-waypoints in a more efficient order.</li>
-<li><strong>transit_mode</strong> (<em>string</em><em> or </em><em>list of strings</em>) – Specifies one or more preferred modes of transit.
-This parameter may only be specified for requests where the mode is
-transit. Valid values are “bus”, “subway”, “train”, “tram”, “rail”.
-“rail” is equivalent to [“train”, “tram”, “subway”].</li>
-<li><strong>transit_routing_preference</strong> (<em>string</em>) – Specifies preferences for transit
-requests. Valid values are “less_walking” or “fewer_transfers”</li>
-<li><strong>traffic_model</strong> – Specifies the predictive travel time model to use.
-Valid values are “best_guess” or “optimistic” or “pessimistic”.
-The traffic_model parameter may only be specified for requests where
-the travel mode is driving, and where the request includes a
-departure_time.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list of routes</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.distance_matrix">
-<code class="descname">distance_matrix</code><span class="sig-paren">(</span><em>origins</em>, <em>destinations</em>, <em>mode=None</em>, <em>language=None</em>, <em>avoid=None</em>, <em>units=None</em>, <em>departure_time=None</em>, <em>arrival_time=None</em>, <em>transit_mode=None</em>, <em>transit_routing_preference=None</em>, <em>traffic_model=None</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.distance_matrix" title="Permalink to this definition">¶</a></dt>
-<dd><p>Gets travel distance and time for a matrix of origins and destinations.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>origins</strong> (<em>a single location</em><em>, or </em><em>a list of locations</em><em>, </em><em>where a
-location is a string</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) – One or more locations and/or latitude/longitude values,
-from which to calculate distance and time. If you pass an address as
-a string, the service will geocode the string and convert it to a
-latitude/longitude coordinate to calculate directions.</li>
-<li><strong>destinations</strong> (<em>a single location</em><em>, or </em><em>a list of locations</em><em>, </em><em>where a
-location is a string</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) – One or more addresses and/or lat/lng values, to
-which to calculate distance and time. If you pass an address as a
-string, the service will geocode the string and convert it to a
-latitude/longitude coordinate to calculate directions.</li>
-<li><strong>mode</strong> (<em>string</em>) – Specifies the mode of transport to use when calculating
-directions. Valid values are “driving”, “walking”, “transit” or
-“bicycling”.</li>
-<li><strong>language</strong> (<em>string</em>) – The language in which to return results.</li>
-<li><strong>avoid</strong> (<em>string</em>) – Indicates that the calculated route(s) should avoid the
-indicated features. Valid values are “tolls”, “highways” or “ferries”.</li>
-<li><strong>units</strong> (<em>string</em>) – Specifies the unit system to use when displaying results.
-Valid values are “metric” or “imperial”.</li>
-<li><strong>departure_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.6)"><em>datetime.datetime</em></a>) – Specifies the desired time of departure.</li>
-<li><strong>arrival_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.6)"><em>datetime.datetime</em></a>) – Specifies the desired time of arrival for transit
-directions. Note: you can’t specify both departure_time and
-arrival_time.</li>
-<li><strong>transit_mode</strong> (<em>string</em><em> or </em><em>list of strings</em>) – Specifies one or more preferred modes of transit.
-This parameter may only be specified for requests where the mode is
-transit. Valid values are “bus”, “subway”, “train”, “tram”, “rail”.
-“rail” is equivalent to [“train”, “tram”, “subway”].</li>
-<li><strong>transit_routing_preference</strong> (<em>string</em>) – Specifies preferences for transit
-requests. Valid values are “less_walking” or “fewer_transfers”.</li>
-<li><strong>traffic_model</strong> – Specifies the predictive travel time model to use.
-Valid values are “best_guess” or “optimistic” or “pessimistic”.
-The traffic_model parameter may only be specified for requests where
-the travel mode is driving, and where the request includes a
-departure_time.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">matrix of distances. Results are returned in rows, each row
-containing one origin paired with each destination.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.elevation">
-<code class="descname">elevation</code><span class="sig-paren">(</span><em>locations</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.elevation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Provides elevation data for locations provided on the surface of the
-earth, including depth locations on the ocean floor (which return negative
-values)</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>locations</strong> (<em>a single location</em><em>, or </em><em>a list of locations</em><em>, </em><em>where a
-location is a string</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) – List of latitude/longitude values from which you wish
-to calculate elevation data.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list of elevation data responses</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.elevation_along_path">
-<code class="descname">elevation_along_path</code><span class="sig-paren">(</span><em>path</em>, <em>samples</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.elevation_along_path" title="Permalink to this definition">¶</a></dt>
-<dd><p>Provides elevation data sampled along a path on the surface of the earth.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>path</strong> (<em>string</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) – An encoded polyline string, or a list of latitude/longitude
-values from which you wish to calculate elevation data.</li>
-<li><strong>samples</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – The number of sample points along a path for which to
-return elevation data.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list of elevation data responses</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.geocode">
-<code class="descname">geocode</code><span class="sig-paren">(</span><em>arg</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happyGISCO/happygisco/services.html#_googleMapsAPI.geocode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.geocode" title="Permalink to this definition">¶</a></dt>
+<dt id="happygisco.services._googleMapsAPI.geocode">
+<code class="descname">geocode</code><span class="sig-paren">(</span><em>arg</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happygisco/services.html#_googleMapsAPI.geocode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happygisco.services._googleMapsAPI.geocode" title="Permalink to this definition">¶</a></dt>
 <dd><p>Geocoding is the process of converting addresses
 (like <code class="docutils literal notranslate"><span class="pre">&quot;1600</span> <span class="pre">Amphitheatre</span> <span class="pre">Parkway,</span> <span class="pre">Mountain</span> <span class="pre">View,</span> <span class="pre">CA&quot;</span></code>) into geographic
 coordinates (like latitude 37.423021 and longitude -122.083739), which you
@@ -445,432 +435,21 @@ two-character value.</li>
 </table>
 </dd></dl>
 
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.geolocate">
-<code class="descname">geolocate</code><span class="sig-paren">(</span><em>home_mobile_country_code=None</em>, <em>home_mobile_network_code=None</em>, <em>radio_type=None</em>, <em>carrier=None</em>, <em>consider_ip=None</em>, <em>cell_towers=None</em>, <em>wifi_access_points=None</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.geolocate" title="Permalink to this definition">¶</a></dt>
-<dd><p>The Google Maps Geolocation API returns a location and accuracy
-radius based on information about cell towers and WiFi nodes given.</p>
-<p>See <a class="reference external" href="https://developers.google.com/maps/documentation/geolocation/intro">https://developers.google.com/maps/documentation/geolocation/intro</a>
-for more info, including more detail for each parameter below.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>home_mobile_country_code</strong> (<em>string</em>) – The mobile country code (MCC) for
-the device’s home network.</li>
-<li><strong>home_mobile_network_code</strong> (<em>string</em>) – The mobile network code (MCC) for
-the device’s home network.</li>
-<li><strong>radio_type</strong> (<em>string</em>) – The mobile radio type. Supported values are
-lte, gsm, cdma, and wcdma. While this field is optional, it
-should be included if a value is available, for more accurate
-results.</li>
-<li><strong>carrier</strong> (<em>string</em>) – The carrier name.</li>
-<li><strong>consider_ip</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – Specifies whether to fall back to IP geolocation
-if wifi and cell tower signals are not available. Note that the
-IP address in the request header may not be the IP of the device.</li>
-<li><strong>cell_towers</strong> (<em>list of dicts</em>) – A list of cell tower dicts. See
-<a class="reference external" href="https://developers.google.com/maps/documentation/geolocation/intro#cell_tower_object">https://developers.google.com/maps/documentation/geolocation/intro#cell_tower_object</a>
-for more detail.</li>
-<li><strong>wifi_access_points</strong> (<em>list of dicts</em>) – A list of WiFi access point dicts. See
-<a class="reference external" href="https://developers.google.com/maps/documentation/geolocation/intro#wifi_access_point_object">https://developers.google.com/maps/documentation/geolocation/intro#wifi_access_point_object</a>
-for more detail.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
 </dd></dl>
 
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.nearest_roads">
-<code class="descname">nearest_roads</code><span class="sig-paren">(</span><em>points</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.nearest_roads" title="Permalink to this definition">¶</a></dt>
-<dd><p>Find the closest road segments for each point</p>
-<p>Takes up to 100 independent coordinates, and returns the closest road
-segment for each point. The points passed do not need to be part of a
-continuous path.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>points</strong> (<em>a single location</em><em>, or </em><em>a list of locations</em><em>, </em><em>where a
-location is a string</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) – The points for which the nearest road segments are to be
-located.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">A list of snapped points.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
+<dl class="class">
+<dt id="happygisco.services._googlePlacesAPI">
+<em class="property">class </em><code class="descclassname">happygisco.services.</code><code class="descname">_googlePlacesAPI</code><a class="reference internal" href="_modules/happygisco/services.html#_googlePlacesAPI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happygisco.services._googlePlacesAPI" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.place">
-<code class="descname">place</code><span class="sig-paren">(</span><em>place_id</em>, <em>language=None</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.place" title="Permalink to this definition">¶</a></dt>
-<dd><p>Comprehensive details for an individual place.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>place_id</strong> (<em>string</em>) – A textual identifier that uniquely identifies a place,
-returned from a Places search.</li>
-<li><strong>language</strong> – The language in which to return results.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">result dict with the following keys:
-result: dict containing place details
-html_attributions: set of attributions which must be displayed</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.places">
-<code class="descname">places</code><span class="sig-paren">(</span><em>query</em>, <em>location=None</em>, <em>radius=None</em>, <em>language=None</em>, <em>min_price=None</em>, <em>max_price=None</em>, <em>open_now=False</em>, <em>type=None</em>, <em>page_token=None</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.places" title="Permalink to this definition">¶</a></dt>
-<dd><p>Places search.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>query</strong> (<em>string</em>) – The text string on which to search, for example: “restaurant”.</li>
-<li><strong>location</strong> (<em>string</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) – The latitude/longitude value for which you wish to obtain the
-closest, human-readable address.</li>
-<li><strong>radius</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Distance in meters within which to bias results.</li>
-<li><strong>language</strong> – The language in which to return results.</li>
-<li><strong>min_price</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Restricts results to only those places with no less than
-this price level. Valid values are in the range from 0 (most affordable)
-to 4 (most expensive).</li>
-<li><strong>max_price</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Restricts results to only those places with no greater
-than this price level. Valid values are in the range from 0 (most
-affordable) to 4 (most expensive).</li>
-<li><strong>open_now</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – Return only those places that are open for business at
-the time the query is sent.</li>
-<li><strong>type</strong> (<em>string</em>) – Restricts the results to places matching the specified type.
-The full list of supported types is available here:
-<a class="reference external" href="https://developers.google.com/places/supported_types">https://developers.google.com/places/supported_types</a></li>
-<li><strong>page_token</strong> (<em>string</em>) – Token from a previous search that when provided will
-returns the next page of results for the same search.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">result dict with the following keys:
-results: list of places
-html_attributions: set of attributions which must be displayed
-next_page_token: token for retrieving the next page of results</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.places_autocomplete">
-<code class="descname">places_autocomplete</code><span class="sig-paren">(</span><em>input_text</em>, <em>offset=None</em>, <em>location=None</em>, <em>radius=None</em>, <em>language=None</em>, <em>types=None</em>, <em>components=None</em>, <em>strict_bounds=False</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.places_autocomplete" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns Place predictions given a textual search string and optional
-geographic bounds.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>input_text</strong> (<em>string</em>) – The text string on which to search.</li>
-<li><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – The position, in the input term, of the last character
-that the service uses to match predictions. For example,
-if the input is ‘Google’ and the offset is 3, the
-service will match on ‘Goo’.</li>
-<li><strong>location</strong> (<em>string</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) – The latitude/longitude value for which you wish to obtain the
-closest, human-readable address.</li>
-<li><strong>radius</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Distance in meters within which to bias results.</li>
-<li><strong>language</strong> – The language in which to return results.</li>
-<li><strong>types</strong> – Restricts the results to places matching the specified type.
-The full list of supported types is available here:
-<a class="reference external" href="https://developers.google.com/places/web-service/autocomplete#place_types">https://developers.google.com/places/web-service/autocomplete#place_types</a></li>
-<li><strong>components</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a>) – A component filter for which you wish to obtain a geocode,
-for example:
-<code class="docutils literal notranslate"><span class="pre">{'administrative_area':</span> <span class="pre">'TX','country':</span> <span class="pre">'US'}</span></code></li>
-<li><strong>strict_bounds</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – Returns only those places that are strictly within
-the region defined by location and radius.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list of predictions</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.places_autocomplete_query">
-<code class="descname">places_autocomplete_query</code><span class="sig-paren">(</span><em>input_text</em>, <em>offset=None</em>, <em>location=None</em>, <em>radius=None</em>, <em>language=None</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.places_autocomplete_query" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns Place predictions given a textual search query, such as
-“pizza near New York”, and optional geographic bounds.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>input_text</strong> (<em>string</em>) – The text query on which to search.</li>
-<li><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – The position, in the input term, of the last character
-that the service uses to match predictions. For example, if the input
-is ‘Google’ and the offset is 3, the service will match on ‘Goo’.</li>
-<li><strong>location</strong> (<em>string</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) – The latitude/longitude value for which you wish to obtain the
-closest, human-readable address.</li>
-<li><strong>radius</strong> (<em>number</em>) – Distance in meters within which to bias results.</li>
-<li><strong>language</strong> – The language in which to return results.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list of predictions</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.places_nearby">
-<code class="descname">places_nearby</code><span class="sig-paren">(</span><em>location</em>, <em>radius=None</em>, <em>keyword=None</em>, <em>language=None</em>, <em>min_price=None</em>, <em>max_price=None</em>, <em>name=None</em>, <em>open_now=False</em>, <em>rank_by=None</em>, <em>type=None</em>, <em>page_token=None</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.places_nearby" title="Permalink to this definition">¶</a></dt>
-<dd><p>Performs nearby search for places.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>location</strong> (<em>string</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) – The latitude/longitude value for which you wish to obtain the
-closest, human-readable address.</li>
-<li><strong>radius</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Distance in meters within which to bias results.</li>
-<li><strong>keyword</strong> (<em>string</em>) – A term to be matched against all content that Google has
-indexed for this place.</li>
-<li><strong>language</strong> – The language in which to return results.</li>
-<li><strong>min_price</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Restricts results to only those places with no less than
-this price level. Valid values are in the range from 0
-(most affordable) to 4 (most expensive).</li>
-<li><strong>max_price</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Restricts results to only those places with no greater
-than this price level. Valid values are in the range
-from 0 (most affordable) to 4 (most expensive).</li>
-<li><strong>name</strong> (<em>string</em><em> or </em><em>list of strings</em>) – One or more terms to be matched against the names of places.</li>
-<li><strong>open_now</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – Return only those places that are open for business at
-the time the query is sent.</li>
-<li><strong>rank_by</strong> (<em>string</em>) – Specifies the order in which results are listed.
-Possible values are: prominence (default), distance</li>
-<li><strong>type</strong> (<em>string</em>) – Restricts the results to places matching the specified type.
-The full list of supported types is available here:
-<a class="reference external" href="https://developers.google.com/places/supported_types">https://developers.google.com/places/supported_types</a></li>
-<li><strong>page_token</strong> (<em>string</em>) – Token from a previous search that when provided will
-returns the next page of results for the same search.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">result dict with the following keys:
-status: status code
-results: list of places
-html_attributions: set of attributions which must be displayed
-next_page_token: token for retrieving the next page of results</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.places_photo">
-<code class="descname">places_photo</code><span class="sig-paren">(</span><em>photo_reference</em>, <em>max_width=None</em>, <em>max_height=None</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.places_photo" title="Permalink to this definition">¶</a></dt>
-<dd><p>Downloads a photo from the Places API.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>photo_reference</strong> (<em>string</em>) – A string identifier that uniquely identifies a
-photo, as provided by either a Places search or Places detail request.</li>
-<li><strong>max_width</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Specifies the maximum desired width, in pixels.</li>
-<li><strong>max_height</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Specifies the maximum desired height, in pixels.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><p>iterator containing the raw image data, which typically can be
-used to save an image file locally. For example:</p>
-<p><a href="#id1"><span class="problematic" id="id2">``</span></a>`
-f = open(local_filename, ‘wb’)
-for chunk in client.photo(photo_reference, max_width=100):</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>if chunk:</dt>
-<dd><p class="first last">f.write(chunk)</p>
-</dd>
-</dl>
-</div></blockquote>
-<p>f.close()
-<a href="#id3"><span class="problematic" id="id4">``</span></a><a href="#id5"><span class="problematic" id="id6">`</span></a></p>
-</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.places_radar">
-<code class="descname">places_radar</code><span class="sig-paren">(</span><em>location</em>, <em>radius</em>, <em>keyword=None</em>, <em>min_price=None</em>, <em>max_price=None</em>, <em>name=None</em>, <em>open_now=False</em>, <em>type=None</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.places_radar" title="Permalink to this definition">¶</a></dt>
-<dd><p>Performs radar search for places.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>location</strong> (<em>string</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) – The latitude/longitude value for which you wish to obtain the
-closest, human-readable address.</li>
-<li><strong>radius</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Distance in meters within which to bias results.</li>
-<li><strong>keyword</strong> (<em>string</em>) – A term to be matched against all content that Google has
-indexed for this place.</li>
-<li><strong>min_price</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Restricts results to only those places with no less than
-this price level. Valid values are in the range from 0
-(most affordable) to 4 (most expensive).</li>
-<li><strong>max_price</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a>) – Restricts results to only those places with no greater
-than this price level. Valid values are in the range
-from 0 (most affordable) to 4 (most expensive).</li>
-<li><strong>name</strong> (<em>string</em><em> or </em><em>list of strings</em>) – One or more terms to be matched against the names of places.</li>
-<li><strong>open_now</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – Return only those places that are open for business at
-the time the query is sent.</li>
-<li><strong>type</strong> (<em>string</em>) – Restricts the results to places matching the specified type.
-The full list of supported types is available here:
-<a class="reference external" href="https://developers.google.com/places/supported_types">https://developers.google.com/places/supported_types</a></li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">result dict with the following keys:
-status: status code
-results: list of places
-html_attributions: set of attributions which must be displayed</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.reverse_geocode">
-<code class="descname">reverse_geocode</code><span class="sig-paren">(</span><em>latlng</em>, <em>result_type=None</em>, <em>location_type=None</em>, <em>language=None</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.reverse_geocode" title="Permalink to this definition">¶</a></dt>
-<dd><p>Reverse geocoding is the process of converting geographic coordinates into a
-human-readable address.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>latlng</strong> (<em>string</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) – The latitude/longitude value or place_id for which you wish
-to obtain the closest, human-readable address.</li>
-<li><strong>result_type</strong> (<em>string</em><em> or </em><em>list of strings</em>) – One or more address types to restrict results to.</li>
-<li><strong>location_type</strong> (<em>list of strings</em>) – One or more location types to restrict results to.</li>
-<li><strong>language</strong> – The language in which to return results.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list of reverse geocoding results.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.snap_to_roads">
-<code class="descname">snap_to_roads</code><span class="sig-paren">(</span><em>path</em>, <em>interpolate=False</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.snap_to_roads" title="Permalink to this definition">¶</a></dt>
-<dd><p>Snaps a path to the most likely roads travelled.</p>
-<p>Takes up to 100 GPS points collected along a route, and returns a similar
-set of data with the points snapped to the most likely roads the vehicle
-was traveling along.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>path</strong> (<em>a single location</em><em>, or </em><em>a list of locations</em><em>, </em><em>where a
-location is a string</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) – The path to be snapped.</li>
-<li><strong>interpolate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) – Whether to interpolate a path to include all points
-forming the full road-geometry. When true, additional interpolated
-points will also be returned, resulting in a path that smoothly follows
-the geometry of the road, even around corners and through tunnels.
-Interpolated paths may contain more points than the original path.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">A list of snapped points.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.snapped_speed_limits">
-<code class="descname">snapped_speed_limits</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.snapped_speed_limits" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the posted speed limit (in km/h) for given road segments.</p>
-<p>The provided points will first be snapped to the most likely roads the
-vehicle was traveling along.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<em>a single location</em><em>, or </em><em>a list of locations</em><em>, </em><em>where a
-location is a string</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) – The path of points to be snapped.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">dict with a list of speed limits and a list of the snapped points.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.speed_limits">
-<code class="descname">speed_limits</code><span class="sig-paren">(</span><em>place_ids</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.speed_limits" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the posted speed limit (in km/h) for given road segments.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>place_ids</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.6)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a>) – The Place ID of the road segment. Place IDs are returned
-by the snap_to_roads function. You can pass up to 100 Place IDs.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list of speed limits.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="happyGISCO.happygisco.services._googleMapsAPI.timezone">
-<code class="descname">timezone</code><span class="sig-paren">(</span><em>location</em>, <em>timestamp=None</em>, <em>language=None</em><span class="sig-paren">)</span><a class="headerlink" href="#happyGISCO.happygisco.services._googleMapsAPI.timezone" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get time zone for a location on the earth, as well as that location’s
-time offset from UTC.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>location</strong> (<em>string</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.6)"><em>list</em></a><em>, or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.6)"><em>tuple</em></a>) – The latitude/longitude value representing the location to
-look up.</li>
-<li><strong>timestamp</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/datetime.html#datetime.datetime" title="(in Python v3.6)"><em>datetime.datetime</em></a>) – Timestamp specifies the desired time as seconds since
-midnight, January 1, 1970 UTC. The Time Zone API uses the timestamp to
-determine whether or not Daylight Savings should be applied. Times
-before 1970 can be expressed as negative values. Optional. Defaults to
-<code class="docutils literal notranslate"><span class="pre">datetime.utcnow()</span></code>.</li>
-<li><strong>language</strong> (<em>string</em>) – The language in which to return results.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)">dict</a></p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
+<dl class="class">
+<dt id="happygisco.services._geoCoderAPI">
+<em class="property">class </em><code class="descclassname">happygisco.services.</code><code class="descname">_geoCoderAPI</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/happygisco/services.html#_geoCoderAPI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#happygisco.services._geoCoderAPI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class emulating <code class="xref py py-mod docutils literal notranslate"><span class="pre">geopy</span></code> API.</p>
+<p>Inherit all methods from original API.</p>
+<p>Most of the <a class="reference internal" href="#happygisco.services._geoCoderAPI" title="happygisco.services._geoCoderAPI"><code class="xref py py-class docutils literal notranslate"><span class="pre">_geoCoderAPI</span></code></a> methods will be inherited by the class
+<code class="xref py py-class docutils literal notranslate"><span class="pre">OfflineService</span></code> through composition and embedding in container
+attributes. Following, usages are presented using <code class="xref py py-class docutils literal notranslate"><span class="pre">OfflineService</span></code>.</p>
 </dd></dl>
 
 </div>
@@ -880,13 +459,13 @@ before 1970 can be expressed as negative values. Optional. Defaults to
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper"><div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-  </ul></li>
-</ul>
-</div>
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="tools.html"
+                        title="previous chapter"><code class="docutils literal notranslate"><span class="pre">tools</span></code> module</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="features.html"
+                        title="next chapter"><code class="docutils literal notranslate"><span class="pre">features</span></code> module</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -910,20 +489,27 @@ before 1970 can be expressed as negative values. Optional. Defaults to
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="footer">
-      &copy;2018, Jacopo Grazzini @European Commission.
-      
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
-      
-      |
-      <a href="_sources/services.rst.txt"
-          rel="nofollow">Page source</a>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="features.html" title="features module"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tools.html" title="tools module"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">happyGISCO happygisco documentation</a> &#187;</li> 
+      </ul>
     </div>
-
-    
-
-    
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Jacopo Grazzini -- European Union.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.2.
+    </div>
   </body>
 </html>

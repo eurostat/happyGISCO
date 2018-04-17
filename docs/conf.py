@@ -12,45 +12,130 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os, sys
 
+try:
+    import simplejson as json
+except:
+    try:
+        import json#analysis:ignore
+    except:
+        pass
+    
+this = os.path.dirname(os.path.abspath(__file__))
+
+DIRHAPPYGISCO       = '../'
+DIRHAPPYGISCO       = os.path.abspath(DIRHAPPYGISCO)
+
+METADATA            = 'metadata.json' # 'metadata.py'
+METADATA            = os.path.join(DIRHAPPYGISCO, METADATA)
+
+# import project metadata
+try:    
+    assert json and os.path.exists(METADATA) and os.path.isfile(METADATA)
+except:
+    # raise IOError('metadata file not loaded')
+    metadata = {}
+else:
+    ## metadata = imp.load_source('metadata', file_metadata) 
+    ## # for consistency when using keys [''] to retrieve the fields
+    ## metadata = metadata.__dict__ 
+    with open(METADATA,'r') as f:
+        metadata = json.load(f) 
 
 # -- Project information -----------------------------------------------------
 
-project = 'happyGISCO'
-copyright = '2018, Jacopo Grazzini @European Commission'
-author = 'Jacopo Grazzini'
+# project = 'happyGISCO'
+try:
+    project         = metadata['project']
+except KeyError: 
+    try:
+        project     = metadata['package'].upper()
+    except KeyError: 
+        raise IOError('project and package names not defined')
+project             = project.strip()
+
+# package = 'happygisco'
+try:
+    package         = metadata['package']
+except KeyError:
+    package         = project.lower()
+package = "".join(package.split())
+
+# at this stage, we can simplofy the search exercise...
+#sys.path.insert(0, os.path.abspath('.'))
+#sys.path.insert(0, DIRHAPPYGISCO)
+sys.path.insert(0, os.path.join(DIRHAPPYGISCO,package))
+# sys.path.insert(0, os.path.abspath(os.path.join(DIRHAPPYGISCO,'../',project)))
+
+# author            = 'Jacopo Grazzini'
+author              = str(metadata.get('author',''))
+
+# copyright = '2018, Jacopo Grazzini @European Commission'
+try:
+    copyright       = metadata['copyright']
+except KeyError:
+    try:
+        copyright   = metadata['date']
+    except KeyError:
+        copyright   = ''
+    else:
+        copyright   = copyright + ', '  + author 
+try:    
+    copyright       = copyright + ' -- ' + metadata['organisation']
+except KeyError:
+    pass 
+copyright           = str(copyright.strip())
+
+description         = metadata.get('description','')
+
+# spoiler: we cheat here!!! we load the package so that automodule actually works
+try:
+    assert True
+    import imp
+    imp.load_module(package, *imp.find_module(package, path=[DIRHAPPYGISCO,]))#analysis:ignore
+except AssertionError:
+    pass
+except ImportError:
+    raise IOError('environment not set to import {package} - short doc only'.format(package=package))
 
 # The short X.Y version
-version = ''
-# The full version, including alpha/beta/rc tags
-release = '1.0'
+# version             = '1.0'
+try:
+    version         = metadata['release']
+except:
+    version         = project.lower()
 
+# The full version, including alpha/beta/rc tags
+release             = version
 
 # -- General configuration ---------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
-# needs_sphinx = '1.0'
+# needs_sphinx      = '1.0'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.doctest',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.todo',
-    'sphinx.ext.coverage',
-    'sphinx.ext.imgmath',
-    'sphinx.ext.ifconfig',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages',
-    'sphinx.ext.napoleon',
-    #'sphinxcontrib.napoleon'
-]
+# sys.path.append(os.path.abspath('sphinxext'))
+
+# Add any Sphinx extension module names here, as strings. They can be
+# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
+# ones.
+extensions          = ['sphinx.ext.autodoc',
+                       'sphinx.ext.autosummary', 
+                       'sphinx.ext.doctest',
+                       'sphinx.ext.intersphinx',
+                       'sphinx.ext.todo',
+                       'sphinx.ext.coverage',
+                       'sphinx.ext.imgmath',
+                       'sphinx.ext.ifconfig',
+                       'sphinx.ext.viewcode',
+                       'sphinx.ext.githubpages',
+                       'sphinx.ext.napoleon',
+                       #'sphinxcontrib.napoleon'
+                       ]
 
 # Napoleon settings
 napoleon_numpy_docstring = True
@@ -60,36 +145,36 @@ napoleon_include_special_with_doc = False
 napoleon_use_admonition_for_examples = False
 napoleon_use_admonition_for_notes = False
 napoleon_use_admonition_for_references = False
-napoleon_use_ivar = False
-napoleon_use_param = True
-napoleon_use_rtype = False
+napoleon_use_ivar   = False
+napoleon_use_param  = True
+napoleon_use_rtype  = False
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path      = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-# source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+# source_suffix         = ['.rst', '.md']
+source_suffix       = '.rst'
 
 # The master toctree document.
-master_doc = 'index'
+master_doc          = 'index'
 
 # The language for content autogenerated by Sphinx. Refer to documentation
 # for a list of supported languages.
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language            = None
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns    = ['_build', 'Thumbs.db', '.DS_Store', '__pycache__']
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style      = 'sphinx'
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -97,7 +182,11 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme          = 'default'
+## nature
+#html_theme = 'nature'
+##'alabaster'
+#html_theme = 'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -108,7 +197,20 @@ html_theme = 'alabaster'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path    = ['_static']
+
+# Add any extra paths that contain custom files (such as robots.txt or
+# .htaccess) here, relative to this directory. These files are copied
+# directly to the root of the documentation.
+#html_extra_path = []
+
+# If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
+# using the given strftime format.
+#html_last_updated_fmt = '%b %d, %Y'
+
+# If true, SmartyPants will be used to convert quotes and dashes to
+# typographically correct entities.
+#html_use_smartypants = True
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -119,12 +221,51 @@ html_static_path = ['_static']
 # 'searchbox.html']``.
 #
 # html_sidebars = {}
+##html_sidebars = {
+##   '**': ['searchbox.html', 'globaltoc.html', 'sourcelink.html'],
+##}
 
+# Additional templates that should be rendered to pages, maps page names to
+# template names.
+#html_additional_pages = {}
+
+# If false, no module index is generated.
+# html_domain_indices = True
+
+# If false, no index is generated.
+#html_use_index = True
+
+# If true, the index is split into individual pages for each letter.
+html_split_index = True
+
+# If true, links to the reST sources are added to the pages.
+#html_show_sourcelink = True
+
+# If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
+#html_show_sphinx = True
+
+# If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
+html_show_copyright = True
+
+# If true, an OpenSearch description file will be output, and all pages will
+# contain a <link> tag referring to it.  The value of this option must be the
+# base URL from which the finished HTML is served.
+#html_use_opensearch = ''
+
+# This is the file name suffix for HTML files (e.g. ".xhtml").
+#html_file_suffix = None
+
+# Extra local configuration. This is useful for placing the class description
+# in the class docstring and the __init__ parameter documentation in the
+# __init__ docstring. See
+# <http://sphinx-doc.org/ext/autodoc.html#confval-autoclass_content> for more
+# information.
+autoclass_content = 'both'
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'happygiscodoc'
+htmlhelp_basename = project + 'doc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -151,8 +292,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'happygisco.tex', 'happygisco Documentation',
-     'Jacopo Grazzini', 'manual'),
+  (master_doc, project + '.tex', project +' Documentation', author, 'manual'),
 ]
 
 
@@ -161,7 +301,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'happygisco', 'happygisco Documentation',
+    (master_doc, project, project +' Documentation',
      [author], 1)
 ]
 
@@ -172,8 +312,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'happygisco', 'happygisco Documentation',
-     author, 'happygisco', 'One line description of project.',
+    (master_doc, project, project +' Documentation',
+     author, 'project', description,
      'Miscellaneous'),
 ]
 

@@ -18,16 +18,19 @@ Overview
    doc
 
 =====================
-Components
+Package components
 =====================
 
-:mod:`happygisco` Package
--------------------------
+Module contents
+---------------
 
-.. automodule:: happyGISCO.happygisco.__init__
+.. automodule:: happygisco
     :members:
     :undoc-members:
     :show-inheritance:
+
+Submodules
+----------
 
 .. toctree::
    :titlesonly:
