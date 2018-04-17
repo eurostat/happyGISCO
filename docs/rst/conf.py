@@ -24,7 +24,7 @@ except:
     
 this = os.path.dirname(os.path.abspath(__file__))
 
-DIRHAPPYGISCO       = '../'
+DIRHAPPYGISCO       = '../../'
 DIRHAPPYGISCO       = os.path.abspath(DIRHAPPYGISCO)
 
 METADATA            = 'metadata.json' # 'metadata.py'
