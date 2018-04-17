@@ -84,7 +84,7 @@ sys.path.insert(0, os.path.join(DIRHAPPYGISCO,package))
 
 # spoiler: we cheat here!!! we load the package so that automodule actually works
 try:
-    assert True
+    assert False
     import imp
     imp.load_module(package, *imp.find_module(package, path=[DIRHAPPYGISCO,]))#analysis:ignore
 except AssertionError:
