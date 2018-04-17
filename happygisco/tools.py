@@ -7,14 +7,6 @@
 Library of simple tools for simple geographical data (geolocations and geocoordinates)
 handling and processin.
 
-**About**
-
-*credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
-
-*version*:      1
---
-*since*:        Sat Apr 14 20:23:34 2018
-
 **Description**
 
 Perform various types of geographical transformations and 'conversions' in order 
@@ -36,7 +28,11 @@ to represent equivalently and uniquely geographical locations/toponames.
 .. |gdal| replace:: `gdal <gdal_>`_
 """
 
-__all__         = ['GeoDistance', 'GeoAngle', 'GeoCoordinate', 'GDALTool']
+# *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
+# *since*:        Sat Apr 14 20:23:34 2018
+
+__all__         = ['_GeoLocation', 
+                   'GeoDistance', 'GeoAngle', 'GeoCoordinate', 'GDALTool']
 
 # generic import
 import os, sys#analysis:ignore
@@ -45,8 +41,8 @@ import math
 import functools#analysis:ignore
 
 # local imports
-from . import settings
-from .settings import happyVerbose, happyWarning, happyError, _geoDecorators
+from happygisco import settings
+from happygisco.settings import happyVerbose, happyWarning, happyError, _geoDecorators
 
 try:
     GDAL_SERVICE = True

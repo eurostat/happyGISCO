@@ -23,7 +23,7 @@ except:
     except:
         pass
 
-IS_READTHEDOCS      = True
+IS_READTHEDOCS      = False
 
 HAPPYGISCO          = 'happyGISCO'
 HAPPYMODULES        = ['settings', 'tools', 'services', 'features'] 
@@ -85,14 +85,14 @@ package = "".join(package.split())
 
 # at this stage, we can simplofy the search exercise...
 #sys.path.insert(0, '.')
-#sys.path.insert(0, DIRHAPPYGISCO)
+sys.path.insert(0, DIRHAPPYGISCO)
 sys.path.insert(0, os.path.join(DIRHAPPYGISCO,package))
 # sys.path.insert(0, os.path.abspath(os.path.join(DIRHAPPYGISCO,'../',project)))
 
 # further integration with ReadTheDocs
 # https://media.readthedocs.org/pdf/docs-python2readthedocs/master/docs-python2readthedocs.pdf
 try:
-    assert IS_READTHEDOCS
+    assert False and IS_READTHEDOCS
     import mock
 except AssertionError:
     pass

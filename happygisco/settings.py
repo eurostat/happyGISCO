@@ -6,14 +6,6 @@
 
 Basic definitions for the use of various geolocation web-services.
 
-**About**
-
-*credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
-
-*version*:      1
---
-*since*:        Sat Mar 31 21:54:08 2018
-
 **Description**
 
 This module contains some basic definitions (classes and variables) that are used
@@ -40,6 +32,9 @@ for:
 .. _gdal: https://pypi.python.org/pypi/GDAL
 .. |gdal| replace:: `gdal <gdal_>`_
 """
+
+# *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
+# *since*:        Sat Mar 31 21:54:08 2018
 
 import os, sys#analysis:ignore
 import inspect#analysis:ignore

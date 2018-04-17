@@ -24,17 +24,19 @@ as NUTS regions, to which geotransformations are associated.
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
 # *since*:        Sat Apr  7 01:34:07 2018
 
+__all__         = ['Place', 'Location', 'NUTS']
+
 # generic import
 import os, sys#analysis:ignore
 
 import functools#analysis:ignore
 
 # local imports
-from . import settings
-from .settings import happyWarning, happyVerbose, _geoDecorators
-from . import services     
-from .services import GISCO_SERVICE, API_SERVICE
-from .tools import GDAL_SERVICE
+from happygisco import settings
+from happygisco.settings import happyWarning, happyVerbose, _geoDecorators#analysis:ignore
+from happygisco import services     
+from happygisco.services import GISCO_SERVICE, API_SERVICE
+from happygisco.tools import GDAL_SERVICE
 
 # requirements
 
@@ -101,7 +103,7 @@ class __Feature(object):
 #==============================================================================
             
 class Place(__Feature):
-    """
+    """Class
     """
 
     #/************************************************************************/
@@ -116,7 +118,7 @@ class Place(__Feature):
         place : tuple, tuple[str]
             a string defining a location name, _e.g._ of the form :literal:`locatity, country`,
             for instance :literal:`Paris, France`; possibly left empty, so as to consider the 
-            keyword argument :literal:`place` in :data:`kwargs` (see below), otherwise 
+            keyword argument :data:`place` in :data:`kwargs` (see below), otherwise 
             all keyword arguments are ignored.
             
         Keyword Argument

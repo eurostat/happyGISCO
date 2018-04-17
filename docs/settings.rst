@@ -1,7 +1,6 @@
 :mod:`settings` module
 ----------------------
 
-.. automodule:: happygisco.settings
+.. automodule:: settings
     :members:
     :inherited-members:
-    :show-inheritance:

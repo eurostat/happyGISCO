@@ -23,7 +23,7 @@ Simple API to Eurostat GISCO web-services.
     
 """
 
-__all__ = ['settings', 'services', 'tools', 'features']#analysis:ignore
+__all__ = ['settings', 'tools', 'services', 'features']#analysis:ignore
 
 #==============================================================================
 # PROGRAM METADATA

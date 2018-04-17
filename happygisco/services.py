@@ -6,14 +6,6 @@
 
 Module for place/location identification and NUTS identifier retrieval.
 
-**About**
-
-*credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
-
-*version*:      1
---
-*since*:        Sat Apr  7 01:46:51 2018
-
 **Description**
 
 Perform offline or online queries in order to define unambiguously geographic 
@@ -45,14 +37,20 @@ locations and their NUTS identifiers.
 .. |PyGeoTools| replace:: `PyGeoTools <PyGeoTools_>`_
 """
 
+# *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
+# *since*:        Sat Apr  7 01:46:51 2018
+
+__all__         = ['GISCOService', 'APIService', 
+                   '_googleMapsAPI', '_googlePlacesAPI', '_geoCoderAPI']
+
 # generic import
 import os, sys#analysis:ignore
 
 import functools#analysis:ignore
 
 # local imports
-from . import settings
-from .settings import happyVerbose, happyWarning, happyError, _geoDecorators
+from happygisco import settings
+from happygisco.settings import happyVerbose, happyWarning, happyError, _geoDecorators
 
 # requirements
 try:                                

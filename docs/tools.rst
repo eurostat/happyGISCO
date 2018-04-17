@@ -1,7 +1,10 @@
 :mod:`tools` module
 -------------------
 
-.. automodule:: happygisco.tools
+.. automodule:: tools
     :members:
     :inherited-members:
-    :show-inheritance:
+    :exclude-members: _GeoLocation
+
+.. autoclass:: tools._GeoLocation
+   :members:
