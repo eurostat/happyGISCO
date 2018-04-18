@@ -42,7 +42,8 @@ import functools#analysis:ignore
 
 # local imports
 from happygisco import settings
-from happygisco.settings import happyVerbose, happyWarning, happyError, _geoDecorators
+from happygisco.settings import happyVerbose, happyWarning, happyError
+from happygisco.decorators import _geoParsing
 
 try:
     GDAL_SERVICE = True
@@ -68,13 +69,13 @@ except ImportError:
 # so that issubclass(GeoCoordinate, object) is True
 class _GeoLocation(object):
     """Class used to represent coordinates on a sphere, most likely Earth, as suggested  
-    in http://janmatuschek.de/LatitudeLongitudeBoundingCoordinates
+    in <http://janmatuschek.de/LatitudeLongitudeBoundingCoordinates>_\ .
 
-    Library forked from https://github.com/jfein/PyGeoTools/blob/master/geolocation.py.
+    Library forked from <https://github.com/jfein/PyGeoTools/blob/master/geolocation.py>_\ .
 
-    Description
+    **Description**
     
-    See https://github.com/jfein/PyGeoTools.
+    See <https://github.com/jfein/PyGeoTools>_\ .
     
     **License**
     
@@ -192,25 +193,26 @@ class GeoDistance(object):
     Attributes
     ----------     
     EARTH_RADIUS_EQUATOR : 
-        Equatorial radius: 6378.1370 km.
+        Equatorial radius: **6378.1370 km**.
     EARTH_RADIUS_POLAR : 
-        Polar radius: 6356.7523 km.
+        Polar radius: **6356.7523 km**.
     WGS84_SEMIAXIS_a :         
         major semi-axis of WGS-84 geoidal  reference equal to :data:`EARTH_RADIUS_EQUATOR`.
     WGS84_SEMIAXIS_b :
         ibid, minor semi-axis equal to :data:`EARTH_RADIUS_POLAR`.
     EARTH_RADIUS_MEAN :          
-        mean radius defined by IUGG, set to :data:`(2*WGS84_SEMIAXIS_a + WGS84_SEMIAXIS_b)/3`, 
-        equal to 6371.0087 km.
+        mean radius defined by the `IUGG <http://www.iugg.org>`_, set to 
+        :data:`(2*WGS84_SEMIAXIS_a + WGS84_SEMIAXIS_b)/3`, equal to **6371.0087 km**.
     EARTH_RADIUS_AVERAGE :          
-        average radius: 6372.7950 km.
+        average radius: **6372.7950 km**.
     DECIMAL_PRECISION : 
-        define the precision in location coordinates; default to :data:`5`\ .        
+        integer defining the precision in location coordinates: **5**.        
     M_TO :
         dictionary of equivalent distances expressed in :literal:`['m', 'km', 'mi', 'ft']` 
         units that are equivalent to **1 m**.
     KM_TO,MI_TO,FT_TO :
         ibid for **1 km**, **1 mi** (mile) and **1 ft** (foot) respectively.
+        
     """
         
     #/************************************************************************/
@@ -291,6 +293,11 @@ class GeoDistance(object):
         kwargs : dict
             dictionary of composed distances indexed by their unit, which can be
             any string in the list :literal:`['m','km','mi','ft']`\ .
+            
+        Raises
+        ------
+        err : :class:`happyError`
+            when unable to recognize any of the distance units in :data:`kwargs`.
 
         Examples
         --------
@@ -303,11 +310,6 @@ class GeoDistance(object):
             3721.7279999999996
         >>> 2*GeoDistance.MI_TO['m'] + 10.*GeoDistance.FT_TO['m'] + 0.5*GeoDistance.KM_TO['m']
             3721.7279999999996
-            
-        Raises
-        ------
-        happyError :
-            when unable to recognize any of the distance units in :data:`kwargs`.
         """
         if to is None:
             to = cls.KM_DIST_UNIT
@@ -615,6 +617,7 @@ class GeoCoordinate(_GeoLocation):
         dummy min longitude value in degree: -180. 
     MAX_LONGITUDE : 
         ibid for max longitude: 180. 
+        
     """
 
     #/************************************************************************/
@@ -1506,7 +1509,7 @@ class GDALTool(object):
         self.__driver_name = driver_name
 
     #/************************************************************************/
-    @_geoDecorators.parse_file
+    @_geoParsing.parse_file
     def file2layer(self, filename):
         """
         """
@@ -1531,7 +1534,7 @@ class GDALTool(object):
         return layer
 
     #/************************************************************************/
-    @_geoDecorators.parse_coordinate
+    @_geoParsing.parse_coordinate
     def coord2vec(self, lat, lon, **kwargs):
         """
         """
@@ -1576,12 +1579,12 @@ class GDALTool(object):
         """
         """
         try:
-            lat, lon = _geoDecorators.parse_coordinate(lambda l, L: [l, L])(*args, **kwargs)
+            lat, lon = _geoParsing.parse_coordinate(lambda l, L: [l, L])(*args, **kwargs)
             assert not (lat in ([], None) or lon in ([], None)) 
         except:
             raise IOError('could not retrieve coordinate')
         try:
-            filename = _geoDecorators.parse_file(lambda f: f)(**kwargs) 
+            filename = _geoParsing.parse_file(lambda f: f)(**kwargs) 
             assert filename not in ('', None)
         except:
             raise IOError('could not retrieve filename')

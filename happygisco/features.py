@@ -15,7 +15,7 @@ as NUTS regions, to which geotransformations are associated.
 
 *require*      :mod:`os`, :mod:`sys`
 
-*call*         :mod:`happygisco.settings`, :mod:`happygisco.services`, :mod:`happygisco.tools`         
+*call*         :mod:`settings`, :mod:`services`, :mod:`tools`         
 
 **Contents**
 
@@ -33,7 +33,8 @@ import functools#analysis:ignore
 
 # local imports
 from happygisco import settings
-from happygisco.settings import happyWarning, happyVerbose, _geoDecorators#analysis:ignore
+from happygisco.settings import happyWarning, happyVerbose#analysis:ignore
+from happygisco.decorators import _geoParsing
 from happygisco import services     
 from happygisco.services import GISCO_SERVICE, API_SERVICE
 from happygisco.tools import GDAL_SERVICE
@@ -107,7 +108,7 @@ class Place(__Feature):
     """
 
     #/************************************************************************/
-    @_geoDecorators.parse_place
+    @_geoParsing.parse_place
     def __init__(self, place, **kwargs):
         """Initialise an instance of :class:`Place` class.
         
@@ -244,7 +245,7 @@ class Place(__Feature):
         pass
 
     #/************************************************************************/
-    @_geoDecorators.parse_place
+    @_geoParsing.parse_place
     def route(self, place, **kwargs):
         lat, lon = self.service.place2coord(place)
         lat = self.__lat + [lat if len(lat)>1 else [lat,]][0]
@@ -268,7 +269,7 @@ class Location(__Feature):
     """
         
     #/************************************************************************/
-    @_geoDecorators.parse_coordinate
+    @_geoParsing.parse_coordinate
     def __init__(self, lat, lon, **kwargs):
         """Initialise an instance of :class:`Place` class.
         
@@ -363,7 +364,7 @@ class Location(__Feature):
         pass
     
     #/************************************************************************/
-    @_geoDecorators.parse_coordinate
+    @_geoParsing.parse_coordinate
     def route(self, lat, lon, **kwargs):
         lat = self.__lat + [lat if len(lat)>1 else [lat,]][0]
         lon = self.__lon + [lon if len(lon)>1 else [lon,]][0]
@@ -386,7 +387,7 @@ class NUTS(__Feature):
     """
 
     #/************************************************************************/
-    @_geoDecorators.parse_nuts
+    @_geoParsing.parse_nuts
     def __init__(self, nuts, **kwargs):
         self.__nuts = nuts
         super(NUTS,self).__init__(**kwargs)
@@ -412,7 +413,7 @@ class NUTS(__Feature):
         instance. A `level` type is (a list of) :class:`int`\ .
         """
         try:
-            level = [int(n[_geoDecorators.parse_nuts.KW_ATTRIBUTES][_geoDecorators.parse_nuts.KW_LEVEL]) \
+            level = [int(n[_geoParsing.parse_nuts.KW_ATTRIBUTES][_geoParsing.parse_nuts.KW_LEVEL]) \
                     for n in self.__nuts]
         except:
             return None
@@ -424,7 +425,7 @@ class NUTS(__Feature):
         """
         """
         try:
-            _id = [n[_geoDecorators.parse_nuts.KW_ATTRIBUTES][_geoDecorators.parse_nuts.KW_NUTS_ID] \
+            _id = [n[_geoParsing.parse_nuts.KW_ATTRIBUTES][_geoParsing.parse_nuts.KW_NUTS_ID] \
                     for n in self.__nuts]
         except:
             return None
@@ -437,7 +438,7 @@ class NUTS(__Feature):
         instance. A name type is :class:`str`.
         """
         try:
-            name = [n[_geoDecorators.parse_nuts.KW_ATTRIBUTES][_geoDecorators.parse_nuts.KW_NUTS_NAME] \
+            name = [n[_geoParsing.parse_nuts.KW_ATTRIBUTES][_geoParsing.parse_nuts.KW_NUTS_NAME] \
                     for n in self.__nuts]
         except:
             return None
@@ -449,7 +450,7 @@ class NUTS(__Feature):
         """
         """
         try:
-            value = [n[_geoDecorators.parse_nuts.KW_VALUE] for n in self.__nuts]
+            value = [n[_geoParsing.parse_nuts.KW_VALUE] for n in self.__nuts]
         except:
             return None
         else:
