@@ -57,8 +57,7 @@ import functools#analysis:ignore
 
 # local imports
 from happygisco import settings
-from happygisco.settings import happyVerbose, happyWarning, happyError
-from happygisco.decorators import _geoParsing, _docString
+from happygisco.settings import happyVerbose, happyWarning, happyError, _geoDecorators
 
 # requirements
 try:                                
@@ -123,7 +122,7 @@ class GISCOService(object):
     ----------     
     CODER :
         coder dictionary defining the connection to |GISCO| based web-service, 
-        *e.g.* :literal:`{{CODER_GISCO}: {KEY_GISCO}}` since there is currently no authentication
+        *e.g.* {:data:`settings.CODER_GISCO`, :data:`settings.KEY_GISCO` } since there is currently no authentication
         requested.
 
     Initialisation of a :class:`GISCOService` instance:
@@ -327,7 +326,7 @@ class GISCOService(object):
         happyVerbose('\n            * '.join(['input filters used for routing service:',]+[attr + '='+ str(kwargs[attr]) \
                                             for attr in kwargs.keys() if attr in keys]))
         coordinates = kwargs.pop('coordinates','')
-        polyline = kwargs.pop(_geoParsing.parse_coordinate.KW_POLYLINE,None)
+        polyline = kwargs.pop(_geoDecorators.parse_coordinate.KW_POLYLINE,None)
         polyline = 'polyline(' + polyline + ')' if polyline else ''
         url = self.__build_url(domain=self.domain, 
                                query='route/v1/driving/%s' % coordinates or polyline, 
@@ -358,7 +357,7 @@ class GISCOService(object):
         return url
     
     #/************************************************************************/
-    @_geoParsing.parse_projection
+    @_geoDecorators.parse_projection
     def url_nuts(self, **kwargs):
         """Create a query URL to be submitted to the GISCO (simple) web-service 
         for NUTS codes identification.
@@ -396,7 +395,7 @@ class GISCOService(object):
         return url
         
     #/************************************************************************/
-    @_geoParsing.parse_place
+    @_geoDecorators.parse_place
     def place2geom(self, place, **kwargs): 
         """
         
@@ -444,7 +443,7 @@ class GISCOService(object):
         return geom if len(geom)>1 else geom[0]
         
     #/************************************************************************/
-    @_geoParsing.parse_place
+    @_geoDecorators.parse_place
     def place2coord(self, place, **kwargs): # specific use
         """
         
@@ -469,10 +468,10 @@ class GISCOService(object):
         :meth:``\ .
         """
         geom = self.place2geom(place, **kwargs)
-        return _geoParsing.parse_geometry(lambda **kw: [kw.get('lat'), kw.get('lon')])(geom)
+        return _geoDecorators.parse_geometry(lambda **kw: [kw.get('lat'), kw.get('lon')])(geom)
        
     #/************************************************************************/
-    @_geoParsing.parse_coordinate
+    @_geoDecorators.parse_coordinate
     def coord2place(self, lat, lon, **kwargs): # specific use
         """
         
@@ -512,20 +511,20 @@ class GISCOService(object):
             except:
                 raise IOError('place for geolocation (%s,%s) not loaded' % (lat[i], lon[i]))
             try:
-                assert _geoParsing.parse_geometry.KW_FEATURES in data     \
-                    and data[_geoParsing.parse_geometry.KW_FEATURES] != []
+                assert _geoDecorators.parse_geometry.KW_FEATURES in data     \
+                    and data[_geoDecorators.parse_geometry.KW_FEATURES] != []
             except:
                 raise IOError('place for geolocation (%s,%s) not recognised' % (lat[i], lon[i]))      
             else:
-                p = data.get(_geoParsing.parse_geometry.KW_FEATURES)
+                p = data.get(_geoDecorators.parse_geometry.KW_FEATURES)
                 place.append(p if len(p)>1 else p[0])
         return place[0] if len(place)==1 else place
     
     #/************************************************************************/
-    @_geoParsing.parse_year
-    @_geoParsing.parse_projection
-    @_geoParsing.parse_geometry
-    @_geoParsing.parse_coordinate
+    @_geoDecorators.parse_year
+    @_geoDecorators.parse_projection
+    @_geoDecorators.parse_geometry
+    @_geoDecorators.parse_coordinate
     def coord2nuts(self, lat, lon, **kwargs):
         """
         
@@ -570,20 +569,20 @@ class GISCOService(object):
                 nuts.append(None)
             try:
                 # assert 'results' in data and data['results'] != [] 
-                assert _geoParsing.parse_nuts.KW_RESULTS in data     \
-                    and data[_geoParsing.parse_nuts.KW_RESULTS] != []
+                assert _geoDecorators.parse_nuts.KW_RESULTS in data     \
+                    and data[_geoDecorators.parse_nuts.KW_RESULTS] != []
             except:
                 happyWarning('NUTS of location (%s,%s) not recognised' % (lat[i], lon[i]))      
                 nuts.append(None)
             else:
-                n = data.get(_geoParsing.parse_nuts.KW_RESULTS)
+                n = data.get(_geoDecorators.parse_nuts.KW_RESULTS)
                 nuts.append(n if len(n)>1 else n[0])
         return nuts[0] if len(nuts)==1 else nuts
 
     #/************************************************************************/
-    @_geoParsing.parse_year
-    @_geoParsing.parse_projection
-    @_geoParsing.parse_place
+    @_geoDecorators.parse_year
+    @_geoDecorators.parse_projection
+    @_geoDecorators.parse_place
     def place2nuts(self, place, **kwargs): # specific use
         """
             >>> nuts = serv.place2nuts(place, **kwargs)
@@ -611,7 +610,7 @@ class GISCOService(object):
         lat, lon = self.place2coord(place, **kwargs)
         nuts = self.coord2nuts(lat, lon, **kwargs)
         return nuts[0] if len(nuts)==1 else nuts
-        #res = _geoParsing.parse_nuts(lambda **kw: kw.get('nuts'))(nuts, **kwargs)
+        #res = _geoDecorators.parse_nuts(lambda **kw: kw.get('nuts'))(nuts, **kwargs)
         #return res[0] if len(res)==1 else res
 
     #/************************************************************************/
@@ -619,7 +618,7 @@ class GISCOService(object):
         pass
 
     #/************************************************************************/
-    @_geoParsing.parse_coordinate
+    @_geoDecorators.parse_coordinate
     def coord2route(self, lat, lon, **kwargs):
         """
             >>>  route = serv.coord2route(lat, lon, **kwargs)
@@ -646,7 +645,7 @@ class GISCOService(object):
         if not (lat in([],None) or lon in ([],None)):
             coordinates = ';'.join([','.join([str(l), str(L)]) for (l,L) in zip(lat,lon)])
         elif kwargs.get():
-            coordinates = kwargs.pop(_geoParsing.parse_coordinate.KW_POLYLINE)
+            coordinates = kwargs.pop(_geoDecorators.parse_coordinate.KW_POLYLINE)
         kwargs.update({'coordinates': coordinates})
         try:
             url = self.url_route(**kwargs)
@@ -662,13 +661,13 @@ class GISCOService(object):
         except:
             raise happyError('route not available')
         try:
-            assert _geoParsing.parse_route.KW_CODE in data       \
-                and data[_geoParsing.parse_route.KW_CODE].upper() == "OK"
+            assert _geoDecorators.parse_route.KW_CODE in data       \
+                and data[_geoDecorators.parse_route.KW_CODE].upper() == "OK"
         except:
             raise happyError('route  not recognised')      
         else:
-            routes = data.get(_geoParsing.parse_route.KW_ROUTES)
-            waypoints = data.get(_geoParsing.parse_route.KW_WAYPOITNS)
+            routes = data.get(_geoDecorators.parse_route.KW_ROUTES)
+            waypoints = data.get(_geoDecorators.parse_route.KW_WAYPOITNS)
         return routes[0], waypoints
     
 #%%
@@ -933,7 +932,7 @@ class APIService(object):
         self.__coder_key = key
 
     #/************************************************************************/
-    @_geoParsing.parse_place
+    @_geoDecorators.parse_place
     def place2coord(self, place, **kwargs):
         """Retrieve the geographical coordinates associated to a (a list of) 
         toponame(s).
@@ -972,7 +971,7 @@ class APIService(object):
         return coord #{'lat':lat, 'lon': lon}
 
     #/************************************************************************/
-    @_geoParsing.parse_coordinate
+    @_geoDecorators.parse_coordinate
     def coord2place(self, lat, lon, **kwargs):
         """Associate a (list of) toponame(s) with a (set of) given geographical
         coordinates.

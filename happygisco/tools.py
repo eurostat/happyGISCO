@@ -42,8 +42,7 @@ import functools#analysis:ignore
 
 # local imports
 from happygisco import settings
-from happygisco.settings import happyVerbose, happyWarning, happyError
-from happygisco.decorators import _geoParsing
+from happygisco.settings import happyVerbose, happyWarning, happyError, _geoDecorators
 
 try:
     GDAL_SERVICE = True
@@ -1509,7 +1508,7 @@ class GDALTool(object):
         self.__driver_name = driver_name
 
     #/************************************************************************/
-    @_geoParsing.parse_file
+    @_geoDecorators.parse_file
     def file2layer(self, filename):
         """
         """
@@ -1534,7 +1533,7 @@ class GDALTool(object):
         return layer
 
     #/************************************************************************/
-    @_geoParsing.parse_coordinate
+    @_geoDecorators.parse_coordinate
     def coord2vec(self, lat, lon, **kwargs):
         """
         """
@@ -1579,12 +1578,12 @@ class GDALTool(object):
         """
         """
         try:
-            lat, lon = _geoParsing.parse_coordinate(lambda l, L: [l, L])(*args, **kwargs)
+            lat, lon = _geoDecorators.parse_coordinate(lambda l, L: [l, L])(*args, **kwargs)
             assert not (lat in ([], None) or lon in ([], None)) 
         except:
             raise IOError('could not retrieve coordinate')
         try:
-            filename = _geoParsing.parse_file(lambda f: f)(**kwargs) 
+            filename = _geoDecorators.parse_file(lambda f: f)(**kwargs) 
             assert filename not in ('', None)
         except:
             raise IOError('could not retrieve filename')
