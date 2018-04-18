@@ -11,7 +11,7 @@ Basic definitions for the use of various geolocation web-services.
 This module contains some basic definitions (classes and variables) that are used
 for:
 
-* query and collection through _Eurostat GISCO webservices,
+* query and collection through |Eurostat| |GISCO| webservices,
 * query and collection through external GIS webservices,
 * simple geographical data handling and processing.
 
@@ -20,13 +20,13 @@ for:
 .. Links
 
 .. _Eurostat: http://ec.europa.eu/eurostat/web/main
-.. |Eurostat| replace:: `_Eurostat_ <Eurostat_>`_
+.. |Eurostat| replace:: `Eurostat <Eurostat_>`_
 .. _GISCO: http://ec.europa.eu/eurostat/web/gisco
 .. |GISCO| replace:: `GISCO <GISCO_>`_
 .. _googlemaps: https://pypi.python.org/pypi/googlemaps
-.. |googlemaps| replace:: `googlemaps <googlemaps_>`_
+.. |googlemaps| replace:: `Google Maps <googlemaps_>`_
 .. _googleplaces: https://github.com/slimkrazy/python-google-places
-.. |googleplaces| replace:: `googleplaces <googleplaces_>`_
+.. |googleplaces| replace:: `Google Places <googleplaces_>`_
 .. _geopy: https://github.com/geopy/geopy
 .. |geopy| replace:: `geopy <geopy_>`_
 .. _gdal: https://pypi.python.org/pypi/GDAL
@@ -42,36 +42,142 @@ import warnings
 
 #%%
 #==============================================================================
-# CLASSES Error/Warning/Verbose
+# CLASSES happyError/happyWarning/happyVerbose
 #==============================================================================
 
-class happyError(Exception):
-    """Base class for exceptions in this package."""
-    def __init__(self, msg, expr=None):    
-        self.msg = msg
-        if expr is not None:    self.expr = expr
-        Exception.__init__(self, msg)
-    def __str__(self):              return repr(self.msg)
-
 class happyWarning(Warning):
-    """Base class for warnings in this package."""
-    def __init__(self, msg, expr=None):    
-        self.msg = msg
+    """Dummy class for warnings in this package.
+    
+        >>> happyWarning(warnmsg, expr=None)
+
+    Arguments
+    ---------
+    warnmsg : str
+        warning message to display.
+        
+    Keyword arguments
+    -----------------
+    expr : str 
+        input expression in which the warning occurs; default: :data:`expr` is 
+        :data:`None`\ .
+        
+    Example
+    -------
+    >>> happyWarning('This is a very interesting warning');
+    happyWarning: ! This is a very interesting warning !
+    """
+    def __init__(self, warnmsg, expr=None):    
+        self.warnmsg = warnmsg
         if expr is not None:    self.expr = expr
-        # logging.warning(self.msg)
-        warnings.warn(self.msg)
+        else:                   self.expr = '' 
+        # warnings.warn(self.msg)
+        print(self)
     def __repr__(self):             return self.msg
-    def __str__(self):              return repr(self.msg)
+    def __str__(self):              
+        #return repr(self.msg)
+        return ( 
+                "! %s%s%s !" %
+                (self.warnmsg, 
+                 ' ' if self.warnmsg and self.expr else '',
+                 self.expr
+                 )
+            )
     
 class happyVerbose(object):
-    """Base class for verbose printing mode in this package."""
+    """Dummy class for verbose printing mode in this package.
+    
+        >>> happyVerbose(msg, verb=True, expr=None)
+
+    Arguments
+    ---------
+    msg : str
+        verbose message to display.
+        
+    Keyword arguments
+    -----------------
+    verb : bool
+        flag set to :data:`True` when the string :literal:`[verbose] -` is added
+        in front of each verbose message displayed.
+    expr : str 
+        input expression in which the verbose mode is called; default: :data:`expr` is 
+        :data:`None`\ .
+        
+    Example
+    -------
+    >>> happyVerbose('The more we talk, we less we do...', verb=True);
+    [verbose] - The more we talk, we less we do...
+    """
     def __init__(self, msg, expr=None, verb=True):    
         self.msg = msg
         if verb is True:
             print('\n[verbose] - %s' % self.msg)
         if expr is not None:    self.expr = expr
-    def __repr__(self):             return self.msg
-    def __str__(self):              return repr(self.msg)
+    #def __repr__(self):             
+    #    return self.msg
+    def __str__(self):              
+        return repr(self.msg)
+    
+class happyError(Exception):
+    """Dummy class for exception raising in this package.
+    
+        >>> raise happyError(errmsg, errtype=None, errcode=None, expr='')
+
+    Arguments
+    ---------
+    errmsg : str
+        message -- explanation of the error.
+        
+    Keyword arguments
+    -----------------
+    errtype : object
+        error type; when :data:`errtype` is left to :data:`None`, the system tries
+        to retrieve automatically the error type using :data:`sys.exc_info()`\ .
+    errcode : (float,int)
+        error code; default: :data:`errcode` is :data:`None`\ .
+    expr : str 
+        input expression in which the error occurred; default: :data:`expr` is 
+        :data:`None`\ .
+        
+    Example
+    -------
+    >>> try:
+            assert False
+        except:
+            raise happyError('It is False')
+    Traceback ...
+    ...
+    happyError: !!! AssertionError: It is False !!!
+    """
+    
+    def __init__(self, errmsg, errtype=None, errcode=None, expr=''):   
+        self.errmsg = errmsg
+        if expr is not None:        self.expr = expr
+        else:                       self.expr = '' 
+        if errtype is None:
+            try:
+                errtype = sys.exc_info()[0]
+            except:
+                pass
+        if inspect.isclass(errtype):            self.errtype = errtype.__name__
+        elif isinstance(errtype, (int,float)):  self.errtype = str(errtype)
+        else:                               self.errtype = errtype
+        if errcode is not None:     self.errcode = str(errcode)
+        else:                       self.errcode = ''
+        # super(happyError,self).__init__(self, msg)
+
+    def __str__(self):              
+        # return repr(self.msg)
+        return ( 
+                "!!! %s%s%s%s%s%s%s !!!" %
+                (self.errtype, 
+                 ' ' if self.errtype and self.errcode else '',
+                 self.errcode,
+                 ': ' if (self.errtype or self.errcode) and (self.errmsg or self.expr) else '',
+                 self.errmsg, 
+                 ' ' if self.errmsg and self.expr else '',
+                 self.expr #[' ' + self.expr if self.expr else '']
+                 )
+            )
 
 #%%
 #==============================================================================
@@ -94,13 +200,23 @@ DEF_LANG            = 'en'
 """Default language used when launching |Eurostat| |GISCO| API.
 """
 
-EC_URL              = 'europa.eu'
+EC_URL              = 'ec.europa.eu'
 """European Commission URL.
+"""
+ESTAT_DOMAIN        = 'eurostat'
+"""|Eurostat| domain under European Commission URL.
+"""
+ESTAT_URL           = '%s://%s/%s' % (PROTOCOL, EC_URL, ESTAT_DOMAIN)
+"""|Eurostat| complete URL.
+"""
+
+EC_DOMAIN           = 'europa.eu'
+"""European Commission web-service domain.
 """
 GISCO_DOMAIN        = 'webtools/rest/gisco/'
 """|GISCO| web-service domain under European Commission URL.
 """
-GISCO_URL           = '%s/%s' % (EC_URL, GISCO_DOMAIN)
+GISCO_URL           = '%s/%s' % (EC_DOMAIN, GISCO_DOMAIN)
 """|GISCO| web-service complete URL.
 """
 
@@ -161,8 +277,8 @@ POLYLINE            = False
 #==============================================================================
     
 class _geoDecorators(object):
-    """Base class with dummy decorators used to parse and check place and coordinate 
-    arguments, and not only, used in the various methods of the geolocation services 
+    """Class implementing dummy decorators used to parse and check place and coordinate 
+    arguments, but not only, to generic methods, *e.g.* the methods of the geoservice 
     classes.
     """
     

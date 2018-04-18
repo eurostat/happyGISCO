@@ -41,11 +41,11 @@ from happygisco.tools import GDAL_SERVICE
 # requirements
 
 #==============================================================================
-# CLASS __Feature
+# CLASS _Feature
 #==============================================================================
             
-class __Feature(object):    
-    """
+class _Feature(object):    
+    """Base class for feature 
     """
     def __init__(self, *args, **kwargs):
         """
@@ -86,10 +86,6 @@ class __Feature(object):
        
     @property
     def service(self):
-        """Service attribute (:data:`getter`) of a :class:`__Feature` instance. 
-        A `service` type is a :class:`~happygisco.services.GISCOService` 
-        or a :class:`~happygisco.services.APIService` object.
-        """
         return self.__service
        
     @property
@@ -102,7 +98,7 @@ class __Feature(object):
 # CLASS Place
 #==============================================================================
             
-class Place(__Feature):
+class Place(_Feature):
     """Class
     """
 
@@ -139,6 +135,14 @@ class Place(__Feature):
         """
         return self.__place  if len(self.__place)>1 else self.__place[0]
    
+    @property
+    def service(self):
+        """Service attribute (:data:`getter`) of a :class:`Place` instance. 
+        A `service` type is a :class:`~happygisco.services.GISCOService` 
+        or a :class:`~happygisco.services.APIService` object.
+        """
+        return self.__service
+    
     #/************************************************************************/
     def __repr__(self):
         return [','.join(p.replace(',',' ').split()) for p in self.place]
@@ -263,7 +267,7 @@ class Place(__Feature):
 # CLASS Location
 #==============================================================================
    
-class Location(__Feature):
+class Location(_Feature):
     """
     """
         

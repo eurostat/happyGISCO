@@ -1,10 +1,20 @@
-:mod:`services` module: APIs to web-services
---------------------------------------------
+:mod:`services` module: APIs to web-based geoservices
+-----------------------------------------------------
 
 .. automodule:: services
     :members:
-    :inherited-members:
-    :exclude-members: _googleMapsAPI, _googlePlacesAPI, _geoCoderAPI
+    :exclude-members: _Service, GISCOService, APIService, _googleMapsAPI, _googlePlacesAPI, _geoCoderAPI
+
+.. autoclass:: services._Service
+    :members:
+
+.. autoclass:: services.GISCOService
+    :members:
+    :show-inheritance:
+
+.. autoclass:: services.APIService
+    :members:
+    :show-inheritance:
 
 .. autoclass:: services._googleMapsAPI
    :members:

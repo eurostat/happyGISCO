@@ -2,46 +2,43 @@
 # -*- coding: utf-8 -*-
 
 """
-.. _mod_services
+.. services
 
-Module for place/location identification and NUTS identifier retrieval.
-
-.. Links
-
-.. _Eurostat: http://ec.europa.eu/eurostat/web/main
-.. |Eurostat| replace:: `_Eurostat_ <Eurostat_>`_
-.. _GISCO: http://ec.europa.eu/eurostat/web/gisco
-.. |GISCO| replace:: `GISCO <GISCO_>`_
-.. _OSM: https://www.openstreetmap.org
-.. |OSM| replace:: `OSM <OSM_>`_
-.. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim
-.. |Nominatim| replace:: `Nominatim <Nominatim_>`_
-.. _googlemaps: https://pypi.python.org/pypi/googlemaps
-.. |googlemaps| replace:: `googlemaps <googlemaps_>`_
-.. _googleplaces: https://github.com/slimkrazy/python-google-places
-.. |googleplaces| replace:: `googleplaces <googleplaces_>`_
-.. _geopy: https://github.com/geopy/geopy
-.. |geopy| replace:: `geopy <geopy_>`_
-.. _PyGeoTools: https://github.com/jfein/PyGeoTools/blob/master/geolocation.py
-.. |PyGeoTools| replace:: `PyGeoTools <PyGeoTools_>`_
+Module implementing simple requests to various web-based geographical services, 
+including |Eurostat| |GISCO|, |OSM| |Nominatim| and |GMaps|.
 
 **Description**
 
 Perform operations using online web-services, *e.g.*:
 
-* query and collection through _Eurostat GISCO webservices,
-* query and collection through external GIS webservices,
+* query and collection through |GISCO| web-services,
+* query and collection through external GIS web-services,
 * simple geographical data handling and processing.
     
 **Dependencies**
 
-*require*:      :mod:`os`, :mod:`sys`, :mod:`json`
+*require*:      :mod:`os`, :mod:`sys`, :mod:`functools`, :mod:`json`
 
-*optional*:     :mod:`requests`, :mod:`googlemaps`, :mod:`googleplaces`
+*optional*:     :mod:`requests`, :mod:`geopy`, :mod:`googlemaps`, :mod:`googleplaces`
 
 *call*:         :mod:`settings`         
 
 **Contents**
+
+.. Links
+
+.. _Eurostat: http://ec.europa.eu/eurostat/web/main
+.. |Eurostat| replace:: `Eurostat <Eurostat_>`_
+.. _GISCO: http://ec.europa.eu/eurostat/web/gisco
+.. |GISCO| replace:: `GISCO <GISCO_>`_
+.. _OSM: https://www.openstreetmap.org
+.. |OSM| replace:: `OpenStreetMap <OSM_>`_
+.. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim
+.. |Nominatim| replace:: `Nominatim <Nominatim_>`_
+.. _googlemaps: https://pypi.python.org/pypi/googlemaps
+.. |googlemaps| replace:: `Google Maps <googlemaps_>`_
+.. _googleplaces: https://github.com/slimkrazy/python-google-places
+.. |googleplaces| replace:: `Google Places <googleplaces_>`_
 """
 
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
@@ -111,117 +108,255 @@ except ImportError:
 
 #%%
 #==============================================================================
-# CLASS GISCOService
+# CLASS _Service
 #==============================================================================
-    
-class GISCOService(object):
-    """Class providing conversion methods and geocoding tools that run the |GISCO| 
-    online web-service, itself based on |OSM| |Nominatim| API.
- 
-    Attributes
-    ----------     
-    CODER :
-        coder dictionary defining the connection to |GISCO| based web-service, 
-        *e.g.* {:data:`settings.CODER_GISCO`, :data:`settings.KEY_GISCO` } since there is currently no authentication
-        requested.
 
-    Initialisation of a :class:`GISCOService` instance:
-        
-        >>> x = GISCOService(**kwargs)
-            
-    Keyword arguments
-    -----------------
-    domain : str
-        domain of |OSM| web-services hosted by |GISCO|\ . 
-    arcgis : str
-        domain of |ArcGIS| web-services hosted by |GISCO|\ .
+class _Service(object):
     """
+    .. Links
     
-    CODER = {settings.CODER_GISCO: settings.KEY_GISCO}
+    .. _Eurostat: http://ec.europa.eu/eurostat/web/main
+    .. |Eurostat| replace:: `Eurostat <Eurostat_>`_
+    .. _GISCO: http://ec.europa.eu/eurostat/web/gisco
+    .. |GISCO| replace:: `GISCO <GISCO_>`_
+
+    Base class defining a web-session and simple connection operations to be
+    used by a web-service. 
+       
+        >>> serv = services._Service()
+            
+    Returns
+    -------
+    serv : :class:`requests.session.Session`
+        a web session used to connect to external URLs.
+    """
     
     #/************************************************************************/
     def __init__(self, **kwargs):
-        self.__session, self.__domain = None, ''
         try:
-            assert GISCO_SERVICE is not False
+            self.session = requests.Session()
         except:
-            raise IOError('GISCO service not available')
-        self.session = requests.Session()
-        self.domain = kwargs.pop('domain', settings.GISCO_URL)
-        self.arcgis = kwargs.pop('arcgis', settings.GISCO_ARCGIS)
-
-    #/************************************************************************/
-    @property
-    def domain(self):
-        """Domain attribute (:data:`getter`/:data:`setter`) of a :class:`GISCOService` 
-        instance. A domain type is :class:`str`.
-        """
-        return self.__domain
-    @domain.setter#analysis:ignore
-    def domain(self, domain):
-        if domain is not None and not isinstance(domain, str):
-            raise IOError('wrong type for DOMAIN parameter')
-        self.__domain = domain or ''
+            raise happyError('request session not recognised')
         
     #/************************************************************************/
     @property
     def session(self):
-        """Session attribute (:data:`getter`/:data:`setter`) of a :class:`GISCOService` 
-        instance. A domain type is :class:`resquests.session.Session`.
-        """
+        """Session attribute (:data:`getter`/:data:`setter`) of an instance of
+        a class :class:`_Service`\ . 
+        """ # A session type is :class:`requests.session.Session`.
         return self.__session
     @session.setter#analysis:ignore
     def session(self, session):
         if session is not None and not isinstance(session, requests.sessions.Session):
-            raise IOError('wrong type for SESSION parameter')
+            raise TypeError('wrong type for SESSION parameter')
         self.__session = session
     
     #/************************************************************************/   
     def get_status(self, url):
         """Retrieve the header of a URL and return the server's status code.
+        
+            >>> status = serv.get_status(url)
+            
+        Arguments
+        ---------
+        url : str
+            complete URL name whom status will be checked.
+        
+        Returns
+        -------
+        status : int
+            response status code.
+            
+        Raises
+        ------
+        error : :class:`settings.happyError` 
+            + when the request was wrongly formulated,
+            + when the connection fails.
+            
+        Examples
+        --------
+        We can check the response status code when connecting to different web-pages/serving:
+        
+        >>> serv = _Service()
+        >>> serv.get_status('http://dumb')
+        ConnectionError: connection failed
+        >>> serv.get_status('http://www.dumbanddumber.com')
+        301 
+        
+        Let us check that the status is ok when connecting to |Eurostat| website:
+            
+        >>> stat = serv.get_status(settings.ESTAT_URL)
+        >>> print(stat)
+        200
+        >>> import requests
+        >>> stat == requests.codes.ok
+        True
         """ 
         try:
             response = self.session.head(url)
         except requests.ConnectionError:
-            raise IOError('connection failed')  
+            raise happyError('connection failed')  
         else:
             happyVerbose('response status from web-service: %s' % response.status_code)
+        response.raise_for_status()
         try:
             response.raise_for_status()
         except:
-            raise IOError('wrong request formulated')  
+            raise happyError('wrong request formulated')  
         else:
             status = response.status_code
             response.close()
         return status
     
     #/************************************************************************/
-    def get_response(self, url, **kwargs):
+    def get_response(self, url):
         """Retrieve the GET response of a URL.
+        
+            >>> response = serv.get_response(url)
+            
+        Arguments
+        ---------
+        url : str
+            complete URL name whose response is retrieved.
+        
+        Returns
+        -------
+        response : :class:`requests.models.Response`
+            response retrieved from the URL.
+            
+        Raises
+        ------
+        error : :class:`settings.happyError` 
+            + when the request is wrongly formulated,
+            + when a wrong response retrieved.
+            
+        Examples
+        --------
+        Some simple tests:
+            
+        >>> serv = _Service()
+        >>> serv.get_response('http://dumb')
+        happyError: wrong request formulated
+        >>> resp = serv.get_response('http://www.example.com')
+        >>> print(resp.text)
+        <!doctype html>
+        <html>
+        <head>
+            <title>Example Domain</title>
+            <meta charset="utf-8" />
+            <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            ...
+            
+        We can view the server’s response headers when connecting to |Eurostat|
+        webpage:
+            
+        >>> resp = serv.get_response(settings.ESTAT_URL)
+        >>> print(resp.headers)
+        {   'Date': 'Wed, 18 Apr 2018 11:54:40 GMT', 
+            'X-Content-Type-Options': 'nosniff', 
+            'X-Frame-Options': 'SAMEORIGIN', 
+            'X-XSS-Protection': '1', 
+            'Content-Type': 'text/html;charset=UTF-8', 
+            'Transfer-Encoding': 'chunked', 
+            'Server': 'Europa', 
+            'Connection': 'Keep-Alive', 
+            'Content-Encoding': 'gzip'}
+        
+        We can also access the response body as bytes (though that is usually
+        adapted to non-text requests):
+            
+        >>> print(resp.content)
+        b'<!DOCTYPE html PUBLIC " ...
         """
         try:
             response = self.session.get(url)                
         except:
-            raise IOError('wrong request formulated')  
+            raise happyError('wrong request formulated')  
         else:
             # happyVerbose('response reason from web-service: %s' % response.reason)
             pass
         try:
             response.raise_for_status()
         except:
-            raise IOError('wrong response retrieved')  
+            raise happyError('wrong response retrieved')  
         return response   
     
     #/************************************************************************/
-    @staticmethod
-    def __build_url(*args, **kwargs):
+    @classmethod
+    def build_url(cls, *args, **kwargs):
+        """Create a complete query URL to be used by a web-service.
+        
+            >>> url = _Service.build_url(*args, **kwargs)
+            
+        Arguments
+        ---------
+        domain : str
+            domain of the URL; default: :data:`domain` is left empty.
+           
+        Keyword Arguments
+        -----------------
+        protocol : str
+            web protocol; default to :data:`settings.DEF_PROTOCOL`, *e.g.* :literal:`http`\ .
+        domain : str
+            this keyword can be used when :data:`domain` is not passed as a 
+            positional argument already.
+        path : str
+            path completing the domain to form the URL: it will actually be concatenated
+            to :data:`domain` so as to form the composite string :data:`domain/path`; hence, 
+            :data:`path` could simply be concatenated with :data:`domain` in input already.
+        query : str
+            query of the URL: it is concatenated to the string :data:`domain/path` so
+            as to form the string :data:`domain/path/query?`\ .
+        kwargs : dict
+            any other keyword argument can be added as further "filters" to the output
+            URL, *e.g.* when :data:`{'par': 1}` is passed as an additional keyword argument,
+            the string :literal:`par=1` will be concatenated at the end of the URL formed
+            by the other parameters.
+                
+        Returns
+        -------
+        url : str
+            URL uniquely defined by the input parameters; the generic form of :data:`url`
+            is :data:`protocol://domain/path/query?filters`, when all parameters above
+            are passed.
+    
+        Example
+        -------
+        Let us, for instance, build a URL query to *Eurostat* Rest API (just enter 
+        the output URL in your browser to check the output):
+            
+        >>> _Service.build_url(settings.ESTAT_URL,
+                               path='wdds/rest/data/v2.1/json/en',
+                               query='ilc_li03', 
+                               precision=1,
+                               indic_il='LI_R_MD60',
+                               time='2015')
+        'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li03?precision=1&indic_il=LI_R_MD60&time=2015'
+        
+        Note that another way to call the method is:
+
+        >>> _Service.build_url(domain=settings.ESTAT_URL,
+                               path='wdds/rest/data/v2.1/json/en',
+                               query='ilc_li01', 
+                               **{'precision': 1, 'hhtyp': 'A1', 'time': '2010'})
+        'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li01?precision=1&hhtyp=A1&time=2010'
+        
+        Similarly, we will be able to access to |GISCO| service (see :meth:`GISCOService.url_geocode`
+        below):
+ 
+        >>> _Service.build_url(domain=settings.GISCO_URL,
+                               query='api', 
+                               **{'q': 'Berlin+Germany', 'limit': 2})
+        'http://europa.eu/webtools/rest/gisco/api?q=Berlin+Germany&limit=2'  
+        """
         # retrieve parameters/build url
         if args not in (None,()):       domain = args[0]
         else:                           domain = kwargs.pop('domain','')
         url = domain.strip("/")
         protocol = kwargs.pop('protocol', settings.DEF_PROTOCOL)
         if protocol not in settings.PROTOCOLS:
-            raise IOError('web protocol not recognised')
+            raise happyError('web protocol not recognised')
         if not url.startswith(protocol):  
             url = "%s://%s" % (protocol, url)
         if 'path' in kwargs:      
@@ -245,39 +380,147 @@ class GISCOService(object):
             url = "%s%s%s" % (url, sep, filters)
         return url
 
+#%%
+#==============================================================================
+# CLASS OSMService
+#==============================================================================
+    
+class OSMService(_Service):
+    """
+    .. Links
+    
+    .. _Eurostat: http://ec.europa.eu/eurostat/web/main
+    .. |Eurostat| replace:: `Eurostat <Eurostat_>`_
+    .. _GISCO: http://ec.europa.eu/eurostat/web/gisco
+    .. |GISCO| replace:: `GISCO <GISCO_>`_
+    .. _GISCOWIKI: https://webgate.ec.europa.eu/fpfis/wikis/pages/viewpage.action?spaceKey=GISCO&postingDay=2016%2F1%2F20&title=Background+Services+at+the+EC+cooperate+level+in+production+in+four+projections
+    .. |GISCOWIKI| replace:: `GISCOWIKI <GISCOWIKI_>`_
+    .. _OSM: https://www.openstreetmap.org
+    .. |OSM| replace:: `OpenStreetMap <OSM_>`_
+    .. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim
+    .. |Nominatim| replace:: `Nominatim <Nominatim_>`_
+    .. _googlemaps: https://pypi.python.org/pypi/googlemaps
+    .. |googlemaps| replace:: `Google Maps <googlemaps_>`_
+    .. _googleplaces: https://github.com/slimkrazy/python-google-places
+    .. |googleplaces| replace:: `Google Places <googleplaces_>`_
+    .. _geopy: https://github.com/geopy/geopy
+    .. |geopy| replace:: `geopy <geopy_>`_
+    .. _PyGeoTools: https://github.com/jfein/PyGeoTools/blob/master/geolocation.py
+    .. |PyGeoTools| replace:: `PyGeoTools <PyGeoTools_>`_
+
+    """
+    pass
+
+#%%
+#==============================================================================
+# CLASS GISCOService
+#==============================================================================
+    
+class GISCOService(_Service):
+    """
+    .. Links
+    
+    .. _Eurostat: http://ec.europa.eu/eurostat/web/main
+    .. |Eurostat| replace:: `Eurostat <Eurostat_>`_
+    .. _GISCO: http://ec.europa.eu/eurostat/web/gisco
+    .. |GISCO| replace:: `GISCO <GISCO_>`_
+    .. _GISCOWIKI: https://webgate.ec.europa.eu/fpfis/wikis/pages/viewpage.action?spaceKey=GISCO&postingDay=2016%2F1%2F20&title=Background+Services+at+the+EC+cooperate+level+in+production+in+four+projections
+    .. |GISCOWIKI| replace:: `GISCOWIKI <GISCOWIKI_>`_
+    .. _OSM: https://www.openstreetmap.org
+    .. |OSM| replace:: `OpenStreetMap <OSM_>`_
+    .. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim
+    .. |Nominatim| replace:: `Nominatim <Nominatim_>`_
+    .. _googlemaps: https://pypi.python.org/pypi/googlemaps
+    .. |googlemaps| replace:: `Google Maps <googlemaps_>`_
+    .. _googleplaces: https://github.com/slimkrazy/python-google-places
+    .. |googleplaces| replace:: `Google Places <googleplaces_>`_
+    .. _geopy: https://github.com/geopy/geopy
+    .. |geopy| replace:: `geopy <geopy_>`_
+    .. _PyGeoTools: https://github.com/jfein/PyGeoTools/blob/master/geolocation.py
+    .. |PyGeoTools| replace:: `PyGeoTools <PyGeoTools_>`_
+
+    Class providing conversion methods and geocoding tools that run the |GISCO| 
+    online web-service, itself based on |OSM| |Nominatim| API.
+       
+        >>> serv = GISCOService(**kwargs)
+            
+    Keyword arguments
+    -----------------
+    domain : str
+        domain of |OSM| web-services hosted by |GISCO|; default is :data:`settings.GISCO_URL`,
+        *e.g.* an URL domain like :literal:`'europa.eu/webtools/rest/gisco/'`\ . 
+    arcgis : str
+        domain of |ArcGIS| web-services hosted by |GISCO|; default is :data:`settings.GISCO_ARCGIS`,
+        *e.g.* an URL domain like :literal:`'webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/'`\ .
+ 
+    Attributes
+    ----------     
+    CODER :
+        coder dictionary defining the connection to |GISCO| based web-service
+        set to {:data:`settings.CODER_GISCO`: :data:`settings.KEY_GISCO` }, *e.g*
+        :literal:`{'gisco': None}` since there is currently no authentication 
+        requested.
+    """
+    
+    CODER = {settings.CODER_GISCO: settings.KEY_GISCO}
+    
+    #/************************************************************************/
+    def __init__(self, **kwargs):
+        try:
+            assert GISCO_SERVICE is not False
+        except:
+            raise happyError('GISCO service not available')
+        super(GISCOService, self).__init__(**kwargs)
+        self.domain = kwargs.pop('domain', settings.GISCO_URL) 
+        self.arcgis = kwargs.pop('arcgis', settings.GISCO_ARCGIS)
+
+    #/************************************************************************/
+    @property
+    def domain(self):
+        """Domain attribute (:data:`getter`/:data:`setter`) of an instance of
+        a class :class:`_Service`\ . 
+        """ # A domain type is :class:`str`.
+        return self.__domain
+    @domain.setter#analysis:ignore
+    def domain(self, domain):
+        if domain is not None and not isinstance(domain, str):
+            raise TypeError('wrong type for DOMAIN parameter')
+        self.__domain = domain or ''
+
     #/************************************************************************/
     def url_geocode(self, **kwargs):
-        """Create a query URL to be be submitted GISCO geolocation web-service.
+        """Create a query URL to be be submitted |GISCO| geolocation web-service.
         
-            >>> url = GISCOService.url_geocode(**filters)
+            >>> url = serv.url_geocode(**kwargs)
            
         Keyword Arguments
         -----------------
-        filters : dict
-            define the parameters for web-service; allowed parameters are: 
-            :literal:`q, lat, lon, distance_sort, limit, osm_tag`, and :literal:`lang`\ .
+        kwargs : dict
+            parameters used to build the query URL; allowed parameters are: 
+            :data:`q, lat, lon, distance_sort, limit, osm_tag`, and :literal:`lang`;
+            see |GISCOWIKI| on *background services* for more details.
                 
         Returns
         -------
         url : str
-            link to GISCO web-service that returns the adequate 'geocode' results
-            associated to a given place.
-
-        Note
-        ----
-        The generic url formatting is: {domain}/api?{filters}
+            URL used to return the adequate *geocode* results (*i.e.*, geocoordinates) 
+            associated to a given place using |GISCO| web-service; the generic form of 
+            :data:`url` :literal:`domain/api?{filters}`.
         
         Example
         -------
-        >>> print(GISCOService.url_geocode(place='paris, France'))
-            'http://europa.eu/webtools/rest/gisco/api?q=paris+France'
+        Let us create a simple URL for querying the geolocation of a toponame:
+            
+        >>> serv = GISCOService()
+        >>> serv.url_geocode(q='Paris+France')
+        'http://europa.eu/webtools/rest/gisco/api?q=Paris+France'
         """
         keys = ['q', 'lat', 'lon', 'distance_sort', 'limit', 'osm_tag', 'lang']
         happyVerbose('\n            * '.join(['input filters used for geocoding service :',]+[attr + '='+ str(kwargs[attr]) \
                                             for attr in kwargs.keys() if attr in keys]))
-        url = self.__build_url(domain=self.domain, 
-                               query='api', 
-                               **{k:v for k,v in kwargs.items() if k in keys})
+        url = self.build_url(domain=self.domain, 
+                             query='api', 
+                             **{k:v for k,v in kwargs.items() if k in keys})
         happyVerbose('output url:\n            %s' % url)
         return url
     
@@ -291,7 +534,8 @@ class GISCOService(object):
         -----------------
         filters : dict
             define the parameters for web-service; allowed parameters are: 
-            :literal:`lat, lon, radius, distance_sort, limit`, and :literal:`lang`\ .
+            :literal:`lat, lon, radius, distance_sort, limit`, and :literal:`lang`;
+            see |GISCOWIKI| on *background services* for more details.
                 
         Returns
         -------
@@ -305,15 +549,16 @@ class GISCOService(object):
         
         Example
         -------
-        >>> print(GISCOService.url_reverse(lon=10, lat=52))
+        >>> serv = GISCOService()
+        >>> serv.url_reverse(lon=10, lat=52))
             'http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52'
         """
         keys = ['lat', 'lon', 'radius', 'distance_sort', 'limit', 'lang']
         happyVerbose('\n            * '.join(['input filters used for reverse geocoding service:',]+[attr + '='+ str(kwargs[attr]) \
                                             for attr in kwargs.keys() if attr in keys]))
-        url = self.__build_url(domain=self.domain, 
-                               query='reverse', 
-                               **{k:v for k,v in kwargs.items() if k in keys})
+        url = self.build_url(domain=self.domain, 
+                             query='reverse', 
+                             **{k:v for k,v in kwargs.items() if k in keys})
         happyVerbose('output url:\n            %s' % url)
         return url
 
@@ -328,9 +573,9 @@ class GISCOService(object):
         coordinates = kwargs.pop('coordinates','')
         polyline = kwargs.pop(_geoDecorators.parse_coordinate.KW_POLYLINE,None)
         polyline = 'polyline(' + polyline + ')' if polyline else ''
-        url = self.__build_url(domain=self.domain, 
-                               query='route/v1/driving/%s' % coordinates or polyline, 
-                               **{k:v for k,v in kwargs.items() if k in keys})
+        url = self.build_url(domain=self.domain, 
+                             query='route/v1/driving/%s' % coordinates or polyline, 
+                             **{k:v for k,v in kwargs.items() if k in keys})
         happyVerbose('output url:\n            %s' % url)
         return url
         # test: 
@@ -350,9 +595,9 @@ class GISCOService(object):
         https://webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/Utilities/Geometry/GeometryServer/project?inSR=4326&outSR=3035&geometries=-9.1630%2C38.7775&transformation=&transformForward=true&f=json
         """
         keys = ['inSR', 'outSR', 'geometries', 'transformation', 'transformForward', 'f'] # ?
-        url = self.__build_url(domain=self.arcgis, 
-                               query='Utilities/Geometry/GeometryServer/project', 
-                               **{k:v for k,v in kwargs.items() if k in keys})
+        url = self.build_url(domain=self.arcgis, 
+                             query='Utilities/Geometry/GeometryServer/project', 
+                             **{k:v for k,v in kwargs.items() if k in keys})
         happyVerbose('output url:\n            %s' % url)
         return url
     
@@ -387,10 +632,10 @@ class GISCOService(object):
         keys = ['x', 'y', 'f', 'year', 'proj', 'geometry']
         happyVerbose('\n            * '.join(['input filters used for NUTS identification service:',]+[attr + '='+ str(kwargs[attr]) \
                                             for attr in kwargs.keys() if attr in keys]))
-        url = self.__build_url(domain=self.domain, 
-                               path='nuts', 
-                               query='find-nuts.py', 
-                               **{k:v for k,v in kwargs.items() if k in keys})
+        url = self.build_url(domain=self.domain, 
+                             path='nuts', 
+                             query='find-nuts.py', 
+                             **{k:v for k,v in kwargs.items() if k in keys})
         happyVerbose('output url:\n            %s' % url)
         return url
         
@@ -683,14 +928,6 @@ except (NameError,AssertionError):
         CODER = {}
 else:   
     class _geoCoderAPI(object):
-        """Class emulating :mod:`geopy` API.
-
-        Inherit all methods from original API.
-        
-        Most of the :class:`_geoCoderAPI` methods will be inherited by the class
-        :class:`OfflineService` through composition and embedding in container 
-        attributes. Following, usages are presented using :class:`OfflineService`\ .
-        """
 
         CODER = {'GoogleV3':         None,   # API authentication is only required for Google Maps Premier customers
                  'Bing':             'key',  # valid Bing Maps API key
@@ -747,6 +984,16 @@ else:
             if self._gc is None or self._gc.__class__.__name__!=coder:
                 gc = getattr(geopy.geocoders, coder) 
                 self._gc = gc(**kwargs) 
+                
+_geoCoderAPI.__doc__ =                                                      \
+        """Class emulating :mod:`geopy` API (whenever the package |geopy| is available).
+
+        Inherit all methods from original API.
+        
+        Most of the :class:`geopy.geocoders` methods will be inherited by the class
+        :class:`~services.APIService` through composition and embedding in container 
+        attributes. 
+        """
 
 #==============================================================================
 # CLASS _googleMapsAPI
@@ -760,12 +1007,6 @@ except (NameError,AssertionError):
         CODER = {}
 else:   
     class _googleMapsAPI(googlemaps.Client):
-        """Class emulating :class:`~googlemaps.Client` API.
-
-        Most of the :class:`googlemaps.Client` methods will be inherited by the
-        :class:`~happygisco.services.APIService` class through composition and 
-        embedding in container attributes. 
-        """
 
         CODER = {settings.CODER_GOOGLE_MAPS: settings.KEY_GOOGLE}
 
@@ -821,6 +1062,17 @@ else:
                     res.update({'distance': dst_mx['distance']}) # 'text' or 'value'
             return res
 
+_googleMapsAPI.__doc__ =                                                    \
+        """Class emulating :class:`~googlemaps.Client` API (whenever the package 
+        |googlemaps| is available).
+
+        Inherit many methods from original API.
+
+        Most of the :class:`googlemaps.Client` methods will be inherited by the
+        :class:`~services.APIService` class through composition and embedding 
+        in container attributes. 
+        """
+
 #==============================================================================
 # CLASS _googlePlacesAPI
 # Class emulating googleplaces.GooglePlaces API.
@@ -849,13 +1101,60 @@ else:
         geocode = classmethod(googleplaces.geocode_location)
         # nearby_search, text_search, get_place are regular attributes
 
+_googlePlacesAPI.__doc__ =                                                  \
+        """
+        """
+
 #==============================================================================
 # CLASS APIService
 #==============================================================================
      
 #%%
-class APIService(object):
+class APIService(_Service):
     """
+    .. Links
+    
+    .. _Eurostat: http://ec.europa.eu/eurostat/web/main
+    .. |Eurostat| replace:: `Eurostat <Eurostat_>`_
+    .. _GISCO: http://ec.europa.eu/eurostat/web/gisco
+    .. |GISCO| replace:: `GISCO <GISCO_>`_
+    .. _GISCOWIKI: https://webgate.ec.europa.eu/fpfis/wikis/pages/viewpage.action?spaceKey=GISCO&postingDay=2016%2F1%2F20&title=Background+Services+at+the+EC+cooperate+level+in+production+in+four+projections
+    .. |GISCOWIKI| replace:: `GISCOWIKI <GISCOWIKI_>`_
+    .. _OSM: https://www.openstreetmap.org
+    .. |OSM| replace:: `OpenStreetMap <OSM_>`_
+    .. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim
+    .. |Nominatim| replace:: `Nominatim <Nominatim_>`_
+    .. _googlemaps: https://pypi.python.org/pypi/googlemaps
+    .. |googlemaps| replace:: `Google Maps <googlemaps_>`_
+    .. _googleplaces: https://github.com/slimkrazy/python-google-places
+    .. |googleplaces| replace:: `Google Places <googleplaces_>`_
+    .. _geopy: https://github.com/geopy/geopy
+    .. |geopy| replace:: `geopy <geopy_>`_
+    .. _PyGeoTools: https://github.com/jfein/PyGeoTools/blob/master/geolocation.py
+    .. |PyGeoTools| replace:: `PyGeoTools <PyGeoTools_>`_
+
+
+    Class providing conversion methods and geocoding tools that run the |GISCO| 
+    online web-service, itself based on |OSM| |Nominatim| API.
+       
+        >>> serv = APIService(**kwargs)
+            
+    Keyword arguments
+    -----------------
+    domain : str
+        domain of |OSM| web-services hosted by |GISCO|; default is :data:`settings.GISCO_URL`,
+        *e.g.* an URL domain like :literal:`'europa.eu/webtools/rest/gisco/'`\ . 
+    coder : str
+        coder selection.
+    key : str
+ 
+    Attributes
+    ----------     
+    CODER :
+        coder dictionary defining the connection to |GISCO| based web-service
+        set to {:data:`settings.CODER_GISCO`: :data:`settings.KEY_GISCO` }, *e.g*
+        :literal:`{'gisco': None}` since there is currently no authentication 
+        requested.
     """
     
     CODER = dict(_googlePlacesAPI.CODER.items()
