@@ -100,7 +100,7 @@ metadata = __metadata({'project'     : __project__,
                        'copyright'   : __copyright__,
                        'organization':__organization__,
                        'url'         : __url__,
-                       'date'        : '',
+                       'date'        : __date__,
                        'credits'     : '',
                        'subpackage'  : ''
                        })                                                        

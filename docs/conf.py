@@ -38,11 +38,12 @@ DEF_METADATA        = {'project'     : HAPPYGISCO,
                        'description' : 'Simple API to Eurostat GISCO web-services',
                        'package'     : HAPPYGISCO.lower(),
                        'version'     : '1.0',
+                       'date'        : '2018',
                        'author'      : 'J. Grazzini',
                        'contact'     : 'jacopo.grazzini@ec.europa.eu',
                        'license'     : 'European Union Public Licence (EUPL)',
                        'copyright'   : 'European Union',
-                       'organization':'European Commission (EC - DG ESTAT)',
+                       'organisation': 'European Commission (EC - DG ESTAT)',
                        'url'         : 'https://github.com/eurostat/happyGISCO'
                        }
 METADATA            = 'metadata.json' # 'metadata.py'
@@ -79,7 +80,6 @@ project             = project.strip()
 try:
     package         = metadata['package']
 except KeyError:
-    
     package         = project.lower()
 package = "".join(package.split())
 
@@ -125,21 +125,38 @@ else:
     except AssertionError: 
         metadata.update(getattr(__package,'metadata'))
 
+# author
 author              = str(metadata.get('author',''))
 
+# copyright
+copyright           = ''
 try:
+    assert False
     copyright       = metadata['copyright']
-except KeyError:
+except (AssertionError,KeyError):
     try:
         copyright   = metadata['date']
     except KeyError:
-        copyright   = ''
+        pass
     else:
-        copyright   = copyright + ', '  + author 
-try:    
-    copyright       = copyright + ' -- ' + metadata['organisation']
-except KeyError:
-    pass 
+        copyright   += ', '
+    try:
+        assert True
+        copyright   += author 
+    except AssertionError:
+        pass
+    else:
+        copyright   += ', '      
+    try:    
+        copyright   += metadata['organisation']
+    except KeyError:
+        pass 
+    if copyright != '':
+        copyright       += ' -- ' 
+    try:    
+        copyright   += 'Licensed under ' + metadata['license']
+    except KeyError:
+        pass 
 copyright           = str(copyright.strip())
 
 # description

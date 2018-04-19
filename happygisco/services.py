@@ -169,9 +169,11 @@ class _Service(object):
             
         Raises
         ------
-        error : :class:`settings.happyError` 
-            + when the request was wrongly formulated,
-            + when the connection fails.
+        ~settings.happyError
+            error is raised in the cases:
+                
+                * the request is wrongly formulated,
+                * the connection fails.
             
         Examples
         --------
@@ -191,6 +193,10 @@ class _Service(object):
         >>> import requests
         >>> stat == requests.codes.ok
         True
+        
+        See also
+        --------
+        :meth:`get_response`, :meth:`build_url`.
         """ 
         try:
             response = self.session.head(url)
@@ -226,9 +232,11 @@ class _Service(object):
             
         Raises
         ------
-        error : :class:`settings.happyError` 
-            + when the request is wrongly formulated,
-            + when a wrong response retrieved.
+        ~settings.happyError
+            error is raised in the cases:
+            
+                * the request is wrongly formulated,
+                * a wrong response is retrieved.
             
         Examples
         --------
@@ -268,6 +276,10 @@ class _Service(object):
             
         >>> print(resp.content)
         b'<!DOCTYPE html PUBLIC " ...
+        
+        See also
+        --------
+        :meth:`get_status`, :meth:`build_url`.
         """
         try:
             response = self.session.get(url)                
@@ -349,6 +361,10 @@ class _Service(object):
                                query='api', 
                                **{'q': 'Berlin+Germany', 'limit': 2})
         'http://europa.eu/webtools/rest/gisco/api?q=Berlin+Germany&limit=2'  
+        
+        See also
+        --------
+        :meth:`get_status`, :meth:`get_response`.
         """
         # retrieve parameters/build url
         if args not in (None,()):       domain = args[0]
@@ -489,7 +505,8 @@ class GISCOService(_Service):
 
     #/************************************************************************/
     def url_geocode(self, **kwargs):
-        """Create a query URL to be be submitted |GISCO| geolocation web-service.
+        """Generate the query URL for the geocoding web-service (from toponame to
+        geocoordinate).
         
             >>> url = serv.url_geocode(**kwargs)
            
@@ -505,7 +522,8 @@ class GISCOService(_Service):
         url : str
             URL used to return the adequate *geocode* results (*i.e.*, geocoordinates) 
             associated to a given place using |GISCO| web-service; the generic form of 
-            :data:`url` :literal:`domain/api?{filters}`.
+            :data:`url` is :literal:`domain/api?{filters}` with :literal:`filters` the 
+            filters passed through :data:`kwargs`\ .
         
         Example
         -------
@@ -514,6 +532,11 @@ class GISCOService(_Service):
         >>> serv = GISCOService()
         >>> serv.url_geocode(q='Paris+France')
         'http://europa.eu/webtools/rest/gisco/api?q=Paris+France'
+        
+        See also
+        --------
+        :meth:`url_reverse`, :meth:`url_route`, :meth:`url_transform`, :meth:`url_nuts`,
+        :meth:`~_Service.build_url`.
         """
         keys = ['q', 'lat', 'lon', 'distance_sort', 'limit', 'osm_tag', 'lang']
         happyVerbose('\n            * '.join(['input filters used for geocoding service :',]+[attr + '='+ str(kwargs[attr]) \
@@ -526,32 +549,39 @@ class GISCOService(_Service):
     
     #/************************************************************************/
     def url_reverse(self, **kwargs):
-        """Create a query URL to be be submitted GISCO geolocation web-service.
+        """Generate the query URL for the reverse geocoding web-service (from 
+        geocoordinate to toponame).
         
-            >>> url = GISCOService.url_reverse(**filters)
+            >>> url = serv.url_reverse(**kwargs)
            
         Keyword Arguments
         -----------------
-        filters : dict
-            define the parameters for web-service; allowed parameters are: 
+        kwargs : dict
+            parameters used to build the query URL; allowed parameters are: 
             :literal:`lat, lon, radius, distance_sort, limit`, and :literal:`lang`;
             see |GISCOWIKI| on *background services* for more details.
                 
         Returns
         -------
         url : str
-            link to GISCO web-service that returns the name results associated
-            to a given geolocation.
-
-        Note
-        ----
-        The generic url formatting is: {domain}/reverse?{filters}.
-        
+            URL used to return the adequate *reverse geocode* results (*i.e.*, 
+            toponame) associated to given geocoordinates using |GISCO| web-service; 
+            the generic form of :data:`url` is :literal:`domain/reverse?{filters}`
+            with :literal:`filters` the filters passed through :data:`kwargs`\ .
+       
         Example
         -------
+        We can generate the URL for querying the toponame associated to a given
+        geolocation:
+
         >>> serv = GISCOService()
         >>> serv.url_reverse(lon=10, lat=52))
-            'http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52'
+        'http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52'
+        
+        See also
+        --------
+        :meth:`url_geocode`, :meth:`url_route`, :meth:`url_transform`, :meth:`url_nuts`,
+        :meth:`~_Service.build_url`.
         """
         keys = ['lat', 'lon', 'radius', 'distance_sort', 'limit', 'lang']
         happyVerbose('\n            * '.join(['input filters used for reverse geocoding service:',]+[attr + '='+ str(kwargs[attr]) \
@@ -566,6 +596,11 @@ class GISCOService(_Service):
     def url_route(self, **kwargs):
         """
         http(s)://europa.eu/webtools/rest/gisco/route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219?overview=false
+        
+        See also
+        --------
+        :meth:`url_geocode`, :meth:`url_reverse`, :meth:`url_transform`, :meth:`url_nuts`,
+        :meth:`~_Service.build_url`.
         """
         keys = ['overview', ] # ?
         happyVerbose('\n            * '.join(['input filters used for routing service:',]+[attr + '='+ str(kwargs[attr]) \
@@ -593,6 +628,11 @@ class GISCOService(_Service):
         -------
         >>> print GISCOService.url_reverse(lon=10, lat=52)
         https://webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/Utilities/Geometry/GeometryServer/project?inSR=4326&outSR=3035&geometries=-9.1630%2C38.7775&transformation=&transformForward=true&f=json
+        
+        See also
+        --------
+        :meth:`url_geocode`, :meth:`url_reverse`, :meth:`url_route`, :meth:`url_nuts`,
+        :meth:`~_Service.build_url`.
         """
         keys = ['inSR', 'outSR', 'geometries', 'transformation', 'transformForward', 'f'] # ?
         url = self.build_url(domain=self.arcgis, 
@@ -607,11 +647,11 @@ class GISCOService(_Service):
         """Create a query URL to be submitted to the GISCO (simple) web-service 
         for NUTS codes identification.
         
-            >>> url = GISCOService.url_nuts(**filters)
+            >>> url = GISCOService.url_nuts(**kwargs)
            
         Keyword Arguments
         -----------------
-        filters : dict
+        kwargs : dict
             define the parameters for web-service; allowed parameters are: 
             :literal:`x, y, f, year, proj`, and :literal:`geometry`\ .
             
@@ -620,14 +660,16 @@ class GISCOService(_Service):
         url : str
             link to NUTS web service to submit the specified 'NUTS' query that
             identifies the NUTS code of a given geolocation.
+            the generic url formatting is: domain/nuts/find-nuts.py?{filters}
             
         Usage
         -----
         x=<lon>&y=<lat>&f=<JSON/XML>&year=<2013/2010/2006>&proj=3035&geometry=<N/Y>
-
-        Note
-        ----
-        The generic url formatting is: domain/nuts/find-nuts.py?{filters}
+        
+        See also
+        --------
+        :meth:`url_geocode`, :meth:`url_reverse`, :meth:`url_route`, :meth:`url_transform`,
+        :meth:`~_Service.build_url`.
         """
         keys = ['x', 'y', 'f', 'year', 'proj', 'geometry']
         happyVerbose('\n            * '.join(['input filters used for NUTS identification service:',]+[attr + '='+ str(kwargs[attr]) \
@@ -654,13 +696,20 @@ class GISCOService(_Service):
         
         Returns
         -------
-        
+            
         Raises
         ------
+        ~settings.happyError
+            error is raised in the cases:
+            
+                * the geolocation request is wrongly formulated,
+                * the geolocation cannot be loaded,                
+                * the geolocation is not recognised.
         
         See also
         --------
-        :meth:``\ .
+        :meth:`place2coord`, :meth:`coord2place`, :meth:`coord2nuts`, :meth:`place2nuts`, 
+        :meth:`coord2route`, :meth:`url_geocode`, :meth:`~_Service.get_response`.
         """
         place = ['+'.join(p.replace(',',' ').split()) for p in place]
         geom = []
@@ -670,18 +719,18 @@ class GISCOService(_Service):
                 url = self.url_geocode(**kwargs)
                 assert self.get_status(url) is not None
             except:
-                raise IOError('error geolocation request')
+                raise happyError('error geolocation request')
             else:
                 response = self.get_response(url)
             try:
                 data = json.loads(response.text)
                 assert data not in({},None)
             except:
-                raise IOError('geolocation for place %s not loaded' % p)
+                raise happyError('geolocation for place %s not loaded' % p)
             try:
                 assert 'features' in data and data['features'] != [] 
             except:
-                raise IOError('geolocation for place %s not recognised' % p)      
+                raise happyError('geolocation for place %s not recognised' % p)      
             else:
                 c = data.get('features')
                 geom.append(c if len(c)>1 else c[0])
@@ -705,12 +754,10 @@ class GISCOService(_Service):
         -------
         coord :
         
-        Raises
-        ------
-        
         See also
         --------
-        :meth:``\ .
+        :meth:`place2geom`, :meth:`coord2place`, :meth:`coord2nuts`, :meth:`place2nuts`, 
+        :meth:`coord2route`.
         """
         geom = self.place2geom(place, **kwargs)
         return _geoDecorators.parse_geometry(lambda **kw: [kw.get('lat'), kw.get('lon')])(geom)
@@ -724,21 +771,28 @@ class GISCOService(_Service):
 
         Arguments
         ---------
-        lat,lon : float or list[float]
+        lat,lon : float, list[float]
         
         Keyword arguments
         -----------------
         
         Returns
         -------
-        place : str or list[str]
+        place : str, list[str]
         
         Raises
         ------
+        ~settings.happyError
+            error is raised in the cases:
+            
+                * the geolocation request is wrongly formulated,
+                * the place cannot be loaded,                
+                * the place is not recognised.
         
         See also
         --------
-        :meth:``\ .
+        :meth:`place2coord`, :meth:`place2geom`, :meth:`coord2nuts`, :meth:`place2nuts`, 
+        :meth:`coord2route`, :meth:`url_reverse`, :meth:`~_Service.get_response`.
         """
         place = []
         for i in range(len(lat)):
@@ -747,19 +801,19 @@ class GISCOService(_Service):
                 url = self.url_reverse(**kwargs)
                 assert self.get_status(url) is not None
             except:
-                raise IOError('error geolocation request')
+                raise happyError('error geolocation request')
             else:
                 response = self.get_response(url)
             try:
                 data = json.loads(response.text)
                 assert data not in({},None)
             except:
-                raise IOError('place for geolocation (%s,%s) not loaded' % (lat[i], lon[i]))
+                raise happyError('place for geolocation (%s,%s) not loaded' % (lat[i], lon[i]))
             try:
                 assert _geoDecorators.parse_geometry.KW_FEATURES in data     \
                     and data[_geoDecorators.parse_geometry.KW_FEATURES] != []
             except:
-                raise IOError('place for geolocation (%s,%s) not recognised' % (lat[i], lon[i]))      
+                raise happyError('place for geolocation (%s,%s) not recognised' % (lat[i], lon[i]))      
             else:
                 p = data.get(_geoDecorators.parse_geometry.KW_FEATURES)
                 place.append(p if len(p)>1 else p[0])
@@ -777,7 +831,7 @@ class GISCOService(_Service):
 
         Arguments
         ---------
-        lat,lon : float or list[float]
+        lat,lon : float, list(float)
         
         Keyword arguments
         -----------------
@@ -787,10 +841,13 @@ class GISCOService(_Service):
         
         Raises
         ------
+        ~settings.happyError
+            error is raised in the case the NUTS request is wrongly formulated.
         
         See also
         --------
-        :meth:``\ .
+        :meth:`place2geom`, :meth:`place2coord`, :meth:`place2nuts`, :meth:`coord2route`,
+        :meth:`coord2place`, :meth:`url_nuts`, :meth:`~_Service.get_response`.
         """
         kwargs.update({#'year': kwargs.pop('year',2013), 
                        # 'proj': kwargs.pop('proj',4326),
@@ -842,25 +899,17 @@ class GISCOService(_Service):
         Returns
         -------
         nuts :
-        
-        Raises
-        ------
-        happyError :
-            
-        
+                 
         See also
         --------
-        :meth:`place2coord`, :meth:`coord2nuts`\ .
+        :meth:`place2coord`, :meth:`coord2nuts`, :meth:`place2geom`, :meth:`coord2place`, 
+        :meth:`coord2route`, :meth:`url_geocode`, :meth:`~_Service.get_response`.
         """
         lat, lon = self.place2coord(place, **kwargs)
         nuts = self.coord2nuts(lat, lon, **kwargs)
         return nuts[0] if len(nuts)==1 else nuts
         #res = _geoDecorators.parse_nuts(lambda **kw: kw.get('nuts'))(nuts, **kwargs)
         #return res[0] if len(res)==1 else res
-
-    #/************************************************************************/
-    def geomtrans(self, *args, **kwargs):
-        pass
 
     #/************************************************************************/
     @_geoDecorators.parse_coordinate
@@ -881,10 +930,17 @@ class GISCOService(_Service):
         
         Raises
         ------
-        
+        ~settings.happyError
+            error is raised in the cases:
+            
+                * the route request is wrongly formulated,
+                * the route is not available,                
+                * the route is not recognised.
+       
         See also
         --------
-        :meth:``\ .
+        :meth:`place2geom`, :meth:`place2coord`, :meth:`coord2place`, :meth:`coord2nuts`, 
+        :meth:`place2nuts`, :meth:`url_route`, :meth:`~_Service.get_response`.
         """
         routes, waypoints = None, None
         if not (lat in([],None) or lon in ([],None)):
@@ -914,6 +970,10 @@ class GISCOService(_Service):
             routes = data.get(_geoDecorators.parse_route.KW_ROUTES)
             waypoints = data.get(_geoDecorators.parse_route.KW_WAYPOITNS)
         return routes[0], waypoints
+
+    #/************************************************************************/
+    def geomtrans(self, *args, **kwargs):
+        pass
     
 #%%
 #/****************************************************************************/

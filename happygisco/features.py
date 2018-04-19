@@ -385,7 +385,7 @@ class Location(_Feature):
 # CLASS NUTS
 #==============================================================================
        
-class NUTS(__Feature):
+class NUTS(_Feature):
     """
     """
 
