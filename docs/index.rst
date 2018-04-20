@@ -1,21 +1,37 @@
-.. happygisco documentation master file, created by
+.. happygisco documentation master file
 
+############
+`happygisco`
+###########
 
-##################
-happygisco Package
-##################
-
+This is the documentation of the `happygisco` package.
 
 ========
 Overview
 ========
 
+
+.. image:: http://img.shields.io/travis/grazzja/src/master.png
+    :alt: Travis-CI Build Status
+    :target: https://travis-ci.org/grazzja/src
+
+.. image:: http://img.shields.io/coveralls/grazzja/src/master.png
+    :alt: Coverage Status
+    :target: https://coveralls.io/r/grazzja/src
+
+.. image:: http://img.shields.io/pypi/v/happygisco.png
+    :alt: PYPI Package
+    :target: https://pypi.python.org/pypi/happygisco
+
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :titlesonly:
+
+   ..   :caption: Contents:
 
    about
-   doc
+   quickstart
+   install
+   examples
 
 =====================
 Package components
@@ -41,9 +57,12 @@ Submodules
    services
    features
 
+==================
 Indices and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+

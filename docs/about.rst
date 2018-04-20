@@ -1,25 +1,24 @@
-.. image:: http://img.shields.io/travis/grazzja/src/master.png
-    :alt: Travis-CI Build Status
-    :target: https://travis-ci.org/grazzja/src
-
-.. image:: http://img.shields.io/coveralls/grazzja/src/master.png
-    :alt: Coverage Status
-    :target: https://coveralls.io/r/grazzja/src
-
-.. image:: http://img.shields.io/pypi/v/happygisco.png
-    :alt: PYPI Package
-    :target: https://pypi.python.org/pypi/happygisco
-
+=====
 About
 =====
 
+Rationale
+---------
+
 `happygisco` is a simple containerized API to Eurostat GISCO web-services
 
-*version*:      1.0
 
-*since*:        2018
+The background for `happygisco` implementation and development are developed in....
 
-*license*:      .. literalinclude:: ../LICENSE
+Online API documentation on *readthedocs* (this site): http://happygisco.readthedocs.io/en/latest/.
 
-*author*: 	Jacopo Grazzini, European Union
+Metadata
+--------
+
+.. literalinclude:: ../metadata.json
+
+.. License
+.. -------
+
+.. .. literalinclude:: ../LICENSE
 

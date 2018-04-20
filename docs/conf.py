@@ -23,7 +23,7 @@ except:
     except:
         pass
 
-IS_READTHEDOCS      = False
+IS_READTHEDOCS      = True
 
 HAPPYGISCO          = 'happyGISCO'
 HAPPYMODULES        = ['settings', 'tools', 'services', 'features'] 
@@ -41,7 +41,7 @@ DEF_METADATA        = {'project'     : HAPPYGISCO,
                        'date'        : '2018',
                        'author'      : 'J. Grazzini',
                        'contact'     : 'jacopo.grazzini@ec.europa.eu',
-                       'license'     : 'European Union Public Licence (EUPL)',
+                       'license'     : 'European Union Public Licence (EUPL-1.2)',
                        'copyright'   : 'European Union',
                        'organisation': 'European Commission (EC - DG ESTAT)',
                        'url'         : 'https://github.com/eurostat/happyGISCO'
@@ -92,7 +92,7 @@ sys.path.insert(0, os.path.join(DIRHAPPYGISCO,package))
 # further integration with ReadTheDocs
 # https://media.readthedocs.org/pdf/docs-python2readthedocs/master/docs-python2readthedocs.pdf
 try:
-    assert False and IS_READTHEDOCS
+    assert False and IS_READTHEDOCS # bug in ReadTheDocs?
     import mock
 except AssertionError:
     pass
