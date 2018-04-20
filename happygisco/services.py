@@ -148,7 +148,7 @@ class _Service(object):
     @property
     def session(self):
         """Session attribute (:data:`getter`/:data:`setter`) of an instance of
-        a class :class:`_Service`\ . 
+        a class :class:`_Service`. 
         """ # A session type is :class:`requests.session.Session`.
         return self.__session
     @session.setter#analysis:ignore
@@ -183,7 +183,8 @@ class _Service(object):
             
         Examples
         --------
-        We can check the response status code when connecting to different web-pages/serving:
+        We can check the response status code when connecting to different web-pages
+        or services:
         
         >>> serv = _Service()
         >>> serv.get_status('http://dumb')
@@ -417,7 +418,7 @@ class OSMService(_Service):
     -----------------
     domain : str
         domain of |OSM| web-services hosted by |OSM|; default is :data:`settings.OSM_URL`,
-        *e.g.* an URL domain like :literal:`'nominatim.openstreetmap.org'`\ . 
+        *e.g.* an URL domain like :literal:`'nominatim.openstreetmap.org'`. 
  
     Attributes
     ----------     
@@ -458,7 +459,7 @@ class OSMService(_Service):
             URL used to return the adequate *geocode* results (*i.e.*, geocoordinates) 
             associated to a given place using |Nominatim| web-service; the generic form of 
             :data:`url` is :literal:`domain/search?{filters}` with :literal:`filters` the 
-            filters passed through :data:`kwargs`\ .
+            filters passed through :data:`kwargs`.
         
         Example
         -------
@@ -510,7 +511,7 @@ class OSMService(_Service):
             URL used to return the adequate *reverse geocode* results (*i.e.*, 
             toponame) associated to given geocoordinates using |Nominatim| web-service; 
             the generic form of :data:`url` is :literal:`domain/reverse?{filters}`
-            with :literal:`filters` the filters passed through :data:`kwargs`\ .
+            with :literal:`filters` the filters passed through :data:`kwargs`.
        
         Example
         -------
@@ -614,16 +615,18 @@ class OSMService(_Service):
     def place2geom(self, place, **kwargs):
         """
         
-            >>>  = serv.(, **kwargs)
+            >>> geom = serv.place2geom(place, **kwargs)
 
         Argument
         --------
+        place : str
         
         Keyword arguments
         -----------------
         
         Returns
         -------
+        geom : dict
             
         Raises
         ------
@@ -645,13 +648,13 @@ class OSMService(_Service):
        
     #/************************************************************************/
     @_geoDecorators.parse_coordinate
-    def _coord2place(self, lat, lon, **kwargs): 
+    def _coord2place(self, coord, **kwargs): 
         fmt = kwargs.pop('format','')
         key = kwargs.pop('key',None)
         if fmt is not None:
             kwargs.update({'format':fmt or 'json'})
-        for i in range(len(lat)):
-            kwargs.update({'lat': lat[i], 'lon': lon[i]})
+        for i in range(len(coord)):
+            kwargs.update({'lat': coord[i][0], 'lon': coord[i][0]})
             try:
                 url = self.url_reverse(**kwargs)
                 assert self.get_status(url) is not None
@@ -663,21 +666,21 @@ class OSMService(_Service):
                 data = json.loads(response.text)
                 assert data not in({},None)
             except:
-                raise happyError('place for geolocation (%s,%s) not loaded' % (lat[i], lon[i]))
+                raise happyError('place for geolocation %s not loaded' % coord[i])
             try:
                 assert key is not None
             except AssertionError:
                 try:
                     assert data != [] 
                 except:
-                    raise happyError('place for geolocation (%s,%s) not recognised' % (lat[i], lon[i]))  
+                    raise happyError('place for geolocation %s not recognised' % coord[i])  
                 else:
                     pass
             else:
                 try:
                     assert key in data and data[key] != [] 
                 except AssertionError:
-                    raise happyError('place for geolocation (%s,%s) and key %s not recognised' % (lat[i], lon[i], key))  
+                    raise happyError('place for geolocation %s and key %s not recognised' % (coord[i], key))  
                 else:
                     data = data.get(key)
             yield data if not isinstance(data,dict) or len(data)>1 else data[0]
@@ -710,14 +713,14 @@ class OSMService(_Service):
     #            place.append(p if len(p)>1 else p[0])
     #    return place[0] if len(place)==1 else place
     @_geoDecorators.parse_coordinate
-    def coord2place(self, lat, lon, **kwargs): # specific use
+    def coord2place(self, coord, **kwargs): # specific use
         """
         
-            >>>  place = serv.coord2place(lat, lon, **kwargs)
+            >>>  place = serv.coord2place(coord, **kwargs)
 
         Arguments
         ---------
-        lat,lon : float, list[float]
+        coord : float, list[float]
         
         Keyword arguments
         -----------------
@@ -741,7 +744,7 @@ class OSMService(_Service):
         :meth:`coord2route`, :meth:`url_reverse`, :meth:`~_Service.get_response`.
         """
         place = []
-        [place.append(data if len(data)>1 else data[0]) for data in self._coord2place(lat, lon, **kwargs)]
+        [place.append(data if len(data)>1 else data[0]) for data in self._coord2place(coord, **kwargs)]
         return place[0] if len(place)==1 else place
 
 #%%
@@ -982,8 +985,8 @@ class GISCOService(OSMService):
         
             >>>  = serv.(, **kwargs)
 
-        Argument
-        --------
+        Arguments
+        ---------
         
         Keyword arguments
         -----------------
@@ -1015,8 +1018,8 @@ class GISCOService(OSMService):
         
             >>>  coord = serv.place2coord(place, **kwargs)
 
-        Argument
-        --------
+        Arguments
+        ---------
         place : str or list[str]
         
         Keyword arguments
@@ -1036,14 +1039,14 @@ class GISCOService(OSMService):
        
     #/************************************************************************/
     @_geoDecorators.parse_coordinate
-    def coord2place(self, lat, lon, **kwargs): # specific use
+    def coord2place(self, coord, **kwargs): # specific use
         """
         
-            >>>  place = serv.coord2place(lat, lon, **kwargs)
+            >>>  place = serv.coord2place(coord, **kwargs)
 
         Arguments
         ---------
-        lat,lon : float, list[float]
+        coord : list[float], list[list]
         
         Keyword arguments
         -----------------
@@ -1067,21 +1070,21 @@ class GISCOService(OSMService):
         :meth:`coord2route`, :meth:`url_reverse`, :meth:`~_Service.get_response`.
         """
         kwargs.update({'key': _geoDecorators.parse_geometry.KW_FEATURES})
-        return super(GISCOService,self).coord2place(lat, lon, **kwargs)
+        return super(GISCOService,self).coord2place(coord, **kwargs)
 
     #/************************************************************************/
     @_geoDecorators.parse_year
     @_geoDecorators.parse_projection
     @_geoDecorators.parse_geometry
     @_geoDecorators.parse_coordinate
-    def coord2nuts(self, lat, lon, **kwargs):
+    def coord2nuts(self, coord, **kwargs):
         """
         
-            >>> nuts = serv.(lat, lon, **kwargs)
+            >>> nuts = serv.(coord, **kwargs)
 
         Arguments
         ---------
-        lat,lon : float, list(float)
+        coord : list[float]
         
         Keyword arguments
         -----------------
@@ -1104,8 +1107,8 @@ class GISCOService(OSMService):
                        'geometry': kwargs.pop('geometry','N'),
                        'f': 'JSON'})
         nuts = []
-        for i in range(len(lat)):
-            kwargs.update({'x': lon[i], 'y': lat[i]})
+        for i in range(len(coord)):
+            kwargs.update({'x': coord[i][1], 'y': coord[i][0]})
             try:
                 url = self.url_nuts(**kwargs)
                 assert self.get_status(url) is not None
@@ -1117,14 +1120,14 @@ class GISCOService(OSMService):
                 data = json.loads(response.text)
                 assert data is not None
             except:
-                happyWarning('NUTS of location (%s,%s) not loaded' % (lat[i], lon[i]))
+                happyWarning('NUTS of location %s not loaded' % coord[i])
                 nuts.append(None)
             try:
                 # assert 'results' in data and data['results'] != [] 
                 assert _geoDecorators.parse_nuts.KW_RESULTS in data     \
                     and data[_geoDecorators.parse_nuts.KW_RESULTS] != []
             except:
-                happyWarning('NUTS of location (%s,%s) not recognised' % (lat[i], lon[i]))      
+                happyWarning('NUTS of location %s not recognised' % coord[i])      
                 nuts.append(None)
             else:
                 n = data.get(_geoDecorators.parse_nuts.KW_RESULTS)
@@ -1139,8 +1142,8 @@ class GISCOService(OSMService):
         """
             >>> nuts = serv.place2nuts(place, **kwargs)
 
-        Argument
-        --------
+        Arguments
+        ---------
         place : str or list[str]
         
         Keyword arguments
@@ -1163,13 +1166,13 @@ class GISCOService(OSMService):
 
     #/************************************************************************/
     @_geoDecorators.parse_coordinate
-    def coord2route(self, lat, lon, **kwargs):
+    def coord2route(self, coord, **kwargs):
         """
-            >>>  route = serv.coord2route(lat, lon, **kwargs)
+            >>>  route = serv.coord2route(coord, **kwargs)
 
-        Argument
-        --------
-        lat,lon : list[float]
+        Arguments
+        ---------
+        coord : list[float]
         
         Keyword arguments
         -----------------
@@ -1193,8 +1196,8 @@ class GISCOService(OSMService):
         :meth:`place2nuts`, :meth:`url_route`, :meth:`~_Service.get_response`.
         """
         routes, waypoints = None, None
-        if not (lat in([],None) or lon in ([],None)):
-            coordinates = ';'.join([','.join([str(l), str(L)]) for (l,L) in zip(lat,lon)])
+        if not coord in([],None):
+            coordinates = ';'.join([','.join([str(l), str(L)]) for (l,L) in coord])
         elif kwargs.get():
             coordinates = kwargs.pop(_geoDecorators.parse_coordinate.KW_POLYLINE)
         kwargs.update({'coordinates': coordinates})
@@ -1422,11 +1425,11 @@ _googlePlacesAPI.__doc__ =                                                  \
         in container attributes. 
         """
 
+#%%
 #==============================================================================
 # CLASS APIService
 #==============================================================================
      
-#%%
 class APIService(_Service):
     """Class providing conversion methods and geocoding tools that run the |GISCO| 
     online web-service, itself based on |OSM| |Nominatim| API.
@@ -1456,7 +1459,7 @@ class APIService(_Service):
     
     CODER = dict(_googlePlacesAPI.CODER.items()
                  | _googleMapsAPI.CODER.items() 
-                 | _geoCoderAPI.CODER.items()) # we know there is no duplicate, so ok...
+                 | _geoCoderAPI.CODER.items()) # we know there is no duplicate, so ok to use | ...
     
     #/************************************************************************/
     def __init__(self, **kwargs):
@@ -1555,14 +1558,15 @@ class APIService(_Service):
 
     #/************************************************************************/
     @_geoDecorators.parse_coordinate
-    def coord2place(self, lat, lon, **kwargs):
+    def coord2place(self, coord, **kwargs):
         """Associate a (list of) toponame(s) with a (set of) given geographical
         coordinates.
         
-            >>>  = serv.(, **kwargs)
+            >>>  = serv.(coord, **kwargs)
 
-        Argument
-        --------
+        Arguments
+        ---------
+        coord : 
         
         Keyword arguments
         -----------------
@@ -1577,16 +1581,16 @@ class APIService(_Service):
         --------
         :meth:``\ .
         """
-        places = self.coder.reverse(lat, lon)
+        #places = self.coder.reverse(coord[0], coord[1])
         places = [] 
-        for i in range(len(lat)):   
+        for i in range(len(coord)):   
             try:
-                p = self.coder.reverse(lat[i],lon[i])
+                p = self.coder.reverse(coord[i][0],coord[i][1])
                 assert p not in ('',None)
                 places.append(p)
             except:
                 places.append(None)
-                happyVerbose('\ncould not retrieve place name for geolocation %s' % (lat[i],lon[i]))
+                happyVerbose('\ncould not retrieve place name for geolocation %s' % coord[i])
                 # continue
             else:
                 # happyVerbose('%s => %s' % (p, coord))

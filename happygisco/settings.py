@@ -42,6 +42,13 @@ for:
 * query and collection through external GIS webservices,
 * simple geographical data handling and processing.
 
+**Note**
+
+The classes exposed in this module (*e.g.*, logging classes :class:`happyVerbose`,
+:class:`happyWarning`, :class:`happyError` and decorator class :class:`_geoDecorators`
+and its subclasses) **can be ignored** at the first glance since they are not requested
+to run the services. They are provided here for the sake of an exhaustive documentation.
+
 **Contents**
 """
 
@@ -270,7 +277,8 @@ KEY_GOOGLE          = 'key'
 """
 
 CODER_GEONAME       = 'GeoNames'
-"""Default geocoder used when defined with the generic |geopy| package.
+"""Default geocoder used when the generic :mod:`geopy` package (see website |geopy|) 
+is run for connecting to the "external" (all but |GISCO|) web-services.
 """
 
 CODER_LIST          = [CODER_GISCO, CODER_GOOGLE, CODER_GOOGLE_MAPS, CODER_GOOGLE_PLACES]
@@ -285,11 +293,17 @@ CODER_PROJ          = {CODER_GISCO: 'WGS84',
 
 DRIVER_NAME         = 'ESRI Shapefile'
 """|GDAL| driver name.
-"""                
+"""             
+   
+POLYLINE            = False
+"""
+Boolean flag set to import the package :mod:`polylines` that will enable you to 
+generate polylines (see the `package website <https://pypi.python.org/pypi/polyline/>`_). 
+Not really necessary to generate the routes.
+"""
 
 VERBOSE             = True
    
-POLYLINE            = False
    
 #%%
 #==============================================================================
@@ -307,6 +321,7 @@ class _geoDecorators(object):
     KW_LON          = 'lon'
     KW_COORD        = 'coord'
     KW_PROJECTION   = 'proj' 
+    KW_NUTS         = 'nuts' 
     
     #/************************************************************************/
     class __parse(object):
@@ -316,6 +331,9 @@ class _geoDecorators(object):
         def __init__(self, func, obj=None, cls=None, method_type='function'):
             self.func, self.obj, self.cls, self.method_type = func, obj, cls, method_type 
             setattr(self,'__doc__',object.__getattribute__(func, '__doc__'))
+        #def __get__(self, obj, objtype):
+        #    # support instance methods
+        #    return functools.partial(self.__call__, obj)
         def __get__(self, obj=None, cls=None):
             if self.obj == obj and self.cls == cls:
                 return self 
@@ -329,16 +347,20 @@ class _geoDecorators(object):
                 )
             return object.__getattribute__(self, '__class__')( 
                 self.func.__get__(obj, cls), obj, cls, method_type) 
-        #def __get__(self, obj, objtype):
-        #    # support instance methods
-        #    return functools.partial(self.__call__, obj)
         def __getattribute__(self, attr_name): 
-            if attr_name in ('__init__', '__get__', '__call__', '__doc__', '__getattribute__', 'func', 'obj', 'cls', 'method_type'): 
+            # this is the only way found so far to have both the generation of the 
+            # documentation for methods and the retrieval of classes' attributes 
+            # working together
+            if attr_name in ('__init__', '__get__', '__getattribute__', '__call__', '__doc__', 
+                             'func', 'obj', 'cls', 'method_type'): 
                 return object.__getattribute__(self, attr_name)
             try:
                 return getattr(self.func, attr_name)
             except:
-                pass
+                try:
+                    return object.__getattribute__(self, attr_name)
+                except:
+                    pass
         def __call__(self, *args, **kwargs):
             return self.func(*args, **kwargs)
         def __repr__(self):
@@ -358,7 +380,7 @@ class _geoDecorators(object):
                 else:   
                     raise IOError('input arguments not recognised')
             else:                           
-                place = kwargs.pop('place', None)
+                place = kwargs.pop(_geoDecorators.KW_PLACE, None)
             if place in (None,[],''):
                 raise IOError('no input arguments passed')
             if not isinstance(place,(list,tuple)):
@@ -370,7 +392,7 @@ class _geoDecorators(object):
     #/************************************************************************/
     class parse_coordinate(__parse):
         """Generic class decorator used to parse (positional,keyword) arguments 
-        with :literal:`(lat,lng)` geographical coordinates to functions and methods.
+        with :literal:`(lat,lon)` geographical coordinates to functions and methods.
         """
         KW_POLYLINE      = 'polyline'
         try:
@@ -384,6 +406,7 @@ class _geoDecorators(object):
             if POLYLINE:   happyWarning('POLYLINE help: https://github.com/hicsail/polyline')
             pass
         def __call__(self, *args, **kwargs):
+            order = kwargs.pop('order', 'lL')
             coord, lat, lon, poly = None, None, None, None
             if args not in (None,()):      
                 if all([isinstance(a,dict) for a in args]):
@@ -402,9 +425,9 @@ class _geoDecorators(object):
                 else:   
                     raise IOError('input coordinate arguments not recognised')
             else:   
-                coord = kwargs.pop('coord', None)         
-                lat = kwargs.pop('lat', None) or kwargs.pop('x', None)
-                lon = kwargs.pop('lon', None) or kwargs.pop('y', None)
+                coord = kwargs.pop(_geoDecorators.KW_COORD, None)         
+                lat = kwargs.pop(_geoDecorators.KW_LAT, None) or kwargs.pop('x', None)
+                lon = kwargs.pop(_geoDecorators.KW_LON, None) or kwargs.pop('y', None)
                 poly = self.polyline and kwargs.get(self.KW_POLYLINE)
             try:
                 assert not(coord is None and lat is None and lon is None and poly in (False,None)) 
@@ -417,24 +440,27 @@ class _geoDecorators(object):
             if poly not in (False,None):
                 # coord = self.polyline.decode(poly)
                 return self.func(None, None, **kwargs)
-            if coord is not None:
-                if not isinstance(coord,(list,tuple)):  
-                    coord = [coord]
-                try:
-                    assert all(['lat' in c and 'lon' in c for c in coord])
-                except AssertionError:
-                    raise IOError('wrong dictionary keys for input coordinate argument')
-                try:
-                    lat, lon = [_ for _ in zip(*[(c['lat'], c['lon']) for c in coord])]
-                except:
-                    raise IOError('wrong input coordinate argument passed')
-            if lat is None or lon is None:
+            #if coord is not None:
+            #    if not isinstance(coord,(list,tuple)):  
+            #        coord = [coord]
+            #    try:
+            #        assert all(['lat' in c and 'lon' in c for c in coord])
+            #    except AssertionError:
+            #        raise IOError('wrong dictionary keys for input coordinate argument')
+            #    try:
+            #        lat, lon = [_ for _ in zip(*[(c['lat'], c['lon']) for c in coord])]
+            #    except:
+            #        raise IOError('wrong input coordinate argument passed')
+            if not (lat is None or lon is None):
+                if not isinstance(lat,(list,tuple)):  
+                    lat, lon = [lat,], [lon,]
+                if not len(lat) == len(lon):
+                    raise IOError('incompatible geographical coordinates')
+                coord = [_ for _ in zip(lat, lon)]
+                if order != 'lL':   coord = [_[::-1] for _ in coord]
+            if coord in ([],None):
                 raise IOError('wrong geographical coordinates')
-            if not isinstance(lat,(list,tuple)):  
-                lat, lon = [lat,], [lon,]
-            if not len(lat) == len(lon):
-                raise IOError('incompatible geographical coordinates')
-            return self.func(lat, lon, **kwargs)
+            return self.func(coord, **kwargs)
        
     #/************************************************************************/
     class parse_place_or_coordinate(__parse):
@@ -446,19 +472,19 @@ class _geoDecorators(object):
             except:
                 place = None
             else:
-                kwargs.update({'place': place})
+                kwargs.update({_geoDecorators.KW_PLACE: place})
             try:
-                lat, lon = _geoDecorators.parse_coordinate(lambda l, L, **kw: [l, L])(*args, **kwargs)
+                coord = _geoDecorators.parse_coordinate(lambda l, L, **kw: [l, L])(*args, **kwargs)
             except:
-                lat, lon = None, None
+                coord = None
             else:
-                kwargs.update({'lat': lat, 'lon': lon})
+                kwargs.update({_geoDecorators.KW_COORD: coord})
             try:
-                assert not(place in ('',None) and lat in ([],None) and lon in ([],None))
+                assert not(place in ('',None) and coord in ([],None))
             except:
                 raise IOError('no geographical entity parsed to define the place')
             try:
-                assert place in ('',None) or (lat in ([],None) and lon in ([],None))
+                assert place in ('',None) or coord in ([],None)
             except:
                 raise IOError('too many geographical entities parsed to define the place')
             return self.func(*args, **kwargs)
@@ -466,8 +492,13 @@ class _geoDecorators(object):
     #/************************************************************************/
     class parse_nuts(__parse):
         """Generic class decorator used to parse (positional,keyword) arguments 
-        with NUTS information stored in GISCO-like formatted dictionary (from JSON 
-        response) to functions and methods.
+        with |NUTS| information stored in |GISCO|-like formatted dictionary (from 
+        JSON response) to functions and methods.
+        
+        Examples
+        --------
+        >>> func = lambda *args, **kwargs: kwargs.get('nuts')
+        >>> nuts = _geoDecorators.parse_nuts(func)(attributes='A', layerId=5, LEVL_CODE=2)
         """
         KW_RESULTS      = 'results'
         KW_ATTRIBUTES   = 'attributes'
@@ -490,7 +521,7 @@ class _geoDecorators(object):
                     if all([isinstance(args[0][i],dict) for i in range(len(args[0]))]):
                         nuts = args[0]
             else:   
-                nuts = kwargs.pop('nuts', {})   
+                nuts = kwargs.pop(_geoDecorators.KW_NUTS, {})   
                 items = {self.KW_ATTRIBUTES: kwargs.pop(self.KW_ATTRIBUTES, None),
                          self.KW_FIELDNAME: kwargs.pop(self.KW_FIELDNAME, None),
                          self.KW_LAYERID: kwargs.pop(self.KW_LAYERID, None),
@@ -517,13 +548,114 @@ class _geoDecorators(object):
                 raise IOError('NUTS attributes not recognised')
             if level is not None:
                 nuts = [n for n in nuts if n[self.KW_ATTRIBUTES][self.KW_LEVEL] == str(level)]
+            # kwargs.update({_geoDecorators.KW_NUTS: nuts})
+            # return self.func(**kwargs)
             return self.func(nuts, **kwargs)
 
     #/************************************************************************/
     class parse_geometry(__parse):
-        """Generic class decorator used to parse (positional,keyword) arguments 
-        with :literal:`(lat,lng)` geographical coordinates stored in GISCO-like
-        formatted dictionary (from JSON response) to functions and methods.
+        """Generic class decorator of functions and methods used to parse 
+        :literal:`(lat,lon)` geographical coordinates from JSON-like dictionary 
+        parameters formated according to |GISCO| geometry responses (see |GISCOWIKI|).
+        
+            >>> new_func = parse_geometry(func)
+        
+        Arguments
+        ---------
+        func : callable
+            the function to decorate that accepts, say, the input parameters :data:`*args, **kwargs`.
+        unique : bool
+            when set to :data:`True`, only one geometry is filtered out, the first
+            available; default to :data:`False`.
+        order : str
+            flag used to define the order of the output filtered geographical 
+            coordinates; it can be either :literal:`'lL'` for :literal:`(lat,lon)` 
+            order or :literal:`'Ll'` for a :literal:`(lon,lat)` order; default 
+            is :literal:`'lL'`.
+        
+        Returns
+        -------
+        new_func : callable
+            the decorated function that now accepts the input parameters :data:`coord`
+            as new keyword argument.
+        
+        Examples
+        --------
+        Some dummy examples:
+            
+        >>> func = lambda **kwargs: kwargs.get('coord')
+        >>> geom = {'A': 1, 'B': 2}
+        >>> _geoDecorators.parse_geometry(func)(geom)
+            []
+        >>> geom = {'geometry': {'coordinates': [1, 2], 'type': 'Point'},
+                    'properties': {'osm_key': 'place'},
+                    'type': 'Feature'}
+        >>> _geoDecorators.parse_geometry(func)(coord=geom)
+            [2, 1]
+        >>> _geoDecorators.parse_geometry(func)(geom, order='Ll')
+            [2, 1]
+        
+        and an actual one:
+            
+        >>> serv = services.GISCOService()
+        >>> geom = serv.place2geom(place='Berlin,Germany')
+        >>> print(geom)
+            [{'geometry': {'coordinates': [13.3888599, 52.5170365], 'type': 'Point'},
+              'properties': {'city': 'Berlin',
+               'country': 'Germany',
+               'name': 'Berlin',
+               'osm_id': 240109189, 'osm_key': 'place', 'osm_type': 'N', 'osm_value': 'city',
+               'postcode': '10117',
+               'state': 'Berlin'},
+              'type': 'Feature'},
+             {'geometry': {'coordinates': [13.4385964, 52.5198535], 'type': 'Point'},
+              'properties': {'country': 'Germany',
+               'extent': [13.08835, 52.67551, 13.76116, 52.33826],
+               'name': 'Berlin',
+               'osm_id': 62422, 'osm_key': 'place', 'osm_type': 'R', 'osm_value': 'state'},
+              'type': 'Feature'},
+             {'geometry': {'coordinates': [13.393560634296435, 52.51875095],
+               'type': 'Point'},
+              'properties': {'city': 'Berlin',
+               'country': 'Germany',
+               'extent': [13.3906703, 52.5200704, 13.3948782, 52.5174944],
+               'name': 'Humboldt University in Berlin Mitte Campus',
+               'osm_id': 120456814, 'osm_key': 'amenity', 'osm_type': 'W', 'osm_value': 'university',
+               'postcode': '10117',
+               'state': 'Berlin',
+               'street': 'Dorotheenstraße'},
+              'type': 'Feature'},
+             ...
+              {'geometry': {'coordinates': [13.3869856, 52.5156648], 'type': 'Point'},
+              'properties': {'city': 'Berlin',
+               'country': 'Germany',
+               'housenumber': '55-57',
+               'name': 'Komische Oper Berlin',
+               'osm_id': 318525456, 'osm_key': 'amenity', 'osm_type': 'N', 'osm_value': 'theatre',
+               'postcode': '10117',
+               'state': 'Berlin',
+               'street': 'Behrenstraße'},
+              'type': 'Feature'}]
+                    
+        We can for instance use the :meth:`parse_geometry` to parse (filter) the 
+        data :data:`geom`:
+            
+        >>> func = lambda **kwargs: kwargs.get('coord')
+        >>> _geoDecorators.parse_geometry(func)(geom)
+            [[52.5170365, 13.3888599], [52.5198535, 13.4385964]]
+        >>> _geoDecorators.parse_geometry(func)(geom, unique=True, order='Ll')
+            [13.3888599, 52.5170365]
+            
+        Note
+        ----
+        When passed to the decorated method :data:`new_func`, the input :data:`kwargs` 
+        are actually filtered out to extract features, say :data:`g`, that are formatted 
+        like the JSON geometries output by |GISCO| web-service and which verify the
+        following match:
+        
+            ```
+            g['type']='Feature' g['geometry']['type']='Point' and g['properties']['osm_key']='place'
+            ```
         """
         KW_FEATURES     = 'features'
         KW_GEOMETRY     = 'geometry'
@@ -532,6 +664,8 @@ class _geoDecorators(object):
         KW_OSM_KEY      = 'osm_key'
         KW_COORDINATES  = 'coordinates'
         def __call__(self, *args, **kwargs):
+            unique = kwargs.pop('unique',False)
+            order = kwargs.pop('order', 'lL')
             coord = None
             if args not in (None,()):      
                 if all([isinstance(a,dict) for a in args]):
@@ -540,18 +674,21 @@ class _geoDecorators(object):
                     if all([isinstance(args[0][i],dict) for i in range(len(args[0]))]):
                         coord = args[0]
             else:   
-                coord = kwargs.pop('coord', None)        
+                coord = kwargs.pop(_geoDecorators.KW_COORD, None)        
             if coord is not None:
                 if isinstance(coord,(list,tuple)) and all([isinstance(c,dict) for c in coord]):      
-                    coord_ = [c for c in coord                                                               \
-                       if self.KW_GEOMETRY in c and self.KW_PROPERTIES in c and self.KW_TYPE in c                 \
-                       and c[self.KW_TYPE]=='Feature'                                                 \
-                       and (not(CHECK_TYPE) or c[self.KW_GEOMETRY][self.KW_TYPE]=='Point')         \
-                       and (not(CHECK_OSM_KEY) or c[self.KW_PROPERTIES][self.KW_OSM_KEY]=='place') \
+                    coord = [c for c in coord                                                      \
+                       if self.KW_GEOMETRY in c and self.KW_PROPERTIES in c and self.KW_TYPE in c   \
+                       and c[self.KW_TYPE]=='Feature'                                               \
+                       and (not(CHECK_TYPE) or c[self.KW_GEOMETRY][self.KW_TYPE]=='Point')          \
+                       and (not(CHECK_OSM_KEY) or c[self.KW_PROPERTIES][self.KW_OSM_KEY]=='place')  \
                        ]
-                    coord = coord[0] if coord_==[] else coord_[0]  
-                    coord = dict(zip(['lon','lat'],coord[self.KW_GEOMETRY][self.KW_COORDINATES]))
-                kwargs.update(coord) 
+                    #coord = dict(zip(['lon','lat'],                                                 \
+                    #                  zip(*[c[self.KW_GEOMETRY][self.KW_COORDINATES] for c in coord])))
+                    coord = [_[self.KW_GEOMETRY][self.KW_COORDINATES] for _ in coord]
+                    if order == 'lL':   coord = [_[::-1] for _ in coord]
+                    if unique or len(coord)==1:          coord = coord[0]
+                kwargs.update({_geoDecorators.KW_COORD: coord}) 
                 return self.func(**kwargs)
             else:
                 return self.func(*args, **kwargs)
@@ -585,6 +722,7 @@ class _geoDecorators(object):
             year = kwargs.pop('year', 2013)
             if year in ([],None):
                 return self.func(None, *args, **kwargs)
+            print(self.YEARS)
             if year not in tuple(self.YEARS):
                 raise IOError('year %s not supported' % year)
             kwargs.update({'year': year})                  
