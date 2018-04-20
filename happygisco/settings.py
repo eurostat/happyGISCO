@@ -14,6 +14,8 @@
 .. |OSM| replace:: `OpenStreetMap <OSM_>`_
 .. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim
 .. |Nominatim| replace:: `Nominatim <Nominatim_>`_
+.. _Google: https://www.google.com/
+.. |Google| replace:: `Google <Google_>`_
 .. _Google_Maps: https://developers.google.com/maps/
 .. |Google_Maps| replace:: `Google Maps <Google_Maps_>`_
 .. _Google_Places: https://developers.google.com/places/
@@ -26,6 +28,8 @@
 .. |geopy| replace:: `geopy <geopy_>`_
 .. _GDAL: https://pypi.python.org/pypi/GDAL
 .. |GDAL| replace:: `GDAL <GDAL_>`_
+.. _ArcGIS: http://arcgis.com
+.. |ArcGIS| replace:: `ArcGIS <ArcGIS_>`_
 
 Basic definitions for the use of various geolocation web-services.
 
@@ -66,7 +70,7 @@ class happyWarning(Warning):
     -----------------
     expr : str 
         input expression in which the warning occurs; default: :data:`expr` is 
-        :data:`None`\ .
+        :data:`None`.
         
     Example
     -------
@@ -107,7 +111,7 @@ class happyVerbose(object):
         in front of each verbose message displayed.
     expr : str 
         input expression in which the verbose mode is called; default: :data:`expr` is 
-        :data:`None`\ .
+        :data:`None`.
         
     Example
     -------
@@ -138,12 +142,12 @@ class happyError(Exception):
     -----------------
     errtype : object
         error type; when :data:`errtype` is left to :data:`None`, the system tries
-        to retrieve automatically the error type using :data:`sys.exc_info()`\ .
+        to retrieve automatically the error type using :data:`sys.exc_info()`.
     errcode : (float,int)
-        error code; default: :data:`errcode` is :data:`None`\ .
+        error code; default: :data:`errcode` is :data:`None`.
     expr : str 
         input expression in which the error occurred; default: :data:`expr` is 
-        :data:`None`\ .
+        :data:`None`.
         
     Example
     -------
@@ -227,7 +231,7 @@ GISCO_URL           = '%s/%s' % (EC_DOMAIN, GISCO_DOMAIN)
 """|GISCO| web-service complete URL.
 """
 GISCO_ARCGIS        = 'webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/'
-"""|GISCO| ArcGIS server.
+"""|GISCO| |ArcGIS| server.
 """
 CODER_GISCO         = 'gisco'
 """Identifier of |GISCO| geocoder.
@@ -253,7 +257,7 @@ CHECK_TYPE          = True
 CHECK_OSM_KEY       = True
 
 CODER_GOOGLE        = 'GoogleV3'
-"""Identifier of GISCO geocoder.
+"""Identifier of |GISCO| geocoder.
 """
 CODER_GOOGLE_MAPS   = 'GMaps'
 """Identifier of |googlemaps| geocoder.
@@ -262,7 +266,7 @@ CODER_GOOGLE_PLACES = 'GPlace'
 """Identifier of |googleplaces| geocoder.
 """
 KEY_GOOGLE          = 'key'
-"""Personal key used for connecting to the various Google web-services.
+"""Personal key used for connecting to the various |Google| web-services.
 """
 
 CODER_GEONAME       = 'GeoNames'
@@ -280,7 +284,7 @@ CODER_PROJ          = {CODER_GISCO: 'WGS84',
 """
 
 DRIVER_NAME         = 'ESRI Shapefile'
-"""GDAL driver name.
+"""|GDAL| driver name.
 """                
 
 VERBOSE             = True

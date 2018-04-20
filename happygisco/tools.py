@@ -8,6 +8,8 @@
 
 .. _GDAL: https://pypi.python.org/pypi/GDAL
 .. |GDAL| replace:: `GDAL <GDAL_>`_
+.. _PyGeoTools: https://github.com/jfein/PyGeoTools
+.. |PyGeoTools| replace:: `PyGeoTools <PyGeoTools_>`_
 
 Library of simple tools for simple geographical data (geolocations and geocoordinates)
 handling and processin.
@@ -68,22 +70,19 @@ except ImportError:
 # so that issubclass(GeoCoordinate, object) is True
 class _GeoLocation(object):
     """Class used to represent coordinates on a sphere, most likely Earth, as suggested  
-    in <http://janmatuschek.de/LatitudeLongitudeBoundingCoordinates>_\ .
+    in http://janmatuschek.de/LatitudeLongitudeBoundingCoordinates.
 
-    Library forked from <https://github.com/jfein/PyGeoTools/blob/master/geolocation.py>_\ .
-
-    **Description**
-    
-    See <https://github.com/jfein/PyGeoTools>_\ .
-    
-    **License**
-    
     |       # This class is based from the code smaple in this paper:
     |       #     http://janmatuschek.de/LatitudeLongitudeBoundingCoordinates        
     |       # The owner of that website, Jan Philip Matuschek, is the full owner of 
     |       # his intellectual property. This class is simply a Python port of his very
     |       # useful Java code. All code written by Jan Philip Matuschek and ported herein 
     |       # (which is all of this class) is owned by Jan Philip Matuschek.
+    
+    The class :class:`_GeoLocation` extends the original :class:`GeoLocation` class 
+    implemented in the |PyGeoTools| tools (see source code 
+    `here <https://github.com/jfein/PyGeoTools/blob/master/geolocation.py>`_). This 
+    class is simply a `Python` port of the original `Java` code by Jan Philip Matuschek.
     """
  
     MIN_LAT = math.radians(-90)
@@ -211,7 +210,6 @@ class GeoDistance(object):
         units that are equivalent to **1 m**.
     KM_TO,MI_TO,FT_TO :
         ibid for **1 km**, **1 mi** (mile) and **1 ft** (foot) respectively.
-        
     """
         
     #/************************************************************************/
@@ -295,7 +293,7 @@ class GeoDistance(object):
             
         Raises
         ------
-        err : :class:`happyError`
+        err : :class:`~settings.happyError`
             when unable to recognize any of the distance units in :data:`kwargs`.
 
         Examples
@@ -616,7 +614,6 @@ class GeoCoordinate(_GeoLocation):
         dummy min longitude value in degree: -180. 
     MAX_LONGITUDE : 
         ibid for max longitude: 180. 
-        
     """
 
     #/************************************************************************/
@@ -646,7 +643,8 @@ class GeoCoordinate(_GeoLocation):
         Returns
         -------
         x : :class:`~happygisco.tools.GeoCoordinate`
-            a :class:`GeoCoordinate` instance from expressed (lat, Lon) coordinates.
+            a :class:`GeoCoordinate` instance from the input latitude and longitude 
+            coordinates :data:`(rad_lat,rad_lon)`.
             
         Example
         -------
@@ -673,7 +671,8 @@ class GeoCoordinate(_GeoLocation):
         Returns
         -------
         x : :class:`~happygisco.tools.GeoCoordinate`
-            a :class:`GeoCoordinate` instance from expressed (lat, Lon) coordinates.
+            a :class:`GeoCoordinate` instance from the input latitude and longitude 
+            coordinates :data:`(deg_lat,deg_lon)`.
             
         Example
         -------
@@ -701,7 +700,8 @@ class GeoCoordinate(_GeoLocation):
         Returns
         -------
         x : :class:`~happygisco.tools.GeoCoordinate`
-            a :class:`GeoCoordinate` instance from expressed (lat, Lon) coordinates.
+            a :class:`GeoCoordinate` instance from the input latitude and longitude 
+            coordinates :data:`(dps_lat,dps_lon)`.
             
         Example
         -------
@@ -760,7 +760,8 @@ class GeoCoordinate(_GeoLocation):
         dlat : float
             latitude difference in degrees.
         alat : float
-            average latitude at which the distance is calculated (between the two fixes).
+            average latitude at which the distance is calculated (between the two 
+            fixes).
             
         Returns
         -------
@@ -787,7 +788,8 @@ class GeoCoordinate(_GeoLocation):
         dlng : float
             longitude difference in degrees.
         alat : float
-            average latitude at which the distance is calculated (between the two fixes).
+            average latitude at which the distance is calculated (between the two 
+            fixes).
             
         Returns
         -------
@@ -814,7 +816,8 @@ class GeoCoordinate(_GeoLocation):
         dy : float
             latitude difference in meters.
         alat : float
-            average latitude at which the distance is calculated (between the two fixes).
+            average latitude at which the distance is calculated (between the two 
+            fixes).
             
         Returns
         -------

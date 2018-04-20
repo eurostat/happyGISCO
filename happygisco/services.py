@@ -30,8 +30,6 @@
 .. |googlemaps| replace:: `Google Maps <googlemaps_>`_
 .. _googleplaces: https://github.com/slimkrazy/python-google-places
 .. |googleplaces| replace:: `Google Places <googleplaces_>`_
-.. _PyGeoTools: https://github.com/jfein/PyGeoTools/blob/master/geolocation.py
-.. |PyGeoTools| replace:: `PyGeoTools <PyGeoTools_>`_
 
 Module implementing simple requests to various web-based geographical services, 
 including |Eurostat| |GISCO|, |OSM| |Nominatim| and |Google_Maps|.
