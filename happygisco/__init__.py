@@ -4,24 +4,51 @@
 """
 .. __init__
 
-Simple API to Eurostat GISCO web-services.
+.. Links
 
-**About**
+.. _Eurostat: http://ec.europa.eu/eurostat/web/main
+.. |Eurostat| replace:: `Eurostat <Eurostat_>`_
+.. _GISCO: http://ec.europa.eu/eurostat/web/gisco
+.. |GISCO| replace:: `GISCO <GISCO_>`_
+.. _OSM: https://www.openstreetmap.org
+.. |OSM| replace:: `OpenStreetMap <OSM_>`_
+.. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim
+.. |Nominatim| replace:: `Nominatim <Nominatim_>`_
+.. _Google: http://www.google.com
+.. |Google| replace:: `Google <Google_>`_
+.. _Google_Maps: https://developers.google.com/maps/
+.. |Google_Maps| replace:: `Google Maps <Google_Maps_>`_
+.. _Google_Places: https://developers.google.com/places/
+.. |Google_Places| replace:: `Google Places <Google_Places_>`_
 
-*credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
-
-*version*:      1
---
-*since*:        Thu Apr  5 16:40:31 2018
-
+Simple microservice (API) built on top of |Eurostat| |GISCO| web-services, and 
+not only.
 
 **Description**
+
+The :mod:`happyGISCO` package will enable you to perform very basic geospatial 
+operations, *e.g.*:
+    
+    * geospatial units conversion,  
+    * geographical system transformation, 
+    * geolocation retrieval,
+    
+using common online web-based geoservices (with or without authentication requested):
+    
+    * |Nominatim| web-services based on |OSM|,
+    * |GISCO| web-services hosted at |Eurostat| and replicating |OSM| web-services, 
+    * |Google| web-services, *e.g.* |Google_Maps| and |Google_Places|.
 
 **Usage**
 
     >>> import happygisco
+    >>> print(happygisco.__all__)
+        ['settings', 'tools', 'services', 'features']
     
 """
+
+# *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
+# *since*:        Thu Apr  5 16:40:31 2018
 
 __all__ = ['settings', 'tools', 'services', 'features']#analysis:ignore
 

@@ -2,10 +2,39 @@
 # -*- coding: utf-8 -*-
 
 """
-.. services
+.. _mod_services
+
+.. Links
+
+.. _Eurostat: http://ec.europa.eu/eurostat/web/main
+.. |Eurostat| replace:: `Eurostat <Eurostat_>`_
+.. _GISCO: http://ec.europa.eu/eurostat/web/gisco
+.. |GISCO| replace:: `GISCO <GISCO_>`_
+.. _GISCOWIKI: https://webgate.ec.europa.eu/fpfis/wikis/pages/viewpage.action?spaceKey=GISCO&postingDay=2016%2F1%2F20&title=Background+Services+at+the+EC+cooperate+level+in+production+in+four+projections
+.. |GISCOWIKI| replace:: `GISCOWIKI <GISCOWIKI_>`_
+.. _OSM: https://www.openstreetmap.org
+.. |OSM| replace:: `OpenStreetMap <OSM_>`_
+.. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim
+.. |Nominatim| replace:: `Nominatim <Nominatim_>`_
+.. _NominatimWIKI: https://wiki.openstreetmap.org/wiki/Nominatim
+.. |NominatimWIKI| replace:: `NominatimWIKI <NominatimWIKI_>`_
+.. _Google_Maps: https://developers.google.com/maps/
+.. |Google_Maps| replace:: `Google Maps <Google_Maps_>`_
+.. _Google_Places: https://developers.google.com/places/
+.. |Google_Places| replace:: `Google Places <Google_Places_>`_
+.. _ArcGIS: http://arcgis.com
+.. |ArcGIS| replace:: `ArcGIS <ArcGIS_>`_
+.. _geopy: https://github.com/geopy/geopy
+.. |geopy| replace:: `geopy <geopy_>`_
+.. _googlemaps: https://pypi.python.org/pypi/googlemaps
+.. |googlemaps| replace:: `Google Maps <googlemaps_>`_
+.. _googleplaces: https://github.com/slimkrazy/python-google-places
+.. |googleplaces| replace:: `Google Places <googleplaces_>`_
+.. _PyGeoTools: https://github.com/jfein/PyGeoTools/blob/master/geolocation.py
+.. |PyGeoTools| replace:: `PyGeoTools <PyGeoTools_>`_
 
 Module implementing simple requests to various web-based geographical services, 
-including |Eurostat| |GISCO|, |OSM| |Nominatim| and |GMaps|.
+including |Eurostat| |GISCO|, |OSM| |Nominatim| and |Google_Maps|.
 
 **Description**
 
@@ -24,21 +53,6 @@ Perform operations using online web-services, *e.g.*:
 *call*:         :mod:`settings`         
 
 **Contents**
-
-.. Links
-
-.. _Eurostat: http://ec.europa.eu/eurostat/web/main
-.. |Eurostat| replace:: `Eurostat <Eurostat_>`_
-.. _GISCO: http://ec.europa.eu/eurostat/web/gisco
-.. |GISCO| replace:: `GISCO <GISCO_>`_
-.. _OSM: https://www.openstreetmap.org
-.. |OSM| replace:: `OpenStreetMap <OSM_>`_
-.. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim
-.. |Nominatim| replace:: `Nominatim <Nominatim_>`_
-.. _googlemaps: https://pypi.python.org/pypi/googlemaps
-.. |googlemaps| replace:: `Google Maps <googlemaps_>`_
-.. _googleplaces: https://github.com/slimkrazy/python-google-places
-.. |googleplaces| replace:: `Google Places <googleplaces_>`_
 """
 
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
@@ -59,10 +73,12 @@ from happygisco.settings import happyVerbose, happyWarning, happyError, _geoDeco
 # requirements
 try:                                
     GISCO_SERVICE = True
+    OSM_SERVICE = True
     import requests # urllib2
 except ImportError:                 
     happyWarning('REQUESTS package (https://pypi.python.org/pypi/requests/) not loaded - GISCO ONLINE service will not be accessed')
     GISCO_SERVICE = False
+    OSM_SERVICE = False
     
 try:
     API_SERVICE = True
@@ -112,15 +128,7 @@ except ImportError:
 #==============================================================================
 
 class _Service(object):
-    """
-    .. Links
-    
-    .. _Eurostat: http://ec.europa.eu/eurostat/web/main
-    .. |Eurostat| replace:: `Eurostat <Eurostat_>`_
-    .. _GISCO: http://ec.europa.eu/eurostat/web/gisco
-    .. |GISCO| replace:: `GISCO <GISCO_>`_
-
-    Base class defining a web-session and simple connection operations to be
+    """Base class defining a web-session and simple connection operations to be
     used by a web-service. 
        
         >>> serv = services._Service()
@@ -181,18 +189,18 @@ class _Service(object):
         
         >>> serv = _Service()
         >>> serv.get_status('http://dumb')
-        ConnectionError: connection failed
+            ConnectionError: connection failed
         >>> serv.get_status('http://www.dumbanddumber.com')
-        301 
+            301 
         
         Let us check that the status is ok when connecting to |Eurostat| website:
             
         >>> stat = serv.get_status(settings.ESTAT_URL)
         >>> print(stat)
-        200
+            200
         >>> import requests
         >>> stat == requests.codes.ok
-        True
+            True
         
         See also
         --------
@@ -244,38 +252,38 @@ class _Service(object):
             
         >>> serv = _Service()
         >>> serv.get_response('http://dumb')
-        happyError: wrong request formulated
+            happyError: wrong request formulated
         >>> resp = serv.get_response('http://www.example.com')
         >>> print(resp.text)
-        <!doctype html>
-        <html>
-        <head>
-            <title>Example Domain</title>
-            <meta charset="utf-8" />
-            <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            ...
+            <!doctype html>
+            <html>
+            <head>
+                <title>Example Domain</title>
+                <meta charset="utf-8" />
+                <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
+                ...
             
         We can view the server’s response headers when connecting to |Eurostat|
         webpage:
             
         >>> resp = serv.get_response(settings.ESTAT_URL)
         >>> print(resp.headers)
-        {   'Date': 'Wed, 18 Apr 2018 11:54:40 GMT', 
-            'X-Content-Type-Options': 'nosniff', 
-            'X-Frame-Options': 'SAMEORIGIN', 
-            'X-XSS-Protection': '1', 
-            'Content-Type': 'text/html;charset=UTF-8', 
-            'Transfer-Encoding': 'chunked', 
-            'Server': 'Europa', 
-            'Connection': 'Keep-Alive', 
-            'Content-Encoding': 'gzip'}
+            {   'Date': 'Wed, 18 Apr 2018 11:54:40 GMT', 
+                'X-Content-Type-Options': 'nosniff', 
+                'X-Frame-Options': 'SAMEORIGIN', 
+                'X-XSS-Protection': '1', 
+                'Content-Type': 'text/html;charset=UTF-8', 
+                'Transfer-Encoding': 'chunked', 
+                'Server': 'Europa', 
+                'Connection': 'Keep-Alive', 
+                'Content-Encoding': 'gzip' }
         
         We can also access the response body as bytes (though that is usually
         adapted to non-text requests):
             
         >>> print(resp.content)
-        b'<!DOCTYPE html PUBLIC " ...
+            b'<!DOCTYPE html PUBLIC " ...
         
         See also
         --------
@@ -344,7 +352,7 @@ class _Service(object):
                                precision=1,
                                indic_il='LI_R_MD60',
                                time='2015')
-        'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li03?precision=1&indic_il=LI_R_MD60&time=2015'
+            'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li03?precision=1&indic_il=LI_R_MD60&time=2015'
         
         Note that another way to call the method is:
 
@@ -352,7 +360,7 @@ class _Service(object):
                                path='wdds/rest/data/v2.1/json/en',
                                query='ilc_li01', 
                                **{'precision': 1, 'hhtyp': 'A1', 'time': '2010'})
-        'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li01?precision=1&hhtyp=A1&time=2010'
+            'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li01?precision=1&hhtyp=A1&time=2010'
         
         Similarly, we will be able to access to |GISCO| service (see :meth:`GISCOService.url_geocode`
         below):
@@ -360,7 +368,7 @@ class _Service(object):
         >>> _Service.build_url(domain=settings.GISCO_URL,
                                query='api', 
                                **{'q': 'Berlin+Germany', 'limit': 2})
-        'http://europa.eu/webtools/rest/gisco/api?q=Berlin+Germany&limit=2'  
+            'http://europa.eu/webtools/rest/gisco/api?q=Berlin+Germany&limit=2'  
         
         See also
         --------
@@ -402,60 +410,349 @@ class _Service(object):
 #==============================================================================
     
 class OSMService(_Service):
+    """Class providing conversion methods and geocoding tools that run the |Nominatim| 
+    online web-service of the |OSM| API.
+       
+        >>> serv = OSMService(**kwargs)
+            
+    Keyword arguments
+    -----------------
+    domain : str
+        domain of |OSM| web-services hosted by |OSM|; default is :data:`settings.OSM_URL`,
+        *e.g.* an URL domain like :literal:`'nominatim.openstreetmap.org'`\ . 
+ 
+    Attributes
+    ----------     
+    CODER :
+        coder dictionary defining the connection to |OSM| based web-service
+        set to {:data:`settings.CODER_OSM`: :data:`settings.KEY_OSM` }, *e.g*
+        :literal:`{'OSM': None}`.
     """
-    .. Links
     
-    .. _Eurostat: http://ec.europa.eu/eurostat/web/main
-    .. |Eurostat| replace:: `Eurostat <Eurostat_>`_
-    .. _GISCO: http://ec.europa.eu/eurostat/web/gisco
-    .. |GISCO| replace:: `GISCO <GISCO_>`_
-    .. _GISCOWIKI: https://webgate.ec.europa.eu/fpfis/wikis/pages/viewpage.action?spaceKey=GISCO&postingDay=2016%2F1%2F20&title=Background+Services+at+the+EC+cooperate+level+in+production+in+four+projections
-    .. |GISCOWIKI| replace:: `GISCOWIKI <GISCOWIKI_>`_
-    .. _OSM: https://www.openstreetmap.org
-    .. |OSM| replace:: `OpenStreetMap <OSM_>`_
-    .. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim
-    .. |Nominatim| replace:: `Nominatim <Nominatim_>`_
-    .. _googlemaps: https://pypi.python.org/pypi/googlemaps
-    .. |googlemaps| replace:: `Google Maps <googlemaps_>`_
-    .. _googleplaces: https://github.com/slimkrazy/python-google-places
-    .. |googleplaces| replace:: `Google Places <googleplaces_>`_
-    .. _geopy: https://github.com/geopy/geopy
-    .. |geopy| replace:: `geopy <geopy_>`_
-    .. _PyGeoTools: https://github.com/jfein/PyGeoTools/blob/master/geolocation.py
-    .. |PyGeoTools| replace:: `PyGeoTools <PyGeoTools_>`_
+    CODER = {settings.CODER_OSM: settings.KEY_OSM}
+    
+    #/************************************************************************/
+    def __init__(self, **kwargs):
+        try:
+            assert OSM_SERVICE is not False
+        except:
+            raise happyError('GISCO service not available')
+        super(OSMService, self).__init__(**kwargs)
+        self.domain = kwargs.pop('domain', settings.OSM_URL) 
 
-    """
-    pass
+    #/************************************************************************/
+    def url_geocode(self, **kwargs):
+        """Generate the query URL for |Nominatim| geocoding web-service (from toponame to
+        geocoordinate).
+        
+            >>> url = serv.url_geocode(**kwargs)
+           
+        Keyword Arguments
+        -----------------
+        kwargs : dict
+            parameters used to build the query URL; allowed parameters are: 
+            :data:`format, json_callback, accept-language, extratags, namedetails, q, street, city, county, state, country, postalcode, countrycodes, viewbox, bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson, polygon_kml, polygon_svg`, and :data:`polygon_text`;
+            see |NominatimWIKI| on *background services* for more details.
+                
+        Returns
+        -------
+        url : str
+            URL used to return the adequate *geocode* results (*i.e.*, geocoordinates) 
+            associated to a given place using |Nominatim| web-service; the generic form of 
+            :data:`url` is :literal:`domain/search?{filters}` with :literal:`filters` the 
+            filters passed through :data:`kwargs`\ .
+        
+        Example
+        -------
+        Let us create a simple URL for querying the geolocation of a toponame:
+            
+        >>> serv = OSMService()
+        >>> serv.url_geocode(q='Paris+France', format='json')
+            'https://nominatim.openstreetmap.org/search?q=Paris+France&format=json'
+        
+        See also
+        --------
+        :meth:`url_reverse`, :meth:`url_route`, :meth:`url_transform`, 
+        :meth:`~_Service.build_url`.
+        """
+        protocol = kwargs.pop('protocol', 'https')
+        query = kwargs.pop('query', 'search')
+        keys = kwargs.pop('keys',
+                          ['format', 'json_callback', 'accept-language', 'extratags', 'namedetails', 
+                           'q', 'street', 'city', 'county', 'state', 'country', 'postalcode', 'countrycodes', 
+                           'viewbox', 'bounded', 'addressdetails', 'email', 'limit', 'dedupe', 'debug', 
+                           'polygon_geojson', 'polygon_kml', 'polygon_svg', 'polygon_text']
+                          )
+        happyVerbose('\n            * '.join(['input filters used for geocoding service :',]+[attr + '='+ str(kwargs[attr]) \
+                                            for attr in kwargs.keys() if attr in keys]))
+        url = self.build_url(protocol=protocol,
+                             domain=self.domain, 
+                             query=query, 
+                             **{k:v for k,v in kwargs.items() if k in keys})
+        happyVerbose('output url:\n            %s' % url)
+        return url
+    
+    #/************************************************************************/
+    def url_reverse(self, **kwargs):
+        """Generate the query URL for |Nominatim| reverse geocoding web-service (from 
+        geocoordinate to toponame).
+        
+            >>> url = serv.url_reverse(**kwargs)
+           
+        Keyword Arguments
+        -----------------
+        kwargs : dict
+            parameters used to build the query URL; allowed parameters are: 
+            :data:`format, json_callback, accept-language, extratags, email, osm_type, osm_id, lat, lon, zoom, addressdetails, polygon_geojson, polygon_kml, polygon_svg`, and :data:`polygon_text`;
+            see |NominatimWIKI| on *background services* for more details.
+                
+        Returns
+        -------
+        url : str
+            URL used to return the adequate *reverse geocode* results (*i.e.*, 
+            toponame) associated to given geocoordinates using |Nominatim| web-service; 
+            the generic form of :data:`url` is :literal:`domain/reverse?{filters}`
+            with :literal:`filters` the filters passed through :data:`kwargs`\ .
+       
+        Example
+        -------
+        We can generate the URL for querying the toponame associated to a given
+        geolocation:
+
+        >>> serv = OSMService()
+        >>> serv.url_reverse(lon=10, lat=52)
+            'https://nominatim.openstreetmap.org/reverse?lon=10&lat=52'
+        
+        See also
+        --------
+        :meth:`url_geocode`, :meth:`url_route`, :meth:`url_transform`, 
+        :meth:`~_Service.build_url`.
+        """
+        protocol = kwargs.pop('protocol', 'https')
+        query = kwargs.pop('query', 'reverse')
+        keys = kwargs.pop('keys',
+                          ['format', 'json_callback', 'accept-language', 'extratags', 'email', 
+                           'osm_type', 'osm_id', 'lat', 'lon', 'zoom', 'addressdetails', 
+                           'polygon_geojson', 'polygon_kml', 'polygon_svg', 'polygon_text']
+                          )
+        happyVerbose('\n            * '.join(['input filters used for reverse geocoding service:',]+[attr + '='+ str(kwargs[attr]) \
+                                            for attr in kwargs.keys() if attr in keys]))
+        url = self.build_url(protocol=protocol,
+                             domain=self.domain, 
+                             query=query, 
+                             **{k:v for k,v in kwargs.items() if k in keys})
+        happyVerbose('output url:\n            %s' % url)
+        return url
+
+    #/************************************************************************/
+    def _place2geom(self, place, **kwargs): 
+        place = ['+'.join(p.replace(',',' ').split()) for p in place]
+        fmt = kwargs.pop('format','')
+        key = kwargs.pop('key',None)
+        if fmt is not None:
+            kwargs.update({'format':fmt or 'json'})
+        for p in place:
+            kwargs.update({'q': p})
+            try:
+                url = self.url_geocode(**kwargs)
+                assert self.get_status(url) is not None
+            except:
+                raise happyError('error geolocation request')
+            else:
+                response = self.get_response(url)
+            try:
+                data = json.loads(response.text)
+                assert data not in({},None)
+            except:
+                raise happyError('geolocation for place %s not loaded' % p)
+            try:
+                assert key is not None
+            except AssertionError:
+                try:
+                    assert data != [] 
+                except:
+                    raise happyError('geolocation for place %s not recognised' % p)  
+                else:
+                    pass
+            else:
+                try:
+                    assert key in data and data[key] != [] 
+                except AssertionError:
+                    raise happyError('geolocation for place %s with key %s not recognised' % (p,key))  
+                else:
+                    data = data.get(key)
+            yield data if not isinstance(data,dict) or len(data)>1 else data[0]
+
+    #/************************************************************************/
+    #@_geoDecorators.parse_place
+    #def place2geom(self, place, **kwargs): 
+    #    place = ['+'.join(p.replace(',',' ').split()) for p in place]
+    #    geom = []
+    #    fmt = kwargs.pop('format','')
+    #    if fmt is not None:
+    #        kwargs.update({'format':fmt or 'json'})
+    #    for p in place:
+    #        kwargs.update({'q': p})
+    #        try:
+    #            url = self.url_geocode(**kwargs)
+    #            assert self.get_status(url) is not None
+    #        except:
+    #            raise happyError('error geolocation request')
+    #        else:
+    #            response = self.get_response(url)
+    #        try:
+    #            data = json.loads(response.text)
+    #            assert data not in({},None)
+    #        except:
+    #            raise happyError('geolocation for place %s not loaded' % p)
+    #        try:
+    #            assert data != [] 
+    #        except:
+    #            raise happyError('geolocation for place %s not recognised' % p)      
+    #        else:
+    #            geom.append(data if len(data)>1 else data[0])
+    #    return geom if len(geom)>1 else geom[0]
+    @_geoDecorators.parse_place
+    def place2geom(self, place, **kwargs):
+        """
+        
+            >>>  = serv.(, **kwargs)
+
+        Argument
+        --------
+        
+        Keyword arguments
+        -----------------
+        
+        Returns
+        -------
+            
+        Raises
+        ------
+        ~settings.happyError
+            error is raised in the cases:
+            
+                * the geolocation request is wrongly formulated,
+                * the geolocation cannot be loaded,                
+                * the geolocation is not recognised.
+        
+        See also
+        --------
+        :meth:`place2coord`, :meth:`coord2place`, :meth:`coord2nuts`, :meth:`place2nuts`, 
+        :meth:`coord2route`, :meth:`url_geocode`, :meth:`~_Service.get_response`.
+        """
+        geom = []
+        [geom.append(data if len(data)>1 else data[0]) for data in self._place2geom(place, **kwargs)]
+        return geom if len(geom)>1 else geom[0]
+       
+    #/************************************************************************/
+    @_geoDecorators.parse_coordinate
+    def _coord2place(self, lat, lon, **kwargs): 
+        fmt = kwargs.pop('format','')
+        key = kwargs.pop('key',None)
+        if fmt is not None:
+            kwargs.update({'format':fmt or 'json'})
+        for i in range(len(lat)):
+            kwargs.update({'lat': lat[i], 'lon': lon[i]})
+            try:
+                url = self.url_reverse(**kwargs)
+                assert self.get_status(url) is not None
+            except:
+                raise happyError('error geolocation request')
+            else:
+                response = self.get_response(url)
+            try:
+                data = json.loads(response.text)
+                assert data not in({},None)
+            except:
+                raise happyError('place for geolocation (%s,%s) not loaded' % (lat[i], lon[i]))
+            try:
+                assert key is not None
+            except AssertionError:
+                try:
+                    assert data != [] 
+                except:
+                    raise happyError('place for geolocation (%s,%s) not recognised' % (lat[i], lon[i]))  
+                else:
+                    pass
+            else:
+                try:
+                    assert key in data and data[key] != [] 
+                except AssertionError:
+                    raise happyError('place for geolocation (%s,%s) and key %s not recognised' % (lat[i], lon[i], key))  
+                else:
+                    data = data.get(key)
+            yield data if not isinstance(data,dict) or len(data)>1 else data[0]
+       
+    #/************************************************************************/
+    #@_geoDecorators.parse_coordinate
+    #def coord2place(self, lat, lon, **kwargs): # specific use
+    #    place = []
+    #    for i in range(len(lat)):
+    #        kwargs.update({'lat': lat[i], 'lon': lon[i]})
+    #        try:
+    #            url = self.url_reverse(**kwargs)
+    #            assert self.get_status(url) is not None
+    #        except:
+    #            raise happyError('error geolocation request')
+    #        else:
+    #            response = self.get_response(url)
+    #        try:
+    #            data = json.loads(response.text)
+    #            assert data not in({},None)
+    #        except:
+    #            raise happyError('place for geolocation (%s,%s) not loaded' % (lat[i], lon[i]))
+    #        try:
+    #            assert _geoDecorators.parse_geometry.KW_FEATURES in data     \
+    #                and data[_geoDecorators.parse_geometry.KW_FEATURES] != []
+    #        except:
+    #            raise happyError('place for geolocation (%s,%s) not recognised' % (lat[i], lon[i]))      
+    #        else:
+    #            p = data.get(_geoDecorators.parse_geometry.KW_FEATURES)
+    #            place.append(p if len(p)>1 else p[0])
+    #    return place[0] if len(place)==1 else place
+    @_geoDecorators.parse_coordinate
+    def coord2place(self, lat, lon, **kwargs): # specific use
+        """
+        
+            >>>  place = serv.coord2place(lat, lon, **kwargs)
+
+        Arguments
+        ---------
+        lat,lon : float, list[float]
+        
+        Keyword arguments
+        -----------------
+        
+        Returns
+        -------
+        place : str, list[str]
+        
+        Raises
+        ------
+        ~settings.happyError
+            error is raised in the cases:
+            
+                * the geolocation request is wrongly formulated,
+                * the place cannot be loaded,                
+                * the place is not recognised.
+        
+        See also
+        --------
+        :meth:`place2coord`, :meth:`place2geom`, :meth:`coord2nuts`, :meth:`place2nuts`, 
+        :meth:`coord2route`, :meth:`url_reverse`, :meth:`~_Service.get_response`.
+        """
+        place = []
+        [place.append(data if len(data)>1 else data[0]) for data in self._coord2place(lat, lon, **kwargs)]
+        return place[0] if len(place)==1 else place
 
 #%%
 #==============================================================================
 # CLASS GISCOService
 #==============================================================================
     
-class GISCOService(_Service):
-    """
-    .. Links
-    
-    .. _Eurostat: http://ec.europa.eu/eurostat/web/main
-    .. |Eurostat| replace:: `Eurostat <Eurostat_>`_
-    .. _GISCO: http://ec.europa.eu/eurostat/web/gisco
-    .. |GISCO| replace:: `GISCO <GISCO_>`_
-    .. _GISCOWIKI: https://webgate.ec.europa.eu/fpfis/wikis/pages/viewpage.action?spaceKey=GISCO&postingDay=2016%2F1%2F20&title=Background+Services+at+the+EC+cooperate+level+in+production+in+four+projections
-    .. |GISCOWIKI| replace:: `GISCOWIKI <GISCOWIKI_>`_
-    .. _OSM: https://www.openstreetmap.org
-    .. |OSM| replace:: `OpenStreetMap <OSM_>`_
-    .. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim
-    .. |Nominatim| replace:: `Nominatim <Nominatim_>`_
-    .. _googlemaps: https://pypi.python.org/pypi/googlemaps
-    .. |googlemaps| replace:: `Google Maps <googlemaps_>`_
-    .. _googleplaces: https://github.com/slimkrazy/python-google-places
-    .. |googleplaces| replace:: `Google Places <googleplaces_>`_
-    .. _geopy: https://github.com/geopy/geopy
-    .. |geopy| replace:: `geopy <geopy_>`_
-    .. _PyGeoTools: https://github.com/jfein/PyGeoTools/blob/master/geolocation.py
-    .. |PyGeoTools| replace:: `PyGeoTools <PyGeoTools_>`_
-
-    Class providing conversion methods and geocoding tools that run the |GISCO| 
+class GISCOService(OSMService):
+    """Class providing conversion methods and geocoding tools that run the |GISCO| 
     online web-service, itself based on |OSM| |Nominatim| API.
        
         >>> serv = GISCOService(**kwargs)
@@ -505,7 +802,7 @@ class GISCOService(_Service):
 
     #/************************************************************************/
     def url_geocode(self, **kwargs):
-        """Generate the query URL for the geocoding web-service (from toponame to
+        """Generate the query URL for |GISCO| geocoding web-service (from toponame to
         geocoordinate).
         
             >>> url = serv.url_geocode(**kwargs)
@@ -514,7 +811,7 @@ class GISCOService(_Service):
         -----------------
         kwargs : dict
             parameters used to build the query URL; allowed parameters are: 
-            :data:`q, lat, lon, distance_sort, limit, osm_tag`, and :literal:`lang`;
+            :data:`q, lat, lon, distance_sort, limit, osm_tag`, and :data:`lang`;
             see |GISCOWIKI| on *background services* for more details.
                 
         Returns
@@ -531,25 +828,22 @@ class GISCOService(_Service):
             
         >>> serv = GISCOService()
         >>> serv.url_geocode(q='Paris+France')
-        'http://europa.eu/webtools/rest/gisco/api?q=Paris+France'
+            'http://europa.eu/webtools/rest/gisco/api?q=Paris+France'
         
         See also
         --------
         :meth:`url_reverse`, :meth:`url_route`, :meth:`url_transform`, :meth:`url_nuts`,
         :meth:`~_Service.build_url`.
         """
-        keys = ['q', 'lat', 'lon', 'distance_sort', 'limit', 'osm_tag', 'lang']
-        happyVerbose('\n            * '.join(['input filters used for geocoding service :',]+[attr + '='+ str(kwargs[attr]) \
-                                            for attr in kwargs.keys() if attr in keys]))
-        url = self.build_url(domain=self.domain, 
-                             query='api', 
-                             **{k:v for k,v in kwargs.items() if k in keys})
-        happyVerbose('output url:\n            %s' % url)
-        return url
+        kwargs.update({'keys': ['q', 'lat', 'lon', 'distance_sort', 'limit', 'osm_tag', 'lang'],
+                       'query': 'api',
+                       'protocol': 'http'}
+            )
+        return super(GISCOService, self).url_geocode(**kwargs)
     
     #/************************************************************************/
     def url_reverse(self, **kwargs):
-        """Generate the query URL for the reverse geocoding web-service (from 
+        """Generate the query URL for |GISCO| reverse geocoding web-service (from 
         geocoordinate to toponame).
         
             >>> url = serv.url_reverse(**kwargs)
@@ -558,7 +852,7 @@ class GISCOService(_Service):
         -----------------
         kwargs : dict
             parameters used to build the query URL; allowed parameters are: 
-            :literal:`lat, lon, radius, distance_sort, limit`, and :literal:`lang`;
+            :data:`lat, lon, radius, distance_sort, limit`, and :data:`lang`;
             see |GISCOWIKI| on *background services* for more details.
                 
         Returns
@@ -575,22 +869,19 @@ class GISCOService(_Service):
         geolocation:
 
         >>> serv = GISCOService()
-        >>> serv.url_reverse(lon=10, lat=52))
-        'http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52'
+        >>> serv.url_reverse(lon=10, lat=52)
+            'http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52'
         
         See also
         --------
         :meth:`url_geocode`, :meth:`url_route`, :meth:`url_transform`, :meth:`url_nuts`,
         :meth:`~_Service.build_url`.
         """
-        keys = ['lat', 'lon', 'radius', 'distance_sort', 'limit', 'lang']
-        happyVerbose('\n            * '.join(['input filters used for reverse geocoding service:',]+[attr + '='+ str(kwargs[attr]) \
-                                            for attr in kwargs.keys() if attr in keys]))
-        url = self.build_url(domain=self.domain, 
-                             query='reverse', 
-                             **{k:v for k,v in kwargs.items() if k in keys})
-        happyVerbose('output url:\n            %s' % url)
-        return url
+        kwargs.update({'keys': ['lat', 'lon', 'radius', 'distance_sort', 'limit', 'lang'],
+                       'query': 'reverse',
+                       'protocol': 'http'}
+            )
+        return super(GISCOService, self).url_reverse(**kwargs)
 
     #/************************************************************************/
     def url_route(self, **kwargs):
@@ -627,7 +918,7 @@ class GISCOService(_Service):
         Example
         -------
         >>> print GISCOService.url_reverse(lon=10, lat=52)
-        https://webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/Utilities/Geometry/GeometryServer/project?inSR=4326&outSR=3035&geometries=-9.1630%2C38.7775&transformation=&transformForward=true&f=json
+            https://webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/Utilities/Geometry/GeometryServer/project?inSR=4326&outSR=3035&geometries=-9.1630%2C38.7775&transformation=&transformForward=true&f=json
         
         See also
         --------
@@ -683,6 +974,11 @@ class GISCOService(_Service):
         
     #/************************************************************************/
     @_geoDecorators.parse_place
+    def _place2geom(self, place, **kwargs): 
+        kwargs.update({'key': 'features'})
+        for g in super(GISCOService,self)._place2geom(place, **kwargs):
+            yield g
+    @_geoDecorators.parse_place
     def place2geom(self, place, **kwargs): 
         """
         
@@ -711,30 +1007,8 @@ class GISCOService(_Service):
         :meth:`place2coord`, :meth:`coord2place`, :meth:`coord2nuts`, :meth:`place2nuts`, 
         :meth:`coord2route`, :meth:`url_geocode`, :meth:`~_Service.get_response`.
         """
-        place = ['+'.join(p.replace(',',' ').split()) for p in place]
-        geom = []
-        for p in place:
-            kwargs.update({'q': p})
-            try:
-                url = self.url_geocode(**kwargs)
-                assert self.get_status(url) is not None
-            except:
-                raise happyError('error geolocation request')
-            else:
-                response = self.get_response(url)
-            try:
-                data = json.loads(response.text)
-                assert data not in({},None)
-            except:
-                raise happyError('geolocation for place %s not loaded' % p)
-            try:
-                assert 'features' in data and data['features'] != [] 
-            except:
-                raise happyError('geolocation for place %s not recognised' % p)      
-            else:
-                c = data.get('features')
-                geom.append(c if len(c)>1 else c[0])
-        return geom if len(geom)>1 else geom[0]
+        kwargs.update({'key': _geoDecorators.parse_geometry.KW_FEATURES})
+        return super(GISCOService,self).place2geom(place, **kwargs)
         
     #/************************************************************************/
     @_geoDecorators.parse_place
@@ -794,31 +1068,9 @@ class GISCOService(_Service):
         :meth:`place2coord`, :meth:`place2geom`, :meth:`coord2nuts`, :meth:`place2nuts`, 
         :meth:`coord2route`, :meth:`url_reverse`, :meth:`~_Service.get_response`.
         """
-        place = []
-        for i in range(len(lat)):
-            kwargs.update({'lat': lat[i], 'lon': lon[i]})
-            try:
-                url = self.url_reverse(**kwargs)
-                assert self.get_status(url) is not None
-            except:
-                raise happyError('error geolocation request')
-            else:
-                response = self.get_response(url)
-            try:
-                data = json.loads(response.text)
-                assert data not in({},None)
-            except:
-                raise happyError('place for geolocation (%s,%s) not loaded' % (lat[i], lon[i]))
-            try:
-                assert _geoDecorators.parse_geometry.KW_FEATURES in data     \
-                    and data[_geoDecorators.parse_geometry.KW_FEATURES] != []
-            except:
-                raise happyError('place for geolocation (%s,%s) not recognised' % (lat[i], lon[i]))      
-            else:
-                p = data.get(_geoDecorators.parse_geometry.KW_FEATURES)
-                place.append(p if len(p)>1 else p[0])
-        return place[0] if len(place)==1 else place
-    
+        kwargs.update({'key': _geoDecorators.parse_geometry.KW_FEATURES})
+        return super(GISCOService,self).coord2place(lat, lon, **kwargs)
+
     #/************************************************************************/
     @_geoDecorators.parse_year
     @_geoDecorators.parse_projection
@@ -1050,7 +1302,7 @@ _geoCoderAPI.__doc__ =                                                      \
 
         Inherit all methods from original API.
         
-        Most of the :class:`geopy.geocoders` methods will be inherited by the class
+        Most of the :class:`geopy.geocoders` methods are inherited by the class
         :class:`~services.APIService` through composition and embedding in container 
         attributes. 
         """
@@ -1123,12 +1375,12 @@ else:
             return res
 
 _googleMapsAPI.__doc__ =                                                    \
-        """Class emulating :class:`~googlemaps.Client` API (whenever the package 
+        """Class emulating :class:`googlemaps.Client` API (whenever the package 
         |googlemaps| is available).
 
         Inherit many methods from original API.
 
-        Most of the :class:`googlemaps.Client` methods will be inherited by the
+        Most of the :class:`googlemaps.Client` methods are inherited by the
         :class:`~services.APIService` class through composition and embedding 
         in container attributes. 
         """
@@ -1162,7 +1414,14 @@ else:
         # nearby_search, text_search, get_place are regular attributes
 
 _googlePlacesAPI.__doc__ =                                                  \
-        """
+        """Class emulating :class:`googleplaces.GooglePlaces` API (whenever the 
+        package |googleplaces| is available).
+
+        Inherit most methods from original API.
+
+        Most of the :class:`googleplaces.GooglePlaces` methods are inherited by the
+        :class:`~services.APIService` class through composition and embedding 
+        in container attributes. 
         """
 
 #==============================================================================
@@ -1171,30 +1430,7 @@ _googlePlacesAPI.__doc__ =                                                  \
      
 #%%
 class APIService(_Service):
-    """
-    .. Links
-    
-    .. _Eurostat: http://ec.europa.eu/eurostat/web/main
-    .. |Eurostat| replace:: `Eurostat <Eurostat_>`_
-    .. _GISCO: http://ec.europa.eu/eurostat/web/gisco
-    .. |GISCO| replace:: `GISCO <GISCO_>`_
-    .. _GISCOWIKI: https://webgate.ec.europa.eu/fpfis/wikis/pages/viewpage.action?spaceKey=GISCO&postingDay=2016%2F1%2F20&title=Background+Services+at+the+EC+cooperate+level+in+production+in+four+projections
-    .. |GISCOWIKI| replace:: `GISCOWIKI <GISCOWIKI_>`_
-    .. _OSM: https://www.openstreetmap.org
-    .. |OSM| replace:: `OpenStreetMap <OSM_>`_
-    .. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim
-    .. |Nominatim| replace:: `Nominatim <Nominatim_>`_
-    .. _googlemaps: https://pypi.python.org/pypi/googlemaps
-    .. |googlemaps| replace:: `Google Maps <googlemaps_>`_
-    .. _googleplaces: https://github.com/slimkrazy/python-google-places
-    .. |googleplaces| replace:: `Google Places <googleplaces_>`_
-    .. _geopy: https://github.com/geopy/geopy
-    .. |geopy| replace:: `geopy <geopy_>`_
-    .. _PyGeoTools: https://github.com/jfein/PyGeoTools/blob/master/geolocation.py
-    .. |PyGeoTools| replace:: `PyGeoTools <PyGeoTools_>`_
-
-
-    Class providing conversion methods and geocoding tools that run the |GISCO| 
+    """Class providing conversion methods and geocoding tools that run the |GISCO| 
     online web-service, itself based on |OSM| |Nominatim| API.
        
         >>> serv = APIService(**kwargs)
@@ -1205,8 +1441,11 @@ class APIService(_Service):
         domain of |OSM| web-services hosted by |GISCO|; default is :data:`settings.GISCO_URL`,
         *e.g.* an URL domain like :literal:`'europa.eu/webtools/rest/gisco/'`\ . 
     coder : str
-        coder selection.
-    key : str
+        identifier of the geocoder, *e.g.* |Google_Maps|, |Google_Places|, 
+        *etc*... used for geolocation queries.
+    key/token/username : str
+        key (depending on the :data:`coder` actually chosen) used to connect 
+        to the geolocation API.
  
     Attributes
     ----------     
@@ -1223,19 +1462,6 @@ class APIService(_Service):
     
     #/************************************************************************/
     def __init__(self, **kwargs):
-        """Initialisation of a :class:`APIService` instance.
-
-            >>> serv = APIService(**kwargs)
-
-        Arguments
-        ---------
-        coder : str
-            identifier of the geocoder, _e.g._ _Google Maps_, _Google Places_, 
-            _etc_... used for geolocation queries.
-        key/token/username : str
-            key (depending on the :literal:`coder actually chosen) used to connect 
-            to the geolocation API.
-        """
         # initial settings
         self.__coder, self.__coder_key = None, ''
         try:

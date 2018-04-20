@@ -4,6 +4,29 @@
 """
 .. _mod_settings
 
+.. Links
+
+.. _Eurostat: http://ec.europa.eu/eurostat/web/main
+.. |Eurostat| replace:: `Eurostat <Eurostat_>`_
+.. _GISCO: http://ec.europa.eu/eurostat/web/gisco
+.. |GISCO| replace:: `GISCO <GISCO_>`_
+.. _OSM: https://www.openstreetmap.org
+.. |OSM| replace:: `OpenStreetMap <OSM_>`_
+.. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim
+.. |Nominatim| replace:: `Nominatim <Nominatim_>`_
+.. _Google_Maps: https://developers.google.com/maps/
+.. |Google_Maps| replace:: `Google Maps <Google_Maps_>`_
+.. _Google_Places: https://developers.google.com/places/
+.. |Google_Places| replace:: `Google Places <Google_Places_>`_
+.. _googlemaps: https://pypi.python.org/pypi/googlemaps
+.. |googlemaps| replace:: `Google Maps <googlemaps_>`_
+.. _googleplaces: https://github.com/slimkrazy/python-google-places
+.. |googleplaces| replace:: `Google Places <googleplaces_>`_
+.. _geopy: https://github.com/geopy/geopy
+.. |geopy| replace:: `geopy <geopy_>`_
+.. _GDAL: https://pypi.python.org/pypi/GDAL
+.. |GDAL| replace:: `GDAL <GDAL_>`_
+
 Basic definitions for the use of various geolocation web-services.
 
 **Description**
@@ -16,21 +39,6 @@ for:
 * simple geographical data handling and processing.
 
 **Contents**
-
-.. Links
-
-.. _Eurostat: http://ec.europa.eu/eurostat/web/main
-.. |Eurostat| replace:: `Eurostat <Eurostat_>`_
-.. _GISCO: http://ec.europa.eu/eurostat/web/gisco
-.. |GISCO| replace:: `GISCO <GISCO_>`_
-.. _googlemaps: https://pypi.python.org/pypi/googlemaps
-.. |googlemaps| replace:: `Google Maps <googlemaps_>`_
-.. _googleplaces: https://github.com/slimkrazy/python-google-places
-.. |googleplaces| replace:: `Google Places <googleplaces_>`_
-.. _geopy: https://github.com/geopy/geopy
-.. |geopy| replace:: `geopy <geopy_>`_
-.. _gdal: https://pypi.python.org/pypi/GDAL
-.. |gdal| replace:: `gdal <gdal_>`_
 """
 
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
@@ -38,7 +46,6 @@ for:
 
 import os, sys#analysis:ignore
 import inspect#analysis:ignore
-import warnings
 
 #%%
 #==============================================================================
@@ -64,7 +71,7 @@ class happyWarning(Warning):
     Example
     -------
     >>> happyWarning('This is a very interesting warning');
-    happyWarning: ! This is a very interesting warning !
+        happyWarning: ! This is a very interesting warning !
     """
     def __init__(self, warnmsg, expr=None):    
         self.warnmsg = warnmsg
@@ -105,7 +112,7 @@ class happyVerbose(object):
     Example
     -------
     >>> happyVerbose('The more we talk, we less we do...', verb=True);
-    [verbose] - The more we talk, we less we do...
+        [verbose] - The more we talk, we less we do...
     """
     def __init__(self, msg, expr=None, verb=True):    
         self.msg = msg
@@ -144,9 +151,9 @@ class happyError(Exception):
             assert False
         except:
             raise happyError('It is False')
-    Traceback ...
-    ...
-    happyError: !!! AssertionError: It is False !!!
+        Traceback ...
+        ...
+        happyError: !!! AssertionError: It is False !!!
     """
     
     def __init__(self, errmsg, errtype=None, errcode=None, expr=''):   
@@ -219,19 +226,28 @@ GISCO_DOMAIN        = 'webtools/rest/gisco/'
 GISCO_URL           = '%s/%s' % (EC_DOMAIN, GISCO_DOMAIN)
 """|GISCO| web-service complete URL.
 """
-
 GISCO_ARCGIS        = 'webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/'
 """|GISCO| ArcGIS server.
 """
-
 CODER_GISCO         = 'gisco'
-"""Identifier of GISCO geocoder.
+"""Identifier of |GISCO| geocoder.
 """
-# key for using GISCO web-services.
 KEY_GISCO           = None
-"""Dummy |GISCO| key. It is set to None since connection to |GISCO| web-services does
+"""Dummy |GISCO| key. It is set to :data:`None` since connection to |GISCO| web-services does
 not require authentication.
 """
+
+OSM_URL             = 'nominatim.openstreetmap.org/'
+"""
+|OSM| web-service complete URL.
+"""
+CODER_OSM         = 'osm'
+"""Identifier of |OSM| geocoder.
+"""
+KEY_OSM           = None
+"""Dummy |OSM| key: connection to |OSM| web-services does not require authentication.
+"""
+
 # dummy variables
 CHECK_TYPE          = True
 CHECK_OSM_KEY       = True

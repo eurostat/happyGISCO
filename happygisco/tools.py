@@ -4,6 +4,11 @@
 """
 .. _mod_tools
 
+.. Links
+
+.. _GDAL: https://pypi.python.org/pypi/GDAL
+.. |GDAL| replace:: `GDAL <GDAL_>`_
+
 Library of simple tools for simple geographical data (geolocations and geocoordinates)
 handling and processin.
 
@@ -21,11 +26,6 @@ to represent equivalently and uniquely geographical locations/toponames.
 *call*:         :mod:`settings`         
 
 **Contents**
-
-.. Links
-
-.. _gdal: https://pypi.python.org/pypi/GDAL
-.. |gdal| replace:: `gdal <gdal_>`_
 """
 
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
@@ -1464,20 +1464,19 @@ class GeoCoordinate(_GeoLocation):
 #==============================================================================
     
 class GDALTool(object):
-    """
+    """Class implementing simple |GDAL|-based operations on raster and/or vector
+    data.
+
+        >>> serv = GDALService(**kwargs)
+
+    Arguments
+    ---------
+    driver_name : str
+        name of the driver used for vector files
     """
     
     #/************************************************************************/
     def __init__(self, **kwargs):
-        """Initialisation of a :class:`GDALService` instance.
-
-            >>> serv = GDALService(**kwargs)
-
-        Arguments
-        ---------
-        driver_name : str
-            name of the driver used for vector files
-        """
         # initial settings
         self.__driver, self.__drivername = None, ''
         try:
