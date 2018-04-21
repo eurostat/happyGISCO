@@ -31,6 +31,8 @@ import os, sys#analysis:ignore
 
 import functools#analysis:ignore
 
+# from typing import Dict, Tuple, List
+
 # local imports
 from happygisco import settings
 from happygisco.settings import happyWarning, happyVerbose, _geoDecorators#analysis:ignore
