@@ -131,11 +131,6 @@ class _Service(object):
     used by a web-service. 
        
         >>> serv = services._Service()
-            
-    Returns
-    -------
-    serv : :class:`requests.session.Session`
-        a web session used to connect to external URLs.
     """
     
     #/************************************************************************/
@@ -149,7 +144,8 @@ class _Service(object):
     @property
     def session(self):
         """Session attribute (:data:`getter`/:data:`setter`) of an instance of
-        a class :class:`_Service`. 
+        a class :class:`_Service`. :data:`session` is actually an instance of a
+        :class:`requests.session.Session` class.
         """ # A session type is :class:`requests.session.Session`.
         return self.__session
     @session.setter#analysis:ignore
@@ -187,7 +183,7 @@ class _Service(object):
         We can check the response status code when connecting to different web-pages
         or services:
         
-        >>> serv = _Service()
+        >>> serv = services._Service()
         >>> serv.get_status('http://dumb')
             ConnectionError: connection failed
         >>> serv.get_status('http://www.dumbanddumber.com')
@@ -250,7 +246,7 @@ class _Service(object):
         --------
         Some simple tests:
             
-        >>> serv = _Service()
+        >>> serv = services._Service()
         >>> serv.get_response('http://dumb')
             happyError: wrong request formulated
         >>> resp = serv.get_response('http://www.example.com')
@@ -413,7 +409,7 @@ class OSMService(_Service):
     """Class providing conversion methods and geocoding tools that run the |Nominatim| 
     online web-service of the |OSM| API.
        
-        >>> serv = OSMService(**kwargs)
+        >>> serv = services.OSMService(**kwargs)
             
     Keyword arguments
     -----------------
@@ -466,7 +462,7 @@ class OSMService(_Service):
         -------
         Let us create a simple URL for querying the geolocation of a toponame:
             
-        >>> serv = OSMService()
+        >>> serv = services.OSMService()
         >>> serv.url_geocode(q='Paris+France', format='json')
             'https://nominatim.openstreetmap.org/search?q=Paris+France&format=json'
         
@@ -503,7 +499,7 @@ class OSMService(_Service):
         -----------------
         kwargs : dict
             parameters used to build the query URL; allowed keyword arguments are: 
-            :data:`format, json_callback, accept-language, extratags, email, osm_type, osm_id, lat, lon, zoom, addressdetails, polygon_geojson, polygon_kml, polygon_svg`, and :data:`polygon_text`;
+            :data:`lat, lon, format, json_callback, accept-language, extratags, email, osm_type, osm_id, zoom, addressdetails, polygon_geojson, polygon_kml, polygon_svg`, and :data:`polygon_text`;
             see |NominatimWIKI| on *background services* for more details.
                 
         Returns
@@ -519,7 +515,7 @@ class OSMService(_Service):
         We can generate the URL for querying the toponame associated to a given
         geolocation:
 
-        >>> serv = OSMService()
+        >>> serv = services.OSMService()
         >>> serv.url_reverse(lon=10, lat=52)
             'https://nominatim.openstreetmap.org/reverse?lon=10&lat=52'
         
@@ -546,6 +542,8 @@ class OSMService(_Service):
 
     #/************************************************************************/
     def _place2geom(self, place, **kwargs): 
+        """Iterable version of :meth:`~OSMService.place2geom`.
+        """
         place = ['+'.join(p.replace(',',' ').split()) for p in place]
         fmt = kwargs.pop('format','')
         key = kwargs.pop('key',None)
@@ -614,21 +612,29 @@ class OSMService(_Service):
     #    return geom if len(geom)>1 else geom[0]
     @_geoDecorators.parse_place
     def place2geom(self, place, **kwargs):
-        """
+        """Retrieve geographical information) associated to a given place as a
+        geometry.
         
             >>> geom = serv.place2geom(place, **kwargs)
 
-        Argument
-        --------
-        place : str
+        Arguments
+        ---------
+        place : str, list[str]
+            place (topo) name(s).
         
         Keyword arguments
         -----------------
+        kwargs : dict
+            keywords in :data:`format, json_callback, accept-language, extratags, namedetails, q, street, city, county, state, country, postalcode, countrycodes, viewbox, bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson, polygon_kml, polygon_svg, polygon_text`;
+            are accepted; see :meth:`~OSMService.url_geocode`.
         
         Returns
         -------
-        geom : dict
-            
+        geom : dict, list[dict]
+            a (list of) geometry(ies), *i.e.* a dictionary describing the geographical
+            information related to the input :data:`place`, one for each place 
+            mentioned.
+                  
         Raises
         ------
         ~settings.happyError
@@ -637,11 +643,63 @@ class OSMService(_Service):
                 * the geolocation request is wrongly formulated,
                 * the geolocation cannot be loaded,                
                 * the geolocation is not recognised.
+                
+        Examples
+        --------
+        We will retrieve the geolocation of Berlin, Germany:
         
+        >>> berlin = 'Berlin, Germany'
+        
+        For that purpose, we can build the desired |OSM| URL:
+        
+        >>> serv = services.OSMService()
+        >>> serv.url_geocode(place=berlin) 
+            'https://nominatim.openstreetmap.org/search?format=json&q=Berlin+Germany'
+        
+        though the method :meth:`place2geom` enables us to run the operation all
+        in once: 
+
+        >>> serv.place2geom(berlin, format='json')
+            [{'boundingbox': ['52.3570365', '52.6770365', '13.2288599', '13.5488599'],
+               'class': 'place',
+              'display_name': 'Berlin, 10117, Deutschland',
+              'icon': 'https://nominatim.openstreetmap.org/images/mapicons/poi_place_city.p.20.png',
+              'importance': 0.31553744940772,
+              'lat': '52.5170365',
+              'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
+              'lon': '13.3888599',
+              'osm_id': '240109189', 'osm_type': 'node',
+              'place_id': '226584215',
+              'type': 'city'},
+             {'boundingbox': ['52.33826', '52.67551', '13.08835', '13.76116'],
+              'class': 'boundary',
+              'display_name': 'Berlin, Deutschland',
+              'icon': 'https://nominatim.openstreetmap.org/images/mapicons/poi_boundary_administrative.p.20.png',
+              'importance': 0.31553744940772,
+              'lat': '52.5198535',
+              'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
+              'lon': '13.4385964',
+              'osm_id': '62422', 'osm_type': 'relation',
+              'place_id': '178741737',
+              'type': 'administrative'},
+             ...
+             {'boundingbox': ['52.4186824', '52.4187824', '13.1963552', '13.1964552'],
+              'class': 'tourism',
+              'display_name': 'Berlin, A 115, Nikolassee, Steglitz-Zehlendorf, Berlin, 14109, Deutschland',
+              'icon': 'https://nominatim.openstreetmap.org/images/mapicons/tourist_art_gallery2.p.20.png',
+              'importance': 0.11025,
+              'lat': '52.4187324',
+              'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
+              'lon': '13.1964052',
+              'osm_id': '1069490670', 'osm_type': 'node',
+              'place_id': '11522486',
+              'type': 'artwork'}]  
+            
         See also
         --------
-        :meth:`place2coord`, :meth:`coord2place`, :meth:`coord2nuts`, :meth:`place2nuts`, 
-        :meth:`coord2route`, :meth:`~OSMService.url_geocode`, :meth:`_Service.get_response`.
+        :meth:`~OSMService.coord2place`, :meth:`~OSMService.place2coord`, 
+        :meth:`~OSMService.url_geocode`, :meth:`~GISCOService.place2geom`, 
+        :meth:`_Service.get_status`, :meth:`_Service.get_response`.
         """
         unique = kwargs.pop('unique',False)
         geom = []
@@ -649,14 +707,15 @@ class OSMService(_Service):
         return geom if len(geom)>1 else geom[0]
        
     #/************************************************************************/
-    @_geoDecorators.parse_coordinate
     def _coord2place(self, coord, **kwargs): 
+        """Iterable version of :meth:`~OSMService.coord2place`.
+        """
         fmt = kwargs.pop('format','')
         key = kwargs.pop('key',None)
         if fmt is not None:
             kwargs.update({'format':fmt or 'json'})
         for i in range(len(coord)):
-            kwargs.update({'lat': coord[i][0], 'lon': coord[i][0]})
+            kwargs.update({'lat': coord[i][0], 'lon': coord[i][1]})
             try:
                 url = self.url_reverse(**kwargs)
                 assert self.get_status(url) is not None
@@ -685,7 +744,7 @@ class OSMService(_Service):
                     raise happyError('place for geolocation %s and key %s not recognised' % (coord[i], key))  
                 else:
                     data = data.get(key)
-            yield data if not isinstance(data,dict) or len(data)>1 else data[0]
+            yield data if not _Types.ismapping(data) or len(data)>1 else data[0]
        
     #/************************************************************************/
     #@_geoDecorators.parse_coordinate
@@ -716,20 +775,27 @@ class OSMService(_Service):
     #    return place[0] if len(place)==1 else place
     @_geoDecorators.parse_coordinate
     def coord2place(self, coord, **kwargs): # specific use
-        """
+        """Retrieve the place (topo)name of a given location provided by its 
+        geographical coordinates.
         
             >>>  place = serv.coord2place(coord, **kwargs)
 
         Arguments
         ---------
         coord : float, list[float]
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            coordinates.
         
         Keyword arguments
         -----------------
+        kwargs : dict
+            keywords in :data:`format, json_callback, accept-language, extratags, email, osm_type, osm_id, zoom, addressdetails, polygon_geojson, polygon_kml, polygon_svg, polygon`
+            are accepted; see :meth:`~OSMService.url_reverse`.
         
         Returns
         -------
         place : str, list[str]
+            place (topo)name(s) identifying the input geolocation(s) in :data:`coord`.
         
         Raises
         ------
@@ -739,15 +805,60 @@ class OSMService(_Service):
                 * the geolocation request is wrongly formulated,
                 * the place cannot be loaded,                
                 * the place is not recognised.
+                
+        Example
+        -------
+        Let us what we actually retrieve when we enter the geolocation of the
+        (approximate) centre of Berlin, Germany:
+        
+        >>> berlin = [52.5170365, 13.3888599]
+        
+        We can build the desired |OSM| URL to get the result:
+        
+        >>> serv = services.OSMService()
+        >>> serv.url_reverse(coord=berlin) 
+            'https://nominatim.openstreetmap.org/reverse?format=json&lat=52.5170365&lon=13.3888599'
+        
+        however, the method :meth:`coord2place` does everything at once:
+        
+        >>> serv.coord2place(berlin, format='json')
+            {'address': {'address29': 'Douglas',
+              'city': 'Berlin',
+              'city_district': 'Mitte',
+              'country': 'Deutschland', 'country_code': 'de',
+              'neighbourhood': 'Spandauer Vorstadt',
+              'postcode': '10117',
+              'road': 'Unter den Linden',
+              'state': 'Berlin',
+              'suburb': 'Mitte'},
+             'boundingbox': ['52.517222', '52.517422', '13.388877', '13.389077'],
+             'display_name': 'Douglas, Unter den Linden, Spandauer Vorstadt, Mitte, Berlin, 10117, Deutschland',
+             'lat': '52.517322',
+             'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
+             'lon': '13.388977',
+             'osm_id': '1818862993', 'osm_type': 'node',
+             'place_id': '18439434'}
         
         See also
         --------
-        :meth:`place2coord`, :meth:`place2geom`, :meth:`coord2nuts`, :meth:`place2nuts`, 
-        :meth:`coord2route`, :meth:`url_reverse`, :meth:`~_Service.get_response`.
+        :meth:`~OSMService.place2coord`, :meth:`~OSMService.url_reverse`, 
+        :meth:`_Service.get_status`, :meth:`_Service.get_response`.
         """
         place = []
         [place.append(data if len(data)>1 else data[0]) for data in self._coord2place(coord, **kwargs)]
         return place[0] if len(place)==1 else place
+
+    @_geoDecorators.parse_place
+    def place2coord(self, place, **kwargs):
+        """Retrieve the geographical coordinates of a given place provided by 
+        its (topo)name.
+        
+            >>> coord = serv.place2coord(place, **kwargs)
+        Note
+        ----
+        !!! Currently not yet implemented !!!
+        """
+        pass
 
 #%%
 #==============================================================================
@@ -758,7 +869,7 @@ class GISCOService(OSMService):
     """Class providing conversion methods and geocoding tools that run the |GISCO| 
     online web-service, itself based on |OSM| |Nominatim| API.
        
-        >>> serv = GISCOService(**kwargs)
+        >>> serv = services.GISCOService(**kwargs)
             
     Keyword arguments
     -----------------
@@ -829,7 +940,7 @@ class GISCOService(OSMService):
         -------
         Let us create a simple URL for querying the geolocation of a toponame:
             
-        >>> serv = GISCOService()
+        >>> serv = services.GISCOService()
         >>> serv.url_geocode(q='Paris+France')
             'http://europa.eu/webtools/rest/gisco/api?q=Paris+France'
             
@@ -876,7 +987,7 @@ class GISCOService(OSMService):
         We can generate the URL for querying the toponame associated to a given
         geolocation:
 
-        >>> serv = GISCOService()
+        >>> serv = services.GISCOService()
         >>> serv.url_reverse(lon=10, lat=52)
             'http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52'
             
@@ -924,7 +1035,7 @@ class GISCOService(OSMService):
         Let us generate the URL for querying the route going through a series of
         geolocations:
 
-        >>> serv = GISCOService()
+        >>> serv = services.GISCOService()
         >>> serv.url_route(coordinates='13.388860,52.517037;13.397634,52.529407;13.428555,52.523219')
             'https://europa.eu/webtools/rest/gisco/route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219'
         
@@ -934,14 +1045,15 @@ class GISCOService(OSMService):
         :meth:`~GISCOService.url_transform`, :meth:`url_nuts`,
         :meth:`_Service.build_url`.
         """
+        protocol = kwargs.pop('protocol', 'https') # actually not necessary, http works as well  
         keys = ['overview', ] # ?
         happyVerbose('\n            * '.join(['input filters used for routing service:',]+[attr + '='+ str(kwargs[attr]) \
                                             for attr in kwargs.keys() if attr in keys]))
-        kwargs.update({'protocol': 'https'}) # actually not necessary, http works as well   
         coordinates = kwargs.pop('coordinates','')
         polyline = kwargs.pop(_geoDecorators.parse_coordinate.KW_POLYLINE,None)
         polyline = 'polyline(' + polyline + ')' if polyline else ''
-        url = self.build_url(domain=self.domain, 
+        url = self.build_url(protocol=protocol,
+                             domain=self.domain, 
                              query='route/v1/driving/%s' % coordinates or polyline, 
                              **{k:v for k,v in kwargs.items() if k in keys})
         happyVerbose('output url:\n            %s' % url)
@@ -977,7 +1089,7 @@ class GISCOService(OSMService):
         We can generate the URL for querying the tranform of a given geolocation
         from *WGS84* projection system to *LAEA*:
 
-        >>> serv = GISCOService()
+        >>> serv = services.GISCOService()
         >>> serv.url_transform(inSR=4326, outSR=3035, f='json',
                                geometries='-9.1630,38.7775')
             'https://webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/Utilities/Geometry/GeometryServer/project?inSR=4326&outSR=3035&geometries=-9.1630,38.7775&f=json'
@@ -988,9 +1100,12 @@ class GISCOService(OSMService):
         :meth:`~GISCOService.url_route`, :meth:`~GISCOService.url_nuts`,
         :meth:`_Service.build_url`.
         """
+        protocol = kwargs.pop('protocol', 'https')  
         keys = ['inSR', 'outSR', 'geometries', 'transformation', 'transformForward', 'f'] # ?
-        kwargs.update({'protocol': 'https'})    
-        url = self.build_url(domain=self.arcgis, 
+        happyVerbose('\n            * '.join(['input filters used for tranform service:',]+[attr + '='+ str(kwargs[attr]) \
+                                            for attr in kwargs.keys() if attr in keys]))
+        url = self.build_url(protocol=protocol,
+                             domain=self.arcgis, 
                              query='Utilities/Geometry/GeometryServer/project', 
                              **{k:v for k,v in kwargs.items() if k in keys})
         happyVerbose('output url:\n            %s' % url)
@@ -1034,12 +1149,14 @@ class GISCOService(OSMService):
         :meth:`~GISCOService.url_route`, :meth:`~GISCOService.url_transform`,
         :meth:`_Service.build_url`.
         """
+        protocol = kwargs.pop('protocol', 'http')  
         keys = ['x', 'y', 'f', 'year', 'proj', 'geometry']
         happyVerbose('\n            * '.join(['input filters used for NUTS identification service:',]+[attr + '='+ str(kwargs[attr]) \
                                             for attr in kwargs.keys() if attr in keys]))
         # note that the service is case sensitive as f is concerned
         kwargs.update({'f': kwargs.get('f','JSON').upper()}) # let us avoid stupid mistakes
-        url = self.build_url(domain=self.domain, 
+        url = self.build_url(protocol=protocol,
+                             domain=self.domain, 
                              path='nuts', 
                              query='find-nuts.py', 
                              **{k:v for k,v in kwargs.items() if k in keys})
@@ -1055,35 +1172,39 @@ class GISCOService(OSMService):
             yield g
     @_geoDecorators.parse_place
     def place2geom(self, place, **kwargs): 
-        """
+        """Retrieve geographical information) associated to a given place as a
+        geometry.
         
             >>>  = serv.place2geom(place, **kwargs)
 
         Arguments
         ---------
         place : str, list[str]
+            place (topo) name(s).
         
         Keyword arguments
         -----------------
         
+        
         Returns
         -------
-            
-        Raises
-        ------
-        ~settings.happyError
-            error is raised in the cases:
-            
-                * the geolocation request is wrongly formulated,
-                * the geolocation cannot be loaded,                
-                * the geolocation is not recognised.
+        geom : dict, list[dict]
+            a (list of) geometry(ies), *i.e.* a dictionary describing the geographical
+            information related to the input :data:`place`, one for each place 
+            mentioned.
+        
+        Note
+        ----
+        Overrides :meth:`OSMService.get_response` by further providing the  
+        :literal:`features` key that will be extracted from the output geometry 
+        dictionary(ies).
         
         See also
         --------
         :meth:`~GISCOService.place2coord`, :meth:`~GISCOService.coord2place`, 
         :meth:`~GISCOService.coord2nuts`, :meth:`~GISCOService.place2nuts`, 
         :meth:`~GISCOService.coord2route`, :meth:`~GISCOService.url_geocode`, 
-        :meth:`_Service.get_response`.
+        :meth:`OSMService.place2geom`, :meth:`_Service.get_response`.
         """
         kwargs.update({'key': _geoDecorators.parse_geometry.KW_FEATURES})
         return super(GISCOService,self).place2geom(place, **kwargs)
@@ -1104,8 +1225,7 @@ class GISCOService(OSMService):
         
         Returns
         -------
-        coord :
-        
+            
         See also
         --------
         :meth:`~GISCOService.place2geom`, :meth:`~GISCOService.coord2place`, 
@@ -1524,7 +1644,7 @@ class APIService(_Service):
     """Class providing conversion methods and geocoding tools that run the |GISCO| 
     online web-service, itself based on |OSM| |Nominatim| API.
        
-        >>> serv = APIService(**kwargs)
+        >>> serv = services.APIService(**kwargs)
             
     Keyword arguments
     -----------------

@@ -656,7 +656,7 @@ class _geoDecorators(object):
                 raise happyError('wrong order parameter')
             coord, lat, lon, poly = None, None, None, None
             if args not in (None,()):      
-                if all([_Types.isdict(a) for a in args]):
+                if all([_Types.ismapping(a) for a in args]):
                     coord = list(args)
                 elif len(args) == 1 and _Types.issequence(args[0]):
                     if len(args[0])==2                                      \
