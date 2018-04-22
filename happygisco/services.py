@@ -204,7 +204,7 @@ class _Service(object):
         
         See also
         --------
-        :meth:`get_response`, :meth:`build_url`.
+        :meth:`~_Service.get_response`, :meth:`~_Service.build_url`.
         """ 
         try:
             response = self.session.head(url)
@@ -287,7 +287,7 @@ class _Service(object):
         
         See also
         --------
-        :meth:`get_status`, :meth:`build_url`.
+        :meth:`~_Service.get_status`, :meth:`~_Service.build_url`.
         """
         try:
             response = self.session.get(url)                
@@ -372,7 +372,7 @@ class _Service(object):
         
         See also
         --------
-        :meth:`get_status`, :meth:`get_response`.
+        :meth:`~_Service.get_status`, :meth:`~_Service.get_response`.
         """
         # retrieve parameters/build url
         if args not in (None,()):       domain = args[0]
@@ -450,7 +450,7 @@ class OSMService(_Service):
         Keyword Arguments
         -----------------
         kwargs : dict
-            parameters used to build the query URL; allowed parameters are: 
+            parameters used to build the query URL; allowed keyword arguments are: 
             :data:`format, json_callback, accept-language, extratags, namedetails, q, street, city, county, state, country, postalcode, countrycodes, viewbox, bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson, polygon_kml, polygon_svg`, and :data:`polygon_text`;
             see |NominatimWIKI| on *background services* for more details.
                 
@@ -502,7 +502,7 @@ class OSMService(_Service):
         Keyword Arguments
         -----------------
         kwargs : dict
-            parameters used to build the query URL; allowed parameters are: 
+            parameters used to build the query URL; allowed keyword arguments are: 
             :data:`format, json_callback, accept-language, extratags, email, osm_type, osm_id, lat, lon, zoom, addressdetails, polygon_geojson, polygon_kml, polygon_svg`, and :data:`polygon_text`;
             see |NominatimWIKI| on *background services* for more details.
                 
@@ -805,15 +805,15 @@ class GISCOService(OSMService):
 
     #/************************************************************************/
     def url_geocode(self, **kwargs):
-        """Generate the query URL for |GISCO| geocoding web-service (from toponame to
-        geocoordinate).
+        """Generate the query URL for |GISCO| geocoding web-service (from toponame 
+        to geocoordinate).
         
             >>> url = serv.url_geocode(**kwargs)
            
         Keyword Arguments
         -----------------
         kwargs : dict
-            parameters used to build the query URL; allowed parameters are: 
+            parameters used to build the query URL; allowed keyword arguments are: 
             :data:`q, lat, lon, distance_sort, limit, osm_tag`, and :data:`lang`;
             see |GISCOWIKI| on *background services* for more details.
                 
@@ -822,8 +822,8 @@ class GISCOService(OSMService):
         url : str
             URL used to return the adequate *geocode* results (*i.e.*, geocoordinates) 
             associated to a given place using |GISCO| web-service; the generic form of 
-            :data:`url` is :literal:`domain/api?{filters}` with :literal:`filters` the 
-            filters passed through :data:`kwargs`\ .
+            :data:`url` is :literal:`{domain}/api?{filters}` with :literal:`filters` 
+            the filters passed through :data:`kwargs`.
         
         Example
         -------
@@ -832,11 +832,16 @@ class GISCOService(OSMService):
         >>> serv = GISCOService()
         >>> serv.url_geocode(q='Paris+France')
             'http://europa.eu/webtools/rest/gisco/api?q=Paris+France'
+            
+        Note
+        ----
+        This method overrides the *super* method :meth:`_Service.url_geocode`.
         
         See also
         --------
-        :meth:`url_reverse`, :meth:`url_route`, :meth:`url_transform`, :meth:`url_nuts`,
-        :meth:`~_Service.build_url`.
+        :meth:`~GISCOService.url_reverse`, :meth:`~GISCOService.url_route`, 
+        :meth:`~GISCOService.url_transform`, :meth:`~GISCOService.url_nuts`,
+        :meth:`_Service.build_url`.
         """
         kwargs.update({'keys': ['q', 'lat', 'lon', 'distance_sort', 'limit', 'osm_tag', 'lang'],
                        'query': 'api',
@@ -854,7 +859,7 @@ class GISCOService(OSMService):
         Keyword Arguments
         -----------------
         kwargs : dict
-            parameters used to build the query URL; allowed parameters are: 
+            parameters used to build the query URL; allowed keyword arguments are: 
             :data:`lat, lon, radius, distance_sort, limit`, and :data:`lang`;
             see |GISCOWIKI| on *background services* for more details.
                 
@@ -863,8 +868,8 @@ class GISCOService(OSMService):
         url : str
             URL used to return the adequate *reverse geocode* results (*i.e.*, 
             toponame) associated to given geocoordinates using |GISCO| web-service; 
-            the generic form of :data:`url` is :literal:`domain/reverse?{filters}`
-            with :literal:`filters` the filters passed through :data:`kwargs`\ .
+            the generic form of :data:`url` is :literal:`{domain}/reverse?{filters}`
+            with :literal:`filters` the filters passed through :data:`kwargs`.
        
         Example
         -------
@@ -874,11 +879,16 @@ class GISCOService(OSMService):
         >>> serv = GISCOService()
         >>> serv.url_reverse(lon=10, lat=52)
             'http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52'
+            
+        Note
+        ----
+        This method overrides the *super* method :meth:`_Service.url_reverse`.
         
         See also
         --------
-        :meth:`url_geocode`, :meth:`url_route`, :meth:`url_transform`, :meth:`url_nuts`,
-        :meth:`~_Service.build_url`.
+        :meth:`~GISCOService.url_geocode`, :meth:`~GISCOService.url_route`, 
+        :meth:`~GISCOService.url_transform`, :meth:`~GISCOService.url_nuts`,
+        :meth:`_Service.build_url`.
         """
         kwargs.update({'keys': ['lat', 'lon', 'radius', 'distance_sort', 'limit', 'lang'],
                        'query': 'reverse',
@@ -888,17 +898,46 @@ class GISCOService(OSMService):
 
     #/************************************************************************/
     def url_route(self, **kwargs):
-        """
-        http(s)://europa.eu/webtools/rest/gisco/route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219?overview=false
+        """Generate the query URL for |GISCO| routing web-service (from a list of
+        geocoordinates to a route).
+        
+            >>> url = serv.url_route(**kwargs)
+           
+        Keyword Arguments
+        -----------------
+        kwargs : dict
+            parameters used to build the query URL; allowed parameters are: 
+            :data:`coordinates, polyline, overview`, and :data:`???`;
+            see |GISCOWIKI| on *background services* for more details.
+                
+        Returns
+        -------
+        url : str
+            URL used to return the adequate *routing* results associated to a list
+            of given geocoordinates using |GISCO| web-service; 
+            the generic form of :data:`url` is 
+            :literal:`{domain}/route/v1/driving/{coordinates}?{filters}`
+            with :literal:`filters` the filters passed through :data:`kwargs`.
+       
+        Example
+        -------
+        Let us generate the URL for querying the route going through a series of
+        geolocations:
+
+        >>> serv = GISCOService()
+        >>> serv.url_route(coordinates='13.388860,52.517037;13.397634,52.529407;13.428555,52.523219')
+            'https://europa.eu/webtools/rest/gisco/route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219'
         
         See also
         --------
-        :meth:`url_geocode`, :meth:`url_reverse`, :meth:`url_transform`, :meth:`url_nuts`,
-        :meth:`~_Service.build_url`.
+        :meth:`~GISCOService.url_geocode`, :meth:`~GISCOService.url_reverse`, 
+        :meth:`~GISCOService.url_transform`, :meth:`url_nuts`,
+        :meth:`_Service.build_url`.
         """
         keys = ['overview', ] # ?
         happyVerbose('\n            * '.join(['input filters used for routing service:',]+[attr + '='+ str(kwargs[attr]) \
                                             for attr in kwargs.keys() if attr in keys]))
+        kwargs.update({'protocol': 'https'}) # actually not necessary, http works as well   
         coordinates = kwargs.pop('coordinates','')
         polyline = kwargs.pop(_geoDecorators.parse_coordinate.KW_POLYLINE,None)
         polyline = 'polyline(' + polyline + ')' if polyline else ''
@@ -912,62 +951,94 @@ class GISCOService(OSMService):
 
     #/************************************************************************/
     def url_transform(self, **kwargs):
-        """
-
-        Note
-        ----
-        The generic url formatting is: {arcgis}/Utilities/Geometry/GeometryServer/project?{filters}.
+        """Generate the query URL for |GISCO| projection tranform web-service (from 
+        a geocoordinate in a given projection reference system to its transformation
+        in another projection reference system)
         
+            >>> url = serv.url_transform(**kwargs)
+           
+        Keyword Arguments
+        -----------------
+        kwargs : dict
+            parameters used to build the query URL; allowed parameters are: 
+            :data:`inSR, outSR, geometries, transformation, transformForward` and :data:`f`;
+            see |GISCOWIKI| on *background services* for more details.
+                
+        Returns
+        -------
+        url : str
+            URL used to return the adequate *projection* results of a given
+            geocoordinate using |GISCO| web-service; the generic form of :data:`url` 
+            is :literal:`{arcgis}/Utilities/Geometry/GeometryServer/project?{filters}`
+            with :literal:`filters` the filters passed through :data:`kwargs`.
+       
         Example
         -------
-        >>> print GISCOService.url_reverse(lon=10, lat=52)
-            https://webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/Utilities/Geometry/GeometryServer/project?inSR=4326&outSR=3035&geometries=-9.1630%2C38.7775&transformation=&transformForward=true&f=json
+        We can generate the URL for querying the tranform of a given geolocation
+        from *WGS84* projection system to *LAEA*:
+
+        >>> serv = GISCOService()
+        >>> serv.url_transform(inSR=4326, outSR=3035, f='json',
+                               geometries='-9.1630,38.7775')
+            'https://webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/Utilities/Geometry/GeometryServer/project?inSR=4326&outSR=3035&geometries=-9.1630,38.7775&f=json'
         
         See also
         --------
-        :meth:`url_geocode`, :meth:`url_reverse`, :meth:`url_route`, :meth:`url_nuts`,
-        :meth:`~_Service.build_url`.
+        :meth:`~GISCOService.url_geocode`, :meth:`~GISCOService.url_reverse`, 
+        :meth:`~GISCOService.url_route`, :meth:`~GISCOService.url_nuts`,
+        :meth:`_Service.build_url`.
         """
         keys = ['inSR', 'outSR', 'geometries', 'transformation', 'transformForward', 'f'] # ?
+        kwargs.update({'protocol': 'https'})    
         url = self.build_url(domain=self.arcgis, 
                              query='Utilities/Geometry/GeometryServer/project', 
                              **{k:v for k,v in kwargs.items() if k in keys})
         happyVerbose('output url:\n            %s' % url)
         return url
-    
+
     #/************************************************************************/
     @_geoDecorators.parse_projection
     def url_nuts(self, **kwargs):
         """Create a query URL to be submitted to the GISCO (simple) web-service 
         for NUTS codes identification.
         
-            >>> url = GISCOService.url_nuts(**kwargs)
+            >>> url = serv.url_nuts(**kwargs)
            
         Keyword Arguments
         -----------------
         kwargs : dict
-            define the parameters for web-service; allowed parameters are: 
-            :literal:`x, y, f, year, proj`, and :literal:`geometry`\ .
+            parameters used to build the query URL; allowed parameters are: 
+            :data:`x, y, f, year, proj` and :data:`geometry`; see |GISCOWIKI| 
+            on *background services* for more details.
             
         Returns
         -------
         url : str
-            link to NUTS web service to submit the specified 'NUTS' query that
-            identifies the NUTS code of a given geolocation.
-            the generic url formatting is: domain/nuts/find-nuts.py?{filters}
+            URL used to return the adequate *NUTS* results from a given
+            geocoordinate using |GISCO| web-service; the generic form of :data:`url` 
+            is :literal:`{domain}/nuts/find-nuts.py?{filters}` with :literal:`filters` 
+            the filters passed through :data:`kwargs`.
             
-        Usage
+        Example
         -----
-        x=<lon>&y=<lat>&f=<JSON/XML>&year=<2013/2010/2006>&proj=3035&geometry=<N/Y>
+        Let us build the URL that will allow us to identify the NUTS actually 
+        associated with Berlin, Germany:
+
+        >>> serv = services.GISCOService()
+        >>> serv.url_nuts(y=52.5170365, x=13.3888599, f='JSON', proj=4326)
+            'http://europa.eu/webtools/rest/gisco/nuts/find-nuts.py?y=52.5170365&x=13.3888599&f=JSON&proj=4326'
         
         See also
         --------
-        :meth:`url_geocode`, :meth:`url_reverse`, :meth:`url_route`, :meth:`url_transform`,
-        :meth:`~_Service.build_url`.
+        :meth:`~GISCOService.url_geocode`, :meth:`~GISCOService.url_reverse`, 
+        :meth:`~GISCOService.url_route`, :meth:`~GISCOService.url_transform`,
+        :meth:`_Service.build_url`.
         """
         keys = ['x', 'y', 'f', 'year', 'proj', 'geometry']
         happyVerbose('\n            * '.join(['input filters used for NUTS identification service:',]+[attr + '='+ str(kwargs[attr]) \
                                             for attr in kwargs.keys() if attr in keys]))
+        # note that the service is case sensitive as f is concerned
+        kwargs.update({'f': kwargs.get('f','JSON').upper()}) # let us avoid stupid mistakes
         url = self.build_url(domain=self.domain, 
                              path='nuts', 
                              query='find-nuts.py', 
@@ -1009,8 +1080,10 @@ class GISCOService(OSMService):
         
         See also
         --------
-        :meth:`place2coord`, :meth:`coord2place`, :meth:`coord2nuts`, :meth:`place2nuts`, 
-        :meth:`coord2route`, :meth:`url_geocode`, :meth:`~_Service.get_response`.
+        :meth:`~GISCOService.place2coord`, :meth:`~GISCOService.coord2place`, 
+        :meth:`~GISCOService.coord2nuts`, :meth:`~GISCOService.place2nuts`, 
+        :meth:`~GISCOService.coord2route`, :meth:`~GISCOService.url_geocode`, 
+        :meth:`_Service.get_response`.
         """
         kwargs.update({'key': _geoDecorators.parse_geometry.KW_FEATURES})
         return super(GISCOService,self).place2geom(place, **kwargs)
@@ -1035,8 +1108,9 @@ class GISCOService(OSMService):
         
         See also
         --------
-        :meth:`place2geom`, :meth:`coord2place`, :meth:`coord2nuts`, :meth:`place2nuts`, 
-        :meth:`coord2route`.
+        :meth:`~GISCOService.place2geom`, :meth:`~GISCOService.coord2place`, 
+        :meth:`~GISCOService.coord2nuts`, :meth:`~GISCOService.place2nuts`, 
+        :meth:`~GISCOService.coord2route`.
         """
         func = lambda **kw: [kw.get('coord')]
         order = kwargs.pop('order','lL')
@@ -1074,8 +1148,10 @@ class GISCOService(OSMService):
         
         See also
         --------
-        :meth:`place2coord`, :meth:`place2geom`, :meth:`coord2nuts`, :meth:`place2nuts`, 
-        :meth:`coord2route`, :meth:`url_reverse`, :meth:`~_Service.get_response`.
+        :meth:`~GISCOService.place2coord`, :meth:`~GISCOService.place2geom`, 
+        :meth:`~GISCOService.coord2nuts`, :meth:`~GISCOService.place2nuts`, 
+        :meth:`~GISCOService.coord2route`, :meth:`~GISCOService.url_reverse`, 
+        :meth:`_Service.get_response`.
         """
         kwargs.update({'key': _geoDecorators.parse_geometry.KW_FEATURES})
         return super(GISCOService,self).coord2place(coord, **kwargs)
@@ -1107,8 +1183,10 @@ class GISCOService(OSMService):
         
         See also
         --------
-        :meth:`place2geom`, :meth:`place2coord`, :meth:`place2nuts`, :meth:`coord2route`,
-        :meth:`coord2place`, :meth:`url_nuts`, :meth:`~_Service.get_response`.
+        :meth:`~GISCOService.place2geom`, :meth:`~GISCOService.place2coord`, 
+        :meth:`~GISCOService.place2nuts`, :meth:`~GISCOService.coord2route`,
+        :meth:`~GISCOService.coord2place`, :meth:`~GISCOService.url_nuts`, 
+        :meth:`_Service.get_response`.
         """
         kwargs.update({#'year': kwargs.pop('year',2013), 
                        # 'proj': kwargs.pop('proj',4326),
@@ -1163,8 +1241,10 @@ class GISCOService(OSMService):
                  
         See also
         --------
-        :meth:`place2coord`, :meth:`coord2nuts`, :meth:`place2geom`, :meth:`coord2place`, 
-        :meth:`coord2route`, :meth:`url_geocode`, :meth:`~_Service.get_response`.
+        :meth:`~GISCOService.place2coord`, :meth:`~GISCOService.coord2nuts`, 
+        :meth:`~GISCOService.place2geom`, :meth:`~GISCOService.coord2place`, 
+        :meth:`~GISCOService.coord2route`, :meth:`~GISCOService.url_geocode`, 
+        :meth:`_Service.get_response`.
         """
         lat, lon = self.place2coord(place, **kwargs)
         nuts = self.coord2nuts(lat, lon, **kwargs)
@@ -1200,8 +1280,10 @@ class GISCOService(OSMService):
        
         See also
         --------
-        :meth:`place2geom`, :meth:`place2coord`, :meth:`coord2place`, :meth:`coord2nuts`, 
-        :meth:`place2nuts`, :meth:`url_route`, :meth:`~_Service.get_response`.
+        :meth:`~GISCOService.place2geom`, :meth:`~GISCOService.place2coord`, 
+        :meth:`~GISCOService.coord2place`, :meth:`~GISCOService.coord2nuts`, 
+        :meth:`~GISCOService.place2nuts`, :meth:`~GISCOService.url_route`, 
+        :meth:`_Service.get_response`.
         """
         routes, waypoints = None, None
         if not coord in([],None):

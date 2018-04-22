@@ -475,7 +475,7 @@ class _geoDecorators(object):
         """Generic class decorator of functions and methods used to parse place
         (topo,geo) names.
         
-            >>> new_func = parse_place(func)
+            >>> new_func = _geoDecorators.parse_place(func)
         
         Arguments
         ---------
@@ -583,7 +583,7 @@ class _geoDecorators(object):
         """Generic class decorator of functions and methods used to parse place 
         :literal:`(lat,Lon)` coordinates.
         
-            >>> new_func = parse_coordinate(func)
+            >>> new_func = _geoDecorators.parse_coordinate(func)
         
         Arguments
         ---------
@@ -715,7 +715,7 @@ class _geoDecorators(object):
         """Generic class decorator of functions and methods used to parse place 
         :literal:`(lat,Lon)` coordinates or place names.
         
-            >>> new_func = parse_place_or_coordinate(func)
+            >>> new_func = _geoDecorators.parse_place_or_coordinate(func)
         
         Arguments
         ---------
@@ -784,7 +784,7 @@ class _geoDecorators(object):
         :literal:`(lat,Lon)` geographical coordinates from JSON-like dictionary 
         parameters formated according to |GISCO| geometry responses (see |GISCOWIKI|).
         
-            >>> new_func = parse_geometry(func)
+            >>> new_func = _geoDecorators.parse_geometry(func)
         
         Arguments
         ---------
@@ -955,7 +955,7 @@ class _geoDecorators(object):
         information from JSON-like dictionary parameters formated according to 
         |GISCO| |NUTS| responses (see |GISCOWIKI|).
         
-            >>> new_func = parse_nuts(func)
+            >>> new_func = _geoDecorators.parse_nuts(func)
         
         Arguments
         ---------
@@ -1117,7 +1117,7 @@ class _geoDecorators(object):
         """Generic class decorator of functions and methods used to parse a projection
         reference system.
         
-            >>> new_func = parse_projection(func)
+            >>> new_func = _geoDecorators.parse_projection(func)
         
         Arguments
         ---------
@@ -1163,7 +1163,7 @@ class _geoDecorators(object):
         """Generic class decorator of functions and methods used to parse a 
         reference year for NUTS regulation.
         
-            >>> new_func = parse_year(func)
+            >>> new_func = _geoDecorators.parse_year(func)
         
         Arguments
         ---------
@@ -1207,7 +1207,7 @@ class _geoDecorators(object):
         """Generic class decorator of functions and methods used to parse a 
         filename.
         
-            >>> new_func = parse_file(func)
+            >>> new_func = _geoDecorators.parse_file(func)
         
         Arguments
         ---------
