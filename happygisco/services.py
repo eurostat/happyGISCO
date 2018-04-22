@@ -11,9 +11,9 @@
 .. _GISCO: http://ec.europa.eu/eurostat/web/gisco
 .. |GISCO| replace:: `GISCO <GISCO_>`_
 .. _GISCOWIKI: https://webgate.ec.europa.eu/fpfis/wikis/pages/viewpage.action?spaceKey=GISCO&postingDay=2016%2F1%2F20&title=Background+Services+at+the+EC+cooperate+level+in+production+in+four+projections
-.. |GISCOWIKI| replace:: `GISCOWIKI <GISCOWIKI_>`_
+.. |GISCOWIKI| replace:: `GISCO offline wiki <GISCOWIKI_>`_
 .. _OSM: https://www.openstreetmap.org
-.. |OSM| replace:: `OpenStreetMap <OSM_>`_
+.. |OSM| replace:: `Open Street Map <OSM_>`_
 .. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim
 .. |Nominatim| replace:: `Nominatim <Nominatim_>`_
 .. _NominatimWIKI: https://wiki.openstreetmap.org/wiki/Nominatim
@@ -66,7 +66,8 @@ import functools#analysis:ignore
 
 # local imports
 from happygisco import settings
-from happygisco.settings import happyVerbose, happyWarning, happyError, _geoDecorators
+from happygisco.settings import happyVerbose, happyWarning, happyError,  \
+                                _geoDecorators, _Types
 
 # requirements
 try:                                
@@ -471,8 +472,8 @@ class OSMService(_Service):
         
         See also
         --------
-        :meth:`url_reverse`, :meth:`url_route`, :meth:`url_transform`, 
-        :meth:`~_Service.build_url`.
+        :meth:`~OSMService.url_reverse`, :meth:`~OSMService.url_route`, 
+        :meth:`~OSMService.url_transform`, :meth:`_Service.build_url`.
         """
         protocol = kwargs.pop('protocol', 'https')
         query = kwargs.pop('query', 'search')
@@ -524,8 +525,8 @@ class OSMService(_Service):
         
         See also
         --------
-        :meth:`url_geocode`, :meth:`url_route`, :meth:`url_transform`, 
-        :meth:`~_Service.build_url`.
+        :meth:`~OSMService.url_geocode`, :meth:`~OSMService.url_route`, 
+        :meth:`~OSMService.url_transform`, :meth:`_Service.build_url`.
         """
         protocol = kwargs.pop('protocol', 'https')
         query = kwargs.pop('query', 'reverse')
@@ -580,7 +581,7 @@ class OSMService(_Service):
                     raise happyError('geolocation for place %s with key %s not recognised' % (p,key))  
                 else:
                     data = data.get(key)
-            yield data if not isinstance(data,dict) or len(data)>1 else data[0]
+            yield data if _Types.ismapping(data) or len(data)>1 else data[0]
 
     #/************************************************************************/
     #@_geoDecorators.parse_place
@@ -640,10 +641,11 @@ class OSMService(_Service):
         See also
         --------
         :meth:`place2coord`, :meth:`coord2place`, :meth:`coord2nuts`, :meth:`place2nuts`, 
-        :meth:`coord2route`, :meth:`url_geocode`, :meth:`~_Service.get_response`.
+        :meth:`coord2route`, :meth:`~OSMService.url_geocode`, :meth:`_Service.get_response`.
         """
+        unique = kwargs.pop('unique',False)
         geom = []
-        [geom.append(data if len(data)>1 else data[0]) for data in self._place2geom(place, **kwargs)]
+        [geom.append(data if len(data)>1 and unique is False else data[0]) for data in self._place2geom(place, **kwargs)]
         return geom if len(geom)>1 else geom[0]
        
     #/************************************************************************/
@@ -977,16 +979,18 @@ class GISCOService(OSMService):
     @_geoDecorators.parse_place
     def _place2geom(self, place, **kwargs): 
         kwargs.update({'key': 'features'})
+        #return super(GISCOService,self)._place2geom(place, **kwargs)
         for g in super(GISCOService,self)._place2geom(place, **kwargs):
             yield g
     @_geoDecorators.parse_place
     def place2geom(self, place, **kwargs): 
         """
         
-            >>>  = serv.(, **kwargs)
+            >>>  = serv.place2geom(place, **kwargs)
 
         Arguments
         ---------
+        place : str, list[str]
         
         Keyword arguments
         -----------------
@@ -1034,8 +1038,12 @@ class GISCOService(OSMService):
         :meth:`place2geom`, :meth:`coord2place`, :meth:`coord2nuts`, :meth:`place2nuts`, 
         :meth:`coord2route`.
         """
-        geom = self.place2geom(place, **kwargs)
-        return _geoDecorators.parse_geometry(lambda **kw: [kw.get('lat'), kw.get('lon')])(geom)
+        func = lambda **kw: [kw.get('coord')]
+        order = kwargs.pop('order','lL')
+        # note that the unique keyword, when passed, is taken into account in 
+        # place2geom already
+        geom = _geoDecorators.parse_geometry(func)(self.place2geom(place, **kwargs), order=order)
+        return geom if len(geom)>1 else geom[0]
        
     #/************************************************************************/
     @_geoDecorators.parse_coordinate

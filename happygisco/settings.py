@@ -11,11 +11,11 @@
 .. _GISCO: http://ec.europa.eu/eurostat/web/gisco
 .. |GISCO| replace:: `GISCO <GISCO_>`_
 .. _NUTS: http://ec.europa.eu/eurostat/web/nuts/background
-.. |NUTS| replace:: `NUTS <NUTS_>`_
+.. |NUTS| replace:: `NUTS background <NUTS_>`_
 .. _GISCOWIKI: https://webgate.ec.europa.eu/fpfis/wikis/pages/viewpage.action?spaceKey=GISCO&postingDay=2016%2F1%2F20&title=Background+Services+at+the+EC+cooperate+level+in+production+in+four+projections
-.. |GISCOWIKI| replace:: `GISCOWIKI <GISCOWIKI_>`_
+.. |GISCOWIKI| replace:: `GISCO offline wiki <GISCOWIKI_>`_
 .. _OSM: https://www.openstreetmap.org
-.. |OSM| replace:: `OpenStreetMap <OSM_>`_
+.. |OSM| replace:: `Open Street Map <OSM_>`_
 .. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim
 .. |Nominatim| replace:: `Nominatim <Nominatim_>`_
 .. _Google: https://www.google.com/
@@ -31,7 +31,7 @@
 .. _geopy: https://github.com/geopy/geopy
 .. |geopy| replace:: `geopy <geopy_>`_
 .. _GDAL: https://pypi.python.org/pypi/GDAL
-.. |GDAL| replace:: `GDAL <GDAL_>`_
+.. |GDAL| replace:: `Geospatial Data Abstraction Library (GDAL) <GDAL_>`_
 .. _ArcGIS: http://arcgis.com
 .. |ArcGIS| replace:: `ArcGIS <ArcGIS_>`_
 
@@ -55,8 +55,7 @@ to run the services. They are provided here for the sake of an exhaustive docume
     
 **Dependencies**
 
-*require*:      :mod:`os`, :mod:`sys`, :mod:`itertools`, :mod:`collection`, :mod:`six`,
-                :mod:`inspect`
+*require*:      :mod:`os`, :mod:`sys`, :mod:`itertools`, :mod:`collection`, :mod:`six`, :mod:`inspect`
 
 **Contents**
 """
@@ -321,39 +320,16 @@ VERBOSE             = True
 # CLASS _geoDecorators
 #==============================================================================
     
-class _geoDecorators(object):
-    """Class implementing dummy decorators of methods and functions used to parse 
-    and check arguments as geographical features, *e.g.* place, coordinates or 
-    geometries.
-    
-    Methods from the :mod:`services` module rely on these classes.
+class _Types(object):
+    """Class implementing various dummy types' checking.
     """
-    
-    KW_PLACE        = 'place'
-    KW_ADDRESS      = 'address'
-    KW_CITY         = 'city'
-    KW_COUNTRY      = 'country'
-    KW_ZIPCODE      = 'zip'
-    KW_LAT          = 'lat'
-    KW_LON          = 'lon'
-    KW_COORD        = 'coord'
-    
-    KW_PROJECTION   = 'proj' 
-    
-    KW_YEAR         = 'year'
-    
-    KW_NUTS         = 'nuts' 
-
-    KW_DIRNAME      = 'dir'
-    KW_BASENAME     = 'base'
-    KW_FILENAME     = 'file'
     
     #/************************************************************************/
     @staticmethod
-    def _isstring(arg):
+    def isstring(arg):
         """Check whether an argument is a string.
         
-            >>> ans = _geoDecorators.__isstring(arg)
+            >>> ans = _Types.isstring(arg)
       
         Arguments
         ---------
@@ -370,12 +346,12 @@ class _geoDecorators(object):
     
     #/************************************************************************/
     @staticmethod
-    def _issequence(arg):
+    def issequence(arg):
         """Check whether an argument is a "pure" sequence (*e.g.*, a :data:`list` 
         or a :data:`tuple`), *i.e.* an instance of the :class:`collections.Sequence`,
         except strings excepted.
         
-            >>> ans = _geoDecorators.__issequence(arg)
+            >>> ans = _Types.issequence(arg)
       
         Arguments
         ---------
@@ -390,14 +366,14 @@ class _geoDecorators(object):
             instance of the :class:`six.string_types` class), :data:`False` 
             otherwise.
         """
-        return (isinstance(arg, collections.Sequence) and not _geoDecorators._isstring(arg))
+        return (isinstance(arg, collections.Sequence) and not _Types.isstring(arg))
     
     #/************************************************************************/
     @staticmethod
-    def __isdict(arg):
+    def ismapping(arg):
         """Check whether an argument is a dictionary.
         
-            >>> ans = _geoDecorators.__isdict(arg)
+            >>> ans = _Types.ismapping(arg)
       
         Arguments
         ---------
@@ -411,10 +387,44 @@ class _geoDecorators(object):
             :class:`collections.Mapping` class.
         """
         return (isinstance(arg, collections.Mapping))
+
+#%%
+#==============================================================================
+# CLASS _geoDecorators
+#==============================================================================
     
+class _geoDecorators(object):
+    """Class implementing dummy decorators of methods and functions used to parse 
+    and check arguments as geographical features, *e.g.* place, coordinates or 
+    geometries.
+    
+    Methods from the :mod:`services` module rely on these classes.
+    """
+    
+    KW_PLACE        = 'place'
+    KW_ADDRESS      = 'address'
+    KW_CITY         = 'city'
+    KW_COUNTRY      = 'country'
+    KW_ZIPCODE      = 'zip'
+    
+    KW_LAT          = 'lat'
+    KW_LON          = 'lon'
+    KW_COORD        = 'coord'
+    
+    KW_PROJECTION   = 'proj' 
+    
+    KW_YEAR         = 'year'
+    
+    KW_NUTS         = 'nuts' 
+    
+    KW_FILE         = 'file'
+
     #/************************************************************************/
     @staticmethod
-    def __flatten(args):
+    def _flatten(args):
+        #ignore
+        """Flatten a list of lists.
+        """
         return list(itertools.chain.from_iterable(args))
 
     #/************************************************************************/
@@ -486,9 +496,9 @@ class _geoDecorators(object):
         >>> func = lambda place, *args, **kwargs: place
         >>> new_func = _geoDecorators.parse_place(func)
         >>> new_func('Athens, Hellas')
-            'Athens, Hellas'
+            ['Athens, Hellas']
         >>> new_func(place='Bruxelles, Belgium')
-            'Bruxelles, Belgium'
+            ['Bruxelles, Belgium']
         >>> new_func(city=['Athens','Heraklion'],country='Hellas')
             ['Athens, Hellas', 'Heraklion, Hellas']
         >>> new_func(**{'address':['72 avenue Parmentier','101 Avenue de la République'], 
@@ -514,9 +524,9 @@ class _geoDecorators(object):
         def __call__(self, *args, **kwargs):
             place, address, city, country, zipcode = '', '', '', '', ''
             if args not in (None,()):      
-                if all([_geoDecorators._isstring(a) for a in args]):
+                if all([_Types.isstring(a) for a in args]):
                     place = list(args)
-                elif len(args) == 1 and _geoDecorators._issequence(args[0]):
+                elif len(args) == 1 and _Types.issequence(args[0]):
                     place = args[0]
                 else:   
                     raise happyError('input arguments not recognised')
@@ -536,9 +546,9 @@ class _geoDecorators(object):
                 raise happyError('too many place arguments')
             if address not in ('',None):        place = address
             if place in ('',None):              place = []
-            if _geoDecorators._isstring(place): place = [place,]
+            if _Types.isstring(place): place = [place,]
             if city not in ('',None):   
-                if _geoDecorators._isstring(city): 
+                if _Types.isstring(city): 
                     city = [city,]
                 if place == []:                 place = city
                 else:
@@ -546,7 +556,7 @@ class _geoDecorators(object):
                         raise happyError('inconsistent place with multiple cities')
                     place = [', '.join(_) for _ in zip(place, itertools.cycle(city))]
             if zipcode not in ('',None):   
-                if _geoDecorators._isstring(zipcode):   
+                if _Types.isstring(zipcode):   
                     zipcode = [zipcode,]
                 if place == []:                 place = zipcode
                 else:
@@ -554,7 +564,7 @@ class _geoDecorators(object):
                         raise happyError('inconsistent place with multiple zipcodes')
                     place = [', '.join(_) for _ in zip(place, itertools.cycle(zipcode))]
             if country not in ('',None):   
-                if _geoDecorators._isstring(country): 
+                if _Types.isstring(country): 
                     country = [country,]
                 if place == []:                 place = country
                 else:
@@ -563,36 +573,30 @@ class _geoDecorators(object):
                     place = [', '.join(_) for _ in zip(place, itertools.cycle(country))]
             if place in (None,[],''):
                 raise happyError('no input arguments passed')
-            #if not isinstance(place,collections.Sequence):
-            #    place = [place,]
-            if len(place)==1:                   place = place[0]
-            if not all([isinstance(p,six.string_types) for p in place]):
+            # if len(place)==1:                   place = place[0]
+            if not all([_Types.isstring(p) for p in place]):
                 raise happyError('wrong format for input place')
             return self.func(place, **kwargs)
 
     #/************************************************************************/
     class parse_coordinate(__parse):
         """Generic class decorator of functions and methods used to parse place 
-        :literal:`(lat,lon)` coordinates.
+        :literal:`(lat,Lon)` coordinates.
         
-            >>> new_func = parse_coordinate(func, order='lL')
+            >>> new_func = parse_coordinate(func)
         
         Arguments
         ---------
         func : callable
             the function to decorate that accepts, say, the input arguments 
             :data:`*args, **kwargs`.
-        order : str
-            flag used to define the order of the output parsed geographical 
-            coordinates; it can be either :literal:`'lL'` for :literal:`(lat,lon)` 
-            order or :literal:`'Ll'` for a :literal:`(lon,lat)` order; default 
-            is :literal:`'lL'`.
         
         Returns
         -------
         new_func : callable
-            the decorated function that now accepts a list of geographical
-            coordinates as a positional argument.
+            the decorated function that now accepts geographical coordinates as 
+            positional argument(s), plus an additional keyword argument (see 
+            *Notes* below).
         
         Examples
         --------        
@@ -601,7 +605,7 @@ class _geoDecorators(object):
         >>> func = lambda coord, *args, **kwargs: coord
         >>> new_func = _geoDecorators.parse_coordinate(func)
         >>> new_func([1,-1])
-            [1,-1]
+            [[1,-1]]
         >>> new_func([1,2],[-1,-2])
             [[1, -1], [2, -2]]
         >>> new_func(coord=[[1,-1],[2,-2]])
@@ -612,14 +616,23 @@ class _geoDecorators(object):
             [[1, -1], [2, -2]]
         >>> new_func(lat=[1,2], lon=[-1,-2], order='Ll')
             [[-1, 1], [-2, 2]]
-        >>> new_func(**{'x':[1,2], 'y': [-1,-2]})
+        >>> new_func(**{'y':[1,2], 'x': [-1,-2]})
             [[1, -1], [2, -2]]
              
-        Note
-        ----
-        The output decorated method :data:`new_func` can parse the following keys: 
-        :literal:`['lat', 'lon', 'x', 'y', 'coord']` from any input keyword argument. 
-        See the examples above.
+        Notes
+        -----
+        * The decorated method/function :data:`new_func` accepts the same :data:`*args` 
+          positional arguments as :data:`func` and, in addition to the arguments 
+          already in `data:`**kwargs`, one extra keyword argument:
+              
+              + :data:`order` : a flag used to define the order of the output parsed 
+                geographical coordinates; it can be either :literal:`'lL'` for 
+                :literal:`(lat,Lon)` order or :literal:`'Ll'` for a :literal:`(lon,lat)` 
+                order; default is :literal:`'lL'`.
+
+        * The output decorated method :data:`new_func` can parse the following keys: 
+          :literal:`['lat', 'lon', 'x', 'y', 'coord']` from any input keyword argument. 
+          See the examples above.
            
         See also
         --------
@@ -639,29 +652,29 @@ class _geoDecorators(object):
             pass
         def __call__(self, *args, **kwargs):
             order = kwargs.pop('order', 'lL')
-            if not isinstance(order, six.string_types) or not order in ('Ll','lL'):
+            if not _Types.isstring(order) or not order in ('Ll','lL'):
                 raise happyError('wrong order parameter')
             coord, lat, lon, poly = None, None, None, None
             if args not in (None,()):      
-                if all([isinstance(a,collections.Mapping) for a in args]):
+                if all([_Types.isdict(a) for a in args]):
                     coord = list(args)
-                elif len(args) == 1 and isinstance(args[0],collections.Sequence):
+                elif len(args) == 1 and _Types.issequence(args[0]):
                     if len(args[0])==2                                      \
-                        and all([isinstance(args[0][i],(tuple,list)) or not hasattr(args[0][i],'__len__') for i in (0,1)]):
+                        and all([_Types.issequence(args[0][i]) or not hasattr(args[0][i],'__len__') for i in (0,1)]):
                         lat, lon = args[0]
-                    elif all([isinstance(args[0][i],dict) for i in range(len(args[0]))]):
+                    elif all([_Types.ismapping(args[0][i]) for i in range(len(args[0]))]):
                         coord = args[0]
-                elif len(args) == 1 and isinstance(args[0],(tuple,list)) and len(args[0])==2:
+                elif len(args) == 1 and _Types.issequence(args[0]) and len(args[0])==2:
                     lat, lon = args[0]
                 elif len(args) == 2                                         \
-                    and all([isinstance(args[i],(tuple,list)) or not hasattr(args[i],'__len__') for i in (0,1)]):    
+                    and all([_Types.issequence(args[i]) or not hasattr(args[i],'__len__') for i in (0,1)]):    
                     lat, lon = args
                 else:   
                     raise happyError('input coordinate arguments not recognised')
             else:   
                 coord = kwargs.pop(_geoDecorators.KW_COORD, None)         
-                lat = kwargs.pop(_geoDecorators.KW_LAT, None) or kwargs.pop('x', None)
-                lon = kwargs.pop(_geoDecorators.KW_LON, None) or kwargs.pop('y', None)
+                lat = kwargs.pop(_geoDecorators.KW_LAT, None) or kwargs.pop('y', None)
+                lon = kwargs.pop(_geoDecorators.KW_LON, None) or kwargs.pop('x', None)
                 poly = self.polyline and kwargs.get(self.KW_POLYLINE)
             try:
                 assert not(coord is None and lat is None and lon is None and poly in (False,None)) 
@@ -694,13 +707,13 @@ class _geoDecorators(object):
             if coord in ([],None):
                 raise happyError('wrong geographical coordinates')
             if order != 'lL':                   coord = [_[::-1] for _ in coord] # order = 'Ll'
-            if len(coord)==1:                   coord = coord[0]
+            # if len(coord)==1:                   coord = coord[0]
             return self.func(coord, **kwargs)
        
     #/************************************************************************/
     class parse_place_or_coordinate(__parse):
         """Generic class decorator of functions and methods used to parse place 
-        :literal:`(lat,lon)` coordinates or place names.
+        :literal:`(lat,Lon)` coordinates or place names.
         
             >>> new_func = parse_place_or_coordinate(func)
         
@@ -713,12 +726,22 @@ class _geoDecorators(object):
         Returns
         -------
         new_func : callable
-            the decorated function that now accepts either :data:`coord` or 
-            :data:`lat` and :data:`lon` as new keyword argument(s).
+            the decorated function that now accepts  :data:`coord` or :data:`lat` 
+            and :data:`lon` as new keyword argument(s) to parse geographical 
+            coordinates, plus some additional keyword argument (see *Notes* of
+            :meth:`~_geoDecorators.parse_coordinate` method).
         
         Examples
         --------
-             
+        Some dummy examples:
+            
+        >>> func = lambda *args, **kwargs: [kwargs.get('coord'), kwargs.get('place')]
+        >>> new_func = _geoDecorators.parse_place_or_coordinate(func)
+        >>> new_func(lat=[1,2], lon=[-1,-2])
+            [[[1, -1], [2, -2]], None]
+        >>> new_func(place='Bruxelles, Belgium')
+            [None, ['Bruxelles, Belgium']]
+        
         Note
         ----
         The output decorated method :data:`new_func` can parse all of the keys
@@ -740,7 +763,7 @@ class _geoDecorators(object):
             else:
                 kwargs.update({_geoDecorators.KW_PLACE: place})
             try:
-                coord = _geoDecorators.parse_coordinate(lambda l, L, **kw: [l, L])(*args, **kwargs)
+                coord = _geoDecorators.parse_coordinate(lambda c, **kw: c)(*args, **kwargs)
             except:
                 coord = None
             else:
@@ -754,107 +777,27 @@ class _geoDecorators(object):
             except:
                 raise happyError('too many geographical entities parsed to define the place')
             return self.func(*args, **kwargs)
-        
-    #/************************************************************************/
-    class parse_nuts(__parse):
-        """Generic class decorator used to parse (positional,keyword) arguments 
-        with |NUTS| information stored in |GISCO|-like formatted dictionary (from 
-        JSON response) to functions and methods.
-        
-        Examples
-        --------
-        >>> func = lambda *args, **kwargs: kwargs.get('nuts')
-        >>> nuts = _geoDecorators.parse_nuts(func)(attributes='A', layerId=5, LEVL_CODE=2)
-             
-        Note
-        ----
-        The output decorated method :data:`new_func` can parse the following keys: 
-        :literal:`['nuts', 'attributes', 'displayFieldName', 'layerId', 'layerName', 'value']` 
-        from any input keyword argument. See the examples above.
-            
-        See also
-        --------
-        :meth:`~_geoDecorators.parse_geometry`.
-        """
-        KW_RESULTS      = 'results'
-        KW_ATTRIBUTES   = 'attributes'
-        KW_FIELDNAME    = 'displayFieldName' 
-        KW_LAYERID      = 'layerId'
-        KW_LAYERNAME    = 'layerName'
-        KW_VALUE        = 'value'
-        KW_LEVEL        = 'LEVL_CODE'
-        KW_NUTS_ID      = 'NUTS_ID' # nuts[self.KW_FIELDNAME]
-        KW_CNTR_CODE    = 'CNTR_CODE'
-        KW_NUTS_NAME    = 'NUTS_NAME'
-        KW_OBJECTID     = 'OBJECTID'
-        def __call__(self, *args, **kwargs):
-            level = kwargs.pop('level',None)
-            nuts, items = None, {}
-            if args not in (None,()):      
-                if all([isinstance(a,dict) for a in args]):
-                    nuts = list(args)
-                elif len(args) == 1 and isinstance(args[0],(tuple,list)):
-                    if all([isinstance(args[0][i],dict) for i in range(len(args[0]))]):
-                        nuts = args[0]
-            else:   
-                nuts = kwargs.pop(_geoDecorators.KW_NUTS, {})   
-                items = {self.KW_ATTRIBUTES: kwargs.pop(self.KW_ATTRIBUTES, None),
-                         self.KW_FIELDNAME: kwargs.pop(self.KW_FIELDNAME, None),
-                         self.KW_LAYERID: kwargs.pop(self.KW_LAYERID, None),
-                         self.KW_LAYERNAME: kwargs.pop(self.KW_LAYERNAME, None),
-                         self.KW_VALUE: kwargs.pop(self.KW_VALUE, None)}
-            try:
-                assert not(nuts in ({},None) and all([v in ([],None) for v in items.values()]))
-            except AssertionError:
-                # raise IOError('no input NUTS parsed')
-                return self.func(None, *args, **kwargs)
-            try:
-                assert nuts in ({},None) or all([v in ([],None) for v in items.values()])
-            except AssertionError:
-                raise happyError('too many input file arguments')
-            else:
-                nuts = items if nuts in ({},None) else nuts
-            if nuts in ((),[],None) or                                              \
-                (isinstance(nuts,dict) and all([n in ([],None) for n in nuts.values()])):
-                # raise IOError('no NUTS parsed')
-                return self.func(*args, **kwargs)
-            if not isinstance(nuts,(list,tuple)):
-                nuts = [nuts,]
-            if not all([isinstance(n,dict) and self.KW_ATTRIBUTES in n for n in nuts]): 
-                raise happyError('NUTS attributes not recognised')
-            if level is not None:
-                nuts = [n for n in nuts if n[self.KW_ATTRIBUTES][self.KW_LEVEL] == str(level)]
-            # kwargs.update({_geoDecorators.KW_NUTS: nuts})
-            # return self.func(**kwargs)
-            return self.func(nuts, **kwargs)
 
     #/************************************************************************/
     class parse_geometry(__parse):
         """Generic class decorator of functions and methods used to parse 
-        :literal:`(lat,lon)` geographical coordinates from JSON-like dictionary 
+        :literal:`(lat,Lon)` geographical coordinates from JSON-like dictionary 
         parameters formated according to |GISCO| geometry responses (see |GISCOWIKI|).
         
-            >>> new_func = parse_geometry(func, unique=False, order='lL')
+            >>> new_func = parse_geometry(func)
         
         Arguments
         ---------
         func : callable
             the function to decorate that accepts, say, the input arguments 
             :data:`*args, **kwargs`.
-        unique : bool
-            when set to :data:`True`, only one geometry is filtered out, the first
-            available; default to :data:`False`, hence all geometries are parsed.
-        order : str
-            flag used to define the order of the output filtered geographical 
-            coordinates; it can be either :literal:`'lL'` for :literal:`(lat,lon)` 
-            order or :literal:`'Ll'` for a :literal:`(lon,lat)` order; default 
-            is :literal:`'lL'`.
         
         Returns
         -------
         new_func : callable
-            the decorated function that now accepts :data:`coord` as a new keyword 
-            argument.
+            the decorated function that now accepts :data:`coord` as a keyword 
+            argument to parse geographical coordinates, plus some additional keyword 
+            arguments (see *Notes* below).
         
         Examples
         --------
@@ -864,13 +807,15 @@ class _geoDecorators(object):
         >>> geom = {'A': 1, 'B': 2}
         >>> _geoDecorators.parse_geometry(func)(geom)
             []
+        >>> _geoDecorators.parse_geometry(func)(coord=geom)
+            happyError: !!! geometry attributes not recognised !!!
         >>> geom = {'geometry': {'coordinates': [1, 2], 'type': 'Point'},
                     'properties': {'osm_key': 'place'},
                     'type': 'Feature'}
         >>> _geoDecorators.parse_geometry(func)(coord=geom)
-            [2, 1]
+            [[2, 1]]
         >>> _geoDecorators.parse_geometry(func)(geom, order='Ll')
-            [1, 2]
+            [[1, 2]]
         
         and an actual one:
             
@@ -878,12 +823,10 @@ class _geoDecorators(object):
         >>> geom = serv.place2geom(place='Berlin,Germany')
         >>> print(geom)
             [{'geometry': {'coordinates': [13.3888599, 52.5170365], 'type': 'Point'},
-              'properties': {'city': 'Berlin',
-               'country': 'Germany',
+              'properties': {'city': 'Berlin', 'country': 'Germany',
                'name': 'Berlin',
                'osm_id': 240109189, 'osm_key': 'place', 'osm_type': 'N', 'osm_value': 'city',
-               'postcode': '10117',
-               'state': 'Berlin'},
+               'postcode': '10117', 'state': 'Berlin'},
               'type': 'Feature'},
              {'geometry': {'coordinates': [13.4385964, 52.5198535], 'type': 'Point'},
               'properties': {'country': 'Germany',
@@ -893,24 +836,20 @@ class _geoDecorators(object):
               'type': 'Feature'},
              {'geometry': {'coordinates': [13.393560634296435, 52.51875095],
                'type': 'Point'},
-              'properties': {'city': 'Berlin',
-               'country': 'Germany',
+              'properties': {'city': 'Berlin', 'country': 'Germany',
                'extent': [13.3906703, 52.5200704, 13.3948782, 52.5174944],
                'name': 'Humboldt University in Berlin Mitte Campus',
                'osm_id': 120456814, 'osm_key': 'amenity', 'osm_type': 'W', 'osm_value': 'university',
-               'postcode': '10117',
-               'state': 'Berlin',
+               'postcode': '10117', 'state': 'Berlin',
                'street': 'Dorotheenstraße'},
               'type': 'Feature'},
              ...
               {'geometry': {'coordinates': [13.3869856, 52.5156648], 'type': 'Point'},
-              'properties': {'city': 'Berlin',
-               'country': 'Germany',
+              'properties': {'city': 'Berlin', 'country': 'Germany',
                'housenumber': '55-57',
                'name': 'Komische Oper Berlin',
                'osm_id': 318525456, 'osm_key': 'amenity', 'osm_type': 'N', 'osm_value': 'theatre',
-               'postcode': '10117',
-               'state': 'Berlin',
+               'postcode': '10117', 'state': 'Berlin',
                'street': 'Behrenstraße'},
               'type': 'Feature'}]
                     
@@ -924,15 +863,29 @@ class _geoDecorators(object):
         >>> new_func(geom)
             [[52.5170365, 13.3888599], [52.5198535, 13.4385964]]
         >>> new_func(geom, unique=True, order='Ll')
-            [13.3888599, 52.5170365]
+            [[13.3888599, 52.5170365]]
             
         Notes
         -----
+        * The decorated method/function :data:`new_func` accepts the same :data:`*args` 
+          positional arguments as :data:`func` and, in addition to the arguments 
+          already in `data:`**kwargs`, some extra keyword arguments:
+              
+              + :data:`coord` to parse geocoordinates;
+              + :data:`unique`: when set to :data:`True`, a single geometry is 
+                filtered out, the first available one; default to :data:`False`, 
+                hence all geometries are parsed;
+              + :data:`order` : a flag used to define the order of the output filtered 
+                geographical coordinates; it can be either :literal:`'lL'` for 
+                :literal:`(lat,Lon)` order or :literal:`'Ll'` for a :literal:`(lon,lat)` 
+                order; default is :literal:`'lL'`.
+                
         * When passed to the decorated method :data:`new_func` with input arguments 
-          :data:`*args, **kwargs`, the parameters :data:`kwargs` are actually filtered 
-          out to extract geometry features, say :data:`g`, that are formatted like 
-          the JSON geometries output by |GISCO| web-service and which verify the 
-          following match:
+          :data:`*args, **kwargs`, the remaining parameters in :data:`kwargs` are 
+          actually filtered out to extract geometry features, say :data:`g`, that 
+          are formatted like the JSON :literal:`geometries` output by |GISCO| 
+          geocoding web-service (see method :meth:`services.GISCOService.place2geom`) 
+          and which verify the following match:
           ::
               
               g['type']='Feature' and g['geometry']['type']='Point' and g['properties']['osm_key']='place'
@@ -944,7 +897,8 @@ class _geoDecorators(object):
         See also
         --------
         :meth:`~_geoDecorators.parse_place`, :meth:`~_geoDecorators.parse_coordinate`,
-        :meth:`~_geoDecorators.parse_place_or_coordinate`, :meth:`~_geoDecorators.parse_nuts`.
+        :meth:`~_geoDecorators.parse_place_or_coordinate`, :meth:`~_geoDecorators.parse_nuts`, 
+        :meth:`services.GISCOService.place2geom`.
         """
         KW_FEATURES     = 'features'
         KW_GEOMETRY     = 'geometry'
@@ -960,72 +914,289 @@ class _geoDecorators(object):
             if not isinstance(order, str) or not order in ('Ll','lL'):
                 raise happyError('wrong "order" parameter')
             coord = None
-            if args not in (None,()):      
-                if all([isinstance(a,dict) for a in args]):
+            if args not in (None,()): 
+                __key_coord = False
+                if all([_Types.ismapping(a) for a in args]):
                     coord = args
-                elif len(args) == 1 and isinstance(args[0],(tuple,list)):
-                    if all([isinstance(args[0][i],dict) for i in range(len(args[0]))]):
+                elif len(args) == 1 and _Types.issequence(args[0]):
+                    if all([_Types.ismapping(args[0][i]) for i in range(len(args[0]))]):
                         coord = args[0]
             else:   
-                coord = kwargs.pop(_geoDecorators.KW_COORD, None)        
+                __key_coord = True
+                coord = kwargs.pop(_geoDecorators.KW_COORD, None)  
             if coord is not None:
-                if isinstance(coord,(list,tuple)) and all([isinstance(c,dict) for c in coord]):      
+                if _Types.ismapping(coord): 
+                    coord = [coord,]
+                elif not _Types.issequence(coord):
+                    raise happyError('wrong geometry definition')              
+                if all([_Types.ismapping(c) for c in coord]):      
                     coord = [c for c in coord                                                      \
                        if self.KW_GEOMETRY in c and self.KW_PROPERTIES in c and self.KW_TYPE in c   \
                        and c[self.KW_TYPE]=='Feature'                                               \
                        and (not(CHECK_TYPE) or c[self.KW_GEOMETRY][self.KW_TYPE]=='Point')          \
                        and (not(CHECK_OSM_KEY) or c[self.KW_PROPERTIES][self.KW_OSM_KEY]=='place')  \
                        ]
-                    #coord = dict(zip(['lon','lat'],                                                 \
-                    #                  zip(*[c[self.KW_GEOMETRY][self.KW_COORDINATES] for c in coord])))
-                    coord = [_[self.KW_GEOMETRY][self.KW_COORDINATES] for _ in coord]
-                    if order == 'lL':   coord = [_[::-1] for _ in coord]
-                    if unique or len(coord)==1:          coord = coord[0]
+                #coord = dict(zip(['lon','lat'],                                                 \
+                #                  zip(*[c[self.KW_GEOMETRY][self.KW_COORDINATES] for c in coord])))
+                coord = [_[self.KW_GEOMETRY][self.KW_COORDINATES] for _ in coord]
+                if __key_coord and coord in ([],None):
+                    raise happyError ('geometry attributes not recognised')
+                if order == 'lL':   coord = [_[::-1] for _ in coord]
+                if unique:          coord = [coord[0],]
+                #elif len(coord)==1:          coord = coord[0]
                 kwargs.update({_geoDecorators.KW_COORD: coord}) 
                 return self.func(**kwargs)
             else:
                 return self.func(*args, **kwargs)
         
     #/************************************************************************/
-    class parse_projection(__parse):
-        """Generic class decorator used to parse keyword argument with projection 
-        information to functions and methods.
-             
+    class parse_nuts(__parse):
+        """Generic class decorator of functions and methods used to parse NUTS
+        information from JSON-like dictionary parameters formated according to 
+        |GISCO| |NUTS| responses (see |GISCOWIKI|).
+        
+            >>> new_func = parse_nuts(func)
+        
+        Arguments
+        ---------
+        func : callable
+            the function to decorate that accepts, say, the input arguments 
+            :data:`*args, **kwargs`.
+                
+        Returns
+        -------
+        new_func : callable
+            the decorated function that now accepts a NUTS entry as a positional
+            argument (see  *Notes* below).             
+        
+        Examples
+        --------
+        Some dummy examples:
+            
+        >>> func = lambda *args, **kwargs: kwargs.get('nuts')
+        >>> nuts = {'A': 1, 'B': 2}
+        >>> _geoDecorators.parse_nuts(func)(nuts)
+            []
+        >>> _geoDecorators.parse_nuts(func)(nuts=nuts)
+            happyError: !!! NUTS attributes not recognised !!!
+        >>> nuts = {'attributes': {'CNTR_CODE': 'EU', 'LEVL_CODE': '0'},
+                    'NUTS_NAME': 'EU',
+                    'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
+                    'value': 'EU'}
+        >>> [nuts] == _geoDecorators.parse_nuts(func)(**nuts)
+            True
+        >>> [nuts] == _geoDecorators.parse_nuts(func)(nuts=nuts)
+            True
+        
+        and an even dummier one:
+            
+        >>> serv = services.GISCOService()
+        >>> nuts = serv.place2nuts(place='Lisbon,Portugal')
+        >>> print(nuts)
+            [{'attributes': {'CNTR_CODE': 'PT', 'LEVL_CODE': '0',
+               'NAME_LATN': 'PORTUGAL', 'NUTS_ID': 'PT',
+               'NUTS_NAME': 'PORTUGAL', 'OBJECTID': '28',
+               'SHRT_ENGL': 'Portugal'},
+              'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
+              'value': 'PT'},
+             {'attributes': {'CNTR_CODE': 'PT', 'LEVL_CODE': '1',
+               'NAME_LATN': 'CONTINENTE', 'NUTS_ID': 'PT1',
+               'NUTS_NAME': 'CONTINENTE', 'OBJECTID': '113',
+               'SHRT_ENGL': 'Portugal'},
+              'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
+              'value': 'PT1'},
+             {'attributes': {'CNTR_CODE': 'PT', 'LEVL_CODE': '2',
+               'NAME_LATN': 'Área Metropolitana de Lisboa', 'NUTS_ID': 'PT17',
+               'NUTS_NAME': 'Área Metropolitana de Lisboa', 'OBJECTID': '376',
+               'SHRT_ENGL': 'Portugal'},
+              'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
+              'value': 'PT17'},
+             {'attributes': {'CNTR_CODE': 'PT', 'LEVL_CODE': '3',
+               'NAME_LATN': 'Área Metropolitana de Lisboa', 'NUTS_ID': 'PT170',
+               'NUTS_NAME': 'Área Metropolitana de Lisboa', 'OBJECTID': '1233',
+               'SHRT_ENGL': 'Portugal'},
+              'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
+              'value': 'PT170'}]
+        >>> res = settings._geoDecorators.parse_nuts(func)(nuts)
+        >>> all([res[i] == nuts[i] for i in range(len(res))])
+            True
+        >>> settings._geoDecorators.parse_nuts(func)(nuts, level=2)
+             {'attributes': {'CNTR_CODE': 'PT', 'LEVL_CODE': '2',
+               'NAME_LATN': 'Área Metropolitana de Lisboa', 'NUTS_ID': 'PT17',
+               'NUTS_NAME': 'Área Metropolitana de Lisboa', 'OBJECTID': '376',
+               'SHRT_ENGL': 'Portugal'},
+              'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
+              'value': 'PT17'},
+
         Note
         ----
-        The output decorated method :data:`new_func` can parse the key :literal:`'proj'` 
-        from any input keyword argument. See the examples above.
+        * When passed to the decorated method :data:`new_func` with input arguments 
+          :data:`*args, **kwargs`, the parameters :data:`kwargs` are actually filtered 
+          out to extract NUTS features, say :data:`g`, that are formatted like 
+          the JSON NUTS output by |GISCO| |NUTS| web-service (see method 
+          :meth:`services.GISCOService.place2nuts`).
+        * Alternatively, the output decorated method :data:`new_func` can parse 
+          the following keys: :literal:`['nuts', 'attributes', 'displayFieldName', 'layerId', 'layerName', 'value']` 
+          from any input keyword argument. See the examples above.
+            
+        See also
+        --------
+        :meth:`~_geoDecorators.parse_geometry`, :meth:`services.GISCOService.place2geom`, 
+        :meth:`services.GISCOService.coord2nuts`, :meth:`services.GISCOService.place2nuts`.
+        """
+        KW_RESULTS      = 'results'
+        KW_ATTRIBUTES   = 'attributes'
+        KW_FIELDNAME    = 'displayFieldName' 
+        KW_LAYERID      = 'layerId'
+        KW_LAYERNAME    = 'layerName'
+        KW_VALUE        = 'value'
+        KW_LEVEL        = 'LEVL_CODE'
+        KW_NUTS_ID      = 'NUTS_ID' 
+        KW_CNTR_CODE    = 'CNTR_CODE'
+        KW_NUTS_NAME    = 'NUTS_NAME'
+        KW_OBJECTID     = 'OBJECTID'
+        def __call__(self, *args, **kwargs):
+            level = kwargs.pop('level',None)
+            nuts, items = None, {}
+            if args not in (None,()):      
+                __key_nuts = False
+                if all([_Types.ismapping(a) for a in args]):
+                    nuts = list(args)
+                elif len(args) == 1 and _Types.issequence(args[0]):
+                    if all([_Types.ismapping(args[0][i]) for i in range(len(args[0]))]):
+                        nuts = args[0]
+            else:   
+                __key_nuts = True
+                nuts = kwargs.pop(_geoDecorators.KW_NUTS, {})   
+                items = {self.KW_ATTRIBUTES: kwargs.pop(self.KW_ATTRIBUTES, None),
+                         self.KW_FIELDNAME: kwargs.pop(self.KW_FIELDNAME, None),
+                         self.KW_LAYERID: kwargs.pop(self.KW_LAYERID, None),
+                         self.KW_LAYERNAME: kwargs.pop(self.KW_LAYERNAME, None),
+                         self.KW_VALUE: kwargs.pop(self.KW_VALUE, None),
+                         self.KW_NUTS_NAME: kwargs.pop(self.KW_NUTS_NAME, None),
+                         self.KW_LEVEL: kwargs.pop(self.KW_LEVEL, None),
+                         self.KW_NUTS_ID: kwargs.pop(self.KW_NUTS_ID, None),
+                         self.KW_CNTR_CODE: kwargs.pop(self.KW_CNTR_CODE, None),
+                         self.KW_OBJECTID: kwargs.pop(self.KW_OBJECTID, None)}
+                # note: the following instruction raises a "unhashable type: 'dict'"
+                # TypeError
+                # items = {(k,v) for (k,v) in list(items.items()) if v is not None}
+                # using frozenset instead of list above does not solve the issue
+                items = dict([(k,v) for (k,v) in list(items.items()) if v is not None])
+            try:
+                assert not(nuts in ({},None) and all([v in ([],None) for v in items.values()]))
+            except AssertionError:
+                # raise happyError('no input NUTS parsed')
+                return self.func(*args, **kwargs)
+            try:
+                assert nuts in ({},None) or all([v in ([],None) for v in items.values()])
+            except AssertionError:
+                raise happyError('too many input file arguments')
+            else:
+                nuts = items if nuts in ({},None) else nuts
+            if nuts in ((),[],None) or                                              \
+                (_Types.ismapping(nuts) and all([n in ([],None) for n in nuts.values()])):
+                # raise happyError('no NUTS parsed')
+                return self.func(*args, **kwargs)
+            else:
+                if _Types.ismapping(nuts):     
+                    nuts = [nuts,]
+                elif not _Types.issequence(nuts):
+                    raise happyError('wrong NUTS definition')              
+                if all([_Types.ismapping(n) for n in nuts]): 
+                    nuts = [n for n in nuts if self.KW_ATTRIBUTES in n]
+                if __key_nuts and nuts in ([],None): 
+                    raise happyError('NUTS attributes not recognised')              
+                if level is not None:
+                    nuts = [n for n in nuts if n[self.KW_ATTRIBUTES][self.KW_LEVEL] == str(level)]
+                kwargs.update({_geoDecorators.KW_NUTS: nuts}) 
+                return self.func(**kwargs)
+ 
+    #/************************************************************************/
+    class parse_projection(__parse):
+        """Generic class decorator of functions and methods used to parse a projection
+        reference system.
+        
+            >>> new_func = parse_projection(func)
+        
+        Arguments
+        ---------
+        func : callable
+            the function to decorate that accepts, say, the input arguments 
+            :data:`*args, **kwargs`.
+                
+        Returns
+        -------
+        new_func : callable
+            the decorated function that now accepts  :data:`proj` as a keyword 
+            argument to parse the geographical projection system.
+        
+        Examples
+        --------          
+        >>> func = lambda *args, **kwargs: kwargs.get('proj')
+        >>> _geoDecorators.parse_projection(func)(proj='dumb')
+            happyError: !!! projection dumb not supported !!!
+        >>> _geoDecorators.parse_projection(func)(proj='WGS84')
+            4326
+        >>> _geoDecorators.parse_projection(func)(proj='EPSG3857')
+            3857
+        >>> _geoDecorators.parse_projection(func)(proj=3857)
+            3857
+        >>> _geoDecorators.parse_projection(func)(proj='LAEA')
+            3035
         """
         PROJECTION      = {'WGS84': 4326, 4326: 4326,
                            4258: 4258,
                            'EPSG3857': 3857, 3857: 3857, 
                            'LAEA': 3035, 3035: 3035}
         def __call__(self, *args, **kwargs):
-            proj = kwargs.pop(_geoDecorators.KW_PROJ, 'WGS84')
+            proj = kwargs.pop(_geoDecorators.KW_PROJECTION, 'WGS84')
             if proj in ('',None):
-                return self.func(None,*args, **kwargs)
+                return self.func(*args, **kwargs)
             if proj not in list(self.PROJECTION.keys() | self.PROJECTION.values()):
                 raise happyError('projection %s not supported' % proj)
-            kwargs.update({_geoDecorators.KW_PROJ: self.PROJECTION[proj]})                  
+            kwargs.update({_geoDecorators.KW_PROJECTION: self.PROJECTION[proj]})                  
             return self.func(*args, **kwargs)
         
     #/************************************************************************/
     class parse_year(__parse):
-        """Generic class decorator used to parse keyword year argument used for  
-        NUTS definition.
-             
+        """Generic class decorator of functions and methods used to parse a 
+        reference year for NUTS regulation.
+        
+            >>> new_func = parse_year(func)
+        
+        Arguments
+        ---------
+        func : callable
+            the function to decorate that accepts, say, the input arguments 
+            :data:`*args, **kwargs`.
+                
+        Returns
+        -------
+        new_func : callable
+            the decorated function that now accepts  :data:`year` as a keyword 
+            argument to parse a reference year (*e.g.*, used in NUTS definition).
+        
+        Examples
+        --------          
+        >>> func = lambda *args, **kwargs: kwargs.get('year')
+        >>> _geoDecorators.parse_year(func)(year=2000)
+            happyError: !!! year 2000 not supported !!!
+        >>> _geoDecorators.parse_projection(func)(year=2013)
+            2013
+
         Note
         ----
-        The output decorated method :data:`new_func` can parse the key :literal:`'year'` 
-        from any input keyword argument. See the examples above.
+        Currently, only years :literal:`[2006, 2010, 2013]` are supported (since
+        they are the one currently implemented in |GISCO| NUTS service). 2013 is the
+        default. 
         """
-        YEARS      = [2006, 2013, 2010, # 2016 ?
+        YEARS      = [2006, 2010, 2013, # 2016 ?
                       ]
         def __call__(self, *args, **kwargs):
             year = kwargs.pop(_geoDecorators.KW_YEAR, 2013)
             if year in ([],None):
-                return self.func(None, *args, **kwargs)
-            print(self.YEARS)
+                return self.func(*args, **kwargs)
             if year not in tuple(self.YEARS):
                 raise happyError('year %s not supported' % year)
             kwargs.update({_geoDecorators.KW_YEAR: year})                  
@@ -1033,27 +1204,54 @@ class _geoDecorators(object):
 
     #/************************************************************************/
     class parse_file(__parse):
+        """Generic class decorator of functions and methods used to parse a 
+        filename.
+        
+            >>> new_func = parse_file(func)
+        
+        Arguments
+        ---------
+        func : callable
+            the function to decorate that accepts, say, the input arguments 
+            :data:`*args, **kwargs`.
+                
+        Returns
+        -------
+        new_func : callable
+            the decorated function that now accepts :data:`dir`, :data:`base`, and 
+            :data:`file` as a keyword argument to parse the complete full path of
+            a file. 
+        
+        Examples
+        --------          
+        >>> func = lambda *args, **kwargs: kwargs.get('file')
+        >>> _geoDecorators.parse_file(func)(file='test.txt')
+            test.txt
+        >>> _geoDecorators.parse_file(func)(dir='/home/sweet/home/',base='test.txt')
+            '/home/sweet/home/test.txt'
         """
-        """
+        KW_DIRNAME      = 'dir'
+        KW_BASENAME     = 'base'
+        KW_FILENAME     = 'file'
         def __call__(self, *args, **kwargs):
             dirname, basename, filename = None, None, None
             if args not in (None,()):      
-                if len(args) == 1 and isinstance(args[0],(tuple,list)):
-                    if len(args[0])==2 and all([isinstance(args[0][i],str) for i in (0,1)]):
+                if len(args) == 1 and _Types.issequence(args[0]):
+                    if len(args[0])==2 and all([_Types.isstring(args[0][i]) for i in (0,1)]):
                         dirname, basename = args[0]
                     elif all([isinstance(args[0][i],str) for i in range(len(args[0]))]):
                         filename = args[0]
-                elif len(args) == 1 and isinstance(args[0],str) and len(args[0])==2:
+                elif len(args) == 1 and _Types.isstring(args[0]) and len(args[0])==2:
                     dirname, basename = args[0]
                 elif len(args) == 2                                         \
-                    and all([isinstance(args[i],str) or not hasattr(args[i],'__len__') for i in (0,1)]):    
+                    and all([_Types.isstring(args[i]) or not hasattr(args[i],'__len__') for i in (0,1)]):    
                     dirname, basename = args
                 else:   
                     raise happyError('input file arguments not recognised')
             else:   
-                dirname = kwargs.pop(_geoDecorators.KW_DIRNAME, '')         
-                basename = kwargs.pop(_geoDecorators.KW_BASENAME, '')
-                filename = kwargs.pop(_geoDecorators.KW_FILENAME, '')
+                dirname = kwargs.pop(self.KW_DIRNAME, '')         
+                basename = kwargs.pop(self.KW_BASENAME, '')
+                filename = kwargs.pop(self.KW_FILENAME, '')
             try:
                 assert not(filename in ('',None) and basename in ('',None))
             except AssertionError:
@@ -1062,18 +1260,24 @@ class _geoDecorators(object):
                 assert filename in ('',None) or basename in ('',None)
             except AssertionError:
                 raise happyError('too many input file arguments')
-            if filename is None:
+            if filename in ('',None):
                 try:
                     filename = os.path.join(os.path.realpath(dirname or ''), basename)
                 except:
                     raise happyError('wrong input file argument passed')
-            if not isinstance(filename,str):
+            if not _Types.isstring(filename):
                 filename = [filename,]
-            return self.func(filename, **kwargs)
+            kwargs.update({_geoDecorators.KW_FILE: filename})                  
+            return self.func(**kwargs)
 
     #/************************************************************************/
     class parse_route(__parse):
-        """
+        """Generic class decorator of functions and methods used to parse a 
+        route.
+            
+        Note
+        ----
+        !!! Currently not implemented !!!
         """
         KW_CODE         = 'code'
         KW_ROUTES       = 'routes'

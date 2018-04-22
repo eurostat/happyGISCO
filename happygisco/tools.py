@@ -7,7 +7,7 @@
 .. Links
 
 .. _GDAL: https://pypi.python.org/pypi/GDAL
-.. |GDAL| replace:: `GDAL <GDAL_>`_
+.. |GDAL| replace:: `Geospatial Data Abstraction Library (GDAL) <GDAL_>`_
 .. _PyGeoTools: https://github.com/jfein/PyGeoTools
 .. |PyGeoTools| replace:: `PyGeoTools <PyGeoTools_>`_
 
@@ -995,12 +995,13 @@ class GeoCoordinate(_GeoLocation):
         Arguments
         ---------
         args : list of list/tuple
-            a list of (lat,Lon) coordinates representing the vertices of a polygon.
+            a list of :literal:`(lat,Lon)` coordinates representing the vertices 
+            of a polygon.
             
         Returns
         ------- 
         lat, Lon : tuple
-            (lat,Lon) coordinates of the centroid point, in the same unit as the
+            :literal:`(lat,Lon)` coordinates of the centroid point, in the same unit as the
             parameters in :data:`args`\ .
             
         Example
@@ -1013,8 +1014,8 @@ class GeoCoordinate(_GeoLocation):
             - lowest/highest latitude,
             - lowest/highest longitude,
             
-        among all (lat,Lon) vertex coordinates passed as arguments, then get
-        the center of this rectangle as the centroid point.
+        among all :literal:`(lat,Lon)` vertex coordinates passed as arguments, 
+        then get the center of this rectangle as the centroid point.
         """
         lat_list, Lon_list = [], []
         for arg in args:
@@ -1071,8 +1072,8 @@ class GeoCoordinate(_GeoLocation):
         Arguments
         ---------
         loc1,loc2 : tuple, list
-            (lat,Lon) coordinates of the two location points, in the same unit 
-            as the parameters in :data:`args`.
+            :literal:`(lat,Lon)` coordinates of the two location points, in the 
+            same unit as the parameters in :data:`args`.
             
         Keyword Arguments
         -----------------
@@ -1269,8 +1270,8 @@ class GeoCoordinate(_GeoLocation):
             
         Note
         ----
-        This method and :meth:`~GeoCoordinate.latlon2bbox` are not idempotent (say 
-        it otherwise :data:`~GeoCoordinate.latlon2bbox(~GeoCoordinate.bbox2latlon(bbox)` 
+        This method and :meth:`~GeoCoordinate.latlon2bbox` method are not idempotent 
+        (say it otherwise :data:`~GeoCoordinate.latlon2bbox(~GeoCoordinate.bbox2latlon(bbox)` 
         does not return :data:`bbox`): see comments on CIRCUMcircle and INcircle; however,
         the centre of the bounding box :data:`bbox` (hence the tuple :data:`(lat,Lon)`) 
         is preserved.
@@ -1327,13 +1328,13 @@ class GeoCoordinate(_GeoLocation):
         Arguments
         ---------
         bbox : list
-            a bounding box represented as a 4-lenght list with the (lat,Lon) coordinates
-            (or (Lon,lat); see :data:`order` below) of the South-West and North-East corners 
-            of the input polygon. 
+            a bounding box represented as a 4-lenght list with the :literal:`(lat,Lon)` 
+            coordinates (or :literal:`(Lon,lat)`; see :data:`order` below) of the 
+            South-West and North-East corners of the input polygon. 
         order : str
             a string specifying the order of the coordinates inside the bounding box:
-            it either 'lL' when latitudes come first (hence (lat,Lon), default), or 'Ll'
-            when longitudes come first (hence (Lon,lat)).
+            it either 'lL' when latitudes come first (hence :literal:`(lat,Lon)`, 
+            default), or 'Ll' when longitudes come first (hence :literal:`(Lon,lat):literal:`).
 
         Returns
         -------
