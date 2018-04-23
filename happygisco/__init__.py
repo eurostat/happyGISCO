@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-.. __init__
+.. _mod_happygisco
 
 .. Links
 
@@ -11,7 +11,7 @@
 .. _GISCO: http://ec.europa.eu/eurostat/web/gisco
 .. |GISCO| replace:: `GISCO <GISCO_>`_
 .. _OSM: https://www.openstreetmap.org
-.. |OSM| replace:: `OpenStreetMap <OSM_>`_
+.. |OSM| replace:: `Open Street Map <OSM_>`_
 .. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim
 .. |Nominatim| replace:: `Nominatim <Nominatim_>`_
 .. _Google: http://www.google.com
@@ -44,7 +44,6 @@ using common online web-based geoservices (with or without authentication reques
     >>> import happygisco
     >>> print(happygisco.__all__)
         ['settings', 'tools', 'services', 'features']
-    
 """
 
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 

@@ -26,9 +26,9 @@ so as to represent equivalently and (almost...) uniquely locations.
 
 **Dependencies**
 
-*require*:      :mod:`os`, :mod:`sys`, :mod:`math`, :mod:`numpy`
+*require*:      :mod:`os`, :mod:`sys`, :mod:`math`
 
-*optional*:     :mod:`osgeo`
+*optional*:     :mod:`osgeo`, :mod:`numpy`, :mod:`multiprocessing`
 
 *call*:         :mod:`settings`         
 
@@ -47,9 +47,24 @@ import math
 
 import functools#analysis:ignore
 
+try:
+    import numpy as np
+except ImportError:
+    pass
+
 # local imports
 from happygisco import settings
 from happygisco.settings import happyVerbose, happyWarning, happyError, _geoDecorators
+ 
+try:                            
+    import multiprocessing 
+except ImportError:             
+    MULTIPROCESSING=False 
+    happyWarning('multiprocessing package (https://docs.python.org/3/library/multiprocessing.html) not loaded - Parallel processing not available')
+    NCPUS = 1
+else:              
+    MULTIPROCESSING=True  
+    NCPUS = multiprocessing.cpu_count()              
 
 try:
     GDAL_SERVICE = True
@@ -59,11 +74,6 @@ except ImportError:
     happyWarning('GDAL package (https://pypi.python.org/pypi/GDAL) not loaded - Inline resources not available')
 else:
     print('GDAL help: https://pcjericks.github.io/py-gdalogr-cookbook/index.html')
-
-try:
-    import numpy as np
-except ImportError:
-    pass
 
 #%%
 #==============================================================================
@@ -136,7 +146,7 @@ class _GeoLocation(object):
     #/************************************************************************/
     def __str__(self):
         ## degree_sign= u'\N{DEGREE SIGN}'
-        return ("({0:.4f}deg, {1:.4f}deg) = ({2:.6f}rad, {3:.6f}rad)").format(
+        return ("({0:.5f}deg, {1:.5f}deg) = ({2:.6f}rad, {3:.6f}rad)").format(
             self.deg_lat, self.deg_lon, self.rad_lat, self.rad_lon)
             
     #/************************************************************************/
@@ -160,7 +170,7 @@ class _GeoLocation(object):
         # returns a list of two geolocations - the SW corner and the NE corner - that
         # represents the bounding box defined by the distance :literal:`dist`
         if radius < 0 or distance < 0:
-            raise Exception('illegal arguments')
+            raise happyError('illegal arguments')
         # angular distance in radians on a great circle
         rad_dist = distance / radius
         min_lat = self.rad_lat - rad_dist
@@ -251,16 +261,16 @@ class GeoDistance(object):
 
     #/************************************************************************/
     @classmethod
-    def units_to(cls, from_, to, dist=1.):            
+    def units_to(cls, from_, to_, dist=1.):            
         """Perform simple distance units conversion.
         
-            >>> d = GeoDistance.units_to(from, to, dist)
+            >>> d = GeoDistance.units_to(from_, to_, dist)
 
         Arguments
         ---------
-        from,to : str
+        from_,to_ : str
             'origin' and 'destination' units: any strings from the list 
-            :literal:`['m','km','mi','ft']`\ .
+            :literal:`['m','km','mi','ft']`.
         dist : float
             distance value to convert; default to 1.
 
@@ -275,18 +285,18 @@ class GeoDistance(object):
                      cls.KM_DIST_UNIT: cls.KM_TO, 
                      cls.MI_DIST_UNIT: cls.MI_TO,   
                      cls.FT_DIST_UNIT: cls.FT_TO}
-        return UNITS_TO[from_][to] * dist            
+        return UNITS_TO[from_][to_] * dist            
 
     #/************************************************************************/
     @classmethod
-    def convert_distance_units(cls, to=None, **kwargs):
+    def convert_distance_units(cls, to_=None, **kwargs):
         """Convert composed distance units to a single one.
         
-            >>> d = GeoDistance.convert_distance_units(to='km', **kwargs)
+            >>> d = GeoDistance.convert_distance_units(to_='km', **kwargs)
 
         Arguments
         ---------
-        to : str
+        to_ : str
             desired 'destination' unit: any string in the list :literal:`['m','km','mi','ft']`; 
             default to :literal:`'km'`\ .
         
@@ -294,11 +304,11 @@ class GeoDistance(object):
         -----------------
         kwargs : dict
             dictionary of composed distances indexed by their unit, which can be
-            any string in the list :literal:`['m','km','mi','ft']`\ .
+            any string in the list :literal:`['m','km','mi','ft']`.
             
         Raises
         ------
-        err : :class:`~settings.happyError`
+        ~settings.happyError
             when unable to recognize any of the distance units in :data:`kwargs`.
 
         Examples
@@ -308,18 +318,18 @@ class GeoDistance(object):
         
         >>> GeoDistance.convert_distance_units('m', **{'km':1, 'm':10}) 
             1010
-        >>> GeoDistance.convert_distance_units(to='m', mi=2,  ft=10, km=0.5)
+        >>> GeoDistance.convert_distance_units(to_='m', mi=2,  ft=10, km=0.5)
             3721.7279999999996
         >>> 2*GeoDistance.MI_TO['m'] + 10.*GeoDistance.FT_TO['m'] + 0.5*GeoDistance.KM_TO['m']
             3721.7279999999996
         """
-        if to is None:
-            to = cls.KM_DIST_UNIT
-        elif not to in cls.DIST_UNITS.keys():
-            raise happyError('unit {} not implemented'.format(to))
+        if to_ is None:
+            to_ = cls.KM_DIST_UNIT
+        elif not to_ in cls.DIST_UNITS.keys():
+            raise happyError('unit {} not implemented'.format(to_))
         dist = 0.
         for u in cls.DIST_UNITS.keys():
-            if u in kwargs: dist += cls.units_to(u, to, kwargs.get(u))
+            if u in kwargs: dist += cls.units_to(u, to_, kwargs.get(u))
         return dist
 
     #/************************************************************************/
@@ -339,7 +349,7 @@ class GeoDistance(object):
             
         Raises
         ------
-        happyError :
+        ~settings.happyError 
             when unable to recognize the distance unit.
         """
         a = cls.WGS84_SEMIAXIS_a  # major semiaxis
@@ -385,7 +395,7 @@ class GeoAngle(object):
             
         See also
         --------
-        :meth:`~GeoAngle.deg2dps`, :meth:`~GeoAngle.dps2rad`\ .
+        :meth:`~GeoAngle.deg2dps`, :meth:`~GeoAngle.dps2rad`.
         """
         degrees, primes, seconds = dps
         return degrees + primes/60.0 + seconds/3600.0    
@@ -406,7 +416,7 @@ class GeoAngle(object):
             
         See also
         --------
-        :meth:`~GeoAngle.dps2deg`, :meth:`~GeoAngle.deg2rad`\ .
+        :meth:`~GeoAngle.dps2deg`, :meth:`~GeoAngle.deg2rad`.
         """
         intdeg = math.floor(degrees)
         primes = (degrees - intdeg)*60.0
@@ -430,7 +440,7 @@ class GeoAngle(object):
             
         See also
         --------
-        :meth:`~GeoAngle.rad2deg`, :meth:`~GeoAngle.deg2dps`\ .
+        :meth:`~GeoAngle.rad2deg`, :meth:`~GeoAngle.deg2dps`.
         """
         return math.radians(degrees) # math.pi*degrees/180.0   
 
@@ -449,7 +459,7 @@ class GeoAngle(object):
             
         See also
         --------
-        :meth:`~GeoAngle.deg2rad`, :meth:`~GeoAngle.rad2dps`\ .
+        :meth:`~GeoAngle.deg2rad`, :meth:`~GeoAngle.rad2dps`.
         """
         return math.degrees(radians) # 180.0*radians/math.pi    
 
@@ -470,11 +480,11 @@ class GeoAngle(object):
                 
         Note
         ----
-        Compose the methods :meth:`~GeoAngle.dps2deg` and :meth:`~GeoAngle.deg2rad`\ .
+        Compose the methods :meth:`~GeoAngle.dps2deg` and :meth:`~GeoAngle.deg2rad`.
             
         See also
         --------
-        :meth:`~GeoAngle.rad2dps`, :meth:`~GeoAngle.dps2deg`\ .
+        :meth:`~GeoAngle.rad2dps`, :meth:`~GeoAngle.dps2deg`.
         """
         return cls.deg2rad(cls.dps2deg(dps))
 
@@ -495,25 +505,25 @@ class GeoAngle(object):
                 
         Note
         ----
-        Compose the methods :meth:`~GeoAngle.rad2deg` and :meth:`~GeoAngle.deg2dps`\ .
+        Compose the methods :meth:`~GeoAngle.rad2deg` and :meth:`~GeoAngle.deg2dps`.
         
         See also
         --------
-        :meth:`~GeoAngle.dps2rad`, :meth:`~GeoAngle.rad2deg`\ .
+        :meth:`~GeoAngle.dps2rad`, :meth:`~GeoAngle.rad2deg`.
         """
         return cls.deg2dps(cls.rad2deg(rad))
 
     #/********************************************************************/
     @classmethod
-    def ang_units_to(cls, from_, to, ang=0.):            
+    def ang_units_to(cls, from_, to_, ang=0.):            
         """Perform simple angular units conversion.
         
-            >>> u = GeoAngle.ang_units_to(from, to, ang=0.)
+            >>> u = GeoAngle.ang_units_to(from_, to_, ang=0.)
 
         Arguments
         ---------
-        from,to : str
-            'origin' and 'destination' units: any strings in :literal:`['deg','rad','dps']`\ .
+        from_,to_ : str
+            'origin' and 'destination' units: any strings in :literal:`['deg','rad','dps']`.
         ang : float
             angle value to convert; default to 0.
             
@@ -532,7 +542,7 @@ class GeoAngle(object):
         See also
         --------
         :meth:`~GeoAngle.dps2deg`, :meth:`~GeoAngle.dps2rad`, :meth:`~GeoAngle.deg2rad`, 
-        :meth:`~GeoAngle.deg2dps`, :meth:`~GeoAngle.rad2deg`, :meth:`~GeoAngle.rad2dps`\ .
+        :meth:`~GeoAngle.deg2dps`, :meth:`~GeoAngle.rad2deg`, :meth:`~GeoAngle.rad2dps`.
         """
         # if from_==to:     return ang
         deg_to = {cls.RAD_ANG_UNIT: cls.deg2rad, 
@@ -544,18 +554,18 @@ class GeoAngle(object):
         dps_to = {cls.RAD_ANG_UNIT: cls.dps2rad,  
                   cls.DEG_ANG_UNIT: cls.dps2deg, 
                   cls.DPS_ANG_UNIT: lambda x:x}
-        return {cls.RAD_ANG_UNIT: rad_to, cls.DEG_ANG_UNIT: deg_to, cls.DPS_ANG_UNIT: dps_to}[from_][to](ang)       
+        return {cls.RAD_ANG_UNIT: rad_to, cls.DEG_ANG_UNIT: deg_to, cls.DPS_ANG_UNIT: dps_to}[from_][to_](ang)       
 
     #/************************************************************************/
     @classmethod
-    def convert_angle_units(cls, to=None, **kwargs):
+    def convert_angle_units(cls, to_=None, **kwargs):
         """Convert composed angular units to a single one.
         
-            >>> u = GeoAngle.convert_angle_units(to='deg', **kwargs)
+            >>> u = GeoAngle.convert_angle_units(to_='deg', **kwargs)
 
         Arguments
         ---------
-        to : str
+        to_ : str
             desired 'final' unit: any string in :literal:`['deg','rad','dps']`; default
             to :literal:`'deg'`\ .
         
@@ -571,21 +581,21 @@ class GeoAngle(object):
             
         Raises
         ------
-        happyError :
-            when unable to recognize the distance unit :data:`to`\ .
+        ~settings.happyError 
+            when unable to recognize the distance unit :data:`to_`.
         """
-        if to is None:
-            to = cls.DEG_ANG_UNIT
-        elif not to in cls.ANG_UNITS.keys():
-            raise happyError('unit {} not implemented'.format(to))
-        if to==cls.DPS_ANG_UNIT: # we will convert first the different values in degrees
+        if to_ is None:
+            to_ = cls.DEG_ANG_UNIT
+        elif not to_ in cls.ANG_UNITS.keys():
+            raise happyError('unit {} not implemented'.format(to_))
+        if to_==cls.DPS_ANG_UNIT: # we will convert first the different values in degrees
             dps = True
-            to = cls.DEG_ANG_UNIT
+            to_ = cls.DEG_ANG_UNIT
         else:
             dps = False
         ang = 0.
         for u in cls.ANG_UNITS.keys():
-            if u in kwargs: ang += cls.ang_units_to(u, to, kwargs.get(u,0.))
+            if u in kwargs: ang += cls.ang_units_to(u, to_, kwargs.get(u,0.))
         if dps is True: # we convert back the sum in dps
             ang = cls.ang_units_to(cls.DEG_ANG_UNIT, cls.DPS_ANG_UNIT, ang)
         return ang
@@ -601,12 +611,30 @@ class GeoCoordinate(_GeoLocation):
     
     This class emulates :class:`~tools._GeoLocation`.
     It inherits, for instance, the methods :meth:`_check_bounds` from the original 
-    class that aim at checking for (`lat`, `Long`) coordinates consistency; instead, 
-    methods :meth:`distance_to` (computation of great circle distance between 
-    geolocations) and :meth:`bounding_locations` (computation of the bounding 
-    coordinates of all points) are overriden.
+    class that aim at checking for :literal:`(lat, Lon)` coordinates consistency; 
+    instead, methods :meth:`distance_to` (computation of great circle distance 
+    between geolocations) and :meth:`bounding_locations` (computation of the 
+    bounding coordinates of all points) are overriden.
  
             >>> x = GeoCoordinate(*args, **kwargs)
+            
+    Arguments
+    ---------
+    args : tuple[float]
+        arguments in :data:`args` define uniquely an instance of this class; it
+        can be either:     
+            * a pair of :literal:`(lat,Lon)` expressed in radians,
+            * a pair of :literal:`(lat,Lon)` expressed in degrees,
+            * a pair of :literal:`(lat,Lon)` expressed in DPS format 
+              (degrees, primes, seconds),
+            * a 4-tuple of :literal:`(lat,Lon)` expressed both in radians and degrees 
+              (in this order).
+
+    Keyword arguments
+    -----------------
+    unit_angle : str
+        name of the unit used for the definition of the angles parsed through 
+        :data:`args`; default is :data:`GeoAngle.DEG_ANG_UNIT`, *i.e.* 'deg'.
 
     Attributes
     ----------     
@@ -638,12 +666,16 @@ class GeoCoordinate(_GeoLocation):
             return
         elif len(args)==2:
             unit = kwargs.pop('unit_angle', GeoAngle.DEG_ANG_UNIT)
-            for i in range(2): # convert to degrees whatever th input is
+            for i in range(2): # convert to degrees whatever the input is
                 try:    
                     dps[i] = GeoAngle.convert_angle_units(GeoAngle.DPS_ANG_UNIT, **{unit: args[i]})
                     deg[i] = GeoAngle.convert_angle_units(GeoAngle.DEG_ANG_UNIT, **{unit: args[i]})
                 except: raise happyError('unit {} not implemented'.format(unit))
-            args = [GeoAngle.deg2rad(l) for l in deg] + deg
+            if unit==GeoAngle.RAD_ANG_UNIT:
+                rad = list(args)
+            else:
+                rad = [GeoAngle.deg2rad(l) for l in deg]
+            args = rad + deg
         elif len(args)!=4:
             raise happyError('wrong number of input arguments')
         super(GeoCoordinate,self).__init__(*args)
@@ -652,8 +684,8 @@ class GeoCoordinate(_GeoLocation):
     #/************************************************************************/
     @classmethod 
     def from_radians(cls, rad_lat, rad_lon):
-        """Return a geolocation instance from (lat, Lon) coordinates expressed 
-        in degrees.
+        """Return a geolocation instance from :literal:`(lat,Lon)` coordinates 
+        expressed in degrees.
         
             >>> x = GeoCoordinate.from_radians(rad_lat, rad_lon)
          
@@ -665,7 +697,7 @@ class GeoCoordinate(_GeoLocation):
         Returns
         -------
         x : :class:`~happygisco.tools.GeoCoordinate`
-            a :class:`GeoCoordinate` instance from the input latitude and longitude 
+            a :class:`GeoCoordinate` instance from the input :literal:`(lat,Lon)` 
             coordinates :data:`(rad_lat,rad_lon)`.
             
         Example
@@ -680,8 +712,8 @@ class GeoCoordinate(_GeoLocation):
     #/************************************************************************/
     @classmethod 
     def from_degrees(cls, deg_lat, deg_lon):
-        """Return a geolocation instance from (lat, Lon) coordinates expressed 
-        in degrees.
+        """Return a geolocation instance from :literal:`(lat,Lon)` coordinates 
+        expressed in degrees.
         
             >>> x = GeoCoordinate.from_degrees(deg_lat, deg_lon)
          
@@ -693,7 +725,7 @@ class GeoCoordinate(_GeoLocation):
         Returns
         -------
         x : :class:`~happygisco.tools.GeoCoordinate`
-            a :class:`GeoCoordinate` instance from the input latitude and longitude 
+            a :class:`GeoCoordinate` instance from the input :literal:`(lat,Lon)` 
             coordinates :data:`(deg_lat,deg_lon)`.
             
         Example
@@ -708,8 +740,8 @@ class GeoCoordinate(_GeoLocation):
     #/************************************************************************/
     @classmethod 
     def from_dps(cls, dps_lat, dps_lon): # new generator
-        """Return a geolocation instance from (lat, Lon) coordinates expressed 
-        in DPS format.
+        """Return a geolocation instance from :literal:`(lat,Lon)` coordinates 
+        expressed in DPS format.
         
             >>> x = GeoCoordinate.from_dps(dps_lat, dps_lon)
          
@@ -722,7 +754,7 @@ class GeoCoordinate(_GeoLocation):
         Returns
         -------
         x : :class:`~happygisco.tools.GeoCoordinate`
-            a :class:`GeoCoordinate` instance from the input latitude and longitude 
+            a :class:`GeoCoordinate` instance from the input :literal:`(lat,Lon)` 
             coordinates :data:`(dps_lat,dps_lon)`.
             
         Example
@@ -883,7 +915,7 @@ class GeoCoordinate(_GeoLocation):
 
     #/************************************************************************/
     def bounding_locations(self, distance, **kwargs):
-        """Method overriding super method from :class:`~happygisco.tools._GeoLocation`  
+        """Method overriding super method from :class:`~tools._GeoLocation`  
         for computing bounding coordinates of all points on the surface of a sphere 
         that have a great circle distance to the point represented by this 
         :class:GeoLocation` instance that is less or equal to the distance argument.
@@ -904,7 +936,7 @@ class GeoCoordinate(_GeoLocation):
             default is :literal:`'km'`.
         radius : float
             the radius of the sphere; must be measured in the same unit as the 
-            :data:`dist` parameter; defaults to Earth radius :data:`~GeoDistance.EARTH_RADIUS_EQUATOR`.
+            :data:`dist` parameter; defaults to Earth radius :data:`GeoDistance.EARTH_RADIUS_EQUATOR`.
             
         Returns
         -------
@@ -944,14 +976,14 @@ class GeoCoordinate(_GeoLocation):
             a location; it must be set in the unit defined by :data:`unit_angle`
             (see below).
         distance : float
-            in between-locations distance, see :meth:`bounding_locations`\ .
+            in between-locations distance, see :meth:`bounding_locations`.
             
         Keyword Arguments
         -----------------
         unit_angle : str
             angle measurement unit, *i.e.* unit of the input :data:`loc` parameter; 
             it can be any string in :literal:`['deg','rad','dps']`; default is 
-            :literal:`'deg'`\ .                
+            :literal:`'deg'`.                
         unit, radius : 
             see :meth:`~GeoLocation.bounding_locations`.
             
@@ -987,8 +1019,8 @@ class GeoCoordinate(_GeoLocation):
     #/************************************************************************/
     @classmethod
     def centroid(cls, *args):
-        """Retrieve the approximate centroid of a polygon (bounding box).
-        Accuracy is not a major aspect here. 
+        """Retrieve the approximate centroid of a polygon (bounding box). Accuracy 
+        is not a major aspect here. 
         
             >>> lat, Lon = GeoCoordinate.centroid(*args)            
 
@@ -1001,8 +1033,8 @@ class GeoCoordinate(_GeoLocation):
         Returns
         ------- 
         lat, Lon : tuple
-            :literal:`(lat,Lon)` coordinates of the centroid point, in the same unit as the
-            parameters in :data:`args`\ .
+            :literal:`(lat,Lon)` coordinates of the centroid point, in the same 
+            unit as the parameters in :data:`args`.
             
         Example
         -------
@@ -1011,8 +1043,8 @@ class GeoCoordinate(_GeoLocation):
         ----
         Convert the polygon to a rectangle by selecting the points with: 
 
-            - lowest/highest latitude,
-            - lowest/highest longitude,
+            * lowest/highest latitude,
+            * lowest/highest longitude,
             
         among all :literal:`(lat,Lon)` vertex coordinates passed as arguments, 
         then get the center of this rectangle as the centroid point.
@@ -1029,16 +1061,16 @@ class GeoCoordinate(_GeoLocation):
         
      #/************************************************************************/
     def distance_to(self, other, **kwargs): # override method distance_to
-        """Method overriding super method from :class:`~happygisco.tools._GeoLocation`
-        for computing the great circle distance between this :class:`GeoLocation` instance 
-        and another (where measurement unit is passed as an argument).
+        """Method overriding super method from :class:`tools._GeoLocation`
+        for computing the great circle distance between this :class:`GeoLocation` 
+        instance and another (where measurement unit is passed as an argument).
         
             >>> R = x.distance_to(other, **kwargs)
 
         Arguments
         ---------
         other : :class:`~happygisco.tools.GeoCoordinate`
-            a :class:`GeoCoordinate` instance to which compute a distance to.
+            a :class:`GeoCoordinate` instance to which compute a distance.
             
         Keyword Arguments
         -----------------
@@ -1063,9 +1095,9 @@ class GeoCoordinate(_GeoLocation):
     #/************************************************************************/
     @classmethod
     def distance_to_from(cls, loc1, loc2, **kwargs):
-        """Compute the (approximate) great circle distance between two points
-        on the Earth (specified in decimal degrees).
-        Accuracy is not a major aspect here. 
+        """Compute the (approximate) great circle distance between two points on 
+        the Earth (specified in decimal degrees). Accuracy is not a major aspect 
+        here. 
         
             >>> lat, Lon = GeoCoordinate.distance_to_from(loc1, loc2, **kwargs)            
 
@@ -1145,7 +1177,7 @@ class GeoCoordinate(_GeoLocation):
         
         Raises
         ------
-        happyError:
+        ~settings.happyError
             an error is raised in cases of:
                 
                 * unexpected variable for lat/long,
@@ -1301,7 +1333,7 @@ class GeoCoordinate(_GeoLocation):
         Returns
         -------
         bbox : list
-            bounding box (see :meth:`~GeoCoordinatebbox2latlon`) whose INcircle 
+            bounding box (see :meth:`~GeoCoordinate.bbox2latlon`) whose INcircle 
             is the circle defined by the centre :data:`(lat,Lon)` and a radius 
             :data:`rad`.
 
@@ -1334,7 +1366,7 @@ class GeoCoordinate(_GeoLocation):
         order : str
             a string specifying the order of the coordinates inside the bounding box:
             it either 'lL' when latitudes come first (hence :literal:`(lat,Lon)`, 
-            default), or 'Ll' when longitudes come first (hence :literal:`(Lon,lat):literal:`).
+            default), or 'Ll' when longitudes come first (hence :literal:`(Lon,lat):`).
 
         Returns
         -------
@@ -1345,7 +1377,7 @@ class GeoCoordinate(_GeoLocation):
         
         Raises
         ------
-        happyError :
+        ~settings.happyError 
             an error is raised when unrecognized order argument.
             
         Example
@@ -1371,7 +1403,7 @@ class GeoCoordinate(_GeoLocation):
     #/************************************************************************/
     @classmethod    
     def polygon2bbox(cls, polygon, order='lL'): 
-        """Convert a polygon of :literal:`(lat, Lon)` or :literal:`(Lon, lat)` 
+        """Convert a polygon of :literal:`(lat, Lon)` (or :literal:`(Lon, lat)`)
         coordinates into an AOI bounding box.
         
             >>> bbox = GeoCoordinate.polygon2bbox(polygon, order='lL')
@@ -1389,7 +1421,7 @@ class GeoCoordinate(_GeoLocation):
         
         Raises
         ------
-        happyError :
+        ~settings.happyError 
             an error is raised in case of unrecognized :data:`order` argument.
 
         Example
@@ -1652,4 +1684,141 @@ class GDALTool(object):
         except:
             raise IOError('could not load geolocation vector')
         return self.vec2id(layer, vector)
+
+#%%
+#==============================================================================
+# CLASS _Pools
+#==============================================================================
+
+class _Pools(object):
+    """Class of generic pool workers for parallel mapping.
+    """
+    
+    #/************************************************************************/
+    @staticmethod
+    def worker(f, ii, chunk, out_q, err_q, lock):  
+        """A worker function that maps an input function over a slice of the input 
+        iterable. 
+        
+            >>> res = worker(f, ii, chunk, out_q, err_q, lock)
+        
+        Arguments
+        ---------
+        f : callable
+            callable function that accepts argument from iterable. 
+        ii : 
+            process ID. 
+        chunk : 
+            slice of input iterable. 
+        out_q : 
+            thread-safe output queue. 
+        err_q : 
+            thread-safe queue to populate on exception. 
+        lock : 
+            thread-safe lock to protect a resource (useful in extending :meth:`~Parallel.map_tasks`). 
+        """  
+        vals = []  
+        # iterate over slice   
+        for val in chunk:  
+            try:  
+                result = f(val)  
+            except Exception as e:  
+                err_q.put(e)  
+                return  
+        vals.append(result)  
+        # output the result and task ID to output queue  
+        out_q.put( (ii, vals) )  
+      
+      
+    #/************************************************************************/
+    @staticmethod
+    def run_tasks(procs, err_q, out_q, num):  
+        """A function that executes populated processes and processes the resultant 
+        array. Checks error queue for any exceptions. 
+        
+            >>> res = run_tasks(procs, err_q, out_q, num) 
+
+        Arguments
+        ---------
+        procs : 
+             list of Process objects. 
+        out_q : 
+            thread-safe output queue. 
+        err_q : 
+            thread-safe queue to populate on exception. 
+        num : 
+            length of resultant array. 
+        """  
+        # function to terminate processes that are still running.  
+        die = (lambda vals : [val.terminate() for val in vals  
+                 if val.exitcode is None])  
+        try:  
+            for proc in procs:  proc.start()  
+            for proc in procs:  proc.join()  
+        except Exception as e:  
+            # kill all slave processes on ctrl-C  
+            die(procs)  
+            raise e  
+        if not err_q.empty():  
+            # kill all on any exception from any one slave  
+            die(procs)  
+            raise err_q.get()  
+        # Processes finish in arbitrary order. Process IDs double  
+        # as index in the resultant array.  
+        results=[None]*num;  
+        while not out_q.empty():  
+            idx, result = out_q.get()  
+            results[idx] = result  
+        # Remove extra dimension added by array_split  
+        return list(np.concatenate(results))  
+      
+    #/************************************************************************/
+    @staticmethod
+    def map_tasks(function, sequence, numcores=None):  
+        """A parallelized version of the native `Python` method :meth:`map` that 
+        uses the `Python` :mod:`multiprocessing` module to divide and conquer sequence. 
+        
+            >>> res = map_tasks(function, sequence, numcores) 
+
+        Arguments
+        ---------
+        function : callable
+            callable function that accepts argument from iterable. 
+        sequence : list,tuple
+            iterable sequence.  
+        numcores : int
+            number of cores to use.
+
+        Note
+        ----
+        :meth :`~_Pool.map_tasks` does not yet support multiple argument sequences. 
+        """  
+        if not callable(function):  
+            raise TypeError("input function {} is not callable".format(repr(function)))  
+        if not np.iterable(sequence):  
+            raise TypeError("input {} is not iterable".format(repr(sequence)))
+        size = len(sequence)  
+        if not _multi or size == 1:     return map(function, sequence)  
+        if numcores is None:            numcores = _ncpus  
+        # returns a started SyncManager object which can be used for sharing   
+        # objects between processes. The returned manager object corresponds  
+        # to a spawned child process and has methods which will create shared  
+        # objects and return corresponding proxies.  
+        manager = multiprocessing.Manager()  
+        # Create FIFO queue and lock shared objects and return proxies to them.  
+        # The managers handles a server process that manages shared objects that  
+        # each slave process has access to. Bottom line -- thread-safe.  
+        out_q = manager.Queue()  
+        err_q = manager.Queue()  
+        lock = manager.Lock()  
+        # if sequence is less than numcores, only use len sequence number of   
+        # processes  
+        if size < numcores:             numcores = size   
+        # group sequence into numcores-worth of chunks  
+        sequence = np.array_split(sequence, numcores)  
+        procs = [multiprocessing.Process(target=_Pools.worker,  
+               args=(function, ii, chunk, out_q, err_q, lock))  
+             for ii, chunk in enumerate(sequence)]  
+        return _Pools.run_tasks(procs, err_q, out_q, numcores)  
+
 

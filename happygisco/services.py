@@ -10,7 +10,7 @@
 .. |Eurostat| replace:: `Eurostat <Eurostat_>`_
 .. _GISCO: http://ec.europa.eu/eurostat/web/gisco
 .. |GISCO| replace:: `GISCO <GISCO_>`_
-.. _GISCOWIKI: https://webgate.ec.europa.eu/fpfis/wikis/pages/viewpage.action?spaceKey=GISCO&postingDay=2016%2F1%2F20&title=Background+Services+at+the+EC+cooperate+level+in+production+in+four+projections
+.. _GISCOWIKI: https://webgate.ec.europa.eu/fpfis/wikis/display/GISCO/Geospatial+information+services+for+the+European+Commission+and+other+EU+users
 .. |GISCOWIKI| replace:: `GISCO offline wiki <GISCOWIKI_>`_
 .. _OSM: https://www.openstreetmap.org
 .. |OSM| replace:: `Open Street Map <OSM_>`_
@@ -144,7 +144,7 @@ class _Service(object):
     @property
     def session(self):
         """Session attribute (:data:`getter`/:data:`setter`) of an instance of
-        a class :class:`_Service`. :data:`session` is actually an instance of a
+        a class :class:`_Service`. `session` is actually an instance of a
         :class:`requests.session.Session` class.
         """ # A session type is :class:`requests.session.Session`.
         return self.__session
@@ -180,7 +180,7 @@ class _Service(object):
             
         Examples
         --------
-        We can check the response status code when connecting to different web-pages
+        We can see the response status code when connecting to different web-pages
         or services:
         
         >>> serv = services._Service()
@@ -189,7 +189,7 @@ class _Service(object):
         >>> serv.get_status('http://www.dumbanddumber.com')
             301 
         
-        Let us check that the status is ok when connecting to |Eurostat| website:
+        Let us actually check that the status is ok when connecting to |Eurostat| website:
             
         >>> stat = serv.get_status(settings.ESTAT_URL)
         >>> print(stat)
@@ -612,8 +612,8 @@ class OSMService(_Service):
     #    return geom if len(geom)>1 else geom[0]
     @_geoDecorators.parse_place
     def place2geom(self, place, **kwargs):
-        """Retrieve geographical information) associated to a given place as a
-        geometry.
+        """Retrieve the geographical information associated to a given place as a
+        geometry object using |OSM| service.
         
             >>> geom = serv.place2geom(place, **kwargs)
 
@@ -625,15 +625,15 @@ class OSMService(_Service):
         Keyword arguments
         -----------------
         kwargs : dict
-            keywords in :data:`format, json_callback, accept-language, extratags, namedetails, q, street, city, county, state, country, postalcode, countrycodes, viewbox, bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson, polygon_kml, polygon_svg, polygon_text`;
+            keywords in :data:`format, json_callback, accept-language, extratags, namedetails, street, city, county, state, country, postalcode, countrycodes, viewbox, bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson, polygon_kml, polygon_svg, polygon_text`;
             are accepted; see :meth:`~OSMService.url_geocode`.
         
         Returns
         -------
         geom : dict, list[dict]
             a (list of) geometry(ies), *i.e.* a dictionary describing the geographical
-            information related to the input :data:`place`, one for each place 
-            mentioned.
+            information related to the input olace(s) in :data:`place`, one for each 
+            place mentioned.
                   
         Raises
         ------
@@ -707,8 +707,8 @@ class OSMService(_Service):
         return geom if len(geom)>1 else geom[0]
        
     #/************************************************************************/
-    def _coord2place(self, coord, **kwargs): 
-        """Iterable version of :meth:`~OSMService.coord2place`.
+    def _coord2geom(self, coord, **kwargs): 
+        """Iterable version of :meth:`~OSMService.coord2geom`.
         """
         fmt = kwargs.pop('format','')
         key = kwargs.pop('key',None)
@@ -748,8 +748,8 @@ class OSMService(_Service):
        
     #/************************************************************************/
     #@_geoDecorators.parse_coordinate
-    #def coord2place(self, lat, lon, **kwargs): # specific use
-    #    place = []
+    #def coord2geom(self, lat, lon, **kwargs): # specific use
+    #    geom = []
     #    for i in range(len(lat)):
     #        kwargs.update({'lat': lat[i], 'lon': lon[i]})
     #        try:
@@ -771,14 +771,14 @@ class OSMService(_Service):
     #            raise happyError('place for geolocation (%s,%s) not recognised' % (lat[i], lon[i]))      
     #        else:
     #            p = data.get(_geoDecorators.parse_geometry.KW_FEATURES)
-    #            place.append(p if len(p)>1 else p[0])
-    #    return place[0] if len(place)==1 else place
+    #            geom.append(p if len(p)>1 else p[0])
+    #    return geom[0] if len(geom)==1 else geom
     @_geoDecorators.parse_coordinate
-    def coord2place(self, coord, **kwargs): # specific use
+    def coord2geom(self, coord, **kwargs): # specific use
         """Retrieve the place (topo)name of a given location provided by its 
-        geographical coordinates.
+        geographical coordinates using |OSM| service.
         
-            >>>  place = serv.coord2place(coord, **kwargs)
+            >>>  place = serv.coord2geom(coord, **kwargs)
 
         Arguments
         ---------
@@ -794,8 +794,10 @@ class OSMService(_Service):
         
         Returns
         -------
-        place : str, list[str]
-            place (topo)name(s) identifying the input geolocation(s) in :data:`coord`.
+        geom : dict, list[dict]
+            a (list of) geometry(ies), *i.e.* a dictionary describing the geographical
+            information related to the input geographical coordinate(s) in :data:`coord`, 
+            one for each coordinate listed.
         
         Raises
         ------
@@ -819,9 +821,9 @@ class OSMService(_Service):
         >>> serv.url_reverse(coord=berlin) 
             'https://nominatim.openstreetmap.org/reverse?format=json&lat=52.5170365&lon=13.3888599'
         
-        however, the method :meth:`coord2place` does everything at once:
+        however, the method :meth:`coord2geom` does everything at once:
         
-        >>> serv.coord2place(berlin, format='json')
+        >>> serv.coord2geom(berlin, format='json')
             {'address': {'address29': 'Douglas',
               'city': 'Berlin',
               'city_district': 'Mitte',
@@ -845,7 +847,7 @@ class OSMService(_Service):
         :meth:`_Service.get_status`, :meth:`_Service.get_response`.
         """
         place = []
-        [place.append(data if len(data)>1 else data[0]) for data in self._coord2place(coord, **kwargs)]
+        [place.append(data if len(data)>1 else data[0]) for data in self._coord2geom(coord, **kwargs)]
         return place[0] if len(place)==1 else place
 
     @_geoDecorators.parse_place
@@ -854,11 +856,123 @@ class OSMService(_Service):
         its (topo)name.
         
             >>> coord = serv.place2coord(place, **kwargs)
+
+        Arguments
+        ---------
+        place : str, list[str]
+            place (topo) name(s).
+        
+        Keyword arguments
+        -----------------
+        kwargs : dict
+            keywords in :data:`format, json_callback, accept-language, extratags, namedetails, street, city, county, state, country, postalcode, countrycodes, viewbox, bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson, polygon_kml, polygon_svg`, and :data:`polygon_text`
+            are accepted; see :meth:`~OSMService.url_geocode`.
+        unique : bool
+            when set to :data:`True`, a single geometry is filtered out, the first 
+            available one; default to :data:`False`, hence all geometries are parsed.
+        order : str
+            a flag used to define the order of the output geographical coordinates; 
+            it can be either :literal:`'lL'` for :literal:`(lat,Lon)` order or 
+            :literal:`'Ll'` for a :literal:`(lon,lat)` order; default is :literal:`'lL'`.            
+            
+        Returns
+        -------
+        coord : list[float], list[list]
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            coordinates.
+
+        Examples
+        --------
+        We can easily retrieve the geolocations associated to well-known places:
+        
+        >>> serv=services.OSMService()
+        >>> serv.place2coord('Berlin, Germany')
+            [[52.5170365, 13.3888599],
+             [52.5198535, 13.4385964],
+             [54.0363605, 10.4461313],
+             [54.405119, 9.4319966],
+             [52.5034002, 13.3386373],
+             [52.5129535, 13.3299651],
+             [52.5208803, 13.4107774],
+             [47.984547, 10.1865807],
+             [52.4758015, 13.3248541],
+             [52.4187324, 13.1964052]]        
+        >>> serv.place2coord('Roma, Italy', order='Ll', unique=True)
+            [12.4829321, 41.8933203]
+            
         Note
         ----
-        !!! Currently not yet implemented !!!
+        This method simply "decorates" the method :meth:`~OSMService._place2geom`
+        with :meth:`_geoDecorators.parse_geometry`.
+            
+        See also
+        --------
+        :meth:`~OSMService.place2geom`, :meth:`~OSMService.coord2place`,
+        :meth:`GISCOService.place2coord`.
         """
-        pass
+        unique = kwargs.pop('unique',False)
+        order = kwargs.pop('order','lL')
+        coord = []
+        func = lambda **kw: [kw.get('coord')]
+        [coord.append(data if len(data)>1 else data[0])                     \
+             for g in self._place2geom(place, **kwargs)                     \
+             for data in _geoDecorators.parse_geometry(func)(g, filter='coord', order=order, unique=unique)]
+        return coord if len(coord)>1 else coord[0]
+
+    @_geoDecorators.parse_coordinate
+    def coord2place(self, coord, **kwargs):
+        """Retrieve the geographical coordinates of a given place provided by 
+        its (topo)name.
+        
+            >>> place = serv.coord2place(coord, **kwargs)
+
+        Arguments
+        ---------
+        coord : float, list[float]
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            coordinates.
+        
+        Keyword arguments
+        -----------------
+        kwargs : dict
+            keywords in :data:`format, json_callback, accept-language, extratags, namedetails, street, city, county, state, country, postalcode, countrycodes, viewbox, bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson, polygon_kml, polygon_svg`, and :data:`polygon_text`
+            are accepted; see :meth:`~OSMService.url_geocode`.
+        unique : bool
+            when set to :data:`True`, a single geometry is filtered out, the first 
+            available one; default to :data:`False`, hence all geometries are parsed.
+            
+        Returns
+        -------
+        place : str, list[str]
+            place (topo) name(s).
+
+        Examples
+        --------
+        Let us see whether we can identify some places through their geolocations:
+            
+        >>> serv=services.OSMService()
+        >>> serv.coord2place([41.8933203, 12.4829321])
+            'Statua equestre di Marco Aurelio, Piazza del Campidoglio, Municipio Roma I, Roma, RM, LAZ, 00186, Italia'        
+        >>> serv.coord2place([55.6867243, 12.5700724])
+            '3A, Øster Farimagsgade, Indre Østerbro, Frederiksstaden, København, Københavns Kommune, Region Hovedstaden, 1353, Danmark'
+            
+        Note
+        ----
+        This method simply "decorates" the method :meth:`~OSMService._coord2geom`
+        with :meth:`_geoDecorators.parse_geometry`.
+            
+        See also
+        --------
+        :meth:`~OSMService.coord2geom`, :meth:`~OSMService.place2coord2`,
+        :meth:`GISCOService.coord2place`.
+        """
+        unique = kwargs.pop('unique',False)
+        place =[]
+        func = lambda **kw: [kw.get('place')]
+        [place.append(data if len(data)>1 else data[0])                     \
+             for g in self._coord2geom(coord, **kwargs)                     \
+             for data in _geoDecorators.parse_geometry(func)(g, filter='place', unique=unique)]
+        return place if len(place)>1 else place[0]
 
 #%%
 #==============================================================================
@@ -904,15 +1018,28 @@ class GISCOService(OSMService):
     #/************************************************************************/
     @property
     def domain(self):
-        """Domain attribute (:data:`getter`/:data:`setter`) of an instance of
-        a class :class:`_Service`\ . 
+        """Domain attribute (:data:`getter`/:data:`setter`) defining the domain
+        URL, *e.g.* :data:`settings.GISCO_URL`, of an instance of this class. 
         """ # A domain type is :class:`str`.
         return self.__domain
     @domain.setter#analysis:ignore
     def domain(self, domain):
-        if domain is not None and not isinstance(domain, str):
+        if domain is not None and not _Types.isstring(domain):
             raise TypeError('wrong type for DOMAIN parameter')
         self.__domain = domain or ''
+
+    #/************************************************************************/
+    @property
+    def arcgis(self):
+        """Domain attribute (:data:`getter`/:data:`setter`) defining the ArcGIS
+        URL, *e.g.* :data:`settings.GISCO_ARCGIS`, of the an instance of this class. 
+        """ # A domain type is :class:`str`.
+        return self.__arcgis
+    @arcgis.setter#analysis:ignore
+    def arcgis(self, arcgis):
+        if arcgis is not None and not _Types.isstring(arcgis):
+            raise TypeError('wrong type for ARCGIS parameter')
+        self.__arcgis = arcgis or ''
 
     #/************************************************************************/
     def url_geocode(self, **kwargs):
@@ -927,6 +1054,9 @@ class GISCOService(OSMService):
             parameters used to build the query URL; allowed keyword arguments are: 
             :data:`q, lat, lon, distance_sort, limit, osm_tag`, and :data:`lang`;
             see |GISCOWIKI| on *background services* for more details.
+        nominatim : bool
+            flag set to :data:`True` when |Nominatim| geocoding service shall be 
+            used; default is :data:`False`.
                 
         Returns
         -------
@@ -946,16 +1076,18 @@ class GISCOService(OSMService):
             
         Note
         ----
-        This method overrides the *super* method :meth:`_Service.url_geocode`.
+        This method overrides the *super* method :meth:`OSMService.url_geocode`.
         
         See also
         --------
         :meth:`~GISCOService.url_reverse`, :meth:`~GISCOService.url_route`, 
         :meth:`~GISCOService.url_transform`, :meth:`~GISCOService.url_nuts`,
-        :meth:`_Service.build_url`.
+        :meth:`OSMService.url_geocode`.
         """
+        nominatim = kwargs.pop('nominatim', False)
         kwargs.update({'keys': ['q', 'lat', 'lon', 'distance_sort', 'limit', 'osm_tag', 'lang'],
-                       'query': 'api',
+                       'path': 'nominatim' if nominatim else '',
+                       'query': 'search.php' if nominatim else 'api',
                        'protocol': 'http'}
             )
         return super(GISCOService, self).url_geocode(**kwargs)
@@ -973,6 +1105,9 @@ class GISCOService(OSMService):
             parameters used to build the query URL; allowed keyword arguments are: 
             :data:`lat, lon, radius, distance_sort, limit`, and :data:`lang`;
             see |GISCOWIKI| on *background services* for more details.
+        nominatim : bool
+            flag set to :data:`True` when |Nominatim| reverse service shall be 
+            used; default is :data:`False`.
                 
         Returns
         -------
@@ -993,16 +1128,18 @@ class GISCOService(OSMService):
             
         Note
         ----
-        This method overrides the *super* method :meth:`_Service.url_reverse`.
+        This method overrides the *super* method :meth:`OSMService.url_reverse`.
         
         See also
         --------
         :meth:`~GISCOService.url_geocode`, :meth:`~GISCOService.url_route`, 
         :meth:`~GISCOService.url_transform`, :meth:`~GISCOService.url_nuts`,
-        :meth:`_Service.build_url`.
+        :meth:`OSMService.url_reverse`.
         """
+        nominatim = kwargs.pop('nominatim', False)
         kwargs.update({'keys': ['lat', 'lon', 'radius', 'distance_sort', 'limit', 'lang'],
-                       'query': 'reverse',
+                       'path': 'nominatim' if nominatim else '',
+                       'query': 'reverse.php' if nominatim else 'reverse',
                        'protocol': 'http'}
             )
         return super(GISCOService, self).url_reverse(**kwargs)
@@ -1042,7 +1179,7 @@ class GISCOService(OSMService):
         See also
         --------
         :meth:`~GISCOService.url_geocode`, :meth:`~GISCOService.url_reverse`, 
-        :meth:`~GISCOService.url_transform`, :meth:`url_nuts`,
+        :meth:`~GISCOService.url_transform`, :meth:`~GISCOServiceurl_nuts`,
         :meth:`_Service.build_url`.
         """
         protocol = kwargs.pop('protocol', 'https') # actually not necessary, http works as well  
@@ -1114,7 +1251,7 @@ class GISCOService(OSMService):
     #/************************************************************************/
     @_geoDecorators.parse_projection
     def url_nuts(self, **kwargs):
-        """Create a query URL to be submitted to the GISCO (simple) web-service 
+        """Create a query URL to be submitted to the |GISCO| (simple) web-service 
         for NUTS codes identification.
         
             >>> url = serv.url_nuts(**kwargs)
@@ -1164,16 +1301,18 @@ class GISCOService(OSMService):
         return url
         
     #/************************************************************************/
-    @_geoDecorators.parse_place
     def _place2geom(self, place, **kwargs): 
-        kwargs.update({'key': 'features'})
+        """Iterable version of :meth:`~GISCOService.place2geom`.
+        """
+        kwargs.update({'key': _geoDecorators.parse_geometry.KW_FEATURES})
         #return super(GISCOService,self)._place2geom(place, **kwargs)
         for g in super(GISCOService,self)._place2geom(place, **kwargs):
             yield g
+    #/************************************************************************/
     @_geoDecorators.parse_place
     def place2geom(self, place, **kwargs): 
         """Retrieve geographical information) associated to a given place as a
-        geometry.
+        geometry using |GISCO| service.
         
             >>>  = serv.place2geom(place, **kwargs)
 
@@ -1184,7 +1323,9 @@ class GISCOService(OSMService):
         
         Keyword arguments
         -----------------
-        
+        kwargs : dict
+            keywords in :data:`[lat, lon, distance_sort, limit, osm_tag, lang]`
+            are accepted; see :meth:`~GISCOService.url_geocode`.
         
         Returns
         -------
@@ -1192,11 +1333,62 @@ class GISCOService(OSMService):
             a (list of) geometry(ies), *i.e.* a dictionary describing the geographical
             information related to the input :data:`place`, one for each place 
             mentioned.
+                  
+        Raises
+        ------
+        ~settings.happyError
+            error is raised in the cases:
+            
+                * the geolocation request is wrongly formulated,
+                * the geolocation cannot be loaded,                
+                * the geolocation is not recognised.
+                
+        Example
+        -------
+        The method returns the complete list of geometries output by the web-servive:
+            
+        >>> serv = services.GISCOService()
+        >>> serv.place2geom('Madrid, Spain')
+            [{'geometry': {'coordinates': [-3.7035825, 40.4167047], 'type': 'Point'},
+              'properties': {'country': 'Spain',
+               'extent': [-3.8889539, 40.6437293, -3.5179163, 40.3119774],
+               'name': 'Madrid',
+               'osm_id': 5326784, 'osm_key': 'place', 'osm_type': 'R', 'osm_value': 'city',
+               'postcode': '28001',
+               'state': 'Community of Madrid'},
+              'type': 'Feature'},
+             {'geometry': {'coordinates': [-3.7715627754518115, 40.5248319],
+               'type': 'Point'},
+              'properties': {'country': 'Spain',
+               'extent': [-4.5790058, 41.1657381, -3.0529852, 39.8845834],
+               'name': 'Community of Madrid',
+               'osm_id': 349055, 'osm_key': 'boundary', 'osm_type': 'R', 'osm_value': 'administrative'},
+              'type': 'Feature'},
+              {'geometry': {'coordinates': [-3.8275783867014415, 40.738663599999995],
+               'type': 'Point'},
+              'properties': {'country': 'Spain',
+               'extent': [-4.3409302, 41.1657381, -3.3946285, 40.3119774],
+               'name': 'Archidiócesis de Madrid',
+               'osm_id': 6932541, 'osm_key': 'boundary', 'osm_type': 'R', 'osm_value': 'religious_administration',
+               'state': 'Community of Madrid'},
+              'type': 'Feature'},
+              ...
+               {'geometry': {'coordinates': [-3.690692008891012, 40.41147845],
+               'type': 'Point'},
+              'properties': {'city': 'Madrid', 'country': 'Spain',
+               'extent': [-3.6925997, 40.4126075, -3.6889179, 40.4097313],
+               'housenumber': '2',
+               'name': 'Royal Botanical Garden of Madrid',
+               'osm_id': 15244804, 'osm_key': 'leisure', 'osm_type': 'W', 'osm_value': 'garden',
+               'postcode': '28014',
+               'state': 'Community of Madrid',
+               'street': 'Plaza Murillo'},
+              'type': 'Feature'}]
         
         Note
         ----
-        Overrides :meth:`OSMService.get_response` by further providing the  
-        :literal:`features` key that will be extracted from the output geometry 
+        This method overrides :meth:`OSMService.get_response` by further providing 
+        the :literal:`features` key that will be extracted from the output geometry 
         dictionary(ies).
         
         See also
@@ -1207,55 +1399,101 @@ class GISCOService(OSMService):
         :meth:`OSMService.place2geom`, :meth:`_Service.get_response`.
         """
         kwargs.update({'key': _geoDecorators.parse_geometry.KW_FEATURES})
-        return super(GISCOService,self).place2geom(place, **kwargs)
+        return super(GISCOService,self).place2geom(place=place, **kwargs)
         
+    #/************************************************************************/
+    #@_geoDecorators.parse_place
+    #def _place2coord(self, place, **kwargs): 
+    #    for g in super(GISCOService,self)._place2coord(place, **kwargs):
+    #        yield g
     #/************************************************************************/
     @_geoDecorators.parse_place
     def place2coord(self, place, **kwargs): # specific use
-        """
+        """Retrieve the geographical coordinates of a given place provided by 
+        its (topo)name using |GISCO| service.
         
-            >>>  coord = serv.place2coord(place, **kwargs)
+            >>> coord = serv.place2coord(place, **kwargs)
 
         Arguments
         ---------
-        place : str or list[str]
+        place : str, list[str]
+            place (topo) name(s).
         
         Keyword arguments
         -----------------
-        
+        kwargs : dict
+            keywords in :data:`[lat, lon, distance_sort, limit, osm_tag, lang]`
+            are accepted; see :meth:`~GISCOService.url_geocode`.
+        unique : bool
+            when set to :data:`True`, a single geometry is filtered out, the first 
+            available one; default to :data:`False`, hence all geometries are parsed.
+        order : str
+            a flag used to define the order of the output geographical coordinates; 
+            it can be either :literal:`'lL'` for :literal:`(lat,Lon)` order or 
+            :literal:`'Ll'` for a :literal:`(lon,lat)` order; default is :literal:`'lL'`.            
+            
         Returns
         -------
+        coord : list[float], list[list]
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            coordinates.
+
+        Examples
+        --------
+        We can easily retrieve the geolocations associated to well-known places:
+        
+        >>> serv=services.GISCOService()
+        >>> serv.place2coord('Berlin, Germany')
+            [[52.5170365, 13.3888599], [52.5198535, 13.4385964]]        
+        >>> serv.place2coord('Roma, Italy', order='Ll', unique=True)
+            [10.4584101, 44.5996045]
             
+        Note
+        ----
+        This method simply overrides the method :meth:`~OSMService.place2geom`.
+           
         See also
         --------
-        :meth:`~GISCOService.place2geom`, :meth:`~GISCOService.coord2place`, 
-        :meth:`~GISCOService.coord2nuts`, :meth:`~GISCOService.place2nuts`, 
-        :meth:`~GISCOService.coord2route`.
+        :meth:`~OSMService.place2coord`, :meth:`~GISCOService.place2geom`, 
+        :meth:`~GISCOService.coord2place`, :meth:`~GISCOService.coord2nuts`, 
+        :meth:`~GISCOService.place2nuts`, :meth:`~GISCOService.coord2route`.
         """
-        func = lambda **kw: [kw.get('coord')]
-        order = kwargs.pop('order','lL')
-        # note that the unique keyword, when passed, is taken into account in 
-        # place2geom already
-        geom = _geoDecorators.parse_geometry(func)(self.place2geom(place, **kwargs), order=order)
-        return geom if len(geom)>1 else geom[0]
-       
+        return super(GISCOService,self).place2coord(place=place, **kwargs)
+
+    #/************************************************************************/
+    def _coord2geom(self, coord, **kwargs): 
+        """Iterable version of :meth:`~GISCOService.coord2geom`.
+        """
+        kwargs.update({'key': _geoDecorators.parse_geometry.KW_FEATURES})
+        #return super(GISCOService,self)._place2geom(place, **kwargs)
+        for g in super(GISCOService,self)._coord2geom(coord, **kwargs):
+            yield g
     #/************************************************************************/
     @_geoDecorators.parse_coordinate
-    def coord2place(self, coord, **kwargs): # specific use
-        """
+    def coord2geom(self, coord, **kwargs): # specific use
+        """Retrieve the place (topo)name of a given location provided by its 
+        geographical coordinates using |GISCO| service.
         
-            >>>  place = serv.coord2place(coord, **kwargs)
+            >>>  place = serv.coord2geom(coord, **kwargs)
 
         Arguments
         ---------
-        coord : list[float], list[list]
+        coord : float, list[float]
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            coordinates.
         
         Keyword arguments
         -----------------
+        kwargs : dict
+            keywords in :data:`[radius, distance_sort, limit, lang]` are accepted; 
+            see :meth:`~GISCOService.url_reverse`.
         
         Returns
         -------
-        place : str, list[str]
+        geom : dict, list[dict]
+            a (list of) geometry(ies), *i.e.* a dictionary describing the geographical
+            information related to the input geographical coordinate(s) in :data:`coord`, 
+            one for each coordinate listed.
         
         Raises
         ------
@@ -1265,48 +1503,113 @@ class GISCOService(OSMService):
                 * the geolocation request is wrongly formulated,
                 * the place cannot be loaded,                
                 * the place is not recognised.
+                
+        Example
+        -------
+        Let us what we actually retrieve when we enter the geolocation of the
+        (approximate) centre of Berlin, Germany:
+        
+        >>> berlin = [52.5170365, 13.3888599]
+        
+        We can build the desired |OSM| URL to get the result:
+        
+        >>> serv = services.OSMService()
+        >>> serv.url_reverse(coord=berlin) 
+            'https://nominatim.openstreetmap.org/reverse?format=json&lat=52.5170365&lon=13.3888599'
+        
+        however, the method :meth:`coord2geom` does everything at once:
+        
+        >>> serv.coord2geom(berlin, format='json')
+            {'address': {'address29': 'Douglas',
+              'city': 'Berlin',
+              'city_district': 'Mitte',
+              'country': 'Deutschland', 'country_code': 'de',
+              'neighbourhood': 'Spandauer Vorstadt',
+              'postcode': '10117',
+              'road': 'Unter den Linden',
+              'state': 'Berlin',
+              'suburb': 'Mitte'},
+             'boundingbox': ['52.517222', '52.517422', '13.388877', '13.389077'],
+             'display_name': 'Douglas, Unter den Linden, Spandauer Vorstadt, Mitte, Berlin, 10117, Deutschland',
+             'lat': '52.517322',
+             'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
+             'lon': '13.388977',
+             'osm_id': '1818862993', 'osm_type': 'node',
+             'place_id': '18439434'}
         
         See also
         --------
-        :meth:`~GISCOService.place2coord`, :meth:`~GISCOService.place2geom`, 
-        :meth:`~GISCOService.coord2nuts`, :meth:`~GISCOService.place2nuts`, 
-        :meth:`~GISCOService.coord2route`, :meth:`~GISCOService.url_reverse`, 
-        :meth:`_Service.get_response`.
+        :meth:`~OSMService.place2coord`, :meth:`~OSMService.url_reverse`, 
+        :meth:`_Service.get_status`, :meth:`_Service.get_response`.
         """
         kwargs.update({'key': _geoDecorators.parse_geometry.KW_FEATURES})
-        return super(GISCOService,self).coord2place(coord, **kwargs)
-
+        return super(GISCOService,self).coord2geom(coord=coord, **kwargs)
+      
     #/************************************************************************/
-    @_geoDecorators.parse_year
-    @_geoDecorators.parse_projection
-    @_geoDecorators.parse_geometry
     @_geoDecorators.parse_coordinate
-    def coord2nuts(self, coord, **kwargs):
-        """
+    def coord2place(self, coord, **kwargs): # specific use
+        """Retrieve the place (topo)name of a given location provided by its 
+        geographical coordinates using |OSM| service.
         
-            >>> nuts = serv.(coord, **kwargs)
+            >>>  place = serv.coord2place(coord, **kwargs)
 
         Arguments
         ---------
-        coord : list[float]
+        coord : list[float], list[list]
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            coordinates.
         
         Keyword arguments
         -----------------
+        kwargs : dict
+            keywords in :data:`[radius, distance_sort, limit, lang]` are accepted; 
+            see :meth:`~GISCOService.url_reverse`.
         
         Returns
         -------
+        place : str, list[str]
+            place (topo)name(s) identifying the input geolocation(s) in :data:`coord`.
         
         Raises
         ------
         ~settings.happyError
-            error is raised in the case the NUTS request is wrongly formulated.
+            error is raised in the cases:
+            
+                * the geolocation request is wrongly formulated,
+                * the place cannot be loaded,                
+                * the place is not recognised.
+                
+        Example
+        -------
+        Let us what we actually retrieve when we enter the geolocation of the
+        (approximate) centre of Berlin, Germany:
+        
+        >>> berlin = [52.5170365, 13.3888599]
+        
+        We can build the desired |OSM| URL to get the result:
+        
+        >>> serv = services.GISCOService()
+        >>> serv.url_reverse(lat=berlin[0], lon=berlin[1])
+            'http://europa.eu/webtools/rest/gisco/reverse?lat=52.5170365&lon=13.3888599'
+        
+        however, the method :meth:`coord2place` does everything at once:
+        
+        >>> serv.coord2place(berlin, format='json')
+            'Caroline-von-Humboldt-Weg, Berlin, 10117, Germany'
         
         See also
         --------
-        :meth:`~GISCOService.place2geom`, :meth:`~GISCOService.place2coord`, 
-        :meth:`~GISCOService.place2nuts`, :meth:`~GISCOService.coord2route`,
-        :meth:`~GISCOService.coord2place`, :meth:`~GISCOService.url_nuts`, 
-        :meth:`_Service.get_response`.
+        :meth:`~OSMService.coord2place`, :meth:`~GISCOService.place2coord`, 
+        :meth:`~GISCOService.place2geom`, :meth:`~GISCOService.coord2nuts`, 
+        :meth:`~GISCOService.place2nuts`, :meth:`~GISCOService.coord2route`, 
+        :meth:`~GISCOService.url_reverse`.
+        """
+        kwargs.update({'key': _geoDecorators.parse_geometry.KW_FEATURES})
+        return super(GISCOService,self).coord2place(coord=coord, **kwargs)
+
+    #/************************************************************************/
+    def _coord2nuts(self, coord, **kwargs):
+        """Iterable version of :meth:`~GISCOService.coord2geom`.
         """
         kwargs.update({#'year': kwargs.pop('year',2013), 
                        # 'proj': kwargs.pop('proj',4326),
@@ -1339,6 +1642,40 @@ class GISCOService(OSMService):
                 n = data.get(_geoDecorators.parse_nuts.KW_RESULTS)
                 nuts.append(n if len(n)>1 else n[0])
         return nuts[0] if len(nuts)==1 else nuts
+
+    #/************************************************************************/
+    @_geoDecorators.parse_year
+    @_geoDecorators.parse_projection
+    @_geoDecorators.parse_geometry
+    @_geoDecorators.parse_coordinate
+    def coord2nuts(self, coord, **kwargs):
+        """
+        
+            >>> nuts = serv.coord2nuts(coord, **kwargs)
+
+        Arguments
+        ---------
+        coord : list[float]
+        
+        Keyword arguments
+        -----------------
+        
+        Returns
+        -------
+        
+        Raises
+        ------
+        ~settings.happyError
+            error is raised in the case the NUTS request is wrongly formulated.
+        
+        See also
+        --------
+        :meth:`~GISCOService.place2geom`, :meth:`~GISCOService.place2coord`, 
+        :meth:`~GISCOService.place2nuts`, :meth:`~GISCOService.coord2route`,
+        :meth:`~GISCOService.coord2place`, :meth:`~GISCOService.url_nuts`, 
+        :meth:`_Service.get_response`.
+        """
+
 
     #/************************************************************************/
     @_geoDecorators.parse_year
@@ -1744,9 +2081,6 @@ class APIService(_Service):
         Returns
         -------
         
-        Raises
-        ------
-        
         See also
         --------
         :meth:``\ .
@@ -1784,12 +2118,9 @@ class APIService(_Service):
         Returns
         -------
         
-        Raises
-        ------
-        
         See also
         --------
-        :meth:``\ .
+        :meth:``.
         """
         #places = self.coder.reverse(coord[0], coord[1])
         places = [] 
