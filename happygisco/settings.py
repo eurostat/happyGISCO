@@ -637,7 +637,7 @@ class _geoDecorators(object):
                 coord = kwargs.pop(_geoDecorators.KW_COORD, None)         
                 lat = kwargs.pop(_geoDecorators.KW_LAT, None) or kwargs.pop('y', None)
                 lon = kwargs.pop(_geoDecorators.KW_LON, None) or kwargs.pop('x', None)
-                poly = self.polyline and kwargs.get(self.KW_POLYLINE)
+                poly = self.polyline and kwargs.get(_geoDecorators.parse_coordinate.KW_POLYLINE)
             try:
                 assert not(coord is None and lat is None and lon is None and poly in (False,None)) 
             except AssertionError:
@@ -1043,18 +1043,22 @@ class _geoDecorators(object):
                 kwargs.update({_geoDecorators.KW_GEOM: geom}) 
             elif filt == 'coord':                            
                 try: # geometry is formatted like an OSM output
-                    coord = [[float(g[self.KW_LAT]),float(g[self.KW_LON])] for g in geom]
+                    coord = [[float(g[_geoDecorators.parse_geometry.KW_LAT]),
+                              float(g[_geoDecorators.parse_geometry.KW_LON])] for g in geom]
                     assert coord not in ([],None,[None])
                 except: # geometry is formatted like a GISCO output
-                    coord = [g for g in geom                                                      \
-                       if self.KW_GEOMETRY in g and self.KW_PROPERTIES in g and self.KW_TYPE in g   \
-                       and g[self.KW_TYPE]=='Feature'                                               \
-                       and (not(CHECK_TYPE) or g[self.KW_GEOMETRY][self.KW_TYPE]=='Point')          \
-                       and (not(CHECK_OSM_KEY) or g[self.KW_PROPERTIES][self.KW_OSM_KEY]=='place')  \
+                    coord = [g for g in geom                                                        \
+                       if _geoDecorators.parse_geometry.KW_GEOMETRY in g                            \
+                           and _geoDecorators.parse_geometry.KW_PROPERTIES in g                     \
+                           and _geoDecorators.parse_geometry.KW_TYPE in g                           \
+                           and g[_geoDecorators.parse_geometry.KW_TYPE]=='Feature'                  \
+                           and (not(CHECK_TYPE) or g[_geoDecorators.parse_geometry.KW_GEOMETRY][_geoDecorators.parse_geometry.KW_TYPE]=='Point')          \
+                           and (not(CHECK_OSM_KEY) or g[_geoDecorators.parse_geometry.KW_PROPERTIES][_geoDecorators.parse_geometry.KW_OSM_KEY]=='place')  \
                        ]
                     #coord = dict(zip(['lon','lat'],                                                 \
                     #                  zip(*[c[self.KW_GEOMETRY][self.KW_COORDINATES] for c in coord])))
-                    coord = [_[self.KW_GEOMETRY][self.KW_COORDINATES][::-1] for _ in coord]
+                    coord = [_[_geoDecorators.parse_geometry.KW_GEOMETRY][_geoDecorators.parse_geometry.KW_COORDINATES][::-1]   \
+                             for _ in coord]
                 if __key_geom and coord in ([],None):
                     raise happyError ('geometry attributes not recognised')
                 if order != 'lL':   coord = [_[::-1] for _ in coord]
@@ -1063,15 +1067,18 @@ class _geoDecorators(object):
                 kwargs.update({_geoDecorators.KW_COORD: coord}) 
             elif filt == 'place':
                 try: # geometry is formatted like an OSM output
-                    place = [g[self.KW_DISPLAYNAME] for g in geom]
+                    place = [g[_geoDecorators.parse_geometry.KW_DISPLAYNAME] for g in geom]
                     assert place not in ([],[''],None,[None])
                 except: # geometry is formatted like an OSM output 
-                    place = [g.get(self.KW_PROPERTIES) for g in geom if self.KW_PROPERTIES in g]
-                    place = [', '.join(filter(None, [p.get(self.KW_STREET) or '',
-                                        p.get(self.KW_CITY) or '',
-                                        '(' + p.get(self.KW_STATE) + ')' if p.get(self.KW_STATE) not in (None,'') and p.get(self.KW_STATE)!=p.get(self.KW_CITY) else '',
-                                        p.get(self.KW_POSTCODE) or '',
-                                        p.get(self.KW_COUNTRY) or ''])) for p in place] 
+                    place = [g.get(_geoDecorators.parse_geometry.KW_PROPERTIES) for g in geom \
+                             if _geoDecorators.parse_geometry.KW_PROPERTIES in g]
+                    place = [', '.join(filter(None, [p.get(_geoDecorators.parse_geometry.KW_STREET) or '',
+                                        p.get(_geoDecorators.parse_geometry.KW_CITY) or '',
+                                        '(' + p.get(_geoDecorators.parse_geometry.KW_STATE) + ')'               \
+                                            if p.get(_geoDecorators.parse_geometry.KW_STATE) not in (None,'')   \
+                                            and p.get(_geoDecorators.parse_geometry.KW_STATE)!=p.get(_geoDecorators.parse_geometry.KW_CITY) else '',
+                                        p.get(_geoDecorators.parse_geometry.KW_POSTCODE) or '',
+                                        p.get(_geoDecorators.parse_geometry.KW_COUNTRY) or ''])) for p in place] 
                 if unique:          place = [place[0],]
                 if REDUCE_ANSWER and len(place)==1:    place=place[0]
                 kwargs.update({_geoDecorators.KW_PLACE: place}) 
@@ -1202,16 +1209,16 @@ class _geoDecorators(object):
             else:   
                 __key_nuts = True
                 nuts = kwargs.pop(_geoDecorators.KW_NUTS, {})   
-                items = {self.KW_ATTRIBUTES: kwargs.pop(self.KW_ATTRIBUTES, None),
-                         self.KW_FIELDNAME: kwargs.pop(self.KW_FIELDNAME, None),
-                         self.KW_LAYERID: kwargs.pop(self.KW_LAYERID, None),
-                         self.KW_LAYERNAME: kwargs.pop(self.KW_LAYERNAME, None),
-                         self.KW_VALUE: kwargs.pop(self.KW_VALUE, None),
-                         self.KW_NUTS_NAME: kwargs.pop(self.KW_NUTS_NAME, None),
-                         self.KW_LEVEL: kwargs.pop(self.KW_LEVEL, None),
-                         self.KW_NUTS_ID: kwargs.pop(self.KW_NUTS_ID, None),
-                         self.KW_CNTR_CODE: kwargs.pop(self.KW_CNTR_CODE, None),
-                         self.KW_OBJECTID: kwargs.pop(self.KW_OBJECTID, None)}
+                items = {_geoDecorators.parse_nuts.KW_ATTRIBUTES:   kwargs.pop(_geoDecorators.parse_nuts.KW_ATTRIBUTES, None),
+                         _geoDecorators.parse_nuts.KW_FIELDNAME:    kwargs.pop(_geoDecorators.parse_nuts.KW_FIELDNAME, None),
+                         _geoDecorators.parse_nuts.KW_LAYERID:      kwargs.pop(_geoDecorators.parse_nuts.KW_LAYERID, None),
+                         _geoDecorators.parse_nuts.KW_LAYERNAME:    kwargs.pop(_geoDecorators.parse_nuts.KW_LAYERNAME, None),
+                         _geoDecorators.parse_nuts.KW_VALUE:        kwargs.pop(_geoDecorators.parse_nuts.KW_VALUE, None),
+                         _geoDecorators.parse_nuts.KW_NUTS_NAME:    kwargs.pop(_geoDecorators.parse_nuts.KW_NUTS_NAME, None),
+                         _geoDecorators.parse_nuts.KW_LEVEL:        kwargs.pop(_geoDecorators.parse_nuts.KW_LEVEL, None),
+                         _geoDecorators.parse_nuts.KW_NUTS_ID:      kwargs.pop(_geoDecorators.parse_nuts.KW_NUTS_ID, None),
+                         _geoDecorators.parse_nuts.KW_CNTR_CODE:    kwargs.pop(_geoDecorators.parse_nuts.KW_CNTR_CODE, None),
+                         _geoDecorators.parse_nuts.KW_OBJECTID:     kwargs.pop(_geoDecorators.parse_nuts.KW_OBJECTID, None)}
                 # note: the following instruction raises a "unhashable type: 'dict'"
                 # TypeError
                 # items = {(k,v) for (k,v) in list(items.items()) if v is not None}
@@ -1237,11 +1244,11 @@ class _geoDecorators(object):
             elif not _Types.issequence(nuts):
                 raise happyError('wrong NUTS definition')              
             if all([_Types.ismapping(n) for n in nuts]): 
-                nuts = [n for n in nuts if self.KW_ATTRIBUTES in n]
+                nuts = [n for n in nuts if _geoDecorators.parse_nuts.KW_ATTRIBUTES in n]
             if __key_nuts and nuts in ([],None): 
                 raise happyError('NUTS attributes not recognised')              
             if level is not None:
-                nuts = [n for n in nuts if n[self.KW_ATTRIBUTES][self.KW_LEVEL] == str(level)]
+                nuts = [n for n in nuts if n[_geoDecorators.parse_nuts.KW_ATTRIBUTES][_geoDecorators.parse_nuts.KW_LEVEL] == str(level)]
             if REDUCE_ANSWER and len(nuts)==1:    nuts=nuts[0]
             kwargs.update({_geoDecorators.KW_NUTS: nuts}) 
             return self.func(**kwargs)
@@ -1296,9 +1303,10 @@ class _geoDecorators(object):
             proj = kwargs.pop(_geoDecorators.KW_PROJECTION, 'WGS84')
             if proj in ('',None):
                 return self.func(*args, **kwargs)
-            if proj not in list(self.PROJECTION.keys() | self.PROJECTION.values()):
+            if proj not in list(_geoDecorators.parse_projection.PROJECTION.keys() \
+                | _geoDecorators.parse_projection.PROJECTION.values()):
                 raise happyError('projection %s not supported' % proj)
-            kwargs.update({_geoDecorators.KW_PROJECTION: self.PROJECTION[proj]})                  
+            kwargs.update({_geoDecorators.KW_PROJECTION: _geoDecorators.parse_projection.PROJECTION[proj]})                  
             return self.func(*args, **kwargs)
         
     #/************************************************************************/
@@ -1330,7 +1338,7 @@ class _geoDecorators(object):
         >>> func = lambda *args, **kwargs: kwargs.get('year')
         >>> _geoDecorators.parse_year(func)(year=2000)
             happyError: !!! year 2000 not supported !!!
-        >>> _geoDecorators.parse_projection(func)(year=2013)
+        >>> _geoDecorators.parse_year(func)(year=2013)
             2013
 
         Note
@@ -1343,13 +1351,14 @@ class _geoDecorators(object):
         --------
         :meth:`~geoDecorators.parse_coordinate`.
         """
-        YEARS      = [2006, 2010, 2013, # 2016 ?
+        YEARS      = [2006, 2010, 2013 # 2016 ?
                       ]
+        MUF = [4]
         def __call__(self, *args, **kwargs):
             year = kwargs.pop(_geoDecorators.KW_YEAR, 2013)
             if year in ([],None):
                 return self.func(*args, **kwargs)
-            if year not in tuple(self.YEARS):
+            if year not in tuple(_geoDecorators.parse_year.YEARS):
                 raise happyError('year %s not supported' % year)
             kwargs.update({_geoDecorators.KW_YEAR: year})                  
             return self.func(*args, **kwargs)
@@ -1410,9 +1419,9 @@ class _geoDecorators(object):
                 else:   
                     raise happyError('input file arguments not recognised')
             else:   
-                dirname = kwargs.pop(self.KW_DIRNAME, '')         
-                basename = kwargs.pop(self.KW_BASENAME, '')
-                filename = kwargs.pop(self.KW_FILENAME, '')
+                dirname = kwargs.pop(_geoDecorators.parse_file.KW_DIRNAME, '')         
+                basename = kwargs.pop(_geoDecorators.parse_file.KW_BASENAME, '')
+                filename = kwargs.pop(_geoDecorators.parse_file.KW_FILENAME, '')
             try:
                 assert not(filename in ('',None) and basename in ('',None))
             except AssertionError:

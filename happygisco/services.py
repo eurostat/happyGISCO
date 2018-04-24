@@ -725,7 +725,7 @@ class OSMService(_Service):
                 response = self.get_response(url)
             try:
                 data = json.loads(response.text)
-                assert data not in({},None)
+                assert data not in ({},None)
             except:
                 raise happyError('place for geolocation %s not loaded' % coord[i])
             try:
@@ -1609,13 +1609,16 @@ class GISCOService(OSMService):
 
     #/************************************************************************/
     def _coord2nuts(self, coord, **kwargs):
-        """Iterable version of :meth:`~GISCOService.coord2geom`.
+        """Iterable version of :meth:`~GISCOService.coord2nuts`.
         """
+        fmt = kwargs.pop('format','')
+        key = kwargs.pop('key',None)
+        if fmt is not None:
+            kwargs.update({'f':fmt or 'JSON'})
         kwargs.update({#'year': kwargs.pop('year',2013), 
                        # 'proj': kwargs.pop('proj',4326),
-                       'geometry': kwargs.pop('geometry','N'),
-                       'f': 'JSON'})
-        nuts = []
+                       'geometry': kwargs.pop('geometry','N')
+                       })
         for i in range(len(coord)):
             kwargs.update({'x': coord[i][1], 'y': coord[i][0]})
             try:
@@ -1627,21 +1630,26 @@ class GISCOService(OSMService):
                 response = self.get_response(url)
             try:
                 data = json.loads(response.text)
-                assert data is not None
+                assert data not in ({},None)
             except:
-                happyWarning('NUTS of location %s not loaded' % coord[i])
-                nuts.append(None)
+                happyError('NUTS for location %s not loaded' % coord[i])
             try:
-                # assert 'results' in data and data['results'] != [] 
-                assert _geoDecorators.parse_nuts.KW_RESULTS in data     \
-                    and data[_geoDecorators.parse_nuts.KW_RESULTS] != []
-            except:
-                happyWarning('NUTS of location %s not recognised' % coord[i])      
-                nuts.append(None)
+                assert key is not None
+            except AssertionError:
+                try:
+                    assert data != [] 
+                except:
+                    raise happyError('NUTS for geolocation %s not recognised' % coord[i])  
+                else:
+                    pass
             else:
-                n = data.get(_geoDecorators.parse_nuts.KW_RESULTS)
-                nuts.append(n if len(n)>1 else n[0])
-        return nuts[0] if len(nuts)==1 else nuts
+                try:
+                    assert key in data and data[key] != [] 
+                except AssertionError:
+                    raise happyError('NUTS for geolocation %s and key %s not recognised' % (coord[i], key))  
+                else:
+                    data = data.get(key)
+            yield data if not _Types.ismapping(data) or len(data)>1 else data[0]
 
     #/************************************************************************/
     @_geoDecorators.parse_year
@@ -1649,24 +1657,78 @@ class GISCOService(OSMService):
     @_geoDecorators.parse_geometry
     @_geoDecorators.parse_coordinate
     def coord2nuts(self, coord, **kwargs):
-        """
+        """Retrieve the various |NUTS| geometries (all levels) associated to given 
+        geolocation(s) provided as geographical :literal:`(lat,Lon)` coordinates.
         
             >>> nuts = serv.coord2nuts(coord, **kwargs)
 
         Arguments
         ---------
-        coord : list[float]
+        coord : list[float], list[list]
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            coordinates.
         
         Keyword arguments
         -----------------
+        level : int
+            integer in [0,3] defining the classification level of the NUTS geometry 
+            to return, if not all (default when :data:`level` is :data:`None`).
         
         Returns
         -------
+        nuts : dict, list[dict]
+            a (list of) dictionary(ies) representing NUTS geometries.
         
         Raises
         ------
         ~settings.happyError
             error is raised in the case the NUTS request is wrongly formulated.
+            
+        Examples
+        --------
+        We can easily retrieve all NUTS geometry associated to Rome, Italia from its
+        geocoordinates:
+            
+        >>> serv.coord2nuts([41.8933203,12.4829321])
+            [{'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '0',
+               'NAME_LATN': 'ITALIA', 'NUTS_ID': 'IT', 'NUTS_NAME': 'ITALIA',
+               'OBJECTID': '17',
+               'SHRT_ENGL': 'Italy'},
+              'displayFieldName': 'NUTS_ID',
+              'layerId': 2, 'layerName': 'NUTS_2013',
+              'value': 'IT'},
+             {'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '1',
+               'NAME_LATN': 'CENTRO (IT)', 'NUTS_ID': 'ITI', 'NUTS_NAME': 'CENTRO (IT)',
+               'OBJECTID': '94',
+               'SHRT_ENGL': 'Italy'},
+              'displayFieldName': 'NUTS_ID',
+              'layerId': 2, 'layerName': 'NUTS_2013',
+              'value': 'ITI'},
+             {'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '2',
+               'NAME_LATN': 'Lazio', 'NUTS_ID': 'ITI4', 'NUTS_NAME': 'Lazio',
+               'OBJECTID': '330',
+               'SHRT_ENGL': 'Italy'},
+              'displayFieldName': 'NUTS_ID',
+              'layerId': 2, 'layerName': 'NUTS_2013',
+              'value': 'ITI4'},
+             {'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '3',
+               'NAME_LATN': 'Roma', 'NUTS_ID': 'ITI43', 'NUTS_NAME': 'Roma',
+               'OBJECTID': '1053',
+               'SHRT_ENGL': 'Italy'},
+              'displayFieldName': 'NUTS_ID',
+              'layerId': 2, 'layerName': 'NUTS_2013',
+              'value': 'ITI43'}]  
+            
+        If we are interested in one level only instead:
+        
+        >>> serv.coord2nuts([41.8933203,12.4829321], level=2)
+            {'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '2',
+              'NAME_LATN': 'Lazio', 'NUTS_ID': 'ITI4', 'NUTS_NAME': 'Lazio',
+              'OBJECTID': '330',
+              'SHRT_ENGL': 'Italy'},
+             'displayFieldName': 'NUTS_ID',
+             'layerId': 2, 'layerName': 'NUTS_2013',
+             'value': 'ITI4'}        
         
         See also
         --------
@@ -1675,6 +1737,15 @@ class GISCOService(OSMService):
         :meth:`~GISCOService.coord2place`, :meth:`~GISCOService.url_nuts`, 
         :meth:`_Service.get_response`.
         """
+        level = kwargs.pop('level',None)
+        kwargs.update({'key': _geoDecorators.parse_nuts.KW_RESULTS})
+        nuts = []        
+        #[nuts.append(data if len(data)>1 else data[0]) for data in self._coord2nuts(coord, **kwargs)]
+        func = lambda **kw: [kw.get('nuts')]
+        [nuts.append(data if len(data)>1 else data[0])                     \
+             for g in self._coord2nuts(coord, **kwargs)                     \
+             for data in _geoDecorators.parse_nuts(func)(g, level=level)]
+        return nuts[0] if len(nuts)==1 else nuts
 
 
     #/************************************************************************/
