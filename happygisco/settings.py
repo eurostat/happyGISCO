@@ -626,8 +626,8 @@ class _geoDecorators(object):
                         lat, lon = args[0]
                     elif all([_Types.ismapping(args[0][i]) for i in range(len(args[0]))]):
                         coord = args[0]
-                elif len(args) == 1 and _Types.issequence(args[0]) and len(args[0])==2:
-                    lat, lon = args[0]
+                    elif all([len(args[0][i])==2 for i in range(len(args[0]))]):
+                        coord = args[0]
                 elif len(args) == 2                                         \
                     and all([_Types.issequence(args[i]) or not hasattr(args[i],'__len__') for i in (0,1)]):    
                     lat, lon = args
@@ -655,6 +655,8 @@ class _geoDecorators(object):
                 if not len(lat) == len(lon):
                     raise happyError('incompatible geographical coordinates')
                 coord = [list(_) for _ in zip(lat, lon)]
+            elif all([_Types.ismapping(coord[i]) for i in range(len(coord))]):
+                coord = [[coord[i].get('lat'), coord[i].get('lon')] for i in range(len(coord))]      
             if coord in ([],None):
                 raise happyError('wrong geographical coordinates')
             if order != 'lL':                   coord = [_[::-1] for _ in coord] # order = 'Ll'
@@ -1353,7 +1355,6 @@ class _geoDecorators(object):
         """
         YEARS      = [2006, 2010, 2013 # 2016 ?
                       ]
-        MUF = [4]
         def __call__(self, *args, **kwargs):
             year = kwargs.pop(_geoDecorators.KW_YEAR, 2013)
             if year in ([],None):

@@ -12,6 +12,8 @@
 .. |GISCO| replace:: `GISCO <GISCO_>`_
 .. _GISCOWIKI: https://webgate.ec.europa.eu/fpfis/wikis/display/GISCO/Geospatial+information+services+for+the+European+Commission+and+other+EU+users
 .. |GISCOWIKI| replace:: `GISCO offline wiki <GISCOWIKI_>`_
+.. _NUTS: http://ec.europa.eu/eurostat/web/nuts/background
+.. |NUTS| replace:: `NUTS background <NUTS_>`_
 .. _OSM: https://www.openstreetmap.org
 .. |OSM| replace:: `Open Street Map <OSM_>`_
 .. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim
@@ -852,8 +854,8 @@ class OSMService(_Service):
 
     @_geoDecorators.parse_place
     def place2coord(self, place, **kwargs):
-        """Retrieve the geographical coordinates of a given place provided by 
-        its (topo)name.
+        """Retrieve the geographical coordinates of a given place provided by its 
+        (topo)name using |OSM| service.
         
             >>> coord = serv.place2coord(place, **kwargs)
 
@@ -921,9 +923,9 @@ class OSMService(_Service):
 
     @_geoDecorators.parse_coordinate
     def coord2place(self, coord, **kwargs):
-        """Retrieve the geographical coordinates of a given place provided by 
-        its (topo)name.
-        
+        """Retrieve the (topo)name of a given location provided by its geographical 
+        coordinates using |OSM| service.
+       
             >>> place = serv.coord2place(coord, **kwargs)
 
         Arguments
@@ -1548,8 +1550,8 @@ class GISCOService(OSMService):
     #/************************************************************************/
     @_geoDecorators.parse_coordinate
     def coord2place(self, coord, **kwargs): # specific use
-        """Retrieve the place (topo)name of a given location provided by its 
-        geographical coordinates using |OSM| service.
+        """Retrieve the (topo)name of a given location provided by its geographical 
+        coordinates using |GISCO| service.
         
             >>>  place = serv.coord2place(coord, **kwargs)
 
@@ -1747,26 +1749,86 @@ class GISCOService(OSMService):
              for data in _geoDecorators.parse_nuts(func)(g, level=level)]
         return nuts[0] if len(nuts)==1 else nuts
 
-
     #/************************************************************************/
     @_geoDecorators.parse_year
     @_geoDecorators.parse_projection
     @_geoDecorators.parse_place
     def place2nuts(self, place, **kwargs): # specific use
-        """
+        """Retrieve the various |NUTS| geometries (all levels) associated to given 
+        geolocation(s) provided as a (topo)name.
+        
             >>> nuts = serv.place2nuts(place, **kwargs)
 
         Arguments
         ---------
-        place : str or list[str]
+        place : str, list[str]
+            place (topo) name(s).
         
         Keyword arguments
         -----------------
+        level : int
+            integer in [0,3] defining the classification level of the NUTS geometry 
+            to return, if not all (default when :data:`level` is :data:`None`).
+        unique : bool
+            when set to :data:`True`, a single geometry is filtered out, the first 
+            available one; default to :data:`True`.
         
         Returns
         -------
-        nuts :
-                 
+        nuts : dict, list[dict]
+            a (list of) dictionary(ies) representing NUTS geometries.
+                
+        Example
+        -------
+        Let us run a simple example:
+            
+        >>> serv=services.GISCOService()
+        >>> serv.place2nuts('Vilnius, Lituania')
+            [{'attributes': {'CNTR_CODE': 'LT', 'LEVL_CODE': '0',
+               'NAME_LATN': 'LIETUVA', 'NUTS_ID': 'LT', 'NUTS_NAME': 'LIETUVA',
+               'OBJECTID': '19',
+               'SHRT_ENGL': 'Lithuania'},
+              'displayFieldName': 'NUTS_ID',
+              'layerId': 2, 'layerName': 'NUTS_2013',
+              'value': 'LT'},
+             {'attributes': {'CNTR_CODE': 'LT', 'LEVL_CODE': '1',
+               'NAME_LATN': 'LIETUVA', 'NUTS_ID': 'LT0', 'NUTS_NAME': 'LIETUVA',
+               'OBJECTID': '96',
+               'SHRT_ENGL': 'Lithuania'},
+              'displayFieldName': 'NUTS_ID',
+              'layerId': 2, 'layerName': 'NUTS_2013',
+              'value': 'LT0'},
+             {'attributes': {'CNTR_CODE': 'LT', 'LEVL_CODE': '2',
+               'NAME_LATN': 'Lietuva', 'NUTS_ID': 'LT00', 'NUTS_NAME': 'Lietuva',
+               'OBJECTID': '332',
+               'SHRT_ENGL': 'Lithuania'},
+              'displayFieldName': 'NUTS_ID',
+              'layerId': 2, 'layerName': 'NUTS_2013',
+              'value': 'LT00'},
+             {'attributes': {'CNTR_CODE': 'LT', 'LEVL_CODE': '3',
+               'NAME_LATN': 'Vilniaus apskritis', 'NUTS_ID': 'LT00A', 'NUTS_NAME': 'Vilniaus apskritis',
+               'OBJECTID': '1066',
+               'SHRT_ENGL': 'Lithuania'},
+              'displayFieldName': 'NUTS_ID',
+              'layerId': 2, 'layerName': 'NUTS_2013',
+              'value': 'LT00A'}]
+            
+        Or one can also run:
+            
+        >>> serv.place2nuts('Valencia, Spain', level=2)
+            {'attributes': {'CNTR_CODE': 'ES', 'LEVL_CODE': '2',
+              'NAME_LATN': 'Comunidad Valenciana', 'NUTS_ID': 'ES52', 'NUTS_NAME': 'Comunidad Valenciana',
+              'OBJECTID': '260',
+              'SHRT_ENGL': 'Spain'},
+             'displayFieldName': 'NUTS_ID',
+             'layerId': 2, 'layerName': 'NUTS_2013',
+             'value': 'ES52'}        
+            
+        Note
+        ----
+        This method simply runs :meth:`~GISCOService.place2coord` then 
+        :meth:`~GISCOService.coord2nuts`.
+        
         See also
         --------
         :meth:`~GISCOService.place2coord`, :meth:`~GISCOService.coord2nuts`, 
@@ -1774,8 +1836,9 @@ class GISCOService(OSMService):
         :meth:`~GISCOService.coord2route`, :meth:`~GISCOService.url_geocode`, 
         :meth:`_Service.get_response`.
         """
-        lat, lon = self.place2coord(place, **kwargs)
-        nuts = self.coord2nuts(lat, lon, **kwargs)
+        kwargs.update({'unique': kwargs.pop('unique',True)})
+        coord = self.place2coord(place, **kwargs)
+        nuts = self.coord2nuts(coord, **kwargs)
         return nuts[0] if len(nuts)==1 else nuts
         #res = _geoDecorators.parse_nuts(lambda **kw: kw.get('nuts'))(nuts, **kwargs)
         #return res[0] if len(res)==1 else res
@@ -2138,23 +2201,30 @@ class APIService(_Service):
     #/************************************************************************/
     @_geoDecorators.parse_place
     def place2coord(self, place, **kwargs):
-        """Retrieve the geographical coordinates associated to a (a list of) 
-        toponame(s).
+        """Retrieve the geographical coordinates of a given place provided by 
+        its (topo)name.
         
             >>> coord = serv.place2coord(place, **kwargs)
 
-        Argument
-        --------
+        Arguments
+        ---------
+        place : str, list[str]
+            place (topo) name(s).
         
         Keyword arguments
         -----------------
-        
+        kwargs : dict
+            depends on the geocoder.
+            
         Returns
         -------
+        coord : list[float], list[list]
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            coordinates.
         
         See also
         --------
-        :meth:``\ .
+        :meth:`GISCOService.place2coord`.
         """
         coord = [] 
         for p in place:   
@@ -2174,24 +2244,30 @@ class APIService(_Service):
     #/************************************************************************/
     @_geoDecorators.parse_coordinate
     def coord2place(self, coord, **kwargs):
-        """Associate a (list of) toponame(s) with a (set of) given geographical
-        coordinates.
+        """Retrieve the (topo)name of a given location provided by its geographical 
+        coordinates using the API geocoding service.
         
-            >>>  = serv.(coord, **kwargs)
+            >>> place = serv.coord2place(coord, **kwargs)
 
         Arguments
         ---------
-        coord : 
+        coord : float, list[float]
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            coordinates.
         
         Keyword arguments
         -----------------
-        
+        kwargs : dict
+            depends on the geocoder.
+            
         Returns
         -------
-        
+        place : str, list[str]
+            place (topo) name(s).
+
         See also
         --------
-        :meth:``.
+        :meth:`GISCOService.coord2place`.
         """
         #places = self.coder.reverse(coord[0], coord[1])
         places = [] 
