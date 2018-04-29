@@ -1389,7 +1389,7 @@ class GISCOService(OSMService):
         
         Note
         ----
-        This method overrides :meth:`OSMService.get_response` by further providing 
+        This method overrides :meth:`OSMService.place2geom` by further providing 
         the :literal:`features` key that will be extracted from the output geometry 
         dictionary(ies).
         
@@ -1452,7 +1452,7 @@ class GISCOService(OSMService):
             
         Note
         ----
-        This method simply overrides the method :meth:`~OSMService.place2geom`.
+        This method simply overrides the method :meth:`OSMService.place2coord`.
            
         See also
         --------
@@ -1539,6 +1539,12 @@ class GISCOService(OSMService):
              'osm_id': '1818862993', 'osm_type': 'node',
              'place_id': '18439434'}
         
+        Note
+        ----
+        This method overrides :meth:`OSMService.coord2geom` by further providing 
+        the :literal:`features` key that will be extracted from the output geometry 
+        dictionary(ies).
+        
         See also
         --------
         :meth:`~OSMService.place2coord`, :meth:`~OSMService.url_reverse`, 
@@ -1598,6 +1604,12 @@ class GISCOService(OSMService):
         
         >>> serv.coord2place(berlin, format='json')
             'Caroline-von-Humboldt-Weg, Berlin, 10117, Germany'
+        
+        Note
+        ----
+        This method overrides :meth:`OSMService.coord2place` by further providing 
+        the :literal:`features` key that will be extracted from the output geometry 
+        dictionary(ies).
         
         See also
         --------

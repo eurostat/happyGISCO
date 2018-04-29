@@ -995,7 +995,7 @@ class _geoDecorators(object):
               + :data:`order` - a flag used to define the order of the output filtered 
                 geographical coordinates; it can be either :literal:`'lL'` for 
                 :literal:`(lat,Lon)` order or :literal:`'Ll'` for a :literal:`(Lon,lat)` 
-                order; default is :literal:`'lL'`.                
+                order; default is :literal:`'lL'`.    
         * When passed to the decorated method :data:`new_func` with input arguments 
           :data:`*args, **kwargs`, the remaining parameters in :data:`kwargs` are 
           actually filtered out to extract geometry features, say :data:`g`, that 
