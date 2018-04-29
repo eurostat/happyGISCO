@@ -887,7 +887,7 @@ class OSMService(_Service):
         --------
         We can easily retrieve the geolocations associated to well-known places:
         
-        >>> serv=services.OSMService()
+        >>> serv = services.OSMService()
         >>> serv.place2coord('Berlin, Germany')
             [[52.5170365, 13.3888599],
              [52.5198535, 13.4385964],
@@ -952,7 +952,7 @@ class OSMService(_Service):
         --------
         Let us see whether we can identify some places through their geolocations:
             
-        >>> serv=services.OSMService()
+        >>> serv = services.OSMService()
         >>> serv.coord2place([41.8933203, 12.4829321])
             'Statua equestre di Marco Aurelio, Piazza del Campidoglio, Municipio Roma I, Roma, RM, LAZ, 00186, Italia'        
         >>> serv.coord2place([55.6867243, 12.5700724])
@@ -1444,7 +1444,7 @@ class GISCOService(OSMService):
         --------
         We can easily retrieve the geolocations associated to well-known places:
         
-        >>> serv=services.GISCOService()
+        >>> serv = services.GISCOService()
         >>> serv.place2coord('Berlin, Germany')
             [[52.5170365, 13.3888599], [52.5198535, 13.4385964]]        
         >>> serv.place2coord('Roma, Italy', order='Ll', unique=True)
@@ -1767,8 +1767,7 @@ class GISCOService(OSMService):
         Keyword arguments
         -----------------
         level : int
-            integer in [0,3] defining the classification level of the NUTS geometry 
-            to return, if not all (default when :data:`level` is :data:`None`).
+            see :meth:`~GISCOService.coord2nuts` method.
         unique : bool
             when set to :data:`True`, a single geometry is filtered out, the first 
             available one; default to :data:`True`.
@@ -1776,13 +1775,13 @@ class GISCOService(OSMService):
         Returns
         -------
         nuts : dict, list[dict]
-            a (list of) dictionary(ies) representing NUTS geometries.
+            see :meth:`~GISCOService.coord2nuts` method.
                 
         Example
         -------
         Let us run a simple example:
             
-        >>> serv=services.GISCOService()
+        >>> serv = services.GISCOService()
         >>> serv.place2nuts('Vilnius, Lituania')
             [{'attributes': {'CNTR_CODE': 'LT', 'LEVL_CODE': '0',
                'NAME_LATN': 'LIETUVA', 'NUTS_ID': 'LT', 'NUTS_NAME': 'LIETUVA',
@@ -1846,19 +1845,25 @@ class GISCOService(OSMService):
     #/************************************************************************/
     @_geoDecorators.parse_coordinate
     def coord2route(self, coord, **kwargs):
-        """
-            >>>  route = serv.coord2route(coord, **kwargs)
+        """Retrieve the route associated to a list of coordinates providing with
+        the different steps/destinations along the route. 
+        
+            >>>  route, waypoints = serv.coord2route(coord, **kwargs)
 
         Arguments
         ---------
-        coord : list[float]
-        
-        Keyword arguments
-        -----------------
-        route : 
+        coord : list[list]
+            list of geolocations defining the different steps/destinations along 
+            the route; the steps are expressed as tuple/list of :literal:`(lat,Lon)` 
+            geographical coordinates; needs to be of length 2 at least.
         
         Returns
         -------
+        route : dict
+            encoded shortest route going through the steps/destinations defined in 
+            :data:`coord`.
+        waypoints : 
+            additional waypoints along the route.
         
         Raises
         ------
@@ -1868,15 +1873,38 @@ class GISCOService(OSMService):
                 * the route request is wrongly formulated,
                 * the route is not available,                
                 * the route is not recognised.
-       
+
+        Example
+        -------
+        Let us retrieve the route between Sofia and Prague, using the other methods
+        defined by the service:
+        
+        >>> serv = services.GISCOService()
+        >>> sofia = serv.place2coord(place='Sofia, Bulgaria', unique=True)
+        >>> print(sofia)
+            [42.6978634, 23.3221789]
+        >>> prague = serv.place2coord(place='Prague, Czech Republic', unique=True)
+        >>> rte, pts = serv.coord2route([sofia, prague])
+        >>> print(rte)
+            {'distance': 3457666.8,
+             'duration': 200144.5,
+             'geometry': '{|rpHgqrcGp}q@lq~@qjNl_tAr~bBvtw@|{dAfzzBzmMt|kBvglEbqm@`wcBzn{@rby@rsrOx|bArrgDpZpndCwtUnho@blm@pfvNi{iAlajD~eJnisAl{t@da|@a}F`fw@|cw@~h}BxxAvfw@gdo@plpBxkVfhsBrh}Dj_dAjbZxjrAhsdChprBlo}@fiHiGz_~El`k@vul@fgfC`nf@l`IvzwFxo]zn}@lzaBbeoAtgPhj{BzcwBlfW~d}Dg~vA`vnBdkpDb|pBmvM`rfAfy_@znb@exu@||hAmx\\frWhnOfoC`vgAnkX}~oBzjeAkih@dz\\iltBhgx@pnl@bbyEmwbAjx{GoohFh{rAzheA',
+             'legs': [{'distance': 3457666.8,
+               'duration': 200144.5,
+               'steps': [],
+               'summary': ''}]}
+        >>> print(pts)
+            [{'hint': 'OF_ThAvR_YQAAAAAIgAAAHgBAABZLQAAAAAAAIMhswJScQAAZoeLAqsO_AKHhIsCKUb8Ai4AAQEZfn5e', 'name': '', 'location': [42.698598, 50.073259]}, 
+             {'hint': 'bqpLg3shJoQAAAAACwAAAAAAAAA0AgAANgAAADa0BQJScQAA2Wp6AcfzFAJC3mMBBQ3cAAcAAQEZfn5e', 'name': '', 'location': [24.799961, 34.927559]}]
+           
         See also
         --------
-        :meth:`~GISCOService.place2geom`, :meth:`~GISCOService.place2coord`, 
-        :meth:`~GISCOService.coord2place`, :meth:`~GISCOService.coord2nuts`, 
-        :meth:`~GISCOService.place2nuts`, :meth:`~GISCOService.url_route`, 
-        :meth:`_Service.get_response`.
+        :meth:`~GISCOService.place2route`, :meth:`~GISCOService.coord2place`, 
+        :meth:`~GISCOService.url_route`, :meth:`_Service.get_response`.
         """
         routes, waypoints = None, None
+        if len(coord)<2 or not all([_Types.issequence(c) for c in coord]):
+            raise happyError('wrong format for list of destinations along the route')
         if not coord in([],None):
             coordinates = ';'.join([','.join([str(l), str(L)]) for (l,L) in coord])
         elif kwargs.get():
@@ -1904,6 +1932,63 @@ class GISCOService(OSMService):
             routes = data.get(_geoDecorators.parse_route.KW_ROUTES)
             waypoints = data.get(_geoDecorators.parse_route.KW_WAYPOITNS)
         return routes[0], waypoints
+
+    #/************************************************************************/
+    @_geoDecorators.parse_place
+    def place2route(self, place, **kwargs):
+        """Retrieve the route associated to a list of (topo) name(s) providing 
+        with the different steps/destinations along the route. 
+        
+            >>>  route, waypoints = serv.place2route(place, **kwargs)
+
+        Arguments
+        ---------
+        place : list[str]
+            list of geolocations defining the different steps/destinations along 
+            the route; the steps are expressed as place (topo) name(s); needs to 
+            be of length 2 at least.
+        
+        Returns
+        -------
+        route, waypoints : 
+            see :meth:`~GISCOService.coord2route` method.
+        
+        Raises
+        ------
+        ~settings.happyError
+            see :meth:`~GISCOService.coord2route` method.
+
+        Example
+        -------    
+        We reproduce here the example already used in :meth:`~GISCOService.coord2route`
+        but parsing directly the toponames to the method: 
+        
+        >>> serv = services.GISCOService()
+        >>> serv.place2route(place=['Sofia, Bulgaria','Prague, Czech Republic'])
+            ({'distance': 3457666.8,
+              'duration': 200144.5,
+              'geometry': '{|rpHgqrcGp}q@lq~@qjNl_tAr~bBvtw@|{dAfzzBzmMt|kBvglEbqm@`wcBzn{@rby@rsrOx|bArrgDpZpndCwtUnho@blm@pfvNi{iAlajD~eJnisAl{t@da|@a}F`fw@|cw@~h}BxxAvfw@gdo@plpBxkVfhsBrh}Dj_dAjbZxjrAhsdChprBlo}@fiHiGz_~El`k@vul@fgfC`nf@l`IvzwFxo]zn}@lzaBbeoAtgPhj{BzcwBlfW~d}Dg~vA`vnBdkpDb|pBmvM`rfAfy_@znb@exu@||hAmx\\frWhnOfoC`vgAnkX}~oBzjeAkih@dz\\iltBhgx@pnl@bbyEmwbAjx{GoohFh{rAzheA',
+              'legs': [{'distance': 3457666.8,
+                'duration': 200144.5,
+                'steps': [],
+                'summary': ''}]},
+             [{'hint': 'OF_ThAvR_YQAAAAAIgAAAHgBAABZLQAAAAAAAIMhswJScQAAZoeLAqsO_AKHhIsCKUb8Ai4AAQEZfn5e',
+               'location': [42.698598, 50.073259],
+               'name': ''},
+              {'hint': 'bqpLg3shJoQAAAAACwAAAAAAAAA0AgAANgAAADa0BQJScQAA2Wp6AcfzFAJC3mMBBQ3cAAcAAQEZfn5e',
+               'location': [24.799961, 34.927559],
+               'name': ''}])
+           
+        See also
+        --------
+        :meth:`~GISCOService.coord2route`, :meth:`~GISCOService.place2coord`, 
+        :meth:`~GISCOService.url_route`.
+        """
+        if not _Types.issequence(place) or len(place)<2 or not all([_Types.isstring(p) for p in place]):
+            raise happyError('wrong format for list of destinations along the route')
+        kwargs.update({'unique': True})
+        coord = [self.place2coord(p, **kwargs) for p in place]
+        return self.coord2route(coord, **kwargs)
 
     #/************************************************************************/
     def geomtrans(self, *args, **kwargs):
@@ -2286,83 +2371,6 @@ class APIService(_Service):
         return places 
 
 
- #   http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52
- #   http://europa.eu/webtools/rest/gisco/reverse?lat=2.3514992&lon=48.8566101
- #   http://europa.eu/webtools/rest/gisco/reverse?lat=2&lon=48
-
-#def place2nuts(*args, **kwargs):
-#    place = Place(*args, **kwargs)
-#    nuts = NUTS(place.tonuts())
-#    return nuts
-#    
-#    
-#PLACES      = ['Bremen, Germany', 'Florence, Italy', 'Brussels, Belgium']
-#GOOGLE_KEY  = '' # you need to provide your own API key here
-#NUTSDIR     = 'ref-nuts-2013-01m'
-#NUTSFILE    = 'NUTS_RG_01M_2013_4326_LEVL_2.shp' # region
-#
-#gmaps = googlemaps.Client(key=GOOGLE_KEY) 
-#Locations = ogr.Geometry(ogr.wkbMultiPoint)
-#
-#try:
-#    assert Locations is not None
-#except:
-#    print('\nCould not retrieve any geolocation')
-#    raise IOError
-#else:
-#    print(Locations.ExportToWkt())
-#
-#try:
-#    driver = ogr.GetDriverByName('ESRI Shapefile')
-#    Nuts = driver.Open(os.path.join(NUTSDIR,NUTSFILE), 0) # 0 means read-only
-#    assert Nuts is not None
-#except:
-#    print('\nCould not open %s' % NUTSFILE)
-#    print('visit: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-01m.shp.zip')
-#    raise IOError
-#else:
-#    print('\nOpened %s' % NUTSFILE)
-#    print('NUTS help: http://ec.europa.eu/eurostat/documents/4311134/4366152/guidelines-geographic-data.pdf')
-#    
-#try:
-#    layer = Nuts.GetLayer()
-#    assert layer is not None
-#except:
-#    print('\nCould not get vector layer')
-#    raise IOError
-#else:
-#    featureCount = layer.GetFeatureCount()
-#    print('\nNumber of features in %s: %d' % (os.path.basename(NUTSFILE),featureCount))
-#    
-#Regions = []
-#
-## iterate through points
-#for i in range(0, Locations.GetGeometryCount()): # because it is a MULTIPOINT
-#    pt = Locations.GetGeometryRef(i)
-#    #print(pt.ExportToWkt())
-#    # iterate through polygons in layer
-#    for j in range(0, featureCount):
-#        feature = layer.GetFeature(j)
-#        if feature is None:
-#            continue    
-#        #elif feature.geometry() and feature.geometry().Contains(pt):
-#        #    Regions.append(feature)
-#        ft = feature.GetGeometryRef()
-#        if ft is not None and ft.Contains(pt):
-#            Regions.append(feature)
-#    if len(Regions)<i+1:    
-#        Regions.append(None)
-#
-#try:
-#    assert not all([region is None for region in Regions])
-#except:
-#    print('\nNUTS regions (level 2) not found')
-#else:
-#    print('\nNUTS regions (level 2) identified')
-#    for i, place in enumerate(PLACES):
-#        items = Regions[i].items()
-#        print('%s => NUTS ID: %s - NUTS name: %s' % (place, items['NUTS_ID'],items['NUTS_NAME']))
-## will display:
 ## Bremen, Germany => NUTS ID: DE50 - NUTS name: Bremen
 ## Florence, Italy => NUTS ID: ITI1 - NUTS name: Toscana
 ## Brussels, Belgium => NUTS ID: BE10 - NUTS name: Région de Bruxelles-Capitale / Brussels Hoofdstedelijk Gewest	
