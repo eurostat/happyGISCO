@@ -573,12 +573,19 @@ class _geoDecorators(object):
             [[1, -1], [2, -2]]
         >>> new_func(coord=[[1,-1],[2,-2]], order='Ll')
             [[-1, 1], [-2, 2]]
-        >>> new_func(**{'lat':[1,2], 'lon': [-1,-2]})
+        >>> new_func(**{'lat':[1,2], 'Lon': [-1,-2]})
             [[1, -1], [2, -2]]
-        >>> new_func(lat=[1,2], lon=[-1,-2], order='Ll')
+        >>> new_func(lat=[1,2], Lon=[-1,-2], order='Ll')
             [[-1, 1], [-2, 2]]
         >>> new_func(**{'y':[1,2], 'x': [-1,-2]})
             [[1, -1], [2, -2]]
+
+        Also be aware:
+
+        >>> new_func([[1,-1],[2,-2]], lat=[1,2], Lon=[-1,-2])
+            happyError: !!! dont mess up with me - duplicated argument parsed !!!
+        >>> new_func(coord=[[1,-1],[2,-2]], lat=[1,2], Lon=[-1,-2])
+            happyError: !!! AssertionError: too many input coordinate arguments !!!
              
         Notes
         -----
@@ -590,10 +597,10 @@ class _geoDecorators(object):
           already in `data:`**kwargs`, one extra keyword argument:
               + :data:`order` : a flag used to define the order of the output parsed 
                 geographical coordinates; it can be either :literal:`'lL'` for 
-                :literal:`(lat,Lon)` order or :literal:`'Ll'` for a :literal:`(lon,lat)` 
+                :literal:`(lat,Lon)` order or :literal:`'Ll'` for a :literal:`(Lon,lat)` 
                 order; default is :literal:`'lL'`.
         * The output decorated method :data:`new_func` can parse the following keys: 
-          :literal:`['lat', 'lon', 'x', 'y', 'coord']` from any input keyword argument. 
+          :literal:`['lat', 'Lon', 'x', 'y', 'coord']` from any input keyword argument. 
           See the examples above.
            
         See also
@@ -633,11 +640,15 @@ class _geoDecorators(object):
                     lat, lon = args
                 else:   
                     raise happyError('input coordinate arguments not recognised')
-            else:   
+            if lat is None and lon is None and coord is None:
                 coord = kwargs.pop(_geoDecorators.KW_COORD, None)         
                 lat = kwargs.pop(_geoDecorators.KW_LAT, None) or kwargs.pop('y', None)
                 lon = kwargs.pop(_geoDecorators.KW_LON, None) or kwargs.pop('x', None)
                 poly = self.polyline and kwargs.get(_geoDecorators.parse_coordinate.KW_POLYLINE)
+            elif not (kwargs.get(_geoDecorators.KW_LAT) is None and \
+                      kwargs.get(_geoDecorators.KW_LON) is None and \
+                      kwargs.get(_geoDecorators.KW_COORD) is None):
+                raise happyError('don''t mess up with me - duplicated coordinate argument parsed')
             try:
                 assert not(coord is None and lat is None and lon is None and poly in (False,None)) 
             except AssertionError:
@@ -649,14 +660,15 @@ class _geoDecorators(object):
             if poly not in (False,None):
                 # coord = self.polyline.decode(poly)
                 return self.func(None, None, **kwargs)
-            if not (lat is None or lon is None):
+            if not (lat is None and lon is None):
                 if not isinstance(lat,(list,tuple)):  
                     lat, lon = [lat,], [lon,]
                 if not len(lat) == len(lon):
                     raise happyError('incompatible geographical coordinates')
                 coord = [list(_) for _ in zip(lat, lon)]
             elif all([_Types.ismapping(coord[i]) for i in range(len(coord))]):
-                coord = [[coord[i].get('lat'), coord[i].get('lon')] for i in range(len(coord))]      
+                coord = [[coord[i].get(_geoDecorators.KW_LAT), coord[i].get(_geoDecorators.KW_LON)]     \
+                          for i in range(len(coord))]      
             if coord in ([],None):
                 raise happyError('wrong geographical coordinates')
             if order != 'lL':                   coord = [_[::-1] for _ in coord] # order = 'Ll'
@@ -728,12 +740,18 @@ class _geoDecorators(object):
                     place = args[0]
                 else:   
                     raise happyError('input arguments not recognised')
-            else:                           
+            if place in ('',None):
                 place = kwargs.pop(_geoDecorators.KW_PLACE, None)
                 address = kwargs.pop(_geoDecorators.KW_ADDRESS, None)
                 city = kwargs.pop(_geoDecorators.KW_CITY, None)
                 country = kwargs.pop(_geoDecorators.KW_COUNTRY, None)
-                zipcode = kwargs.pop(_geoDecorators.KW_ZIPCODE, None)
+                zipcode = kwargs.pop(_geoDecorators.KW_ZIPCODE, None)                
+            elif not (kwargs.get(_geoDecorators.KW_PLACE) is None and   \
+                      kwargs.get(_geoDecorators.KW_ADDRESS) is None and \
+                      kwargs.get(_geoDecorators.KW_CITY) is None and    \
+                      kwargs.get(_geoDecorators.KW_COUNTRY) is None and \
+                      kwargs.get(_geoDecorators.KW_ZIPCODE) is None):
+                raise happyError('don''t mess up with me - duplicated place argument parsed')
             try:
                 assert not(place in ('',None) and country in ('',None) and city in ('',None)) 
             except AssertionError:
@@ -798,7 +816,7 @@ class _geoDecorators(object):
         -------
         new_func : callable
             the decorated function that now accepts  :data:`coord` or :data:`lat` 
-            and :data:`lon` as new keyword argument(s) to parse geographical 
+            and :data:`Lon` as new keyword argument(s) to parse geographical 
             coordinates, plus some additional keyword argument (see *Notes* of
             :meth:`~_geoDecorators.parse_coordinate` method).
         
@@ -818,7 +836,7 @@ class _geoDecorators(object):
         The output decorated method :data:`new_func` can parse all of the keys
         already supported by :meth:`~_geoDecorators.parse_place` and 
         :meth:`~_geoDecorators.parse_coordinate` from any input keyword argument,
-        *i.e.,* :literal:`['lat', 'lon', 'x', 'y', 'coord', 'place', 'address', 'city', 'zip', 'country']`. 
+        *i.e.,* :literal:`['lat', 'Lon', 'x', 'y', 'coord', 'place', 'address', 'city', 'zip', 'country']`. 
         See the examples above.
             
         See also
@@ -976,7 +994,7 @@ class _geoDecorators(object):
                 hence all geometries are parsed;
               + :data:`order` - a flag used to define the order of the output filtered 
                 geographical coordinates; it can be either :literal:`'lL'` for 
-                :literal:`(lat,Lon)` order or :literal:`'Ll'` for a :literal:`(lon,lat)` 
+                :literal:`(lat,Lon)` order or :literal:`'Ll'` for a :literal:`(Lon,lat)` 
                 order; default is :literal:`'lL'`.                
         * When passed to the decorated method :data:`new_func` with input arguments 
           :data:`*args, **kwargs`, the remaining parameters in :data:`kwargs` are 
@@ -989,7 +1007,7 @@ class _geoDecorators(object):
         * When extracting the coordinates from a geometry feature, say :data:`g`, 
           output by |GISCO| web-service, the original order in the composite key 
           :data:`g['geometry']['coordinates']` is :literal:`(Lon,lat)`. Note that
-          for |OSM| output, the keyword :data:`lat` and :data:`lon` are directly
+          for |OSM| output, the keyword :data:`lat` and :data:`Lon` are directly
           defined.
             
         See also
@@ -1030,9 +1048,11 @@ class _geoDecorators(object):
                 elif len(args) == 1 and _Types.issequence(args[0]):
                     if all([_Types.ismapping(args[0][i]) for i in range(len(args[0]))]):
                         geom = args[0]
-            else:   
+            if geom is None:
                 __key_geom = True
-                geom = kwargs.pop(_geoDecorators.KW_GEOM, None) 
+                geom = kwargs.pop(_geoDecorators.KW_GEOM, None)                 
+            elif not kwargs.get(_geoDecorators.KW_GEOM) is None:
+                raise happyError('don''t mess up with me - duplicated geometry argument parsed')
             if geom is None:
                 return self.func(*args, **kwargs)
             if _Types.ismapping(geom): 
@@ -1208,7 +1228,7 @@ class _geoDecorators(object):
                 elif len(args) == 1 and _Types.issequence(args[0]):
                     if all([_Types.ismapping(args[0][i]) for i in range(len(args[0]))]):
                         nuts = args[0]
-            else:   
+            if nuts is None:
                 __key_nuts = True
                 nuts = kwargs.pop(_geoDecorators.KW_NUTS, {})   
                 items = {_geoDecorators.parse_nuts.KW_ATTRIBUTES:   kwargs.pop(_geoDecorators.parse_nuts.KW_ATTRIBUTES, None),
@@ -1226,6 +1246,8 @@ class _geoDecorators(object):
                 # items = {(k,v) for (k,v) in list(items.items()) if v is not None}
                 # using frozenset instead of list above does not solve the issue
                 items = dict([(k,v) for (k,v) in list(items.items()) if v is not None])
+            elif not kwargs.get(_geoDecorators.KW_NUTS) is None:
+                raise happyError('don''t mess up with me - duplicated argument parsed')
             try:
                 assert not(nuts in ({},None) and all([v in ([],None) for v in items.values()]))
             except AssertionError:
@@ -1419,6 +1441,11 @@ class _geoDecorators(object):
                     dirname, basename = args
                 else:   
                     raise happyError('input file arguments not recognised')
+            if not (dirname is None and basename is None) or            \
+                    (kwargs.get(_geoDecorators.KW_DIRNAME) is None and  \
+                     kwargs.get(_geoDecorators.KW_BASENAME) is None and \
+                     kwargs.get(_geoDecorators.KW_FILENAME) is None):
+                raise happyError('don''t mess up with me - duplicated argument parsed')
             else:   
                 dirname = kwargs.pop(_geoDecorators.parse_file.KW_DIRNAME, '')         
                 basename = kwargs.pop(_geoDecorators.parse_file.KW_BASENAME, '')
