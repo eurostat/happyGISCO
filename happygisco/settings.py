@@ -556,7 +556,7 @@ class _geoDecorators(object):
         -------
         new_func : callable
             the decorated function that now accepts geographical coordinates as 
-            positional argument(s), plus an additional keyword argument (see 
+            positional argument(s), plus some additional keyword arguments (see 
             *Notes* below).
         
         Examples
@@ -565,12 +565,6 @@ class _geoDecorators(object):
             
         >>> func = lambda coord, *args, **kwargs: coord
         >>> new_func = _geoDecorators.parse_coordinate(func)
-        >>> new_func([1,-1])
-            [[1,-1]]
-        >>> new_func([1,2],[-1,-2])
-            [[1, -1], [2, -2]]
-        >>> new_func(coord=[[1,-1],[2,-2]])
-            [[1, -1], [2, -2]]
         >>> new_func(coord=[[1,-1],[2,-2]], order='Ll')
             [[-1, 1], [-2, 2]]
         >>> new_func(**{'lat':[1,2], 'Lon': [-1,-2]})
@@ -579,22 +573,33 @@ class _geoDecorators(object):
             [[-1, 1], [-2, 2]]
         >>> new_func(**{'y':[1,2], 'x': [-1,-2]})
             [[1, -1], [2, -2]]
+            
+        Note that the new decorated method also supports the parsing of the coordinates 
+        as positional arguments (usage not recommended):
+            
+        >>> new_func([1,-1])
+            [[1,-1]]
+        >>> new_func([1,2],[-1,-2])
+            [[1, -1], [2, -2]]
+        >>> new_func(coord=[[1,-1],[2,-2]])
+            [[1, -1], [2, -2]]
 
-        Also be aware:
+        Therefore, things like that should be avoided:
 
         >>> new_func([[1,-1],[2,-2]], lat=[1,2], Lon=[-1,-2])
-            happyError: !!! dont mess up with me - duplicated argument parsed !!!
+            happyError: !!! dont mess up with me - duplicated coordinate argument parsed !!!
         >>> new_func(coord=[[1,-1],[2,-2]], lat=[1,2], Lon=[-1,-2])
             happyError: !!! AssertionError: too many input coordinate arguments !!!
              
         Notes
         -----
-        * As per their use in the module :mod:`happyGISCO` of the :class:`_geoDecorators` 
-          decorating functions, the keyword arguments :data:`obj,cls,method_type` 
+        * As per the use  of the :class:`_geoDecorators` decorating functions in the
+          module :mod:`happyGISCO`, the keyword arguments :data:`obj,cls,method_type` 
           can be ignored. 
         * The decorated method/function :data:`new_func` accepts the same :data:`*args` 
           positional arguments as :data:`func` and, in addition to the arguments 
-          already in `data:`**kwargs`, one extra keyword argument:
+          in `data:`**kwargs` already supported by the input method/function :data:`func`, 
+          an extra keyword argument:
               + :data:`order` : a flag used to define the order of the output parsed 
                 geographical coordinates; it can be either :literal:`'lL'` for 
                 :literal:`(lat,Lon)` order or :literal:`'Ll'` for a :literal:`(Lon,lat)` 
@@ -705,8 +710,6 @@ class _geoDecorators(object):
             
         >>> func = lambda place, *args, **kwargs: place
         >>> new_func = _geoDecorators.parse_place(func)
-        >>> new_func('Athens, Hellas')
-            ['Athens, Hellas']
         >>> new_func(place='Bruxelles, Belgium')
             ['Bruxelles, Belgium']
         >>> new_func(city=['Athens','Heraklion'],country='Hellas')
@@ -719,6 +722,17 @@ class _geoDecorators(object):
         >>> new_func(place=['Eurostat', 'DIGIT', 'EIB']], 
                      city='Luxembourg')
             ['Eurostat, Luxembourg', 'DIGIT, Luxembourg', 'EIB, Luxembourg']
+            
+        Note that the new decorated method also supports the parsing of the place
+        (topo)name as a positional argument (usage not recommended):
+
+        >>> new_func('Athens, Hellas')
+            ['Athens, Hellas']
+
+        Therefore, things like that should be avoided:
+
+        >>> new_func('Athens, Hellas', place='Berlin, Germany')
+            happyError: !!! dont mess up with me - duplicated place argument parsed !!!
             
         Note
         ----
@@ -890,7 +904,7 @@ class _geoDecorators(object):
         Returns
         -------
         new_func : callable
-            the decorated function that now accepts :data:`coord` as a keyword 
+            the decorated function that now accepts :data:`geom` as a keyword 
             argument to parse geographical coordinates, plus some additional keyword 
             arguments (see *Notes* below).
         
@@ -900,7 +914,7 @@ class _geoDecorators(object):
             
         >>> func = lambda *args, **kwargs: kwargs.get('coord')
         >>> geom = {'A': 1, 'B': 2}
-        >>> _geoDecorators.parse_geometry(func)(geom)
+        >>> _geoDecorators.parse_geometry(func)(geom=geom)
             []
         >>> _geoDecorators.parse_geometry(func)(geom=geom)
             happyError: !!! geometry attributes not recognised !!!
@@ -912,12 +926,16 @@ class _geoDecorators(object):
                     'type': 'Feature'}
         >>> _geoDecorators.parse_geometry(func)(geom=geom)
             [[2, 1]]
-        >>> _geoDecorators.parse_geometry(func)(geom, order='Ll')
-            [[1, 2]]
         >>> func = lambda *args, **kwargs: kwargs.get('place')
         >>> _geoDecorators.parse_geometry(func)(geom=geom, filter='place')
             ['sesame street, somewhere, some country']
         
+        Also note that the argument can be parsed as a positional argument (usage
+        not recommended):
+            
+        >>> _geoDecorators.parse_geometry(func)(geom, order='Ll')
+            [[1, 2]]
+
         and an actual one:
             
         >>> serv = services.GISCOService()
@@ -961,9 +979,9 @@ class _geoDecorators(object):
         >>> new_func = _geoDecorators.parse_geometry(func)
         >>> hasattr(new_func, '__call__')
             True
-        >>> new_func(geom, filter='coord')
+        >>> new_func(geom=geom, filter='coord')
             [[52.5170365, 13.3888599], [52.5198535, 13.4385964]]
-        >>> new_func(geom, filter='coord', unique=True, order='Ll')
+        >>> new_func(geom=geom, filter='coord', unique=True, order='Ll')
             [[13.3888599, 52.5170365]]
             
         One can also simlarly retrieve the name of the places:
@@ -972,7 +990,7 @@ class _geoDecorators(object):
         >>> new_func = _geoDecorators.parse_geometry(func)
         >>> hasattr(new_func, '__call__')
             True
-        >>> new_func(geom, filter='place')
+        >>> new_func(geom=geom, filter='place')
             ['Berlin, 10117, Germany', 'Germany', 'Dorotheenstraße, Berlin, 10117, Germany',
             'Unter den Linden, Berlin, 10117, Germany', 'Olympischer Platz, Berlin, 14053, Germany', 
             'Sauerbruchweg, Berlin, 10117, Germany', 'Eingangsebene, Berlin, 10557, Germany', 
@@ -985,7 +1003,8 @@ class _geoDecorators(object):
         -----
         * The decorated method/function :data:`new_func` accepts the same :data:`*args` 
           positional arguments as :data:`func` and, in addition to the arguments 
-          already in `data:`**kwargs`, some extra keyword arguments:              
+          in `data:`**kwargs` already supported by the input method/function :data:`func`, 
+          some extra keyword arguments:              
               + :data:`geom` to parse geocoordinates;
               + :data:`filter` - a flag used to define the output of the decorated
                 function; it is either :literal:`place` or :literal:`coord`;
