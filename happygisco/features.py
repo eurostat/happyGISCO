@@ -36,9 +36,10 @@ import functools#analysis:ignore
 # local imports
 from happygisco import settings
 from happygisco.settings import happyWarning, happyVerbose, _geoDecorators#analysis:ignore
+from happygisco import tools     
+from happygisco.tools import GDAL_TOOL
 from happygisco import services     
 from happygisco.services import GISCO_SERVICE, API_SERVICE
-from happygisco.tools import GDAL_SERVICE
 
 # requirements
 
@@ -52,14 +53,14 @@ class _Feature(object):
     def __init__(self, *args, **kwargs):
         """
         """
-        self.__service, self.__geolib, self.__arcgis = None, None, None
+        self.__service, self.__geotool, self.__arcgis = None, None, None
         try:
-            assert GDAL_SERVICE
+            assert GDAL_TOOL
         except:
             happyWarning('GDAL services not available')
             pass
         else:
-            self.__geolib = services.GDALService()
+            self.__geotool = tools.GDALService()
         try:
             assert API_SERVICE or GISCO_SERVICE
         except:
@@ -88,63 +89,102 @@ class _Feature(object):
        
     @property
     def service(self):
-        return self.__service
-       
-    @property
-    def geolib(self):
-        """
-        """
-        return self.__geolib
-
-#==============================================================================
-# CLASS Place
-#==============================================================================
-            
-class Place(_Feature):
-    """Class
-    """
-
-    #/************************************************************************/
-    @_geoDecorators.parse_place
-    def __init__(self, place, **kwargs):
-        """Initialise an instance of :class:`Place` class.
-        
-            >>> P = Place(place, **kwargs)
-        
-        Argument
-        --------
-        place : tuple, tuple[str]
-            a string defining a location name, _e.g._ of the form :literal:`locatity, country`,
-            for instance :literal:`Paris, France`; possibly left empty, so as to consider the 
-            keyword argument :data:`place` in :data:`kwargs` (see below), otherwise 
-            all keyword arguments are ignored.
-            
-        Keyword Argument
-        ----------------
-        place : str, tuple[str]
-            a string defining a location name; ignored when the argument :data:`place` above is
-            passed.
-        """
-        super(Place,self).__init__(**kwargs)
-        self.__place = place
-        self.__lat, self.__lon = None, None
-
-    #/************************************************************************/
-    @property
-    def place(self):
-        """Place attribute (:data:`getter`) of a :class:`Place` instance. 
-        A `place` type is  (a list of) :class:`str`\ .
-        """
-        return self.__place  if len(self.__place)>1 else self.__place[0]
-   
-    @property
-    def service(self):
         """Service attribute (:data:`getter`) of a :class:`Place` instance. 
         A `service` type is a :class:`~happygisco.services.GISCOService` 
         or a :class:`~happygisco.services.APIService` object.
         """
         return self.__service
+       
+    @property
+    def geotool(self):
+        """
+        """
+        return self.__geotool
+
+#==============================================================================
+# CLASS GeoLocation
+#==============================================================================
+            
+class GeoLocation(_Feature):
+    """Class
+    """
+
+    #/************************************************************************/
+    @_geoDecorators.parse_place_or_coordinate
+    def __init__(self, *args, **kwargs):
+        """Initialise an instance of :class:`GeoLocation` class.
+        
+            >>> loc = features.GeoLocation(*args, **kwargs)
+        
+        Arguments
+        ---------
+        place : tuple, tuple[str]
+            a string defining a location name, _e.g._ of the form :literal:`locality, country`,
+            for instance :literal:`Paris, France`; possibly left empty, so as to consider the 
+            keyword argument :data:`place` in :data:`kwargs` (see below), otherwise 
+            all keyword arguments are ignored.
+        lat,Lon : float, tuple[float]
+            a pair of (tuple of) floats, defining the coordinates :literal:`(lat,Lon)`,
+            for instance 48.8566 and 2.3515 to locate Paris; possibly left empty, so as 
+            to consider the keyword argument :literal:`place` in :data:`kwargs`.
+            
+        Keyword Arguments
+        -----------------
+        lat, Lon, place : 
+            same as above; ignored when the arguments :data:`[lat,Lon]` or  :data:`place` 
+            are parsed.
+        radius : float
+            accuracy radius around the geolocation :data:`[lat,Lon]`; default:
+            :data:`radius` is set to 0.001km, _i.e._ 1m.
+        """
+        self.__place = kwargs.pop(settings.KW_PLACE)
+        self.__coord = kwargs.pop(settings.KW_COORD)
+        super(GeoLocation,self).__init__(**kwargs)
+
+    #/************************************************************************/
+    @property
+    def place(self):
+        """Place attribute (:data:`getter`) of a :class:`GeoLocation` instance. 
+        A `place` type is  (a list of) :class:`str`\ .
+        """
+        return self.__place  if len(self.__place)>1 else self.__place[0]
+   
+    @property
+    def lat(self):
+        """Latitude attribute (:data:`getter`) of a :class:`GeoLocation` instance. 
+        A `lat` type is (a list of) :class:`float`\ .
+        """
+        try:
+            lat = self.__coord[0]
+        except:
+            lat = self.__coord.get(settings.KW_LAT)
+        return lat if lat is None or len(lat)>1 else lat[0]
+
+    @property
+    def Lon(self):
+        """Longitude attribute (:data:`getter`) of a :class:`GeoLocation` instance. 
+        A `Lon` type is (a list of) :class:`float`\ .
+        """
+        try:
+            Lon = self.__coord[0]
+        except:
+            Lon = self.__coord.get(settings.KW_LON)
+        return Lon if Lon is None or len(Lon)>1 else Lon[0]
     
+    @property
+    def coord(self):              
+        """Geographical coordinates :literal:`(lat,Lon)` attribute (:data:`getter`) 
+        of a :class:`GeoLocation` instance.
+        """ 
+        return self.__coord
+    
+    @property
+    def coordinates(self):              
+        """Geographical coordinates :literal:`(lat,Lon)` attribute (:data:`getter`) 
+        of a :class:`GeoLocation` instance.
+        """ 
+        return [self.lat, self.Lon]
+        
     #/************************************************************************/
     def __repr__(self):
         return [','.join(p.replace(',',' ').split()) for p in self.place]
@@ -154,7 +194,7 @@ class Place(_Feature):
         """Convert place names to geographic coordinates (default) and reciprocally, 
         depending on the type of input arguments passed.
         
-            >>> loc = place.geocode(**kwargs)
+            >>> place = loc.geocode(**kwargs)
         
         Keyword Arguments
         -----------------        
@@ -163,7 +203,7 @@ class Place(_Feature):
 
         Returns
         -------
-        location : tuple, str
+        place : tuple, str
             a place name or a :data:`(lat,Lon)` tuple.
 
         Raises
@@ -178,9 +218,10 @@ class Place(_Feature):
 
         Examples
         --------
-        >>> print serv.code('Paris, France')
+        >>> loc = GeoLocation('Paris, France')
+        >>> print loc.geocode()
             (48.856614, 2.3522219)
-        >>> paris = serv.code('48.85693, 2.3412', reverse=True)
+        >>> paris = serv.coord2('48.85693, 2.3412')
         >>> print paris
             [u'76 Quai des Orf\xe8vres, 75001 Paris, France', u"Saint-Germain-l'Auxerrois, Paris, France", 
              u'75001 Paris, France', u'1er Arrondissement, Paris, France', u'Paris, France', 
@@ -192,7 +233,7 @@ class Place(_Feature):
         --------
         :meth:`~Location.reverse`
         """
-        if self.__lat in ([],None) or self.__lon in ([],None):
+        if self.__lat in ([],None) or self.__Lon in ([],None):
             try:
                 lat, lon = self.service.place2coord(place=self.place, **kwargs)
             except:     
@@ -250,79 +291,6 @@ class Place(_Feature):
         pass
 
     #/************************************************************************/
-    @_geoDecorators.parse_place
-    def route(self, place, **kwargs):
-        lat, lon = self.service.place2coord(place)
-        lat = self.__lat + [lat if len(lat)>1 else [lat,]][0]
-        lon = self.__lon + [lon if len(lon)>1 else [lon,]][0]
-        return self.service.coord2route(lat, lon, **kwargs)
-     
-    #/************************************************************************/
-    def iscontained(self, layer, **kwargs):
-        pass
-    
-    #/************************************************************************/
-    def findnuts(self, **kwargs):
-        return self.service.place2nuts(self.place, **kwargs)
-
-#==============================================================================
-# CLASS Location
-#==============================================================================
-   
-class Location(_Feature):
-    """
-    """
-        
-    #/************************************************************************/
-    @_geoDecorators.parse_coordinate
-    def __init__(self, lat, lon, **kwargs):
-        """Initialise an instance of :class:`Place` class.
-        
-            >>> L = Location(lat, lon, **kwargs)
-            
-        Arguments
-        ---------
-        lat,Lon : float, tuple[float]
-            a pair of (tuple of) floats, defining the coordinates :literal:`(lat,Lon)`,
-            for instance 48.8566 and 2.3515 to locate Paris; possibly left empty, so as 
-            to consider the keyword argument :literal:`place` in :data:`kwargs`.
-            
-        Keyword Arguments
-        -----------------
-        lat, lon : tuple, float
-            a tuple representing (lat,Lon) coordinates coordinates; ignored when the 
-            arguments :data:`[lat,Lon]` above are passed.
-        radius : float
-            accuracy radius around the geolocation :data:`[lat,Lon]`; default:
-            :data:`radius` is set to 0.001km, _i.e._ 1m.
-        """
-        self.__lat, self.__lon = lat, lon        
-        self.__place = ''
-        super(Location,self).__init__(**kwargs)
-
-    #/************************************************************************/
-    @property
-    def lat(self):
-        """Latitude attribute (:data:`getter`) of a :class:`Place`  instance. 
-        A `lat` type is (a list of) :class:`float`\ .
-        """
-        return self.__lat if len(self.__lat)>1 else self.__lat[0]
-
-    @property
-    def lon(self):
-        """Longitude attribute (:data:`getter`) of a :class:`Place` instance. 
-        A `lon` type is (a list of) :class:`float`\ .
-        """
-        return self.__lon if len(self.__lon)>1 else self.__lon[0]
-    
-    @property
-    def coordinates(self):              
-        """Coordinates (latitude,longitude) attribute (:data:`getter`) of a 
-        :class:`Location` instance.
-        """ 
-        return [self.latitude, self.longitude]
-
-    #/************************************************************************/
     def reverse(self, **kwargs):
         """Convert geographic location (passed as a tuple of coordinates or a string 
         with those coordinates). 
@@ -371,17 +339,18 @@ class Location(_Feature):
     #/************************************************************************/
     @_geoDecorators.parse_coordinate
     def route(self, lat, lon, **kwargs):
+        lat, Lon = self.service.place2coord(self.place)
         lat = self.__lat + [lat if len(lat)>1 else [lat,]][0]
-        lon = self.__lon + [lon if len(lon)>1 else [lon,]][0]
-        return self.service.coord2route(lat, lon, **kwargs)
-
+        Lon = self.__lon + [lon if len(lon)>1 else [lon,]][0]
+        return self.service.coord2route(lat, Lon, **kwargs)
+     
     #/************************************************************************/
     def iscontained(self, layer, **kwargs):
         pass
     
     #/************************************************************************/
     def findnuts(self, **kwargs):
-        return self.service.coord2nuts(self.lat, self.lon, **kwargs)
+        return self.service.place2nuts(self.place, **kwargs)
 
 #==============================================================================
 # CLASS NUTS
@@ -473,6 +442,12 @@ class NUTS(_Feature):
         """
         pass
 
+#==============================================================================
+# CLASS Geometry
+#==============================================================================
+       
+class Geometry(_Feature):
+    pass
 
  #   http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52
  #   http://europa.eu/webtools/rest/gisco/reverse?lat=2.3514992&lon=48.8566101

@@ -67,10 +67,10 @@ else:
     NCPUS = multiprocessing.cpu_count()              
 
 try:
-    GDAL_SERVICE = True
+    GDAL_TOOL = True
     from osgeo import ogr
 except ImportError:
-    GDAL_SERVICE = False
+    GDAL_TOOL = False
     happyWarning('GDAL package (https://pypi.python.org/pypi/GDAL) not loaded - Inline resources not available')
 else:
     print('GDAL help: https://pcjericks.github.io/py-gdalogr-cookbook/index.html')
@@ -1554,7 +1554,7 @@ class GDALTool(object):
     """Class implementing simple |GDAL|-based operations on raster and/or vector
     data.
 
-        >>> serv = GDALService(**kwargs)
+        >>> tool = tools.GDALTool(**kwargs)
 
     Arguments
     ---------
@@ -1567,7 +1567,7 @@ class GDALTool(object):
         # initial settings
         self.__driver, self.__drivername = None, ''
         try:
-            assert GDAL_SERVICE is not False
+            assert GDAL_TOOL is not False
         except:
             raise IOError('GDAL service not available')
         self.__drivername   = kwargs.pop('driver_name', settings.DRIVER_NAME)
@@ -1597,6 +1597,7 @@ class GDALTool(object):
     @_geoDecorators.parse_file
     def file2layer(self, filename):
         """
+            >>> layer = tool.file2layer(filename)
         """
         if not isinstance(filename, str):
             raise IOError('wrong type for FILENAME parameter')
@@ -1622,6 +1623,7 @@ class GDALTool(object):
     @_geoDecorators.parse_coordinate
     def coord2vec(self, lat, lon, **kwargs):
         """
+            >>> vec = tool.coord2vec(coord, **kwargs)
         """
         vector = ogr.Geometry(ogr.wkbMultiPoint)
         for i in range(len(lat)):
@@ -1637,6 +1639,7 @@ class GDALTool(object):
     #/************************************************************************/
     def vec2id(self, layer, vector):
         """
+           >>> id = tool.vec2id(layer, vector)
         """
         answer = [] # will be same lenght as self.vector
         featureCount = layer.GetFeatureCount()
@@ -1662,6 +1665,7 @@ class GDALTool(object):
     #/************************************************************************/
     def coord2id(self, *args, **kwargs):
         """
+            >>> id = tool.coord2id(*args, **kwargs)
         """
         try:
             lat, lon = _geoDecorators.parse_coordinate(lambda l, L: [l, L])(*args, **kwargs)
@@ -1798,8 +1802,8 @@ class _Pools(object):
         if not np.iterable(sequence):  
             raise TypeError("input {} is not iterable".format(repr(sequence)))
         size = len(sequence)  
-        if not _multi or size == 1:     return map(function, sequence)  
-        if numcores is None:            numcores = _ncpus  
+        if not MULTIPROCESSING or size == 1:     return map(function, sequence)  
+        if numcores is None:            numcores = NCPUS  
         # returns a started SyncManager object which can be used for sharing   
         # objects between processes. The returned manager object corresponds  
         # to a spawned child process and has methods which will create shared  
