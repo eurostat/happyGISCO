@@ -719,7 +719,7 @@ class _geoDecorators(object):
                         'country':'France'})
             ['72 avenue Parmentier, Paris, France', 
             '101 Avenue de la République, Paris, France']
-        >>> new_func(place=['Eurostat', 'DIGIT', 'EIB']], 
+        >>> new_func(place=['Eurostat', 'DIGIT', 'EIB'], 
                      city='Luxembourg')
             ['Eurostat, Luxembourg', 'DIGIT, Luxembourg', 'EIB, Luxembourg']
             
@@ -915,8 +915,6 @@ class _geoDecorators(object):
         >>> func = lambda *args, **kwargs: kwargs.get('coord')
         >>> geom = {'A': 1, 'B': 2}
         >>> _geoDecorators.parse_geometry(func)(geom=geom)
-            []
-        >>> _geoDecorators.parse_geometry(func)(geom=geom)
             happyError: !!! geometry attributes not recognised !!!
         >>> geom = {'geometry': {'coordinates': [1, 2], 'type': 'Point'},
                     'properties': {'city': 'somewhere', 
@@ -933,6 +931,8 @@ class _geoDecorators(object):
         Also note that the argument can be parsed as a positional argument (usage
         not recommended):
             
+        >>> _geoDecorators.parse_geometry(func)(geom)
+            []
         >>> _geoDecorators.parse_geometry(func)(geom, order='Ll')
             [[1, 2]]
 
