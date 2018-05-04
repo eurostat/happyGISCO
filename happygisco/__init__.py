@@ -26,7 +26,7 @@ not only.
 
 **Description**
 
-The :mod:`happyGISCO` package will enable you to perform very basic geospatial 
+The :mod:`happyGISCO` project will enable you to perform very basic geospatial 
 operations, *e.g.*:
     
     * geospatial units conversion,  
@@ -43,13 +43,13 @@ using common online web-based geoservices (with or without authentication reques
 
     >>> import happygisco
     >>> print(happygisco.__all__)
-        ['settings', 'tools', 'services', 'features']
+        ['settings', 'base', 'tools', 'services', 'features']
 """
 
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
 # *since*:        Thu Apr  5 16:40:31 2018
 
-__all__ = ['settings', 'tools', 'services', 'features']#analysis:ignore
+__all__ = ['settings', 'base', 'tools', 'services', 'features']#analysis:ignore
 
 #==============================================================================
 # PROGRAM METADATA

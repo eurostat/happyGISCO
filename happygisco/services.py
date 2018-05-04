@@ -48,9 +48,9 @@ Perform operations using online web-services, *e.g.*:
 
 *require*:      :mod:`os`, :mod:`sys`, :mod:`functools`, :mod:`json`
 
-*optional*:     :mod:`requests`, :mod:`geopy`, :mod:`googlemaps`, :mod:`googleplaces`
+*optional*:     :mod:`geopy`, :mod:`googlemaps`, :mod:`googleplaces`
 
-*call*:         :mod:`settings`         
+*call*:         :mod:`settings`, :mod:`base`         
 
 **Contents**
 """
@@ -68,19 +68,15 @@ import functools#analysis:ignore
 
 # local imports
 from happygisco import settings
-from happygisco.settings import happyVerbose, happyWarning, happyError,  \
-                                _geoDecorators, _Types
+from happygisco.settings import happyVerbose, happyWarning, happyError, happyType
+from happygisco.base import _Decorator, _Service
 
 # requirements
-try:                                
-    GISCO_SERVICE = True
+try: # dummy me...
     OSM_SERVICE = True
-    import requests # urllib2
-except ImportError:                 
-    happyWarning('REQUESTS package (https://pypi.python.org/pypi/requests/) not loaded - GISCO ONLINE service will not be accessed')
-    GISCO_SERVICE = False
-    OSM_SERVICE = False
-    
+except:
+    pass
+
 try:
     API_SERVICE = True
     import googlemaps
@@ -125,285 +121,6 @@ except ImportError:
 
 #%%
 #==============================================================================
-# CLASS _Service
-#==============================================================================
-
-class _Service(object):
-    """Base class defining a web-session and simple connection operations to be
-    used by a web-service. 
-       
-        >>> serv = services._Service()
-    """
-    
-    #/************************************************************************/
-    def __init__(self, **kwargs):
-        try:
-            self.session = requests.Session()
-        except:
-            raise happyError('request session not recognised')
-        
-    #/************************************************************************/
-    @property
-    def session(self):
-        """Session attribute (:data:`getter`/:data:`setter`) of an instance of
-        a class :class:`_Service`. `session` is actually an instance of a
-        :class:`requests.session.Session` class.
-        """ # A session type is :class:`requests.session.Session`.
-        return self.__session
-    @session.setter#analysis:ignore
-    def session(self, session):
-        if session is not None and not isinstance(session, requests.sessions.Session):
-            raise TypeError('wrong type for SESSION parameter')
-        self.__session = session
-    
-    #/************************************************************************/   
-    def get_status(self, url):
-        """Retrieve the header of a URL and return the server's status code.
-        
-            >>> status = serv.get_status(url)
-            
-        Arguments
-        ---------
-        url : str
-            complete URL name whom status will be checked.
-        
-        Returns
-        -------
-        status : int
-            response status code.
-            
-        Raises
-        ------
-        ~settings.happyError
-            error is raised in the cases:
-                
-                * the request is wrongly formulated,
-                * the connection fails.
-            
-        Examples
-        --------
-        We can see the response status code when connecting to different web-pages
-        or services:
-        
-        >>> serv = services._Service()
-        >>> serv.get_status('http://dumb')
-            ConnectionError: connection failed
-        >>> serv.get_status('http://www.dumbanddumber.com')
-            301 
-        
-        Let us actually check that the status is ok when connecting to |Eurostat| website:
-            
-        >>> stat = serv.get_status(settings.ESTAT_URL)
-        >>> print(stat)
-            200
-        >>> import requests
-        >>> stat == requests.codes.ok
-            True
-        
-        See also
-        --------
-        :meth:`~_Service.get_response`, :meth:`~_Service.build_url`.
-        """ 
-        try:
-            response = self.session.head(url)
-        except requests.ConnectionError:
-            raise happyError('connection failed')  
-        else:
-            happyVerbose('response status from web-service: %s' % response.status_code)
-        response.raise_for_status()
-        try:
-            response.raise_for_status()
-        except:
-            raise happyError('wrong request formulated')  
-        else:
-            status = response.status_code
-            response.close()
-        return status
-    
-    #/************************************************************************/
-    def get_response(self, url):
-        """Retrieve the GET response of a URL.
-        
-            >>> response = serv.get_response(url)
-            
-        Arguments
-        ---------
-        url : str
-            complete URL name whose response is retrieved.
-        
-        Returns
-        -------
-        response : :class:`requests.models.Response`
-            response retrieved from the URL.
-            
-        Raises
-        ------
-        ~settings.happyError
-            error is raised in the cases:
-            
-                * the request is wrongly formulated,
-                * a wrong response is retrieved.
-            
-        Examples
-        --------
-        Some simple tests:
-            
-        >>> serv = services._Service()
-        >>> serv.get_response('http://dumb')
-            happyError: wrong request formulated
-        >>> resp = serv.get_response('http://www.example.com')
-        >>> print(resp.text)
-            <!doctype html>
-            <html>
-            <head>
-                <title>Example Domain</title>
-                <meta charset="utf-8" />
-                <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-                <meta name="viewport" content="width=device-width, initial-scale=1" />
-                ...
-            
-        We can view the server’s response headers when connecting to |Eurostat|
-        webpage:
-            
-        >>> resp = serv.get_response(settings.ESTAT_URL)
-        >>> print(resp.headers)
-            {   'Date': 'Wed, 18 Apr 2018 11:54:40 GMT', 
-                'X-Content-Type-Options': 'nosniff', 
-                'X-Frame-Options': 'SAMEORIGIN', 
-                'X-XSS-Protection': '1', 
-                'Content-Type': 'text/html;charset=UTF-8', 
-                'Transfer-Encoding': 'chunked', 
-                'Server': 'Europa', 
-                'Connection': 'Keep-Alive', 
-                'Content-Encoding': 'gzip' }
-        
-        We can also access the response body as bytes (though that is usually
-        adapted to non-text requests):
-            
-        >>> print(resp.content)
-            b'<!DOCTYPE html PUBLIC " ...
-        
-        See also
-        --------
-        :meth:`~_Service.get_status`, :meth:`~_Service.build_url`.
-        """
-        try:
-            response = self.session.get(url)                
-        except:
-            raise happyError('wrong request formulated')  
-        else:
-            # happyVerbose('response reason from web-service: %s' % response.reason)
-            pass
-        try:
-            response.raise_for_status()
-        except:
-            raise happyError('wrong response retrieved')  
-        return response   
-    
-    #/************************************************************************/
-    @classmethod
-    def build_url(cls, *args, **kwargs):
-        """Create a complete query URL to be used by a web-service.
-        
-            >>> url = _Service.build_url(*args, **kwargs)
-            
-        Arguments
-        ---------
-        domain : str
-            domain of the URL; default: :data:`domain` is left empty.
-           
-        Keyword Arguments
-        -----------------
-        protocol : str
-            web protocol; default to :data:`settings.DEF_PROTOCOL`, *e.g.* :literal:`http`\ .
-        domain : str
-            this keyword can be used when :data:`domain` is not passed as a 
-            positional argument already.
-        path : str
-            path completing the domain to form the URL: it will actually be concatenated
-            to :data:`domain` so as to form the composite string :data:`domain/path`; hence, 
-            :data:`path` could simply be concatenated with :data:`domain` in input already.
-        query : str
-            query of the URL: it is concatenated to the string :data:`domain/path` so
-            as to form the string :data:`domain/path/query?`\ .
-        kwargs : dict
-            any other keyword argument can be added as further "filters" to the output
-            URL, *e.g.* when :data:`{'par': 1}` is passed as an additional keyword argument,
-            the string :literal:`par=1` will be concatenated at the end of the URL formed
-            by the other parameters.
-                
-        Returns
-        -------
-        url : str
-            URL uniquely defined by the input parameters; the generic form of :data:`url`
-            is :data:`protocol://domain/path/query?filters`, when all parameters above
-            are passed.
-    
-        Example
-        -------
-        Let us, for instance, build a URL query to *Eurostat* Rest API (just enter 
-        the output URL in your browser to check the output):
-            
-        >>> _Service.build_url(settings.ESTAT_URL,
-                               path='wdds/rest/data/v2.1/json/en',
-                               query='ilc_li03', 
-                               precision=1,
-                               indic_il='LI_R_MD60',
-                               time='2015')
-            'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li03?precision=1&indic_il=LI_R_MD60&time=2015'
-        
-        Note that another way to call the method is:
-
-        >>> _Service.build_url(domain=settings.ESTAT_URL,
-                               path='wdds/rest/data/v2.1/json/en',
-                               query='ilc_li01', 
-                               **{'precision': 1, 'hhtyp': 'A1', 'time': '2010'})
-            'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li01?precision=1&hhtyp=A1&time=2010'
-        
-        Similarly, we will be able to access to |GISCO| service (see :meth:`GISCOService.url_geocode`
-        below):
- 
-        >>> _Service.build_url(domain=settings.GISCO_URL,
-                               query='api', 
-                               **{'q': 'Berlin+Germany', 'limit': 2})
-            'http://europa.eu/webtools/rest/gisco/api?q=Berlin+Germany&limit=2'  
-        
-        See also
-        --------
-        :meth:`~_Service.get_status`, :meth:`~_Service.get_response`.
-        """
-        # retrieve parameters/build url
-        if args not in (None,()):       domain = args[0]
-        else:                           domain = kwargs.pop('domain','')
-        url = domain.strip("/")
-        protocol = kwargs.pop('protocol', settings.DEF_PROTOCOL)
-        if protocol not in settings.PROTOCOLS:
-            raise happyError('web protocol not recognised')
-        if not url.startswith(protocol):  
-            url = "%s://%s" % (protocol, url)
-        if 'path' in kwargs:      
-            url = "%s/%s" % (url, kwargs.pop('path'))
-        if 'query' in kwargs:      
-            url = "%s/%s" % (url, kwargs.pop('query'))
-        if kwargs != {}:
-            #_izip_replicate = lambda d : [(k,i) if isinstance(d[k], (tuple,list))        \
-            #        else (k, d[k]) for k in d for i in d[k]]
-            _izip_replicate = lambda d : [[(k,i) for i in d[k]] if isinstance(d[k], (tuple,list))        \
-                else (k, d[k])  for k in d]          
-            filters = '&'.join(['{k}={v}'.format(k=k, v=v) for (k, v) in _izip_replicate(kwargs)])
-            # filters = '&'.join(map("=".join,kwargs.items()))
-            sep = '?'
-            try:        
-                last = url.rsplit('/',1)[1]
-            except:     
-                pass
-            else:
-                if any([last.endswith(c) for c in ('?', '/')]):     sep = ''
-            url = "%s%s%s" % (url, sep, filters)
-        return url
-
-#%%
-#==============================================================================
 # CLASS OSMService
 #==============================================================================
     
@@ -434,7 +151,7 @@ class OSMService(_Service):
         try:
             assert OSM_SERVICE is not False
         except:
-            raise happyError('GISCO service not available')
+            raise happyError('OSM service not available')
         super(OSMService, self).__init__(**kwargs)
         self.domain = kwargs.pop('domain', settings.OSM_URL) 
 
@@ -581,10 +298,10 @@ class OSMService(_Service):
                     raise happyError('geolocation for place %s with key %s not recognised' % (p,key))  
                 else:
                     data = data.get(key)
-            yield data if _Types.ismapping(data) or len(data)>1 else data[0]
+            yield data if happyType.ismapping(data) or len(data)>1 else data[0]
 
     #/************************************************************************/
-    #@_geoDecorators.parse_place
+    #@_Decorator.parse_place
     #def place2geom(self, place, **kwargs): 
     #    place = ['+'.join(p.replace(',',' ').split()) for p in place]
     #    geom = []
@@ -612,7 +329,7 @@ class OSMService(_Service):
     #        else:
     #            geom.append(data if len(data)>1 else data[0])
     #    return geom if len(geom)>1 else geom[0]
-    @_geoDecorators.parse_place
+    @_Decorator.parse_place
     def place2geom(self, place, **kwargs):
         """Retrieve the geographical information associated to a given place as a
         geometry object using |OSM| service.
@@ -746,10 +463,10 @@ class OSMService(_Service):
                     raise happyError('place for geolocation %s and key %s not recognised' % (coord[i], key))  
                 else:
                     data = data.get(key)
-            yield data if not _Types.ismapping(data) or len(data)>1 else data[0]
+            yield data if not happyType.ismapping(data) or len(data)>1 else data[0]
        
     #/************************************************************************/
-    #@_geoDecorators.parse_coordinate
+    #@_Decorator.parse_coordinate
     #def coord2geom(self, lat, lon, **kwargs): # specific use
     #    geom = []
     #    for i in range(len(lat)):
@@ -767,15 +484,15 @@ class OSMService(_Service):
     #        except:
     #            raise happyError('place for geolocation (%s,%s) not loaded' % (lat[i], lon[i]))
     #        try:
-    #            assert _geoDecorators.parse_geometry.KW_FEATURES in data     \
-    #                and data[_geoDecorators.parse_geometry.KW_FEATURES] != []
+    #            assert _Decorator.parse_geometry.KW_FEATURES in data     \
+    #                and data[_Decorator.parse_geometry.KW_FEATURES] != []
     #        except:
     #            raise happyError('place for geolocation (%s,%s) not recognised' % (lat[i], lon[i]))      
     #        else:
-    #            p = data.get(_geoDecorators.parse_geometry.KW_FEATURES)
+    #            p = data.get(_Decorator.parse_geometry.KW_FEATURES)
     #            geom.append(p if len(p)>1 else p[0])
     #    return geom[0] if len(geom)==1 else geom
-    @_geoDecorators.parse_coordinate
+    @_Decorator.parse_coordinate
     def coord2geom(self, coord, **kwargs): # specific use
         """Retrieve the place (topo)name of a given location provided by its 
         geographical coordinates using |OSM| service.
@@ -852,7 +569,7 @@ class OSMService(_Service):
         [place.append(data if len(data)>1 else data[0]) for data in self._coord2geom(coord, **kwargs)]
         return place[0] if len(place)==1 else place
 
-    @_geoDecorators.parse_place
+    @_Decorator.parse_place
     def place2coord(self, place, **kwargs):
         """Retrieve the geographical coordinates of a given place provided by its 
         (topo)name using |OSM| service.
@@ -905,7 +622,7 @@ class OSMService(_Service):
         Note
         ----
         This method simply "decorates" the method :meth:`~OSMService._place2geom`
-        with :meth:`_geoDecorators.parse_geometry`.
+        with :meth:`_Decorator.parse_geometry`.
             
         See also
         --------
@@ -918,10 +635,10 @@ class OSMService(_Service):
         func = lambda **kw: [kw.get('coord')]
         [coord.append(data if len(data)>1 else data[0])                     \
              for g in self._place2geom(place, **kwargs)                     \
-             for data in _geoDecorators.parse_geometry(func)(g, filter='coord', order=order, unique=unique)]
+             for data in _Decorator.parse_geometry(func)(g, filter='coord', order=order, unique=unique)]
         return coord if len(coord)>1 else coord[0]
 
-    @_geoDecorators.parse_coordinate
+    @_Decorator.parse_coordinate
     def coord2place(self, coord, **kwargs):
         """Retrieve the (topo)name of a given location provided by its geographical 
         coordinates using |OSM| service.
@@ -961,7 +678,7 @@ class OSMService(_Service):
         Note
         ----
         This method simply "decorates" the method :meth:`~OSMService._coord2geom`
-        with :meth:`_geoDecorators.parse_geometry`.
+        with :meth:`_Decorator.parse_geometry`.
             
         See also
         --------
@@ -973,7 +690,7 @@ class OSMService(_Service):
         func = lambda **kw: [kw.get('place')]
         [place.append(data if len(data)>1 else data[0])                     \
              for g in self._coord2geom(coord, **kwargs)                     \
-             for data in _geoDecorators.parse_geometry(func)(g, filter='place', unique=unique)]
+             for data in _Decorator.parse_geometry(func)(g, filter='place', unique=unique)]
         return place if len(place)>1 else place[0]
 
 #%%
@@ -1026,7 +743,7 @@ class GISCOService(OSMService):
         return self.__domain
     @domain.setter#analysis:ignore
     def domain(self, domain):
-        if domain is not None and not _Types.isstring(domain):
+        if domain is not None and not happyType.isstring(domain):
             raise TypeError('wrong type for DOMAIN parameter')
         self.__domain = domain or ''
 
@@ -1039,7 +756,7 @@ class GISCOService(OSMService):
         return self.__arcgis
     @arcgis.setter#analysis:ignore
     def arcgis(self, arcgis):
-        if arcgis is not None and not _Types.isstring(arcgis):
+        if arcgis is not None and not happyType.isstring(arcgis):
             raise TypeError('wrong type for ARCGIS parameter')
         self.__arcgis = arcgis or ''
 
@@ -1189,7 +906,7 @@ class GISCOService(OSMService):
         happyVerbose('\n            * '.join(['input filters used for routing service:',]+[attr + '='+ str(kwargs[attr]) \
                                             for attr in kwargs.keys() if attr in keys]))
         coordinates = kwargs.pop('coordinates','')
-        polyline = kwargs.pop(_geoDecorators.parse_coordinate.KW_POLYLINE,None)
+        polyline = kwargs.pop(_Decorator.parse_coordinate.KW_POLYLINE,None)
         polyline = 'polyline(' + polyline + ')' if polyline else ''
         url = self.build_url(protocol=protocol,
                              domain=self.domain, 
@@ -1251,7 +968,7 @@ class GISCOService(OSMService):
         return url
 
     #/************************************************************************/
-    @_geoDecorators.parse_projection
+    @_Decorator.parse_projection
     def url_nuts(self, **kwargs):
         """Create a query URL to be submitted to the |GISCO| (simple) web-service 
         for NUTS codes identification.
@@ -1306,12 +1023,12 @@ class GISCOService(OSMService):
     def _place2geom(self, place, **kwargs): 
         """Iterable version of :meth:`~GISCOService.place2geom`.
         """
-        kwargs.update({'key': _geoDecorators.parse_geometry.KW_FEATURES})
+        kwargs.update({'key': _Decorator.parse_geometry.KW_FEATURES})
         #return super(GISCOService,self)._place2geom(place, **kwargs)
         for g in super(GISCOService,self)._place2geom(place, **kwargs):
             yield g
     #/************************************************************************/
-    @_geoDecorators.parse_place
+    @_Decorator.parse_place
     def place2geom(self, place, **kwargs): 
         """Retrieve geographical information) associated to a given place as a
         geometry using |GISCO| service.
@@ -1400,16 +1117,16 @@ class GISCOService(OSMService):
         :meth:`~GISCOService.coord2route`, :meth:`~GISCOService.url_geocode`, 
         :meth:`OSMService.place2geom`, :meth:`_Service.get_response`.
         """
-        kwargs.update({'key': _geoDecorators.parse_geometry.KW_FEATURES})
+        kwargs.update({'key': _Decorator.parse_geometry.KW_FEATURES})
         return super(GISCOService,self).place2geom(place=place, **kwargs)
         
     #/************************************************************************/
-    #@_geoDecorators.parse_place
+    #@_Decorator.parse_place
     #def _place2coord(self, place, **kwargs): 
     #    for g in super(GISCOService,self)._place2coord(place, **kwargs):
     #        yield g
     #/************************************************************************/
-    @_geoDecorators.parse_place
+    @_Decorator.parse_place
     def place2coord(self, place, **kwargs): # specific use
         """Retrieve the geographical coordinates of a given place provided by 
         its (topo)name using |GISCO| service.
@@ -1466,12 +1183,12 @@ class GISCOService(OSMService):
     def _coord2geom(self, coord, **kwargs): 
         """Iterable version of :meth:`~GISCOService.coord2geom`.
         """
-        kwargs.update({'key': _geoDecorators.parse_geometry.KW_FEATURES})
+        kwargs.update({'key': _Decorator.parse_geometry.KW_FEATURES})
         #return super(GISCOService,self)._place2geom(place, **kwargs)
         for g in super(GISCOService,self)._coord2geom(coord, **kwargs):
             yield g
     #/************************************************************************/
-    @_geoDecorators.parse_coordinate
+    @_Decorator.parse_coordinate
     def coord2geom(self, coord, **kwargs): # specific use
         """Retrieve the place (topo)name of a given location provided by its 
         geographical coordinates using |GISCO| service.
@@ -1550,11 +1267,11 @@ class GISCOService(OSMService):
         :meth:`~OSMService.place2coord`, :meth:`~OSMService.url_reverse`, 
         :meth:`_Service.get_status`, :meth:`_Service.get_response`.
         """
-        kwargs.update({'key': _geoDecorators.parse_geometry.KW_FEATURES})
+        kwargs.update({'key': _Decorator.parse_geometry.KW_FEATURES})
         return super(GISCOService,self).coord2geom(coord=coord, **kwargs)
       
     #/************************************************************************/
-    @_geoDecorators.parse_coordinate
+    @_Decorator.parse_coordinate
     def coord2place(self, coord, **kwargs): # specific use
         """Retrieve the (topo)name of a given location provided by its geographical 
         coordinates using |GISCO| service.
@@ -1618,7 +1335,7 @@ class GISCOService(OSMService):
         :meth:`~GISCOService.place2nuts`, :meth:`~GISCOService.coord2route`, 
         :meth:`~GISCOService.url_reverse`.
         """
-        kwargs.update({'key': _geoDecorators.parse_geometry.KW_FEATURES})
+        kwargs.update({'key': _Decorator.parse_geometry.KW_FEATURES})
         return super(GISCOService,self).coord2place(coord=coord, **kwargs)
 
     #/************************************************************************/
@@ -1663,13 +1380,13 @@ class GISCOService(OSMService):
                     raise happyError('NUTS for geolocation %s and key %s not recognised' % (coord[i], key))  
                 else:
                     data = data.get(key)
-            yield data if not _Types.ismapping(data) or len(data)>1 else data[0]
+            yield data if not happyType.ismapping(data) or len(data)>1 else data[0]
 
     #/************************************************************************/
-    @_geoDecorators.parse_year
-    @_geoDecorators.parse_projection
-    @_geoDecorators.parse_geometry
-    @_geoDecorators.parse_coordinate
+    @_Decorator.parse_year
+    @_Decorator.parse_projection
+    @_Decorator.parse_geometry
+    @_Decorator.parse_coordinate
     def coord2nuts(self, coord, **kwargs):
         """Retrieve the various |NUTS| geometries (all levels) associated to given 
         geolocation(s) provided as geographical :literal:`(lat,Lon)` coordinates.
@@ -1752,19 +1469,19 @@ class GISCOService(OSMService):
         :meth:`_Service.get_response`.
         """
         level = kwargs.pop('level',None)
-        kwargs.update({'key': _geoDecorators.parse_nuts.KW_RESULTS})
+        kwargs.update({'key': _Decorator.parse_nuts.KW_RESULTS})
         nuts = []        
         #[nuts.append(data if len(data)>1 else data[0]) for data in self._coord2nuts(coord, **kwargs)]
         func = lambda **kw: [kw.get('nuts')]
         [nuts.append(data if len(data)>1 else data[0])                     \
              for g in self._coord2nuts(coord, **kwargs)                     \
-             for data in _geoDecorators.parse_nuts(func)(g, level=level)]
+             for data in _Decorator.parse_nuts(func)(g, level=level)]
         return nuts[0] if len(nuts)==1 else nuts
 
     #/************************************************************************/
-    @_geoDecorators.parse_year
-    @_geoDecorators.parse_projection
-    @_geoDecorators.parse_place
+    @_Decorator.parse_year
+    @_Decorator.parse_projection
+    @_Decorator.parse_place
     def place2nuts(self, place, **kwargs): # specific use
         """Retrieve the various |NUTS| geometries (all levels) associated to given 
         geolocation(s) provided as a (topo)name.
@@ -1851,11 +1568,11 @@ class GISCOService(OSMService):
         coord = self.place2coord(place, **kwargs)
         nuts = self.coord2nuts(coord, **kwargs)
         return nuts[0] if len(nuts)==1 else nuts
-        #res = _geoDecorators.parse_nuts(lambda **kw: kw.get('nuts'))(nuts, **kwargs)
+        #res = _Decorator.parse_nuts(lambda **kw: kw.get('nuts'))(nuts, **kwargs)
         #return res[0] if len(res)==1 else res
 
     #/************************************************************************/
-    @_geoDecorators.parse_coordinate
+    @_Decorator.parse_coordinate
     def coord2route(self, coord, **kwargs):
         """Retrieve the route associated to a list of coordinates providing with
         the different steps/destinations along the route. 
@@ -1915,12 +1632,12 @@ class GISCOService(OSMService):
         :meth:`~GISCOService.url_route`, :meth:`_Service.get_response`.
         """
         routes, waypoints = None, None
-        if len(coord)<2 or not all([_Types.issequence(c) for c in coord]):
+        if len(coord)<2 or not all([happyType.issequence(c) for c in coord]):
             raise happyError('wrong format for list of destinations along the route')
         if not coord in([],None):
             coordinates = ';'.join([','.join([str(l), str(L)]) for (l,L) in coord])
         elif kwargs.get():
-            coordinates = kwargs.pop(_geoDecorators.parse_coordinate.KW_POLYLINE)
+            coordinates = kwargs.pop(_Decorator.parse_coordinate.KW_POLYLINE)
         kwargs.update({'coordinates': coordinates})
         try:
             url = self.url_route(**kwargs)
@@ -1936,17 +1653,17 @@ class GISCOService(OSMService):
         except:
             raise happyError('route not available')
         try:
-            assert _geoDecorators.parse_route.KW_CODE in data       \
-                and data[_geoDecorators.parse_route.KW_CODE].upper() == "OK"
+            assert _Decorator.parse_route.KW_CODE in data       \
+                and data[_Decorator.parse_route.KW_CODE].upper() == "OK"
         except:
             raise happyError('route  not recognised')      
         else:
-            routes = data.get(_geoDecorators.parse_route.KW_ROUTES)
-            waypoints = data.get(_geoDecorators.parse_route.KW_WAYPOITNS)
+            routes = data.get(_Decorator.parse_route.KW_ROUTES)
+            waypoints = data.get(_Decorator.parse_route.KW_WAYPOITNS)
         return routes[0], waypoints
 
     #/************************************************************************/
-    @_geoDecorators.parse_place
+    @_Decorator.parse_place
     def place2route(self, place, **kwargs):
         """Retrieve the route associated to a list of (topo) name(s) providing 
         with the different steps/destinations along the route. 
@@ -1996,7 +1713,7 @@ class GISCOService(OSMService):
         :meth:`~GISCOService.coord2route`, :meth:`~GISCOService.place2coord`, 
         :meth:`~GISCOService.url_route`.
         """
-        if not _Types.issequence(place) or len(place)<2 or not all([_Types.isstring(p) for p in place]):
+        if not happyType.issequence(place) or len(place)<2 or not all([happyType.isstring(p) for p in place]):
             raise happyError('wrong format for list of destinations along the route')
         kwargs.update({'unique': True})
         coord = [self.place2coord(p, **kwargs) for p in place]
@@ -2296,7 +2013,7 @@ class APIService(_Service):
         self.__coder_key = key
 
     #/************************************************************************/
-    @_geoDecorators.parse_place
+    @_Decorator.parse_place
     def place2coord(self, place, **kwargs):
         """Retrieve the geographical coordinates of a given place provided by 
         its (topo)name.
@@ -2339,7 +2056,7 @@ class APIService(_Service):
         return coord #{'lat':lat, 'lon': lon}
 
     #/************************************************************************/
-    @_geoDecorators.parse_coordinate
+    @_Decorator.parse_coordinate
     def coord2place(self, coord, **kwargs):
         """Retrieve the (topo)name of a given location provided by its geographical 
         coordinates using the API geocoding service.

@@ -30,7 +30,7 @@ so as to represent equivalently and (almost...) uniquely locations.
 
 *optional*:     :mod:`osgeo`, :mod:`numpy`, :mod:`multiprocessing`
 
-*call*:         :mod:`settings`         
+*call*:         :mod:`settings`, :mod:`base`        
 
 **Contents**
 """
@@ -38,8 +38,7 @@ so as to represent equivalently and (almost...) uniquely locations.
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
 # *since*:        Sat Apr 14 20:23:34 2018
 
-__all__         = ['_GeoLocation', 
-                   'GeoDistance', 'GeoAngle', 'GeoCoordinate', 'GDALTool']
+__all__         = ['GeoLocation', 'GeoDistance', 'GeoAngle', 'GeoCoordinate', 'GDALTool']
 
 # generic import
 import os, sys#analysis:ignore
@@ -54,7 +53,8 @@ except ImportError:
 
 # local imports
 from happygisco import settings
-from happygisco.settings import happyVerbose, happyWarning, happyError, _geoDecorators
+from happygisco.settings import happyVerbose, happyWarning, happyError
+from happygisco.base import _Decorator, _Tool
  
 try:                            
     import multiprocessing 
@@ -77,13 +77,13 @@ else:
 
 #%%
 #==============================================================================
-# CLASS _GeoLocation
+# CLASS GeoLocation
 #==============================================================================
  
-## class _GeoLocation:
+## class GeoLocation:
 # we get rid of the 'old-style' class to enable inheritance with 'super()' method
-# so that issubclass(GeoCoordinate, object) is True
-class _GeoLocation(object):
+# so that issubclass(GeoLocation, object) is True
+class GeoLocation(object):
     """Class used to represent coordinates on a sphere, most likely Earth, as suggested  
     in http://janmatuschek.de/LatitudeLongitudeBoundingCoordinates.
 
@@ -94,7 +94,7 @@ class _GeoLocation(object):
     |       # useful Java code. All code written by Jan Philip Matuschek and ported herein 
     |       # (which is all of this class) is owned by Jan Philip Matuschek.
     
-    The class :class:`_GeoLocation` extends the original :class:`GeoLocation` class 
+    The class :class:`GeoLocation` extends the original :class:`GeoLocation` class 
     implemented in the |PyGeoTools| tools (see source code 
     `here <https://github.com/jfein/PyGeoTools/blob/master/geolocation.py>`_). This 
     class is simply a `Python` port of the original `Java` code by Jan Philip Matuschek.
@@ -128,7 +128,7 @@ class _GeoLocation(object):
         
     #/************************************************************************/
     def __init__(self, rad_lat, rad_lon, deg_lat, deg_lon):
-        # initialise an instance of _GeoLocation
+        # initialise an instance of GeoLocation
         self.rad_lat = float(rad_lat)
         self.rad_lon = float(rad_lon)
         self.deg_lat = float(deg_lat)
@@ -137,10 +137,10 @@ class _GeoLocation(object):
         
     #/************************************************************************/
     def __check_bounds(self):
-        if (self.rad_lat < _GeoLocation.MIN_LAT 
-                or self.rad_lat > _GeoLocation.MAX_LAT 
-                or self.rad_lon < _GeoLocation.MIN_LON 
-                or self.rad_lon > _GeoLocation.MAX_LON):
+        if (self.rad_lat < GeoLocation.MIN_LAT 
+                or self.rad_lat > GeoLocation.MAX_LAT 
+                or self.rad_lon < GeoLocation.MIN_LON 
+                or self.rad_lon > GeoLocation.MAX_LON):
             raise happyError("Illegal arguments")
         
     #/************************************************************************/
@@ -151,7 +151,7 @@ class _GeoLocation(object):
             
     #/************************************************************************/
     def distance_to(self, other, radius=EARTH_RADIUS):
-        # compute the great circle distance between this _GeoLocation instance and 
+        # compute the great circle distance between this GeoLocation instance and 
         # the other.
         # returns the distance from the geolocation represented by the current 
         # instance to other geolocation
@@ -166,7 +166,7 @@ class _GeoLocation(object):
     def bounding_locations(self, distance, radius=EARTH_RADIUS):
         # compute the bounding coordinates of all points on the surface of a 
         # sphere that has a great circle distance to the point represented by this 
-        # _GeoLocation` instance that is less or equal to the distance argument
+        # GeoLocation` instance that is less or equal to the distance argument
         # returns a list of two geolocations - the SW corner and the NE corner - that
         # represents the bounding box defined by the distance :literal:`dist`
         if radius < 0 or distance < 0:
@@ -175,25 +175,25 @@ class _GeoLocation(object):
         rad_dist = distance / radius
         min_lat = self.rad_lat - rad_dist
         max_lat = self.rad_lat + rad_dist
-        if min_lat > _GeoLocation.MIN_LAT and max_lat < _GeoLocation.MAX_LAT:
+        if min_lat > GeoLocation.MIN_LAT and max_lat < GeoLocation.MAX_LAT:
             delta_lon = math.asin(math.sin(rad_dist) / math.cos(self.rad_lat))
             
             min_lon = self.rad_lon - delta_lon
-            if min_lon < _GeoLocation.MIN_LON:
+            if min_lon < GeoLocation.MIN_LON:
                 min_lon += 2 * math.pi
                 
             max_lon = self.rad_lon + delta_lon
-            if max_lon > _GeoLocation.MAX_LON:
+            if max_lon > GeoLocation.MAX_LON:
                 max_lon -= 2 * math.pi
         # a pole is within the distance
         else:
-            min_lat = max(min_lat, _GeoLocation.MIN_LAT)
-            max_lat = min(max_lat, _GeoLocation.MAX_LAT)
-            min_lon = _GeoLocation.MIN_LON
-            max_lon = _GeoLocation.MAX_LON
+            min_lat = max(min_lat, GeoLocation.MIN_LAT)
+            max_lat = min(max_lat, GeoLocation.MAX_LAT)
+            min_lon = GeoLocation.MIN_LON
+            max_lon = GeoLocation.MAX_LON
         
-        return [ _GeoLocation.from_radians(min_lat, min_lon), 
-            _GeoLocation.from_radians(max_lat, max_lon) ]
+        return [ GeoLocation.from_radians(min_lat, min_lon), 
+            GeoLocation.from_radians(max_lat, max_lon) ]
 
 #%%
 #==============================================================================
@@ -233,7 +233,7 @@ class GeoDistance(object):
     # distances from points on the surface to the center range from 6,353 km 
     # to 6,384 km 
     # Equatorial radius 6378137 m 
-    EARTH_RADIUS_EQUATOR    = _GeoLocation.EARTH_RADIUS # 6378.1370 km 
+    EARTH_RADIUS_EQUATOR    = GeoLocation.EARTH_RADIUS # 6378.1370 km 
     # Polar radius 6356752.3 m
     EARTH_RADIUS_POLAR      = 6356.7523 
     # Semi-axes of WGS-84 geoidal reference
@@ -605,11 +605,11 @@ class GeoAngle(object):
 # CLASS GeoCoordinate
 #==============================================================================
 
-class GeoCoordinate(_GeoLocation):
+class GeoCoordinate(GeoLocation):
     """Class of geographic/location attributes and methods used to define, describe 
     and represent the geospatial status of an object.
     
-    This class emulates :class:`~tools._GeoLocation`.
+    This class emulates :class:`~tools.GeoLocation`.
     It inherits, for instance, the methods :meth:`_check_bounds` from the original 
     class that aim at checking for :literal:`(lat, Lon)` coordinates consistency; 
     instead, methods :meth:`distance_to` (computation of great circle distance 
@@ -915,7 +915,7 @@ class GeoCoordinate(_GeoLocation):
 
     #/************************************************************************/
     def bounding_locations(self, distance, **kwargs):
-        """Method overriding super method from :class:`~tools._GeoLocation`  
+        """Method overriding super method from :class:`~tools.GeoLocation`  
         for computing bounding coordinates of all points on the surface of a sphere 
         that have a great circle distance to the point represented by this 
         :class:GeoLocation` instance that is less or equal to the distance argument.
@@ -989,14 +989,14 @@ class GeoCoordinate(_GeoLocation):
             
         Note
         ----
-        Generalise the :meth:`_GeoLocation.bounding_locations` method.
+        Generalise the :meth:`GeoLocation.bounding_locations` method.
             
         Example
         -------
             
         See also
         --------
-        :meth:`~GeoCoordinate.bounding_locations`, :meth:`_GeoLocation.bounding_locations`.
+        :meth:`~GeoCoordinate.bounding_locations`, :meth:`GeoLocation.bounding_locations`.
         """
         # ang_unit is both the unit of input and output locations
         ang_unit = kwargs.pop('unit_angle',GeoAngle.DEG_ANG_UNIT) 
@@ -1061,7 +1061,7 @@ class GeoCoordinate(_GeoLocation):
         
      #/************************************************************************/
     def distance_to(self, other, **kwargs): # override method distance_to
-        """Method overriding super method from :class:`tools._GeoLocation`
+        """Method overriding super method from :class:`tools.GeoLocation`
         for computing the great circle distance between this :class:`GeoLocation` 
         instance and another (where measurement unit is passed as an argument).
         
@@ -1086,7 +1086,7 @@ class GeoCoordinate(_GeoLocation):
         """
         radius = kwargs.pop('radius', GeoDistance.EARTH_RADIUS_EQUATOR) # GeoDistance.EARTH_RADIUS
         res = super(GeoCoordinate,self).distance_to(other, radius=radius)
-        # res = _GeoLocation.distance_to(self, other, radius=radius)
+        # res = GeoLocation.distance_to(self, other, radius=radius)
         # note: "super() cannot be used with old-style class":
         unit = kwargs.pop('unit', GeoDistance.KM_DIST_UNIT)
         try:    return res * GeoDistance.KM_TO[unit]
@@ -1550,7 +1550,7 @@ class GeoCoordinate(_GeoLocation):
 # CLASS GDALTool
 #==============================================================================
     
-class GDALTool(object):
+class GDALTool(_Tool):
     """Class implementing simple |GDAL|-based operations on raster and/or vector
     data.
 
@@ -1594,7 +1594,7 @@ class GDALTool(object):
         self.__driver_name = driver_name
 
     #/************************************************************************/
-    @_geoDecorators.parse_file
+    @_Decorator.parse_file
     def file2layer(self, filename):
         """
             >>> layer = tool.file2layer(filename)
@@ -1620,7 +1620,7 @@ class GDALTool(object):
         return layer
 
     #/************************************************************************/
-    @_geoDecorators.parse_coordinate
+    @_Decorator.parse_coordinate
     def coord2vec(self, lat, lon, **kwargs):
         """
             >>> vec = tool.coord2vec(coord, **kwargs)
@@ -1668,12 +1668,12 @@ class GDALTool(object):
             >>> id = tool.coord2id(*args, **kwargs)
         """
         try:
-            lat, lon = _geoDecorators.parse_coordinate(lambda l, L: [l, L])(*args, **kwargs)
+            lat, lon = _Decorator.parse_coordinate(lambda l, L: [l, L])(*args, **kwargs)
             assert not (lat in ([], None) or lon in ([], None)) 
         except:
             raise IOError('could not retrieve coordinate')
         try:
-            filename = _geoDecorators.parse_file(lambda f: f)(**kwargs) 
+            filename = _Decorator.parse_file(lambda f: f)(**kwargs) 
             assert filename not in ('', None)
         except:
             raise IOError('could not retrieve filename')
