@@ -2,7 +2,7 @@
 
 ############
 `happygisco`
-###########
+############
 
 This is the documentation of the `happygisco` package.
 
@@ -25,8 +25,6 @@ Overview
 
 .. toctree::
    :titlesonly:
-
-   ..   :caption: Contents:
 
    about
    quickstart
@@ -53,6 +51,7 @@ Submodules
    :maxdepth: 2
 
    settings
+   base
    tools
    services
    features

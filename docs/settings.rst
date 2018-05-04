@@ -4,10 +4,7 @@
 .. automodule:: settings
     :members:
     :inherited-members:
-    :exclude-members: _geoDecorators, happyVerbose, happyWarning, happyError
-
-.. autoclass:: settings._geoDecorators
-   :members:
+    :exclude-members: happyVerbose, happyWarning, happyError, happyType
 
 .. autoclass:: settings.happyError
    :members:
@@ -16,4 +13,7 @@
    :members:
 
 .. autoclass:: settings.happyVerbose
+   :members:
+
+.. autoclass:: settings. happyType
    :members:

@@ -3,10 +3,7 @@
 
 .. automodule:: services
     :members:
-    :exclude-members: _Service, OSMService, GISCOService, APIService, _googleMapsAPI, _googlePlacesAPI, _geoCoderAPI
-
-.. autoclass:: services._Service
-    :members:
+    :exclude-members: OSMService, GISCOService, APIService, _googleMapsAPI, _googlePlacesAPI, _geoCoderAPI
 
 .. autoclass:: services.OSMService
     :members:
