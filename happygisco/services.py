@@ -58,7 +58,7 @@ Perform operations using online web-services, *e.g.*:
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
 # *since*:        Sat Apr  7 01:46:51 2018
 
-__all__         = ['GISCOService', 'APIService', 
+__all__         = ['OSMService', 'GISCOService', 'APIService', 
                    '_googleMapsAPI', '_googlePlacesAPI', '_geoCoderAPI']
 
 # generic import
@@ -73,6 +73,7 @@ from happygisco.base import _Decorator, _Service
 
 # requirements
 try: # dummy me...
+    GISCO_SERVICE = True
     OSM_SERVICE = True
 except:
     pass

@@ -6,7 +6,7 @@
     :inherited-members:
     :exclude-members: GeoLocation, GeoDistance, GeoAngle, GeoCoordinate, GDALTool
 
-.. autoclass:: features.GDALTool
+.. autoclass:: tools.GDALTool
     :members:
     :show-inheritance:
 

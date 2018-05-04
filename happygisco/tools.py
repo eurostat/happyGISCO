@@ -10,6 +10,8 @@
 .. |GDAL| replace:: `Geospatial Data Abstraction Library (GDAL) <GDAL_>`_
 .. _PyGeoTools: https://github.com/jfein/PyGeoTools
 .. |PyGeoTools| replace:: `PyGeoTools <PyGeoTools_>`_
+.. _geopy: https://github.com/geopy/geopy
+.. |geopy| replace:: `geopy <geopy_>`_
 
 Library of simple tools for simple geographical data (geolocations and geocoordinates)
 handling and processin.
@@ -616,7 +618,7 @@ class GeoCoordinate(GeoLocation):
     between geolocations) and :meth:`bounding_locations` (computation of the 
     bounding coordinates of all points) are overriden.
  
-            >>> x = GeoCoordinate(*args, **kwargs)
+        >>> x = GeoCoordinate(*args, **kwargs)
             
     Arguments
     ---------

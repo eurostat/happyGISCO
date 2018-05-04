@@ -59,7 +59,7 @@ They are provided here for the sake of an exhaustive documentation.
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
 # *since*:        Sat May  5 00:09:56 2018
 
-__all__         = ['_Service', '_Feature', '_Decorator']
+__all__         = ['_Service', '_Feature', '_Tool', '_Decorator']
 
 # generic import
 import os, sys#analysis:ignore
@@ -1272,7 +1272,7 @@ class _Decorator(object):
                 raise happyError('NUTS attributes not recognised')              
             if level is not None:
                 nuts = [n for n in nuts if n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL] == str(level)]
-            if REDUCE_ANSWER and len(nuts)==1:    nuts=nuts[0]
+            if settings.REDUCE_ANSWER and len(nuts)==1:    nuts=nuts[0]
             kwargs.update({_Decorator.KW_NUTS: nuts}) 
             return self.func(**kwargs)
  

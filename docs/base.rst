@@ -1,19 +1,19 @@
 :mod:`base` module: Basic implementations, generic classes and methods
 ----------------------------------------------------------------------
 
-.. automodule:: settings
+.. automodule:: base
     :members:
     :inherited-members:
     :exclude-members: _Decorator, _Service, _Feature, _Tool
 
-.. autoclass:: settings._Tool
+.. autoclass:: base._Tool
    :members:
 
-.. autoclass:: settings._Service
+.. autoclass:: base._Service
    :members:
 
-.. autoclass:: settings._Feature
+.. autoclass:: base._Feature
    :members:
 
-.. autoclass:: settings._Decorator
+.. autoclass:: base._Decorator
    :members:
