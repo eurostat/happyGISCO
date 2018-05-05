@@ -121,7 +121,7 @@ class Location(_Feature):
     #/************************************************************************/
     @property
     def place(self):
-        """Place attribute (:data:`getter`) of a :class:`GeoLocation` instance. 
+        """Place attribute (:data:`getter`) of a :class:`Location` instance. 
         A `place` type is  (a list of) :class:`str`\ .
         """
         return self.__place  if len(self.__place)>1 else self.__place[0]
@@ -135,7 +135,7 @@ class Location(_Feature):
         
     @property
     def lat(self):
-        """Latitude attribute (:data:`getter`) of a :class:`_Feature` instance. 
+        """Latitude attribute (:data:`getter`) of a :class:`Location` instance. 
         A `lat` type is (a list of) :class:`float`\ .
         """
         try:
@@ -146,7 +146,7 @@ class Location(_Feature):
 
     @property
     def Lon(self):
-        """Longitude attribute (:data:`getter`) of a :class:`_Feature` instance. 
+        """Longitude attribute (:data:`getter`) of a :class:`Location` instance. 
         A `Lon` type is (a list of) :class:`float`\ .
         """
         try:
@@ -188,7 +188,7 @@ class Location(_Feature):
 
         Examples
         --------
-        >>> loc = GeoLocation('Paris, France')
+        >>> loc = features.Location('Paris, France')
         >>> print loc.geocode()
             (48.856614, 2.3522219)
         >>> paris = serv.coord2('48.85693, 2.3412')
@@ -201,7 +201,7 @@ class Location(_Feature):
         
         See also
         --------
-        :meth:`~GeoLocation.reverse`
+        :meth:`~Location.reverse`
         """
         if self.coord in ([],None):
             try:
@@ -236,7 +236,7 @@ class Location(_Feature):
 
         Examples
         --------
-        >>> loc = Location('48.85693, 2.3412')
+        >>> loc = features.Location('48.85693, 2.3412')
         >>> paris = loc.reverse()
         >>> print paris
             [u'76 Quai des Orf\xe8vres, 75001 Paris, France', u"Saint-Germain-l'Auxerrois, Paris, France", 
@@ -245,7 +245,7 @@ class Location(_Feature):
         
         See also
         --------
-        :meth:`~GeoLocation.geocode`
+        :meth:`~Location.geocode`
         """
         # geocode may return no results if it is passed a  
         # non-existent address or a lat/lng in a remote location
@@ -261,6 +261,7 @@ class Location(_Feature):
         return self.place
     
     #/************************************************************************/
+    @_Decorator.parse_place_or_coordinate
     def distance(self, *args, **kwargs):            
         """Method used for computing pairwise distances between given locations, 
         passed indifferently as places names or geographic coordinates.
@@ -296,7 +297,7 @@ class Location(_Feature):
             
         Examples
         --------      
-        >>> loc = features.GeoLocation([26.062951, -80.238853])
+        >>> loc = features.Location([26.062951, -80.238853])
         >>> print loc.distance([26.060484,-80.207268], 
                                dist='vincenty', unit='m')
             3172.3596179302895
@@ -308,18 +309,6 @@ class Location(_Feature):
             7338.5353364838438
         """
         func = lambda *a, **kw: [kw.pop(_Decorator.KW_PLACE), kw.pop(_Decorator.KW_COORD)]
-        if args not in ((),None):
-            if len(args) == 1 and happyType.issequence(args[0])    \
-                and all(isinstance(a, _Feature) for a in args[0]):
-                feat = args[0]
-            elif len(args) > 1 and all(isinstance(a, _Feature) for a in args):
-                feat = args
-            else:
-                feat 
-            try:
-                coord = [f.coord for f in feat]
-            except:
-                pass
         try:
             place, coord = _Decorator.parse_place_or_coordinate(func)(*args, **kwargs)          
         except:

@@ -189,7 +189,7 @@ class OSMService(_Service):
         See also
         --------
         :meth:`~OSMService.url_reverse`, :meth:`~OSMService.url_route`, 
-        :meth:`~OSMService.url_transform`, :meth:`_Service.build_url`.
+        :meth:`~OSMService.url_transform`, :meth:`base._Service.build_url`.
         """
         protocol = kwargs.pop('protocol', 'https')
         query = kwargs.pop('query', 'search')
@@ -242,7 +242,7 @@ class OSMService(_Service):
         See also
         --------
         :meth:`~OSMService.url_geocode`, :meth:`~OSMService.url_route`, 
-        :meth:`~OSMService.url_transform`, :meth:`_Service.build_url`.
+        :meth:`~OSMService.url_transform`, :meth:`base._Service.build_url`.
         """
         protocol = kwargs.pop('protocol', 'https')
         query = kwargs.pop('query', 'reverse')
@@ -419,7 +419,7 @@ class OSMService(_Service):
         --------
         :meth:`~OSMService.coord2place`, :meth:`~OSMService.place2coord`, 
         :meth:`~OSMService.url_geocode`, :meth:`~GISCOService.place2geom`, 
-        :meth:`_Service.get_status`, :meth:`_Service.get_response`.
+        :meth:`base._Service.get_status`, :meth:`base._Service.get_response`.
         """
         unique = kwargs.pop('unique',False)
         geom = []
@@ -564,7 +564,7 @@ class OSMService(_Service):
         See also
         --------
         :meth:`~OSMService.place2coord`, :meth:`~OSMService.url_reverse`, 
-        :meth:`_Service.get_status`, :meth:`_Service.get_response`.
+        :meth:`base._Service.get_status`, :meth:`base._Service.get_response`.
         """
         place = []
         [place.append(data if len(data)>1 else data[0]) for data in self._coord2geom(coord, **kwargs)]
@@ -900,7 +900,7 @@ class GISCOService(OSMService):
         --------
         :meth:`~GISCOService.url_geocode`, :meth:`~GISCOService.url_reverse`, 
         :meth:`~GISCOService.url_transform`, :meth:`~GISCOServiceurl_nuts`,
-        :meth:`_Service.build_url`.
+        :meth:`base._Service.build_url`.
         """
         protocol = kwargs.pop('protocol', 'https') # actually not necessary, http works as well  
         keys = ['overview', ] # ?
@@ -955,7 +955,7 @@ class GISCOService(OSMService):
         --------
         :meth:`~GISCOService.url_geocode`, :meth:`~GISCOService.url_reverse`, 
         :meth:`~GISCOService.url_route`, :meth:`~GISCOService.url_nuts`,
-        :meth:`_Service.build_url`.
+        :meth:`base._Service.build_url`.
         """
         protocol = kwargs.pop('protocol', 'https')  
         keys = ['inSR', 'outSR', 'geometries', 'transformation', 'transformForward', 'f'] # ?
@@ -1004,7 +1004,7 @@ class GISCOService(OSMService):
         --------
         :meth:`~GISCOService.url_geocode`, :meth:`~GISCOService.url_reverse`, 
         :meth:`~GISCOService.url_route`, :meth:`~GISCOService.url_transform`,
-        :meth:`_Service.build_url`.
+        :meth:`base._Service.build_url`.
         """
         protocol = kwargs.pop('protocol', 'http')  
         keys = ['x', 'y', 'f', 'year', 'proj', 'geometry']
@@ -1116,7 +1116,7 @@ class GISCOService(OSMService):
         :meth:`~GISCOService.place2coord`, :meth:`~GISCOService.coord2place`, 
         :meth:`~GISCOService.coord2nuts`, :meth:`~GISCOService.place2nuts`, 
         :meth:`~GISCOService.coord2route`, :meth:`~GISCOService.url_geocode`, 
-        :meth:`OSMService.place2geom`, :meth:`_Service.get_response`.
+        :meth:`OSMService.place2geom`, :meth:`base._Service.get_response`.
         """
         kwargs.update({'key': _Decorator.parse_geometry.KW_FEATURES})
         return super(GISCOService,self).place2geom(place=place, **kwargs)
@@ -1266,7 +1266,7 @@ class GISCOService(OSMService):
         See also
         --------
         :meth:`~OSMService.place2coord`, :meth:`~OSMService.url_reverse`, 
-        :meth:`_Service.get_status`, :meth:`_Service.get_response`.
+        :meth:`base._Service.get_status`, :meth:`base._Service.get_response`.
         """
         kwargs.update({'key': _Decorator.parse_geometry.KW_FEATURES})
         return super(GISCOService,self).coord2geom(coord=coord, **kwargs)
@@ -1467,7 +1467,7 @@ class GISCOService(OSMService):
         :meth:`~GISCOService.place2geom`, :meth:`~GISCOService.place2coord`, 
         :meth:`~GISCOService.place2nuts`, :meth:`~GISCOService.coord2route`,
         :meth:`~GISCOService.coord2place`, :meth:`~GISCOService.url_nuts`, 
-        :meth:`_Service.get_response`.
+        :meth:`base._Service.get_response`.
         """
         level = kwargs.pop('level',None)
         kwargs.update({'key': _Decorator.parse_nuts.KW_RESULTS})
@@ -1563,7 +1563,7 @@ class GISCOService(OSMService):
         :meth:`~GISCOService.place2coord`, :meth:`~GISCOService.coord2nuts`, 
         :meth:`~GISCOService.place2geom`, :meth:`~GISCOService.coord2place`, 
         :meth:`~GISCOService.coord2route`, :meth:`~GISCOService.url_geocode`, 
-        :meth:`_Service.get_response`.
+        :meth:`base._Service.get_response`.
         """
         kwargs.update({'unique': kwargs.pop('unique',True)})
         coord = self.place2coord(place, **kwargs)
@@ -1630,7 +1630,7 @@ class GISCOService(OSMService):
         See also
         --------
         :meth:`~GISCOService.place2route`, :meth:`~GISCOService.coord2place`, 
-        :meth:`~GISCOService.url_route`, :meth:`_Service.get_response`.
+        :meth:`~GISCOService.url_route`, :meth:`base._Service.get_response`.
         """
         routes, waypoints = None, None
         if len(coord)<2 or not all([happyType.issequence(c) for c in coord]):

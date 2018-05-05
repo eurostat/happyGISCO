@@ -88,7 +88,7 @@ class _Service(object):
     """Base class defining a web-session and simple connection operations to be
     used by a web-service. 
        
-        >>> serv = services._Service()
+        >>> serv = base._Service()
     """
     
     #/************************************************************************/
@@ -141,7 +141,7 @@ class _Service(object):
         We can see the response status code when connecting to different web-pages
         or services:
         
-        >>> serv = services._Service()
+        >>> serv = base._Service()
         >>> serv.get_status('http://dumb')
             ConnectionError: connection failed
         >>> serv.get_status('http://www.dumbanddumber.com')
@@ -204,7 +204,7 @@ class _Service(object):
         --------
         Some simple tests:
             
-        >>> serv = services._Service()
+        >>> serv = base._Service()
         >>> serv.get_response('http://dumb')
             happyError: wrong request formulated
         >>> resp = serv.get_response('http://www.example.com')
@@ -300,28 +300,28 @@ class _Service(object):
         Let us, for instance, build a URL query to *Eurostat* Rest API (just enter 
         the output URL in your browser to check the output):
             
-        >>> _Service.build_url(settings.ESTAT_URL,
-                               path='wdds/rest/data/v2.1/json/en',
-                               query='ilc_li03', 
-                               precision=1,
-                               indic_il='LI_R_MD60',
-                               time='2015')
+        >>> base._Service.build_url(settings.ESTAT_URL,
+                                    path='wdds/rest/data/v2.1/json/en',
+                                    query='ilc_li03', 
+                                    precision=1,
+                                    indic_il='LI_R_MD60',
+                                    time='2015')
             'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li03?precision=1&indic_il=LI_R_MD60&time=2015'
         
         Note that another way to call the method is:
 
-        >>> _Service.build_url(domain=settings.ESTAT_URL,
-                               path='wdds/rest/data/v2.1/json/en',
-                               query='ilc_li01', 
-                               **{'precision': 1, 'hhtyp': 'A1', 'time': '2010'})
+        >>> base._Service.build_url(domain=settings.ESTAT_URL,
+                                    path='wdds/rest/data/v2.1/json/en',
+                                    query='ilc_li01', 
+                                    **{'precision': 1, 'hhtyp': 'A1', 'time': '2010'})
             'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li01?precision=1&hhtyp=A1&time=2010'
         
         Similarly, we will be able to access to |GISCO| service (see :meth:`GISCOService.url_geocode`
         below):
  
-        >>> _Service.build_url(domain=settings.GISCO_URL,
-                               query='api', 
-                               **{'q': 'Berlin+Germany', 'limit': 2})
+        >>> base._Service.build_url(domain=settings.GISCO_URL,
+                                    query='api', 
+                                    **{'q': 'Berlin+Germany', 'limit': 2})
             'http://europa.eu/webtools/rest/gisco/api?q=Berlin+Germany&limit=2'  
         
         See also
@@ -609,7 +609,12 @@ class _Decorator(object):
                 raise happyError('wrong order parameter')
             coord, lat, lon, poly = None, None, None, None
             if args not in (None,()):      
-                if all([happyType.ismapping(a) for a in args]):
+                if all([isinstance(a,_Feature) for a in args]):
+                    try:
+                        coord = [a.coord for a in args]
+                    except:
+                        raise happyError('parsed coordinates feature not recognised')
+                elif all([happyType.ismapping(a) for a in args]):
                     coord = list(args)
                 elif len(args) == 1 and happyType.issequence(args[0]):
                     if len(args[0])==2                                      \
@@ -727,7 +732,12 @@ class _Decorator(object):
         def __call__(self, *args, **kwargs):
             place, address, city, country, zipcode = '', '', '', '', ''
             if args not in (None,()):      
-                if all([happyType.isstring(a) for a in args]):
+                if all([isinstance(a,_Feature) for a in args]):
+                    try:
+                        place = [a.place for a in args]
+                    except:
+                        raise happyError('parsed place feature not recognised')
+                elif all([happyType.isstring(a) for a in args]):
                     place = list(args)
                 elif len(args) == 1 and happyType.issequence(args[0]):
                     place = args[0]
@@ -1042,7 +1052,12 @@ class _Decorator(object):
             geom = None
             if args not in (None,()): 
                 __key_geom = False
-                if all([happyType.ismapping(a) for a in args]):
+                if all([isinstance(a,_Feature) for a in args]):
+                    try:
+                        geom = [a.geometry for a in args]
+                    except:
+                        raise happyError('parsed geometry feature not recognised')
+                elif all([happyType.ismapping(a) for a in args]):
                     geom = args
                 elif len(args) == 1 and happyType.issequence(args[0]):
                     if all([happyType.ismapping(args[0][i]) for i in range(len(args[0]))]):
