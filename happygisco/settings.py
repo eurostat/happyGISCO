@@ -28,8 +28,6 @@
 .. |googlemaps| replace:: `Google Maps <googlemaps_>`_
 .. _googleplaces: https://github.com/slimkrazy/python-google-places
 .. |googleplaces| replace:: `Google Places <googleplaces_>`_
-.. _geopy: https://github.com/geopy/geopy
-.. |geopy| replace:: `geopy <geopy_>`_
 .. _GDAL: https://pypi.python.org/pypi/GDAL
 .. |GDAL| replace:: `Geospatial Data Abstraction Library (GDAL) <GDAL_>`_
 .. _ArcGIS: http://arcgis.com

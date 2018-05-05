@@ -8,12 +8,6 @@ Unit test of module :mod:`happygisco.services`.
 
 **About**
 
-*credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
-
-*version*:      1
---
-*since*:        Sun Apr  8 20:35:49 2018
-
 **Description**
 
 **Usage**
@@ -28,6 +22,8 @@ Unit test of module :mod:`happygisco.services`.
 *require*:      :mod:`unittest`, :mod:`warnings`, :mod:`numpy`
 """
 
+# *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
+# *since*:        Sun Apr  8 20:35:49 2018
 
 #==============================================================================
 # PROGRAM METADATA
@@ -58,13 +54,13 @@ except ImportError:
     raise IOError
 
 from happygisco import settings
-from happygisco.services import GISCOService, APIService, GDALservice
+from happygisco.services import GISCOService, APIService
 
 #==============================================================================
 # GLOBAL VARIABLES/METHODS
 #==============================================================================
 
-from .base import runtest as BaseRuntest
+from . import runtest as _runtest
 
 PARIS = {'place': 'Paris, France',
                  'lat': 48.8566, # 48.8566101
@@ -150,15 +146,15 @@ class APIServiceTestCase(unittest.TestCase):
         """
         try: 
             import googlemaps#analysis:ignore
-            assert GOOGLE_KEY not in ('',None)
+            assert settings.GOOGLE_KEY not in ('',None)
         except: 
             warnings.warn('API Google Maps not imported') 
             return 
         try:
-            self.serv = APIService(coder='GMaps', key=GOOGLE_KEY)
+            self.serv = APIService(coder='GMaps', key=settings.GOOGLE_KEY)
         except:
             warnings.warn('API Google Maps service not available') 
-        self.assertEqual(self.serv.coder_key,            GOOGLE_KEY)
+        self.assertEqual(self.serv.coder_key,            settings.GOOGLE_KEY)
         # reproduce tests from https://pypi.python.org/pypi/googlemaps ?
         try:    
             lat, lon = self.serv.place2coord(self.paris['place'])
@@ -178,10 +174,10 @@ class APIServiceTestCase(unittest.TestCase):
             warnings.warn('API Google Places not imported') 
             return 
         try:
-            self.serv = APIService(coder='GPlaces', key=GOOGLE_KEY)
+            self.serv = APIService(coder='GPlaces', key=settings.GOOGLE_KEY)
         except:
             warnings.warn('API Google Maps service not available') 
-        self.assertEqual(self.serv.coder_key,            GOOGLE_KEY)
+        self.assertEqual(self.serv.coder_key,            settings.GOOGLE_KEY)
         # reproduce tests from https://github.com/slimkrazy/python-google-places
         try:    
             lat, lon = self.serv.place2coord(self.paris['place'])
@@ -196,7 +192,7 @@ class APIServiceTestCase(unittest.TestCase):
         Reproduce tests from https://github.com/geopy/geopy
         """
         try:
-            self.serv = APIService(coder='GoogleV3', key=GOOGLE_KEY)
+            self.serv = APIService(coder='GoogleV3', key=settings.GOOGLE_KEY)
         except:
             warnings.warn('API geopy service not available') 
         code = self.serv.geocode(self.paris['place'])    
@@ -224,7 +220,7 @@ class GDALserviceTestCase(unittest.TestCase):
 #==============================================================================
 
 def runtest():
-    BaseRuntest(GISCOServiceTestCase, APIServiceTestCase, GDALserviceTestCase)
+    _runtest(GISCOServiceTestCase, APIServiceTestCase)
     return
     
 if __name__ == '__main__':
