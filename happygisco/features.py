@@ -24,7 +24,7 @@ as NUTS regions, to which geotransformations are associated.
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
 # *since*:        Sat Apr  7 01:34:07 2018
 
-__all__         = ['Location', 'Geometry', 'NUTS']
+__all__         = ['Location', 'Area', 'NUTS']
 
 # generic import
 import os, sys#analysis:ignore
@@ -46,6 +46,7 @@ from happygisco.services import GISCO_SERVICE, API_SERVICE
 # requirements
 
 
+#%%
 #==============================================================================
 # CLASS Location
 #==============================================================================
@@ -120,10 +121,46 @@ class Location(_Feature):
     #/************************************************************************/
     @property
     def place(self):
-        """Place attribute (:data:`getter`) of a :class:`Location` instance. 
-        A `place` type is  (a list of) :class:`str`\ .
+        """Place attribute (:data:`getter/setter`/:data:`setter`) of a :class:`Location` 
+        instance. A `place` type is  (a list of) :class:`str`\ .
         """
-        return self.__place  if len(self.__place)>1 else self.__place[0]
+        if self.__place in ('',[''],None):
+            try:
+                place = self.reverse()
+            except:     
+                raise happyError('place not found') 
+            else:
+                self.__place = place
+        return self.__place if len(self.__place)>1 else self.__place[0]    
+    @place.setter
+    def place(self,place):
+        try:
+            place = _Decorator.parse_place(lambda p: p)(place)
+        except:
+            raise happyError('unrecognised address/location argument') 
+        self.__place = place
+
+    #/************************************************************************/
+    @property
+    def coord(self):
+        """Geographical :literal:`(lat,Lon)` coordinates attribute (:data:`getter`/:data:`setter`) 
+        of a :class:`Location` instance.
+        """ 
+        if self.__coord in ([],[None,None],None):
+            try:
+                coord = self.geocode(unique=True)
+            except:     
+                raise happyError('coordinates not found') 
+            else:
+                self.__coord = coord
+        return self.__coord # if len(self.__coord)>1 else self.__coord[0]    
+    @coord.setter
+    def coord(self,coord):
+        try:
+            coord = _Decorator.parse_coordinates(lambda c: c)(coord)
+        except:
+            raise happyError('unrecognised coordinates argument') 
+        self.__coord = coord
 
     #/************************************************************************/
     def __repr__(self):
@@ -173,14 +210,10 @@ class Location(_Feature):
         --------
         :meth:`~Location.reverse`
         """
-        if self.coord in ([],None):
-            try:
-                coord = self.service.place2coord(place=self.place, **kwargs)
-            except:     
-                raise happyError('unrecognised address/location argument') 
-            else:
-                self.__coord = coord
-        return coord
+        try:
+            return self.service.place2coord(place=self.place, **kwargs)
+        except:     
+            raise happyError('unable to retrieve coordinates from place (address/location)') 
 
     #/************************************************************************/
     def reverse(self, **kwargs):
@@ -219,16 +252,11 @@ class Location(_Feature):
         """
         # geocode may return no results if it is passed a  
         # non-existent address or a lat/lng in a remote location
-        # raise LocationError('unrecognised location argument')  
-        if self.place in ('',[''],None):
-            try:
-                # place = self.service.coord2place(lat=self.lat, lon=self.Lon, **kwargs)
-                place = self.service.coord2place(coord=self.coord, **kwargs)
-            except:     
-                raise happyError('unrecognised coordinates argument') 
-            else:
-                self.__place = place
-        return self.place
+        # raise LocationError('unrecognised location argument') 
+        try:
+            return self.service.coord2place(coord=self.coord, **kwargs)
+        except:     
+            raise happyError('unable to retrieve place (address/location) from coordinates') 
     
     #/************************************************************************/
     @_Decorator.parse_place_or_coordinate
@@ -312,6 +340,7 @@ class Location(_Feature):
     def findnuts(self, **kwargs):
         return self.service.place2nuts(self.place, **kwargs)
 
+#%%
 #==============================================================================
 # CLASS NUTS
 #==============================================================================
@@ -329,22 +358,37 @@ class NUTS(_Feature):
     #/************************************************************************/
     def __getattr__(self, attr_name): 
         try:
-            return super().__getattribute__(attr_name) 
+            return super(NUTS,self).__getattribute__(attr_name) 
         except AttributeError:
             attr = [n[attr_name] for n in self.__nuts]
             return attr if len(attr)>1 else attr[0]
 
     #/************************************************************************/
     @property
-    def nuts(self):
+    def feature(self):
         """
         """
         return self.__nuts if len(self.__nuts)>1 else self.__nuts[0]
     
     @property
+    def coord(self):
+        """Geographical :literal:`(lat,Lon)` coordinates attribute (:data:`getter`) 
+        of a :class:`NUTS` instance.
+        This is an educated guess from the actual geometry NUTS name.
+        """ 
+        if self.__coord in ([],[None,None],None):
+            try:
+                coord = self.geocode(unique=True)
+            except:     
+                raise happyError('coordinates not found') 
+            else:
+                self.__coord = coord
+        return self.__coord # if len(self.__coord)>1 else self.__coord[0]    
+
+    @property
     def level(self):
-        """Level attribute (:data:`getter`/:data:`setter`) of a :class:`NUTS` 
-        instance. A `level` type is (a list of) :class:`int`\ .
+        """Level attribute (:data:`getter`) of a :class:`NUTS` instance. 
+        A `level` type is (a list of) :class:`int`\ .
         """
         try:
             level = [int(n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL]) \
@@ -368,8 +412,8 @@ class NUTS(_Feature):
     
     @property
     def name(self):
-        """Name attribute (:data:`getter`/:data:`setter`) of a :class:`NUTS` 
-        instance. A name type is :class:`str`.
+        """Name attribute (:data:`getter`) of a :class:`NUTS` instance. 
+        A name type is :class:`str`.
         """
         try:
             name = [n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_NAME] \
@@ -381,7 +425,8 @@ class NUTS(_Feature):
     
     @property
     def value(self):
-        """
+        """Value attribute (:data:`getter`) of a :class:`NUTS` instance. 
+        A value type is :class:`str`.
         """
         try:
             value = [n[_Decorator.parse_nuts.KW_VALUE] for n in self.__nuts]
@@ -391,24 +436,107 @@ class NUTS(_Feature):
             return value if len(value)>1 else value[0]
         
     #/************************************************************************/
+    def geocode(self, **kwargs):
+        """
+        """
+        try:
+            return self.service.place2coord(place=self.name, **kwargs)
+        except:     
+            raise happyError('unable to retrieve coordinates from NUTS name') 
+        
+    #/************************************************************************/
     def identify(self, place, **kwargs):
         """
         """
         pass
     
     #/************************************************************************/
-    def contains(self, place, **kwargs):
+    @_Decorator.parse_place_or_coordinate
+    def contains(self, *args, **kwargs):
         """
         """
         pass
 
+#%%
 #==============================================================================
-# CLASS Geometry
+# CLASS Area
 #==============================================================================
        
-class Geometry(_Feature):
-    pass
+class Area(_Feature):
+    """
+    """
 
+    #/************************************************************************/
+    @_Decorator.parse_nuts
+    def __init__(self, area, **kwargs):
+        self.__area = area
+        super(Area,self).__init__(**kwargs)
+    
+    #/************************************************************************/
+    def __getattr__(self, attr_name): 
+        # this covers the case: geometry, properties and type
+        try:
+            return super(Area,self).__getattribute__(attr_name) 
+        except AttributeError:
+            attr = [n[attr_name] for n in self.__area]
+            return attr if len(attr)>1 else attr[0]
+ 
+    #/************************************************************************/
+    @property
+    def feature(self):
+        """
+        """
+        return self.__area if len(self.__area)>1 else self.__area[0]
+    
+    @property
+    def coord(self):
+        """Geographical :literal:`(lat,Lon)` coordinates attribute (:data:`getter`) 
+        of a :class:`NUTS` instance.
+        This is an educated guess from the actual geometry NUTS name.
+        """ 
+        if self.__coord in ([],[None,None],None):
+            try:
+                func = lambda *a, **kw: kw.get(_Decorator.KW_COORD)
+                coord = _Decorator.parse_area(func)(self.geometry, filter='coord')
+            except:     
+                raise happyError('coordinates not found') 
+            else:
+                self.__coord = coord
+        return self.__coord # if len(self.__coord)>1 else self.__coord[0]    
+    
+    @property
+    def name(self):
+        """Name attribute (:data:`getter`) of a :class:`Area` instance. 
+        A name type is :class:`str`.
+        """
+        try:
+            name = [a[_Decorator.parse_area.KW_PROPERTIES][_Decorator.parse_area.KW_NAME] \
+                    for a in self.__area]
+        except:
+            return None
+        else:
+            return name if len(name)>1 else name[0]
+    
+    @property
+    def extent(self):
+        """Extent attribute (:data:`getter`) of a :class:`Area` instance. 
+        A extent type is :class:`list`.
+        """
+        try:
+            extent = [a[_Decorator.parse_area.KW_PROPERTIES][_Decorator.parse_area.KW_EXTENT] \
+                    for a in self.__area]
+        except:
+            return None
+        else:
+            return extent if len(extent)>1 else extent[0]
+    
+    #/************************************************************************/
+    @_Decorator.parse_place_or_coordinate
+    def contains(self, *args, **kwargs):
+        """
+        """
+        pass
+       
  #   http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52
  #   http://europa.eu/webtools/rest/gisco/reverse?lat=2.3514992&lon=48.8566101
  #   http://europa.eu/webtools/rest/gisco/reverse?lat=2&lon=48

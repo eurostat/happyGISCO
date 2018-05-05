@@ -417,12 +417,12 @@ class _Feature(object):
         return self.__tool
     
     @property
-    def coord(self):              
+    def coord(self):
+        # ignore: this will be overwritten              
         """Geographical coordinates :literal:`(lat,Lon)` attribute (:data:`getter`) 
         of a :class:`_Feature` instance.
         """ 
         return self.__coord
-
 
 #%%
 #==============================================================================
@@ -447,7 +447,7 @@ class _Decorator(object):
     KW_LON          = 'Lon' 
     KW_COORD        = 'coord'
     
-    KW_GEOM         = 'geom'
+    KW_AREA         = 'area'
     
     KW_PROJECTION   = 'proj' 
     
@@ -594,7 +594,7 @@ class _Decorator(object):
         See also
         --------
         :meth:`~_Decorator.parse_place`, :meth:`~_Decorator.parse_place_or_coordinate`,
-        :meth:`~_Decorator.parse_geometry`.
+        :meth:`~_Decorator.parse_area`.
         """
         KW_POLYLINE      = 'polyline'
         try:
@@ -731,7 +731,7 @@ class _Decorator(object):
         See also
         --------
         :meth:`~_Decorator.parse_coordinate`, :meth:`~_Decorator.parse_place_or_coordinate`,
-        :meth:`~_Decorator.parse_geometry`.
+        :meth:`~_Decorator.parse_area`.
         """ 
         def __call__(self, *args, **kwargs):
             place, address, city, country, zipcode = '', '', '', '', ''
@@ -849,7 +849,7 @@ class _Decorator(object):
         See also
         --------
         :meth:`~_Decorator.parse_place`, :meth:`~_Decorator.parse_coordinate`,
-        :meth:`~_Decorator.parse_geometry`.
+        :meth:`~_Decorator.parse_area`.
         """
         def __call__(self, *args, **kwargs):
             try:
@@ -876,13 +876,13 @@ class _Decorator(object):
             return self.func(*args, **kwargs)
 
     #/************************************************************************/
-    class parse_geometry(__parse):
+    class parse_area(__parse):
         """Generic class decorator of functions and methods used to parse either
         :literal:`(lat,Lon)` coordinate(s) or (topo)name(s) from JSON-like dictionary 
         parameters (geometry features) formated according to |GISCO| geometry 
         responses (see |GISCOWIKI|).
         
-            >>> new_func = _Decorator.parse_geometry(func)
+            >>> new_func = _Decorator.parse_area(func)
         
         Arguments
         ---------
@@ -898,7 +898,7 @@ class _Decorator(object):
         Returns
         -------
         new_func : callable
-            the decorated function that now accepts :data:`geom` as a keyword 
+            the decorated function that now accepts :data:`area` as a keyword 
             argument to parse geographical coordinates, plus some additional keyword 
             arguments (see *Notes* below).
         
@@ -907,34 +907,34 @@ class _Decorator(object):
         Some dummy examples:
             
         >>> func = lambda *args, **kwargs: kwargs.get('coord')
-        >>> geom = {'A': 1, 'B': 2}
-        >>> _Decorator.parse_geometry(func)(geom=geom)
+        >>> area = {'A': 1, 'B': 2}
+        >>> _Decorator.parse_area(func)(area=area)
             happyError: !!! geometry attributes not recognised !!!
-        >>> geom = {'geometry': {'coordinates': [1, 2], 'type': 'Point'},
+        >>> area = {'geometry': {'coordinates': [1, 2], 'type': 'Point'},
                     'properties': {'city': 'somewhere', 
                                    'country': 'some country',
                                    'street': 'sesame street',
                                    'osm_key': 'place'},
                     'type': 'Feature'}
-        >>> _Decorator.parse_geometry(func)(geom=geom)
+        >>> _Decorator.parse_area(func)(area=area)
             [[2, 1]]
         >>> func = lambda *args, **kwargs: kwargs.get('place')
-        >>> _Decorator.parse_geometry(func)(geom=geom, filter='place')
+        >>> _Decorator.parse_area(func)(area=area, filter='place')
             ['sesame street, somewhere, some country']
         
         Also note that the argument can be parsed as a positional argument (usage
         not recommended):
             
-        >>> _Decorator.parse_geometry(func)(geom)
+        >>> _Decorator.parse_area(func)(area)
             []
-        >>> _Decorator.parse_geometry(func)(geom, order='Ll')
+        >>> _Decorator.parse_area(func)(area, order='Ll')
             [[1, 2]]
 
         and an actual one:
             
         >>> serv = services.GISCOService()
-        >>> geom = serv.place2geom(place='Berlin,Germany')
-        >>> print(geom)
+        >>> area = serv.place2area(place='Berlin,Germany')
+        >>> print(area)
             [{'geometry': {'coordinates': [13.3888599, 52.5170365], 'type': 'Point'},
               'properties': {'city': 'Berlin', 'country': 'Germany',
                'name': 'Berlin',
@@ -947,14 +947,12 @@ class _Decorator(object):
                'name': 'Berlin',
                'osm_id': 62422, 'osm_key': 'place', 'osm_type': 'R', 'osm_value': 'state'},
               'type': 'Feature'},
-             {'geometry': {'coordinates': [13.393560634296435, 52.51875095],
-               'type': 'Point'},
+             {'geometry': {'coordinates': [13.393560634296435, 52.51875095], 'type': 'Point'},
               'properties': {'city': 'Berlin', 'country': 'Germany',
                'extent': [13.3906703, 52.5200704, 13.3948782, 52.5174944],
                'name': 'Humboldt University in Berlin Mitte Campus',
                'osm_id': 120456814, 'osm_key': 'amenity', 'osm_type': 'W', 'osm_value': 'university',
-               'postcode': '10117', 'state': 'Berlin',
-               'street': 'Dorotheenstraße'},
+               'postcode': '10117', 'state': 'Berlin', 'street': 'Dorotheenstraße'},
               'type': 'Feature'},
              ...
               {'geometry': {'coordinates': [13.3869856, 52.5156648], 'type': 'Point'},
@@ -962,29 +960,28 @@ class _Decorator(object):
                'housenumber': '55-57',
                'name': 'Komische Oper Berlin',
                'osm_id': 318525456, 'osm_key': 'amenity', 'osm_type': 'N', 'osm_value': 'theatre',
-               'postcode': '10117', 'state': 'Berlin',
-               'street': 'Behrenstraße'},
+               'postcode': '10117', 'state': 'Berlin', 'street': 'Behrenstraße'},
               'type': 'Feature'}]
                     
-        We can for instance use the :meth:`parse_geometry` to parse (filter) the 
-        data :data:`geom` and retrieve the coordinates:
+        We can for instance use the :meth:`parse_area` to parse (filter) the 
+        data :data:`area` and retrieve the coordinates:
             
         >>> func = lambda **kwargs: kwargs.get('coord')
-        >>> new_func = _Decorator.parse_geometry(func)
+        >>> new_func = _Decorator.parse_area(func)
         >>> hasattr(new_func, '__call__')
             True
-        >>> new_func(geom=geom, filter='coord')
+        >>> new_func(area=area, filter='coord')
             [[52.5170365, 13.3888599], [52.5198535, 13.4385964]]
-        >>> new_func(geom=geom, filter='coord', unique=True, order='Ll')
+        >>> new_func(area=area, filter='coord', unique=True, order='Ll')
             [[13.3888599, 52.5170365]]
             
         One can also simlarly retrieve the name of the places:
 
         >>> func = lambda **kwargs: kwargs.get('place')
-        >>> new_func = _Decorator.parse_geometry(func)
+        >>> new_func = _Decorator.parse_area(func)
         >>> hasattr(new_func, '__call__')
             True
-        >>> new_func(geom=geom, filter='place')
+        >>> new_func(area=area, filter='place')
             ['Berlin, 10117, Germany', 'Germany', 'Dorotheenstraße, Berlin, 10117, Germany',
             'Unter den Linden, Berlin, 10117, Germany', 'Olympischer Platz, Berlin, 14053, Germany', 
             'Sauerbruchweg, Berlin, 10117, Germany', 'Eingangsebene, Berlin, 10557, Germany', 
@@ -999,7 +996,7 @@ class _Decorator(object):
           positional arguments as :data:`func` and, in addition to the arguments 
           in `data:`**kwargs` already supported by the input method/function :data:`func`, 
           some extra keyword arguments:              
-              + :data:`geom` to parse geocoordinates;
+              + :data:`area` to parse geocoordinates;
               + :data:`filter` - a flag used to define the output of the decorated
                 function; it is either :literal:`place` or :literal:`coord`;
               + :data:`unique` - when set to :data:`True`, a single geometry is 
@@ -1013,7 +1010,7 @@ class _Decorator(object):
           :data:`*args, **kwargs`, the remaining parameters in :data:`kwargs` are 
           actually filtered out to extract geometry features, say :data:`g`, that 
           are formatted like the JSON :literal:`geometries` output by |GISCO| 
-          geocoding web-service (see method :meth:`services.GISCOService.place2geom`) 
+          geocoding web-service (see method :meth:`services.GISCOService.place2area`) 
           and which verify the following match:
           ::             
               g['type']='Feature' and g['geometry']['type']='Point' and g['properties']['osm_key']='place'             
@@ -1027,7 +1024,7 @@ class _Decorator(object):
         --------
         :meth:`~_Decorator.parse_place`, :meth:`~_Decorator.parse_coordinate`,
         :meth:`~_Decorator.parse_place_or_coordinate`, :meth:`~_Decorator.parse_nuts`, 
-        :meth:`services.GISCOService.place2geom`.
+        :meth:`services.GISCOService.place2area`.
         """
         KW_LAT          = 'lat' # not to be confused with _Decorator.KW_LAT
         KW_LON          = 'lon' # ibid 
@@ -1042,6 +1039,7 @@ class _Decorator(object):
         KW_POSTCODE     = 'postcode'
         KW_STATE        = 'state'
         KW_STREET       = 'street'
+        KW_EXTENT       = 'extent'
         KW_DISPLAYNAME  = 'display_name'
         def __call__(self, *args, **kwargs):
             filt = kwargs.pop('filter','coord')
@@ -1055,7 +1053,7 @@ class _Decorator(object):
                 raise happyError('wrong "order" parameter')
             geom = None
             if args not in (None,()): 
-                __key_geom = False
+                __key_area = False
                 if all([isinstance(a,_Feature) for a in args]):
                     try:
                         geom = [a.geometry for a in args]
@@ -1067,9 +1065,9 @@ class _Decorator(object):
                     if all([happyType.ismapping(args[0][i]) for i in range(len(args[0]))]):
                         geom = args[0]
             if geom is None:
-                __key_geom = True
-                geom = kwargs.pop(_Decorator.KW_GEOM, None)                 
-            elif not kwargs.get(_Decorator.KW_GEOM) is None:
+                __key_area = True
+                geom = kwargs.pop(_Decorator.KW_AREA, None)                 
+            elif not kwargs.get(_Decorator.KW_AREA) is None:
                 raise happyError('don''t mess up with me - duplicated geometry argument parsed')
             if geom is None:
                 return self.func(*args, **kwargs)
@@ -1080,26 +1078,26 @@ class _Decorator(object):
             if not all([happyType.ismapping(g) for g in geom]): 
                 raise happyError('wrong formatting/typing of geometry')  
             if filt in ('',None):
-                kwargs.update({_Decorator.KW_GEOM: geom}) 
+                kwargs.update({_Decorator.KW_AREA: geom}) 
             elif filt == 'coord':                            
                 try: # geometry is formatted like an OSM output
-                    coord = [[float(g[_Decorator.parse_geometry.KW_LAT]),
-                              float(g[_Decorator.parse_geometry.KW_LON])] for g in geom]
+                    coord = [[float(g[_Decorator.parse_area.KW_LAT]),
+                              float(g[_Decorator.parse_area.KW_LON])] for g in geom]
                     assert coord not in ([],None,[None])
                 except: # geometry is formatted like a GISCO output
                     coord = [g for g in geom                                                        \
-                       if _Decorator.parse_geometry.KW_GEOMETRY in g                            \
-                           and _Decorator.parse_geometry.KW_PROPERTIES in g                     \
-                           and _Decorator.parse_geometry.KW_TYPE in g                           \
-                           and g[_Decorator.parse_geometry.KW_TYPE]=='Feature'                  \
-                           and (not(settings.CHECK_TYPE) or g[_Decorator.parse_geometry.KW_GEOMETRY][_Decorator.parse_geometry.KW_TYPE]=='Point')          \
-                           and (not(settings.CHECK_OSM_KEY) or g[_Decorator.parse_geometry.KW_PROPERTIES][_Decorator.parse_geometry.KW_OSM_KEY]=='place')  \
+                       if _Decorator.parse_area.KW_GEOMETRY in g                            \
+                           and _Decorator.parse_area.KW_PROPERTIES in g                     \
+                           and _Decorator.parse_area.KW_TYPE in g                           \
+                           and g[_Decorator.parse_area.KW_TYPE]=='Feature'                  \
+                           and (not(settings.CHECK_TYPE) or g[_Decorator.parse_area.KW_GEOMETRY][_Decorator.parse_area.KW_TYPE]=='Point')          \
+                           and (not(settings.CHECK_OSM_KEY) or g[_Decorator.parse_area.KW_PROPERTIES][_Decorator.parse_area.KW_OSM_KEY]=='place')  \
                        ]
                     #coord = dict(zip(['lon','lat'],                                                 \
                     #                  zip(*[c[self.KW_GEOMETRY][self.KW_COORDINATES] for c in coord])))
-                    coord = [_[_Decorator.parse_geometry.KW_GEOMETRY][_Decorator.parse_geometry.KW_COORDINATES][::-1]   \
+                    coord = [_[_Decorator.parse_area.KW_GEOMETRY][_Decorator.parse_area.KW_COORDINATES][::-1]   \
                              for _ in coord]
-                if __key_geom and coord in ([],None):
+                if __key_area and coord in ([],None):
                     raise happyError ('geometry attributes not recognised')
                 if order != 'lL':   coord = [_[::-1] for _ in coord]
                 if unique:          coord = [coord[0],]
@@ -1107,18 +1105,18 @@ class _Decorator(object):
                 kwargs.update({_Decorator.KW_COORD: coord}) 
             elif filt == 'place':
                 try: # geometry is formatted like an OSM output
-                    place = [g[_Decorator.parse_geometry.KW_DISPLAYNAME] for g in geom]
+                    place = [g[_Decorator.parse_area.KW_DISPLAYNAME] for g in geom]
                     assert place not in ([],[''],None,[None])
                 except: # geometry is formatted like an OSM output 
-                    place = [g.get(_Decorator.parse_geometry.KW_PROPERTIES) for g in geom \
-                             if _Decorator.parse_geometry.KW_PROPERTIES in g]
-                    place = [', '.join(filter(None, [p.get(_Decorator.parse_geometry.KW_STREET) or '',
-                                        p.get(_Decorator.parse_geometry.KW_CITY) or '',
-                                        '(' + p.get(_Decorator.parse_geometry.KW_STATE) + ')'               \
-                                            if p.get(_Decorator.parse_geometry.KW_STATE) not in (None,'')   \
-                                            and p.get(_Decorator.parse_geometry.KW_STATE)!=p.get(_Decorator.parse_geometry.KW_CITY) else '',
-                                        p.get(_Decorator.parse_geometry.KW_POSTCODE) or '',
-                                        p.get(_Decorator.parse_geometry.KW_COUNTRY) or ''])) for p in place] 
+                    place = [g.get(_Decorator.parse_area.KW_PROPERTIES) for g in geom \
+                             if _Decorator.parse_area.KW_PROPERTIES in g]
+                    place = [', '.join(filter(None, [p.get(_Decorator.parse_area.KW_STREET) or '',
+                                        p.get(_Decorator.parse_area.KW_CITY) or '',
+                                        '(' + p.get(_Decorator.parse_area.KW_STATE) + ')'               \
+                                            if p.get(_Decorator.parse_area.KW_STATE) not in (None,'')   \
+                                            and p.get(_Decorator.parse_area.KW_STATE)!=p.get(_Decorator.parse_area.KW_CITY) else '',
+                                        p.get(_Decorator.parse_area.KW_POSTCODE) or '',
+                                        p.get(_Decorator.parse_area.KW_COUNTRY) or ''])) for p in place] 
                 if unique:          place = [place[0],]
                 if settings.REDUCE_ANSWER and len(place)==1:    place=place[0]
                 kwargs.update({_Decorator.KW_PLACE: place}) 
@@ -1221,7 +1219,7 @@ class _Decorator(object):
             
         See also
         --------
-        :meth:`~_Decorator.parse_geometry`, :meth:`services.GISCOService.place2geom`, 
+        :meth:`~_Decorator.parse_area`, :meth:`services.GISCOService.place2area`, 
         :meth:`~geoDecorators.parse_coordinate`, :meth:`services.GISCOService.coord2nuts`, 
         :meth:`services.GISCOService.place2nuts`.
         """
@@ -1234,7 +1232,7 @@ class _Decorator(object):
         KW_LEVEL        = 'LEVL_CODE'
         KW_NUTS_ID      = 'NUTS_ID' 
         KW_CNTR_CODE    = 'CNTR_CODE'
-        KW_NUTS_NAME    = 'NUTS_NAME'
+        KW_NUTS_NAME    = 'NUTS_NAME' # or 'NAME_LATN' ?
         KW_OBJECTID     = 'OBJECTID'
         def __call__(self, *args, **kwargs):
             level = kwargs.pop('level',None)
@@ -1492,7 +1490,7 @@ class _Decorator(object):
             
         Note
         ----
-        !!! Not yet implemented !!!
+        ! Not yet implemented !
         """
         KW_CODE         = 'code'
         KW_ROUTES       = 'routes'
@@ -1502,20 +1500,6 @@ class _Decorator(object):
     
 #/****************************************************************************/
 # let us complement the definition of _Feature
-def __Lon(inst):
-    try:
-        Lon = inst.coord[1]
-    except:
-        try:
-            Lon = inst.coord.get(_Decorator.KW_LON)
-        except:  # AttributeError
-            raise happyError('coordinates parameter not set')
-    return Lon if Lon is None or len(Lon)>1 else Lon[0]
-_Feature.Lon = property(__Lon) 
-_Feature.Lon.__doc__ =                                                      \
-    """Longitude attribute (:data:`getter`) of a :class:`_Feature` instance. 
-    A `Lon` type is (a list of) :class:`float`\ .
-    """
         
 def __lat(inst):
     try:
@@ -1531,9 +1515,26 @@ _Feature.lat.__doc__ =                                                      \
     """Latitude attribute (:data:`getter`) of a :class:`_Feature` instance. 
     A `lat` type is (a list of) :class:`float`\ .
     """
+def __Lon(inst):
+    try:
+        Lon = inst.coord[1]
+    except:
+        try:
+            Lon = inst.coord.get(_Decorator.KW_LON)
+        except:  # AttributeError
+            raise happyError('coordinates parameter not set')
+    return Lon if Lon is None or len(Lon)>1 else Lon[0]
+_Feature.Lon = property(__Lon) 
+_Feature.Lon.__doc__ =                                                      \
+    """Longitude attribute (:data:`getter`) of a :class:`_Feature` instance. 
+    A `Lon` type is (a list of) :class:`float`\ .
+    """
     
-def __coordinates(inst):              
-    return [inst.lat, inst.Lon]
+def __coordinates(inst):  
+    try:            
+        return [_ for _ in zip(inst.lat, inst.Lon)]
+    except:
+        return [inst.lat, inst.Lon]
 _Feature.coordinates = property(__coordinates) 
 _Feature.coordinates.__doc__ =                                              \
     """Geographical coordinates :literal:`(lat,Lon)` attribute (:data:`getter`) 
