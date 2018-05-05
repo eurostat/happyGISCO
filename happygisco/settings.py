@@ -28,6 +28,8 @@
 .. |googlemaps| replace:: `Google Maps <googlemaps_>`_
 .. _googleplaces: https://github.com/slimkrazy/python-google-places
 .. |googleplaces| replace:: `Google Places <googleplaces_>`_
+.. _geopy: https://github.com/geopy/geopy
+.. |geopy| replace:: `geopy <geopy_>`_
 .. _GDAL: https://pypi.python.org/pypi/GDAL
 .. |GDAL| replace:: `Geospatial Data Abstraction Library (GDAL) <GDAL_>`_
 .. _ArcGIS: http://arcgis.com
@@ -109,7 +111,7 @@ GISCO_URL           = '%s/%s' % (EC_DOMAIN, GISCO_DOMAIN)
 GISCO_ARCGIS        = 'webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/'
 """|GISCO| |ArcGIS| server.
 """
-CODER_GISCO         = 'gisco'
+CODER_GISCO         = 'GISCO'
 """Identifier of |GISCO| geocoder.
 """
 KEY_GISCO           = None

@@ -85,8 +85,10 @@ except ImportError:
 #==============================================================================
 
 class _Service(object):
-    """Base class defining a web-session and simple connection operations to be
-    used by a web-service. 
+    """Base class for web-based geospatial services.
+    
+    This class is used to defined a web-session and simple connection operations 
+    called by a web-service. 
        
         >>> serv = base._Service()
     """
@@ -376,24 +378,24 @@ class _Tool(object):
             
 class _Feature(object):    
     """Base class for geographical features.
+    
+        >>> feat = base._Feature()
     """
 
     #/************************************************************************/
-    def __init__(self, *args, **kwargs):
-        """
-        """
+    def __init__(self):
         self.__coord = None
-        self.__service, self.__tool = None, None, None
+        self.__service, self.__tool = None, None
         try:
             assert True
         except:
-            happyWarning('Tools not available')
+            happyWarning('tool(s) not available')
         else:
             self.__tool = _Tool()
         try:
             assert SERVICE_AVAILABLE
         except:
-            happyWarning('web services not available')
+            happyWarning('web service(s) not available')
         else:
             self.__service = _Service()
        
@@ -401,14 +403,16 @@ class _Feature(object):
     @property
     def service(self):
         """Service attribute (:data:`getter`) of a :class:`_Feature` instance. 
-        A `service` type is a :class:`~happygisco.services.GISCOService` 
-        or a :class:`~happygisco.services.APIService` object.
+        A :data:`service` object will be generally a :class:`~happygisco.services.GISCOService` 
+        or a :class:`~happygisco.services.APIService` instance.
         """
         return self.__service
        
     @property
     def tool(self):
         """Geospatial too attribute (:data:`getter`) of a :class:`_Feature` instance.
+        A :data:`service` object will be generally a :class:`~happygisco.tools.GDALTool` 
+        instance.
         """
         return self.__tool
     
@@ -1484,12 +1488,11 @@ class _Decorator(object):
 
     #/************************************************************************/
     class parse_route(__parse):
-        """Generic class decorator of functions and methods used to parse a 
-        route.
+        """Generic class decorator of functions and methods used to parse a route.
             
         Note
         ----
-        !!! Currently not yet implemented !!!
+        !!! Not yet implemented !!!
         """
         KW_CODE         = 'code'
         KW_ROUTES       = 'routes'
@@ -1497,3 +1500,42 @@ class _Decorator(object):
         def __call__(self, *args, **kwargs):
             pass
     
+#/****************************************************************************/
+# let us complement the definition of _Feature
+def __Lon(inst):
+    try:
+        Lon = inst.coord[1]
+    except:
+        try:
+            Lon = inst.coord.get(_Decorator.KW_LON)
+        except:  # AttributeError
+            raise happyError('coordinates parameter not set')
+    return Lon if Lon is None or len(Lon)>1 else Lon[0]
+_Feature.Lon = property(__Lon) 
+_Feature.Lon.__doc__ =                                                      \
+    """Longitude attribute (:data:`getter`) of a :class:`_Feature` instance. 
+    A `Lon` type is (a list of) :class:`float`\ .
+    """
+        
+def __lat(inst):
+    try:
+        lat = inst.__coord[0]
+    except:
+        try:
+            lat = inst.__coord.get(_Decorator.KW_LAT)
+        except:  # AttributeError
+            raise happyError('coordinates parameter not set')
+    return lat if lat is None or len(lat)>1 else lat[0]
+_Feature.lat = property(__lat) 
+_Feature.lat.__doc__ =                                                      \
+    """Latitude attribute (:data:`getter`) of a :class:`_Feature` instance. 
+    A `lat` type is (a list of) :class:`float`\ .
+    """
+    
+def __coordinates(inst):              
+    return [inst.lat, inst.Lon]
+_Feature.coordinates = property(__coordinates) 
+_Feature.coordinates.__doc__ =                                              \
+    """Geographical coordinates :literal:`(lat,Lon)` attribute (:data:`getter`) 
+    of a :class:`_Feature` instance.
+    """ 

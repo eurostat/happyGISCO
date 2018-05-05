@@ -89,7 +89,6 @@ class Location(_Feature):
             assert GDAL_TOOL
         except:
             happyWarning('GDAL services not available')
-            pass
         else:
             self.__tool = tools.GDALTool()
         try:
@@ -125,35 +124,6 @@ class Location(_Feature):
         A `place` type is  (a list of) :class:`str`\ .
         """
         return self.__place  if len(self.__place)>1 else self.__place[0]
-    
-    @property
-    def coordinates(self):              
-        """Geographical coordinates :literal:`(lat,Lon)` attribute (:data:`getter`) 
-        of a :class:`GeoLocation` instance.
-        """ 
-        return [self.lat, self.Lon]
-        
-    @property
-    def lat(self):
-        """Latitude attribute (:data:`getter`) of a :class:`Location` instance. 
-        A `lat` type is (a list of) :class:`float`\ .
-        """
-        try:
-            lat = self.__coord[0]
-        except:
-            lat = self.__coord.get(_Decorator.KW_LAT)
-        return lat if lat is None or len(lat)>1 else lat[0]
-
-    @property
-    def Lon(self):
-        """Longitude attribute (:data:`getter`) of a :class:`Location` instance. 
-        A `Lon` type is (a list of) :class:`float`\ .
-        """
-        try:
-            Lon = self.__coord[1]
-        except:
-            Lon = self.__coord.get(_Decorator.KW_LON)
-        return Lon if Lon is None or len(Lon)>1 else Lon[0]
 
     #/************************************************************************/
     def __repr__(self):
