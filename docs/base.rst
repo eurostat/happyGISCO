@@ -1,5 +1,5 @@
-:mod:`base` module: Basic implementations, generic classes and methods
-----------------------------------------------------------------------
+:mod:`base` module: Base implementations of generic classes and methods
+-----------------------------------------------------------------------
 
 .. automodule:: base
     :members:

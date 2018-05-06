@@ -4,13 +4,13 @@
 .. automodule:: features
     :members:
     :inherited-members:
-    :exclude-members: Location, Geometry, NUTS
+    :exclude-members: Location, Area, NUTS
 
 .. autoclass:: features.Location
     :members:
     :show-inheritance:
 
-.. autoclass:: features.Geometry
+.. autoclass:: features.Area
     :members:
     :show-inheritance:
 
