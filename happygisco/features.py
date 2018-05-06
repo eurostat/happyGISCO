@@ -45,6 +45,88 @@ from happygisco.services import GISCO_SERVICE, API_SERVICE
 
 # requirements
 
+#%%
+#==============================================================================
+# ENLARGE YOUR _Feature
+#==============================================================================
+        
+#/****************************************************************************/
+# let us complement the definition of _Feature
+def __init(inst, *args, **kwargs):
+    # kwargs.pop(_Decorator.KW_PLACE); kwargs.pop(_Decorator.KW_COORD)
+    try:
+        assert GDAL_TOOL
+    except:
+        happyWarning('GDAL services not available')
+    else:
+        inst.__tool = tools.GDALTool()
+    try:
+        assert API_SERVICE or GISCO_SERVICE
+    except:
+        happyWarning('external API and GISCO services not available')
+    else:
+        service = kwargs.pop('serv', settings.CODER_GISCO)
+        if service is None: # whatever works
+            try:
+                assert GISCO_SERVICE is True
+                inst.__service = services.GISCOService(coder=service)
+            except:
+                try:
+                    assert API_SERVICE is True
+                    inst.__service = services.APIService(coder=service)
+                except:
+                    raise IOError('no service available')
+        elif isinstance(service,str):
+            if service in services.GISCOService.CODER:
+                inst.__service = services.GISCOService(coder=service)
+            elif service in services.APIService.CODER:
+                inst.__service = services.APIService(coder=service)
+            else:
+                raise IOError('service %s not available' % service)
+        if not isinstance(inst.__service,(services.GISCOService,services.APIService)):
+            raise IOError('service %s not supported' % service)
+_Feature.__init__ = __init
+
+#/****************************************************************************/
+def __lat(inst):
+    try:
+        lat = inst.__coord[0]
+    except:
+        try:
+            lat = inst.__coord.get(_Decorator.KW_LAT)
+        except:  # AttributeError
+            raise happyError('coordinates parameter not set')
+    return lat if lat is None or len(lat)>1 else lat[0]
+_Feature.lat = property(__lat) 
+_Feature.lat.__doc__ =                                                      \
+    """Latitude attribute (:data:`getter`) of a :class:`_Feature` instance. 
+    A `lat` type is (a list of) :class:`float`\ .
+    """
+def __Lon(inst):
+    try:
+        Lon = inst.coord[1]
+    except:
+        try:
+            Lon = inst.coord.get(_Decorator.KW_LON)
+        except:  # AttributeError
+            raise happyError('coordinates parameter not set')
+    return Lon if Lon is None or len(Lon)>1 else Lon[0]
+_Feature.Lon = property(__Lon) 
+_Feature.Lon.__doc__ =                                                      \
+    """Longitude attribute (:data:`getter`) of a :class:`_Feature` instance. 
+    A `Lon` type is (a list of) :class:`float`\ .
+    """
+    
+def __coordinates(inst):  
+    try:            
+        return [_ for _ in zip(inst.lat, inst.Lon)]
+    except:
+        return [inst.lat, inst.Lon]
+_Feature.coordinates = property(__coordinates) 
+_Feature.coordinates.__doc__ =                                              \
+    """Geographical coordinates :literal:`(lat,Lon)` attribute (:data:`getter`) 
+    of a :class:`_Feature` instance.
+    """ 
 
 #%%
 #==============================================================================
@@ -81,42 +163,11 @@ class Location(_Feature):
 
     #/************************************************************************/
     @_Decorator.parse_place_or_coordinate
-    def __init__(self, *args, **kwargs):
+    def __init__(self,**kwargs):
         # kwargs.pop('order',None)
         self.__place = kwargs.pop(_Decorator.KW_PLACE, None)
         self.__coord = kwargs.pop(_Decorator.KW_COORD, None)
         super(Location,self).__init__(**kwargs)
-        try:
-            assert GDAL_TOOL
-        except:
-            happyWarning('GDAL services not available')
-        else:
-            self.__tool = tools.GDALTool()
-        try:
-            assert API_SERVICE or GISCO_SERVICE
-        except:
-            happyWarning('external API and GISCO services not available')
-        else:
-            service = kwargs.pop('serv', settings.CODER_GISCO)
-            if service is None: # whatever works
-                try:
-                    assert GISCO_SERVICE is True
-                    self.__service = services.GISCOService(coder=service)
-                except:
-                    try:
-                        assert API_SERVICE is True
-                        self.__service = services.APIService(coder=service)
-                    except:
-                        raise IOError('no service available')
-            elif isinstance(service,str):
-                if service in services.GISCOService.CODER:
-                    self.__service = services.GISCOService(coder=service)
-                elif service in services.APIService.CODER:
-                    self.__service = services.APIService(coder=service)
-                else:
-                    raise IOError('service %s not available' % service)
-            if not isinstance(self.__service,(services.GISCOService,services.APIService)):
-                raise IOError('service %s not supported' % service)
 
     #/************************************************************************/
     @property
@@ -351,8 +402,8 @@ class NUTS(_Feature):
 
     #/************************************************************************/
     @_Decorator.parse_nuts
-    def __init__(self, nuts, **kwargs):
-        self.__nuts = nuts
+    def __init__(self, **kwargs):
+        self.__nuts = kwargs.pop(_Decorator.KW_NUTS, [])
         super(NUTS,self).__init__(**kwargs)
     
     #/************************************************************************/
@@ -468,8 +519,8 @@ class Area(_Feature):
 
     #/************************************************************************/
     @_Decorator.parse_nuts
-    def __init__(self, area, **kwargs):
-        self.__area = area
+    def __init__(self, **kwargs):
+        self.__area = kwargs.pop(_Decorator.KW_AREA, [])
         super(Area,self).__init__(**kwargs)
     
     #/************************************************************************/

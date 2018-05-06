@@ -4,6 +4,8 @@
 """
 .. _mod_base
 
+.. highlight:: python
+
 .. Links
 
 .. _Eurostat: http://ec.europa.eu/eurostat/web/main
@@ -44,7 +46,7 @@ Base implementations (generic methods and classes) used trhoughout :mod:`happygi
 The :class:`_Decorator` class and its subclasses exposed in this module **can be 
 ignored** at the first glance since they are not requested to run the services. 
 They are provided here for the sake of an exhaustive documentation.
-    
+
 **Dependencies**
 
 *require*:      :mod:`os`, :mod:`sys`, :mod:`itertools`
@@ -89,8 +91,9 @@ class _Service(object):
     
     This class is used to defined a web-session and simple connection operations 
     called by a web-service. 
-       
-        >>> serv = base._Service()
+        
+       >>> serv = base._Service()
+        
     """
     
     #/************************************************************************/
@@ -1006,6 +1009,7 @@ class _Decorator(object):
                 geographical coordinates; it can be either :literal:`'lL'` for 
                 :literal:`(lat,Lon)` order or :literal:`'Ll'` for a :literal:`(Lon,lat)` 
                 order; default is :literal:`'lL'`.    
+                
         * When passed to the decorated method :data:`new_func` with input arguments 
           :data:`*args, **kwargs`, the remaining parameters in :data:`kwargs` are 
           actually filtered out to extract geometry features, say :data:`g`, that 
@@ -1013,7 +1017,8 @@ class _Decorator(object):
           geocoding web-service (see method :meth:`services.GISCOService.place2area`) 
           and which verify the following match:
           ::             
-              g['type']='Feature' and g['geometry']['type']='Point' and g['properties']['osm_key']='place'             
+              g['type']='Feature' and g['geometry']['type']='Point' and g['properties']['osm_key']='place'    
+              
         * When extracting the coordinates from a geometry feature, say :data:`g`, 
           output by |GISCO| web-service, the original order in the composite key 
           :data:`g['geometry']['coordinates']` is :literal:`(Lon,lat)`. Note that
@@ -1498,45 +1503,3 @@ class _Decorator(object):
         def __call__(self, *args, **kwargs):
             pass
     
-#/****************************************************************************/
-# let us complement the definition of _Feature
-        
-def __lat(inst):
-    try:
-        lat = inst.__coord[0]
-    except:
-        try:
-            lat = inst.__coord.get(_Decorator.KW_LAT)
-        except:  # AttributeError
-            raise happyError('coordinates parameter not set')
-    return lat if lat is None or len(lat)>1 else lat[0]
-_Feature.lat = property(__lat) 
-_Feature.lat.__doc__ =                                                      \
-    """Latitude attribute (:data:`getter`) of a :class:`_Feature` instance. 
-    A `lat` type is (a list of) :class:`float`\ .
-    """
-def __Lon(inst):
-    try:
-        Lon = inst.coord[1]
-    except:
-        try:
-            Lon = inst.coord.get(_Decorator.KW_LON)
-        except:  # AttributeError
-            raise happyError('coordinates parameter not set')
-    return Lon if Lon is None or len(Lon)>1 else Lon[0]
-_Feature.Lon = property(__Lon) 
-_Feature.Lon.__doc__ =                                                      \
-    """Longitude attribute (:data:`getter`) of a :class:`_Feature` instance. 
-    A `Lon` type is (a list of) :class:`float`\ .
-    """
-    
-def __coordinates(inst):  
-    try:            
-        return [_ for _ in zip(inst.lat, inst.Lon)]
-    except:
-        return [inst.lat, inst.Lon]
-_Feature.coordinates = property(__coordinates) 
-_Feature.coordinates.__doc__ =                                              \
-    """Geographical coordinates :literal:`(lat,Lon)` attribute (:data:`getter`) 
-    of a :class:`_Feature` instance.
-    """ 
