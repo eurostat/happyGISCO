@@ -4,8 +4,6 @@
 """
 .. _mod_base
 
-.. highlight:: python
-
 .. Links
 
 .. _Eurostat: http://ec.europa.eu/eurostat/web/main
@@ -92,6 +90,8 @@ class _Service(object):
     This class is used to defined a web-session and simple connection operations 
     called by a web-service. 
         
+    ::
+        
        >>> serv = base._Service()
         
     """
@@ -146,20 +146,24 @@ class _Service(object):
         We can see the response status code when connecting to different web-pages
         or services:
         
-        >>> serv = base._Service()
-        >>> serv.get_status('http://dumb')
-            ConnectionError: connection failed
-        >>> serv.get_status('http://www.dumbanddumber.com')
-            301 
+        ::
+        
+            >>> serv = base._Service()
+            >>> serv.get_status('http://dumb')
+                ConnectionError: connection failed
+            >>> serv.get_status('http://www.dumbanddumber.com')
+                301 
         
         Let us actually check that the status is ok when connecting to |Eurostat| website:
+        
+        ::
             
-        >>> stat = serv.get_status(settings.ESTAT_URL)
-        >>> print(stat)
-            200
-        >>> import requests
-        >>> stat == requests.codes.ok
-            True
+            >>> stat = serv.get_status(settings.ESTAT_URL)
+            >>> print(stat)
+                200
+            >>> import requests
+            >>> stat == requests.codes.ok
+                True
         
         See also
         --------
@@ -185,6 +189,8 @@ class _Service(object):
     def get_response(self, url):
         """Retrieve the GET response of a URL.
         
+        ::
+        
             >>> response = serv.get_response(url)
             
         Arguments
@@ -208,41 +214,47 @@ class _Service(object):
         Examples
         --------
         Some simple tests:
+        
+        ::
             
-        >>> serv = base._Service()
-        >>> serv.get_response('http://dumb')
-            happyError: wrong request formulated
-        >>> resp = serv.get_response('http://www.example.com')
-        >>> print(resp.text)
-            <!doctype html>
-            <html>
-            <head>
-                <title>Example Domain</title>
-                <meta charset="utf-8" />
-                <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-                <meta name="viewport" content="width=device-width, initial-scale=1" />
-                ...
+            >>> serv = base._Service()
+            >>> serv.get_response('http://dumb')
+                happyError: wrong request formulated
+            >>> resp = serv.get_response('http://www.example.com')
+            >>> print(resp.text)
+                <!doctype html>
+                <html>
+                <head>
+                    <title>Example Domain</title>
+                    <meta charset="utf-8" />
+                    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1" />
+                    ...
             
         We can view the server’s response headers when connecting to |Eurostat|
         webpage:
+        
+        ::
             
-        >>> resp = serv.get_response(settings.ESTAT_URL)
-        >>> print(resp.headers)
-            {   'Date': 'Wed, 18 Apr 2018 11:54:40 GMT', 
-                'X-Content-Type-Options': 'nosniff', 
-                'X-Frame-Options': 'SAMEORIGIN', 
-                'X-XSS-Protection': '1', 
-                'Content-Type': 'text/html;charset=UTF-8', 
-                'Transfer-Encoding': 'chunked', 
-                'Server': 'Europa', 
-                'Connection': 'Keep-Alive', 
-                'Content-Encoding': 'gzip' }
+            >>> resp = serv.get_response(settings.ESTAT_URL)
+            >>> print(resp.headers)
+                {   'Date': 'Wed, 18 Apr 2018 11:54:40 GMT', 
+                    'X-Content-Type-Options': 'nosniff', 
+                    'X-Frame-Options': 'SAMEORIGIN', 
+                    'X-XSS-Protection': '1', 
+                    'Content-Type': 'text/html;charset=UTF-8', 
+                    'Transfer-Encoding': 'chunked', 
+                    'Server': 'Europa', 
+                    'Connection': 'Keep-Alive', 
+                    'Content-Encoding': 'gzip' }
         
         We can also access the response body as bytes (though that is usually
         adapted to non-text requests):
+        
+        ::
             
-        >>> print(resp.content)
-            b'<!DOCTYPE html PUBLIC " ...
+            >>> print(resp.content)
+                b'<!DOCTYPE html PUBLIC " ...
         
         See also
         --------
