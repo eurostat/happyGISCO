@@ -238,6 +238,9 @@ language            = None
 # This pattern also affects html_static_path and html_extra_path .
 exclude_patterns    = ['_build', 'Thumbs.db', '.DS_Store', '__pycache__']
 
+# The default language to highlight source code in. 
+highlight_language  = 'python3' 
+
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style      = 'sphinx'
 

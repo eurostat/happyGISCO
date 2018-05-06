@@ -15,5 +15,5 @@
 .. autoclass:: settings.happyVerbose
    :members:
 
-.. autoclass:: settings. happyType
+.. autoclass:: settings.happyType
    :members:
