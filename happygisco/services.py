@@ -128,6 +128,8 @@ except ImportError:
 class OSMService(_Service):
     """Class providing conversion methods and geocoding tools that run the |Nominatim| 
     online web-service of the |OSM| API.
+        
+    ::
        
         >>> serv = services.OSMService(**kwargs)
             
@@ -161,6 +163,8 @@ class OSMService(_Service):
         """Generate the query URL for |Nominatim| geocoding web-service (from toponame to
         geocoordinate).
         
+        ::
+        
             >>> url = serv.url_geocode(**kwargs)
            
         Keyword Arguments
@@ -181,10 +185,12 @@ class OSMService(_Service):
         Example
         -------
         Let us create a simple URL for querying the geolocation of a toponame:
+        
+        ::
             
-        >>> serv = services.OSMService()
-        >>> serv.url_geocode(q='Paris+France', format='json')
-            'https://nominatim.openstreetmap.org/search?q=Paris+France&format=json'
+            >>> serv = services.OSMService()
+            >>> serv.url_geocode(q='Paris+France', format='json')
+                'https://nominatim.openstreetmap.org/search?q=Paris+France&format=json'
         
         See also
         --------
@@ -213,6 +219,8 @@ class OSMService(_Service):
         """Generate the query URL for |Nominatim| reverse geocoding web-service (from 
         geocoordinate to toponame).
         
+        ::
+        
             >>> url = serv.url_reverse(**kwargs)
            
         Keyword Arguments
@@ -234,10 +242,12 @@ class OSMService(_Service):
         -------
         We can generate the URL for querying the toponame associated to a given
         geolocation:
+        
+        ::
 
-        >>> serv = services.OSMService()
-        >>> serv.url_reverse(lon=10, lat=52)
-            'https://nominatim.openstreetmap.org/reverse?lon=10&lat=52'
+            >>> serv = services.OSMService()
+            >>> serv.url_reverse(lon=10, lat=52)
+                'https://nominatim.openstreetmap.org/reverse?lon=10&lat=52'
         
         See also
         --------
@@ -335,6 +345,8 @@ class OSMService(_Service):
         """Retrieve the geographical information associated to a given place as a
         geometry object using |OSM| service.
         
+        ::
+        
             >>> area = serv.place2area(place, **kwargs)
 
         Arguments
@@ -368,53 +380,59 @@ class OSMService(_Service):
         --------
         We will retrieve the geolocation of Berlin, Germany:
         
-        >>> berlin = 'Berlin, Germany'
+        ::
+        
+            >>> berlin = 'Berlin, Germany'
         
         For that purpose, we can build the desired |OSM| URL:
         
-        >>> serv = services.OSMService()
-        >>> serv.url_geocode(place=berlin) 
-            'https://nominatim.openstreetmap.org/search?format=json&q=Berlin+Germany'
+        ::
+        
+            >>> serv = services.OSMService()
+            >>> serv.url_geocode(place=berlin) 
+                'https://nominatim.openstreetmap.org/search?format=json&q=Berlin+Germany'
         
         though the method :meth:`place2area` enables us to run the operation all
         in once: 
+        
+        ::
 
-        >>> serv.place2area(berlin, format='json')
-            [{'boundingbox': ['52.3570365', '52.6770365', '13.2288599', '13.5488599'],
-               'class': 'place',
-              'display_name': 'Berlin, 10117, Deutschland',
-              'icon': 'https://nominatim.openstreetmap.org/images/mapicons/poi_place_city.p.20.png',
-              'importance': 0.31553744940772,
-              'lat': '52.5170365',
-              'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
-              'lon': '13.3888599',
-              'osm_id': '240109189', 'osm_type': 'node',
-              'place_id': '226584215',
-              'type': 'city'},
-             {'boundingbox': ['52.33826', '52.67551', '13.08835', '13.76116'],
-              'class': 'boundary',
-              'display_name': 'Berlin, Deutschland',
-              'icon': 'https://nominatim.openstreetmap.org/images/mapicons/poi_boundary_administrative.p.20.png',
-              'importance': 0.31553744940772,
-              'lat': '52.5198535',
-              'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
-              'lon': '13.4385964',
-              'osm_id': '62422', 'osm_type': 'relation',
-              'place_id': '178741737',
-              'type': 'administrative'},
-             ...
-             {'boundingbox': ['52.4186824', '52.4187824', '13.1963552', '13.1964552'],
-              'class': 'tourism',
-              'display_name': 'Berlin, A 115, Nikolassee, Steglitz-Zehlendorf, Berlin, 14109, Deutschland',
-              'icon': 'https://nominatim.openstreetmap.org/images/mapicons/tourist_art_gallery2.p.20.png',
-              'importance': 0.11025,
-              'lat': '52.4187324',
-              'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
-              'lon': '13.1964052',
-              'osm_id': '1069490670', 'osm_type': 'node',
-              'place_id': '11522486',
-              'type': 'artwork'}]  
-            
+            >>> serv.place2area(berlin, format='json')
+                [{'boundingbox': ['52.3570365', '52.6770365', '13.2288599', '13.5488599'],
+                   'class': 'place',
+                  'display_name': 'Berlin, 10117, Deutschland',
+                  'icon': 'https://nominatim.openstreetmap.org/images/mapicons/poi_place_city.p.20.png',
+                  'importance': 0.31553744940772,
+                  'lat': '52.5170365',
+                  'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
+                  'lon': '13.3888599',
+                  'osm_id': '240109189', 'osm_type': 'node',
+                  'place_id': '226584215',
+                  'type': 'city'},
+                 {'boundingbox': ['52.33826', '52.67551', '13.08835', '13.76116'],
+                  'class': 'boundary',
+                  'display_name': 'Berlin, Deutschland',
+                  'icon': 'https://nominatim.openstreetmap.org/images/mapicons/poi_boundary_administrative.p.20.png',
+                  'importance': 0.31553744940772,
+                  'lat': '52.5198535',
+                  'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
+                  'lon': '13.4385964',
+                  'osm_id': '62422', 'osm_type': 'relation',
+                  'place_id': '178741737',
+                  'type': 'administrative'},
+                 ...
+                 {'boundingbox': ['52.4186824', '52.4187824', '13.1963552', '13.1964552'],
+                  'class': 'tourism',
+                  'display_name': 'Berlin, A 115, Nikolassee, Steglitz-Zehlendorf, Berlin, 14109, Deutschland',
+                  'icon': 'https://nominatim.openstreetmap.org/images/mapicons/tourist_art_gallery2.p.20.png',
+                  'importance': 0.11025,
+                  'lat': '52.4187324',
+                  'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
+                  'lon': '13.1964052',
+                  'osm_id': '1069490670', 'osm_type': 'node',
+                  'place_id': '11522486',
+                  'type': 'artwork'}]  
+                
         See also
         --------
         :meth:`~OSMService.coord2place`, :meth:`~OSMService.place2coord`, 
@@ -497,7 +515,9 @@ class OSMService(_Service):
     def coord2area(self, coord, **kwargs): # specific use
         """Retrieve the place (topo)name of a given location provided by its 
         geographical coordinates using |OSM| service.
-        
+                
+        ::
+
             >>>  area = serv.coord2area(coord, **kwargs)
 
         Arguments
@@ -533,33 +553,39 @@ class OSMService(_Service):
         Let us what we actually retrieve when we enter the geolocation of the
         (approximate) centre of Berlin, Germany:
         
-        >>> berlin = [52.5170365, 13.3888599]
+        ::
+        
+            >>> berlin = [52.5170365, 13.3888599]
         
         We can build the desired |OSM| URL to get the result:
         
-        >>> serv = services.OSMService()
-        >>> serv.url_reverse(coord=berlin) 
-            'https://nominatim.openstreetmap.org/reverse?format=json&lat=52.5170365&lon=13.3888599'
+        ::
+        
+            >>> serv = services.OSMService()
+            >>> serv.url_reverse(coord=berlin) 
+                'https://nominatim.openstreetmap.org/reverse?format=json&lat=52.5170365&lon=13.3888599'
         
         however, the method :meth:`coord2area` does everything at once:
-        
-        >>> serv.coord2area(berlin, format='json')
-            {'address': {'address29': 'Douglas',
-              'city': 'Berlin',
-              'city_district': 'Mitte',
-              'country': 'Deutschland', 'country_code': 'de',
-              'neighbourhood': 'Spandauer Vorstadt',
-              'postcode': '10117',
-              'road': 'Unter den Linden',
-              'state': 'Berlin',
-              'suburb': 'Mitte'},
-             'boundingbox': ['52.517222', '52.517422', '13.388877', '13.389077'],
-             'display_name': 'Douglas, Unter den Linden, Spandauer Vorstadt, Mitte, Berlin, 10117, Deutschland',
-             'lat': '52.517322',
-             'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
-             'lon': '13.388977',
-             'osm_id': '1818862993', 'osm_type': 'node',
-             'place_id': '18439434'}
+         
+        ::
+       
+            >>> serv.coord2area(berlin, format='json')
+                {'address': {'address29': 'Douglas',
+                  'city': 'Berlin',
+                  'city_district': 'Mitte',
+                  'country': 'Deutschland', 'country_code': 'de',
+                  'neighbourhood': 'Spandauer Vorstadt',
+                  'postcode': '10117',
+                  'road': 'Unter den Linden',
+                  'state': 'Berlin',
+                  'suburb': 'Mitte'},
+                 'boundingbox': ['52.517222', '52.517422', '13.388877', '13.389077'],
+                 'display_name': 'Douglas, Unter den Linden, Spandauer Vorstadt, Mitte, Berlin, 10117, Deutschland',
+                 'lat': '52.517322',
+                 'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
+                 'lon': '13.388977',
+                 'osm_id': '1818862993', 'osm_type': 'node',
+                 'place_id': '18439434'}
         
         See also
         --------
@@ -574,6 +600,8 @@ class OSMService(_Service):
     def place2coord(self, place, **kwargs):
         """Retrieve the geographical coordinates of a given place provided by its 
         (topo)name using |OSM| service.
+        
+        ::
         
             >>> coord = serv.place2coord(place, **kwargs)
 
@@ -605,20 +633,22 @@ class OSMService(_Service):
         --------
         We can easily retrieve the geolocations associated to well-known places:
         
-        >>> serv = services.OSMService()
-        >>> serv.place2coord('Berlin, Germany')
-            [[52.5170365, 13.3888599],
-             [52.5198535, 13.4385964],
-             [54.0363605, 10.4461313],
-             [54.405119, 9.4319966],
-             [52.5034002, 13.3386373],
-             [52.5129535, 13.3299651],
-             [52.5208803, 13.4107774],
-             [47.984547, 10.1865807],
-             [52.4758015, 13.3248541],
-             [52.4187324, 13.1964052]]        
-        >>> serv.place2coord('Roma, Italy', order='Ll', unique=True)
-            [12.4829321, 41.8933203]
+        ::
+        
+            >>> serv = services.OSMService()
+            >>> serv.place2coord('Berlin, Germany')
+                [[52.5170365, 13.3888599],
+                 [52.5198535, 13.4385964],
+                 [54.0363605, 10.4461313],
+                 [54.405119, 9.4319966],
+                 [52.5034002, 13.3386373],
+                 [52.5129535, 13.3299651],
+                 [52.5208803, 13.4107774],
+                 [47.984547, 10.1865807],
+                 [52.4758015, 13.3248541],
+                 [52.4187324, 13.1964052]]        
+            >>> serv.place2coord('Roma, Italy', order='Ll', unique=True)
+                [12.4829321, 41.8933203]
             
         Note
         ----
@@ -643,6 +673,8 @@ class OSMService(_Service):
     def coord2place(self, coord, **kwargs):
         """Retrieve the (topo)name of a given location provided by its geographical 
         coordinates using |OSM| service.
+        
+        ::
        
             >>> place = serv.coord2place(coord, **kwargs)
 
@@ -669,12 +701,14 @@ class OSMService(_Service):
         Examples
         --------
         Let us see whether we can identify some places through their geolocations:
+        
+        ::
             
-        >>> serv = services.OSMService()
-        >>> serv.coord2place([41.8933203, 12.4829321])
-            'Statua equestre di Marco Aurelio, Piazza del Campidoglio, Municipio Roma I, Roma, RM, LAZ, 00186, Italia'        
-        >>> serv.coord2place([55.6867243, 12.5700724])
-            '3A, Øster Farimagsgade, Indre Østerbro, Frederiksstaden, København, Københavns Kommune, Region Hovedstaden, 1353, Danmark'
+            >>> serv = services.OSMService()
+            >>> serv.coord2place([41.8933203, 12.4829321])
+                'Statua equestre di Marco Aurelio, Piazza del Campidoglio, Municipio Roma I, Roma, RM, LAZ, 00186, Italia'        
+            >>> serv.coord2place([55.6867243, 12.5700724])
+                '3A, Øster Farimagsgade, Indre Østerbro, Frederiksstaden, København, Københavns Kommune, Region Hovedstaden, 1353, Danmark'
             
         Note
         ----
@@ -702,6 +736,8 @@ class OSMService(_Service):
 class GISCOService(OSMService):
     """Class providing conversion methods and geocoding tools that run the |GISCO| 
     online web-service, itself based on |OSM| |Nominatim| API.
+        
+    ::
        
         >>> serv = services.GISCOService(**kwargs)
             
@@ -766,6 +802,8 @@ class GISCOService(OSMService):
         """Generate the query URL for |GISCO| geocoding web-service (from toponame 
         to geocoordinate).
         
+        ::
+        
             >>> url = serv.url_geocode(**kwargs)
            
         Keyword Arguments
@@ -789,10 +827,12 @@ class GISCOService(OSMService):
         Example
         -------
         Let us create a simple URL for querying the geolocation of a toponame:
+        
+        ::
             
-        >>> serv = services.GISCOService()
-        >>> serv.url_geocode(q='Paris+France')
-            'http://europa.eu/webtools/rest/gisco/api?q=Paris+France'
+            >>> serv = services.GISCOService()
+            >>> serv.url_geocode(q='Paris+France')
+                'http://europa.eu/webtools/rest/gisco/api?q=Paris+France'
             
         Note
         ----
@@ -816,6 +856,8 @@ class GISCOService(OSMService):
     def url_reverse(self, **kwargs):
         """Generate the query URL for |GISCO| reverse geocoding web-service (from 
         geocoordinate to toponame).
+        
+        ::
         
             >>> url = serv.url_reverse(**kwargs)
            
@@ -841,10 +883,12 @@ class GISCOService(OSMService):
         -------
         We can generate the URL for querying the toponame associated to a given
         geolocation:
+        
+        ::
 
-        >>> serv = services.GISCOService()
-        >>> serv.url_reverse(lon=10, lat=52)
-            'http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52'
+            >>> serv = services.GISCOService()
+            >>> serv.url_reverse(lon=10, lat=52)
+                'http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52'
             
         Note
         ----
@@ -869,6 +913,8 @@ class GISCOService(OSMService):
         """Generate the query URL for |GISCO| routing web-service (from a list of
         geocoordinates to a route).
         
+        ::
+        
             >>> url = serv.url_route(**kwargs)
            
         Keyword Arguments
@@ -891,10 +937,12 @@ class GISCOService(OSMService):
         -------
         Let us generate the URL for querying the route going through a series of
         geolocations:
+        
+        ::
 
-        >>> serv = services.GISCOService()
-        >>> serv.url_route(coordinates='13.388860,52.517037;13.397634,52.529407;13.428555,52.523219')
-            'https://europa.eu/webtools/rest/gisco/route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219'
+            >>> serv = services.GISCOService()
+            >>> serv.url_route(coordinates='13.388860,52.517037;13.397634,52.529407;13.428555,52.523219')
+                'https://europa.eu/webtools/rest/gisco/route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219'
         
         See also
         --------
@@ -923,7 +971,9 @@ class GISCOService(OSMService):
         """Generate the query URL for |GISCO| projection tranform web-service (from 
         a geocoordinate in a given projection reference system to its transformation
         in another projection reference system)
-        
+         
+        ::
+       
             >>> url = serv.url_transform(**kwargs)
            
         Keyword Arguments
@@ -945,11 +995,13 @@ class GISCOService(OSMService):
         -------
         We can generate the URL for querying the tranform of a given geolocation
         from *WGS84* projection system to *LAEA*:
+        
+        ::
 
-        >>> serv = services.GISCOService()
-        >>> serv.url_transform(inSR=4326, outSR=3035, f='json',
-                               geometries='-9.1630,38.7775')
-            'https://webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/Utilities/Geometry/GeometryServer/project?inSR=4326&outSR=3035&geometries=-9.1630,38.7775&f=json'
+            >>> serv = services.GISCOService()
+            >>> serv.url_transform(inSR=4326, outSR=3035, f='json',
+                                   geometries='-9.1630,38.7775')
+                'https://webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/Utilities/Geometry/GeometryServer/project?inSR=4326&outSR=3035&geometries=-9.1630,38.7775&f=json'
         
         See also
         --------
@@ -974,6 +1026,8 @@ class GISCOService(OSMService):
         """Create a query URL to be submitted to the |GISCO| (simple) web-service 
         for NUTS codes identification.
         
+        ::
+        
             >>> url = serv.url_nuts(**kwargs)
            
         Keyword Arguments
@@ -995,10 +1049,12 @@ class GISCOService(OSMService):
         -----
         Let us build the URL that will allow us to identify the NUTS actually 
         associated with Berlin, Germany:
+        
+        ::
 
-        >>> serv = services.GISCOService()
-        >>> serv.url_nuts(y=52.5170365, x=13.3888599, f='JSON', proj=4326)
-            'http://europa.eu/webtools/rest/gisco/nuts/find-nuts.py?y=52.5170365&x=13.3888599&f=JSON&proj=4326'
+            >>> serv = services.GISCOService()
+            >>> serv.url_nuts(y=52.5170365, x=13.3888599, f='JSON', proj=4326)
+                'http://europa.eu/webtools/rest/gisco/nuts/find-nuts.py?y=52.5170365&x=13.3888599&f=JSON&proj=4326'
         
         See also
         --------
@@ -1034,6 +1090,8 @@ class GISCOService(OSMService):
         """Retrieve geographical information) associated to a given place as a
         geometry using |GISCO| service.
         
+        ::
+        
             >>> area = serv.place2area(place, **kwargs)
 
         Arguments
@@ -1066,41 +1124,43 @@ class GISCOService(OSMService):
         Example
         -------
         The method returns the complete list of geometries output by the web-servive:
-            
-        >>> serv = services.GISCOService()
-        >>> serv.place2area('Madrid, Spain')
-            [{'geometry': {'coordinates': [-3.7035825, 40.4167047], 'type': 'Point'},
-              'properties': {'country': 'Spain',
-               'extent': [-3.8889539, 40.6437293, -3.5179163, 40.3119774],
-               'name': 'Madrid',
-               'osm_id': 5326784, 'osm_key': 'place', 'osm_type': 'R', 'osm_value': 'city',
-               'postcode': '28001',
-               'state': 'Community of Madrid'},
-              'type': 'Feature'},
-             {'geometry': {'coordinates': [-3.7715627754518115, 40.5248319], 'type': 'Point'},
-              'properties': {'country': 'Spain',
-               'extent': [-4.5790058, 41.1657381, -3.0529852, 39.8845834],
-               'name': 'Community of Madrid',
-               'osm_id': 349055, 'osm_key': 'boundary', 'osm_type': 'R', 'osm_value': 'administrative'},
-              'type': 'Feature'},
-              {'geometry': {'coordinates': [-3.8275783867014415, 40.738663599999995], 'type': 'Point'},
-              'properties': {'country': 'Spain',
-               'extent': [-4.3409302, 41.1657381, -3.3946285, 40.3119774],
-               'name': 'Archidiócesis de Madrid',
-               'osm_id': 6932541, 'osm_key': 'boundary', 'osm_type': 'R', 'osm_value': 'religious_administration',
-               'state': 'Community of Madrid'},
-              'type': 'Feature'},
-              ...
-               {'geometry': {'coordinates': [-3.690692008891012, 40.41147845], 'type': 'Point'},
-              'properties': {'city': 'Madrid', 'country': 'Spain',
-               'extent': [-3.6925997, 40.4126075, -3.6889179, 40.4097313],
-               'housenumber': '2',
-               'name': 'Royal Botanical Garden of Madrid',
-               'osm_id': 15244804, 'osm_key': 'leisure', 'osm_type': 'W', 'osm_value': 'garden',
-               'postcode': '28014',
-               'state': 'Community of Madrid',
-               'street': 'Plaza Murillo'},
-              'type': 'Feature'}]
+         
+        ::
+           
+            >>> serv = services.GISCOService()
+            >>> serv.place2area('Madrid, Spain')
+                [{'geometry': {'coordinates': [-3.7035825, 40.4167047], 'type': 'Point'},
+                  'properties': {'country': 'Spain',
+                   'extent': [-3.8889539, 40.6437293, -3.5179163, 40.3119774],
+                   'name': 'Madrid',
+                   'osm_id': 5326784, 'osm_key': 'place', 'osm_type': 'R', 'osm_value': 'city',
+                   'postcode': '28001',
+                   'state': 'Community of Madrid'},
+                  'type': 'Feature'},
+                 {'geometry': {'coordinates': [-3.7715627754518115, 40.5248319], 'type': 'Point'},
+                  'properties': {'country': 'Spain',
+                   'extent': [-4.5790058, 41.1657381, -3.0529852, 39.8845834],
+                   'name': 'Community of Madrid',
+                   'osm_id': 349055, 'osm_key': 'boundary', 'osm_type': 'R', 'osm_value': 'administrative'},
+                  'type': 'Feature'},
+                  {'geometry': {'coordinates': [-3.8275783867014415, 40.738663599999995], 'type': 'Point'},
+                  'properties': {'country': 'Spain',
+                   'extent': [-4.3409302, 41.1657381, -3.3946285, 40.3119774],
+                   'name': 'Archidiócesis de Madrid',
+                   'osm_id': 6932541, 'osm_key': 'boundary', 'osm_type': 'R', 'osm_value': 'religious_administration',
+                   'state': 'Community of Madrid'},
+                  'type': 'Feature'},
+                  ...
+                   {'geometry': {'coordinates': [-3.690692008891012, 40.41147845], 'type': 'Point'},
+                  'properties': {'city': 'Madrid', 'country': 'Spain',
+                   'extent': [-3.6925997, 40.4126075, -3.6889179, 40.4097313],
+                   'housenumber': '2',
+                   'name': 'Royal Botanical Garden of Madrid',
+                   'osm_id': 15244804, 'osm_key': 'leisure', 'osm_type': 'W', 'osm_value': 'garden',
+                   'postcode': '28014',
+                   'state': 'Community of Madrid',
+                   'street': 'Plaza Murillo'},
+                  'type': 'Feature'}]
         
         Note
         ----
@@ -1128,6 +1188,8 @@ class GISCOService(OSMService):
     def place2coord(self, place, **kwargs): # specific use
         """Retrieve the geographical coordinates of a given place provided by 
         its (topo)name using |GISCO| service.
+        
+        ::
         
             >>> coord = serv.place2coord(place, **kwargs)
 
@@ -1159,11 +1221,13 @@ class GISCOService(OSMService):
         --------
         We can easily retrieve the geolocations associated to well-known places:
         
-        >>> serv = services.GISCOService()
-        >>> serv.place2coord('Berlin, Germany')
-            [[52.5170365, 13.3888599], [52.5198535, 13.4385964]]        
-        >>> serv.place2coord('Roma, Italy', order='Ll', unique=True)
-            [10.4584101, 44.5996045]
+        ::
+        
+            >>> serv = services.GISCOService()
+            >>> serv.place2coord('Berlin, Germany')
+                [[52.5170365, 13.3888599], [52.5198535, 13.4385964]]        
+            >>> serv.place2coord('Roma, Italy', order='Ll', unique=True)
+                [10.4584101, 44.5996045]
             
         Note
         ----
@@ -1190,6 +1254,8 @@ class GISCOService(OSMService):
     def coord2area(self, coord, **kwargs): # specific use
         """Retrieve the place (topo)name of a given location provided by its 
         geographical coordinates using |GISCO| service.
+        
+        ::
         
             >>>  area = serv.coord2area(coord, **kwargs)
 
@@ -1226,33 +1292,39 @@ class GISCOService(OSMService):
         Let us what we actually retrieve when we enter the geolocation of the
         (approximate) centre of Berlin, Germany:
         
-        >>> berlin = [52.5170365, 13.3888599]
+        ::
+        
+            >>> berlin = [52.5170365, 13.3888599]
         
         We can build the desired |OSM| URL to get the result:
         
-        >>> serv = services.OSMService()
-        >>> serv.url_reverse(coord=berlin) 
-            'https://nominatim.openstreetmap.org/reverse?format=json&lat=52.5170365&lon=13.3888599'
+        ::
+        
+            >>> serv = services.OSMService()
+            >>> serv.url_reverse(coord=berlin) 
+                'https://nominatim.openstreetmap.org/reverse?format=json&lat=52.5170365&lon=13.3888599'
         
         however, the method :meth:`coord2geom` does everything at once:
         
-        >>> serv.coord2area(berlin, format='json')
-            {'address': {'address29': 'Douglas',
-              'city': 'Berlin',
-              'city_district': 'Mitte',
-              'country': 'Deutschland', 'country_code': 'de',
-              'neighbourhood': 'Spandauer Vorstadt',
-              'postcode': '10117',
-              'road': 'Unter den Linden',
-              'state': 'Berlin',
-              'suburb': 'Mitte'},
-             'boundingbox': ['52.517222', '52.517422', '13.388877', '13.389077'],
-             'display_name': 'Douglas, Unter den Linden, Spandauer Vorstadt, Mitte, Berlin, 10117, Deutschland',
-             'lat': '52.517322',
-             'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
-             'lon': '13.388977',
-             'osm_id': '1818862993', 'osm_type': 'node',
-             'place_id': '18439434'}
+        ::
+        
+            >>> serv.coord2area(berlin, format='json')
+                {'address': {'address29': 'Douglas',
+                  'city': 'Berlin',
+                  'city_district': 'Mitte',
+                  'country': 'Deutschland', 'country_code': 'de',
+                  'neighbourhood': 'Spandauer Vorstadt',
+                  'postcode': '10117',
+                  'road': 'Unter den Linden',
+                  'state': 'Berlin',
+                  'suburb': 'Mitte'},
+                 'boundingbox': ['52.517222', '52.517422', '13.388877', '13.389077'],
+                 'display_name': 'Douglas, Unter den Linden, Spandauer Vorstadt, Mitte, Berlin, 10117, Deutschland',
+                 'lat': '52.517322',
+                 'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
+                 'lon': '13.388977',
+                 'osm_id': '1818862993', 'osm_type': 'node',
+                 'place_id': '18439434'}
         
         Note
         ----
@@ -1273,6 +1345,8 @@ class GISCOService(OSMService):
     def coord2place(self, coord, **kwargs): # specific use
         """Retrieve the (topo)name of a given location provided by its geographical 
         coordinates using |GISCO| service.
+        
+        ::
         
             >>>  place = serv.coord2place(coord, **kwargs)
 
@@ -1307,18 +1381,24 @@ class GISCOService(OSMService):
         Let us what we actually retrieve when we enter the geolocation of the
         (approximate) centre of Berlin, Germany:
         
-        >>> berlin = [52.5170365, 13.3888599]
+        ::
+        
+            >>> berlin = [52.5170365, 13.3888599]
         
         We can build the desired |OSM| URL to get the result:
         
-        >>> serv = services.GISCOService()
-        >>> serv.url_reverse(lat=berlin[0], lon=berlin[1])
-            'http://europa.eu/webtools/rest/gisco/reverse?lat=52.5170365&lon=13.3888599'
+        ::
+        
+            >>> serv = services.GISCOService()
+            >>> serv.url_reverse(lat=berlin[0], lon=berlin[1])
+                'http://europa.eu/webtools/rest/gisco/reverse?lat=52.5170365&lon=13.3888599'
         
         however, the method :meth:`coord2place` does everything at once:
         
-        >>> serv.coord2place(berlin, format='json')
-            'Caroline-von-Humboldt-Weg, Berlin, 10117, Germany'
+        ::
+        
+            >>> serv.coord2place(berlin, format='json')
+                'Caroline-von-Humboldt-Weg, Berlin, 10117, Germany'
         
         Note
         ----
@@ -1389,6 +1469,8 @@ class GISCOService(OSMService):
         """Retrieve the various |NUTS| geometries (all levels) associated to given 
         geolocation(s) provided as geographical :literal:`(lat,Lon)` coordinates.
         
+        ::
+        
             >>> nuts = serv.coord2nuts(coord, **kwargs)
 
         Arguments
@@ -1417,47 +1499,51 @@ class GISCOService(OSMService):
         --------
         We can easily retrieve all NUTS geometry associated to Rome, Italia from its
         geocoordinates:
+        
+        ::
             
-        >>> serv.coord2nuts([41.8933203,12.4829321])
-            [{'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '0',
-               'NAME_LATN': 'ITALIA', 'NUTS_ID': 'IT', 'NUTS_NAME': 'ITALIA',
-               'OBJECTID': '17',
-               'SHRT_ENGL': 'Italy'},
-              'displayFieldName': 'NUTS_ID',
-              'layerId': 2, 'layerName': 'NUTS_2013',
-              'value': 'IT'},
-             {'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '1',
-               'NAME_LATN': 'CENTRO (IT)', 'NUTS_ID': 'ITI', 'NUTS_NAME': 'CENTRO (IT)',
-               'OBJECTID': '94',
-               'SHRT_ENGL': 'Italy'},
-              'displayFieldName': 'NUTS_ID',
-              'layerId': 2, 'layerName': 'NUTS_2013',
-              'value': 'ITI'},
-             {'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '2',
-               'NAME_LATN': 'Lazio', 'NUTS_ID': 'ITI4', 'NUTS_NAME': 'Lazio',
-               'OBJECTID': '330',
-               'SHRT_ENGL': 'Italy'},
-              'displayFieldName': 'NUTS_ID',
-              'layerId': 2, 'layerName': 'NUTS_2013',
-              'value': 'ITI4'},
-             {'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '3',
-               'NAME_LATN': 'Roma', 'NUTS_ID': 'ITI43', 'NUTS_NAME': 'Roma',
-               'OBJECTID': '1053',
-               'SHRT_ENGL': 'Italy'},
-              'displayFieldName': 'NUTS_ID',
-              'layerId': 2, 'layerName': 'NUTS_2013',
-              'value': 'ITI43'}]  
+            >>> serv.coord2nuts([41.8933203,12.4829321])
+                [{'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '0',
+                   'NAME_LATN': 'ITALIA', 'NUTS_ID': 'IT', 'NUTS_NAME': 'ITALIA',
+                   'OBJECTID': '17',
+                   'SHRT_ENGL': 'Italy'},
+                  'displayFieldName': 'NUTS_ID',
+                  'layerId': 2, 'layerName': 'NUTS_2013',
+                  'value': 'IT'},
+                 {'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '1',
+                   'NAME_LATN': 'CENTRO (IT)', 'NUTS_ID': 'ITI', 'NUTS_NAME': 'CENTRO (IT)',
+                   'OBJECTID': '94',
+                   'SHRT_ENGL': 'Italy'},
+                  'displayFieldName': 'NUTS_ID',
+                  'layerId': 2, 'layerName': 'NUTS_2013',
+                  'value': 'ITI'},
+                 {'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '2',
+                   'NAME_LATN': 'Lazio', 'NUTS_ID': 'ITI4', 'NUTS_NAME': 'Lazio',
+                   'OBJECTID': '330',
+                   'SHRT_ENGL': 'Italy'},
+                  'displayFieldName': 'NUTS_ID',
+                  'layerId': 2, 'layerName': 'NUTS_2013',
+                  'value': 'ITI4'},
+                 {'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '3',
+                   'NAME_LATN': 'Roma', 'NUTS_ID': 'ITI43', 'NUTS_NAME': 'Roma',
+                   'OBJECTID': '1053',
+                   'SHRT_ENGL': 'Italy'},
+                  'displayFieldName': 'NUTS_ID',
+                  'layerId': 2, 'layerName': 'NUTS_2013',
+                  'value': 'ITI43'}]  
             
         If we are interested in one level only instead:
-        
-        >>> serv.coord2nuts([41.8933203,12.4829321], level=2)
-            {'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '2',
-              'NAME_LATN': 'Lazio', 'NUTS_ID': 'ITI4', 'NUTS_NAME': 'Lazio',
-              'OBJECTID': '330',
-              'SHRT_ENGL': 'Italy'},
-             'displayFieldName': 'NUTS_ID',
-             'layerId': 2, 'layerName': 'NUTS_2013',
-             'value': 'ITI4'}        
+                
+        ::
+
+            >>> serv.coord2nuts([41.8933203,12.4829321], level=2)
+                {'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '2',
+                  'NAME_LATN': 'Lazio', 'NUTS_ID': 'ITI4', 'NUTS_NAME': 'Lazio',
+                  'OBJECTID': '330',
+                  'SHRT_ENGL': 'Italy'},
+                 'displayFieldName': 'NUTS_ID',
+                 'layerId': 2, 'layerName': 'NUTS_2013',
+                 'value': 'ITI4'}        
         
         See also
         --------
@@ -1484,6 +1570,8 @@ class GISCOService(OSMService):
         """Retrieve the various |NUTS| geometries (all levels) associated to given 
         geolocation(s) provided as a (topo)name.
         
+        ::
+        
             >>> nuts = serv.place2nuts(place, **kwargs)
 
         Arguments
@@ -1507,48 +1595,52 @@ class GISCOService(OSMService):
         Example
         -------
         Let us run a simple example:
+        
+        ::
             
-        >>> serv = services.GISCOService()
-        >>> serv.place2nuts('Vilnius, Lituania')
-            [{'attributes': {'CNTR_CODE': 'LT', 'LEVL_CODE': '0',
-               'NAME_LATN': 'LIETUVA', 'NUTS_ID': 'LT', 'NUTS_NAME': 'LIETUVA',
-               'OBJECTID': '19',
-               'SHRT_ENGL': 'Lithuania'},
-              'displayFieldName': 'NUTS_ID',
-              'layerId': 2, 'layerName': 'NUTS_2013',
-              'value': 'LT'},
-             {'attributes': {'CNTR_CODE': 'LT', 'LEVL_CODE': '1',
-               'NAME_LATN': 'LIETUVA', 'NUTS_ID': 'LT0', 'NUTS_NAME': 'LIETUVA',
-               'OBJECTID': '96',
-               'SHRT_ENGL': 'Lithuania'},
-              'displayFieldName': 'NUTS_ID',
-              'layerId': 2, 'layerName': 'NUTS_2013',
-              'value': 'LT0'},
-             {'attributes': {'CNTR_CODE': 'LT', 'LEVL_CODE': '2',
-               'NAME_LATN': 'Lietuva', 'NUTS_ID': 'LT00', 'NUTS_NAME': 'Lietuva',
-               'OBJECTID': '332',
-               'SHRT_ENGL': 'Lithuania'},
-              'displayFieldName': 'NUTS_ID',
-              'layerId': 2, 'layerName': 'NUTS_2013',
-              'value': 'LT00'},
-             {'attributes': {'CNTR_CODE': 'LT', 'LEVL_CODE': '3',
-               'NAME_LATN': 'Vilniaus apskritis', 'NUTS_ID': 'LT00A', 'NUTS_NAME': 'Vilniaus apskritis',
-               'OBJECTID': '1066',
-               'SHRT_ENGL': 'Lithuania'},
-              'displayFieldName': 'NUTS_ID',
-              'layerId': 2, 'layerName': 'NUTS_2013',
-              'value': 'LT00A'}]
+            >>> serv = services.GISCOService()
+            >>> serv.place2nuts('Vilnius, Lituania')
+                [{'attributes': {'CNTR_CODE': 'LT', 'LEVL_CODE': '0',
+                   'NAME_LATN': 'LIETUVA', 'NUTS_ID': 'LT', 'NUTS_NAME': 'LIETUVA',
+                   'OBJECTID': '19',
+                   'SHRT_ENGL': 'Lithuania'},
+                  'displayFieldName': 'NUTS_ID',
+                  'layerId': 2, 'layerName': 'NUTS_2013',
+                  'value': 'LT'},
+                 {'attributes': {'CNTR_CODE': 'LT', 'LEVL_CODE': '1',
+                   'NAME_LATN': 'LIETUVA', 'NUTS_ID': 'LT0', 'NUTS_NAME': 'LIETUVA',
+                   'OBJECTID': '96',
+                   'SHRT_ENGL': 'Lithuania'},
+                  'displayFieldName': 'NUTS_ID',
+                  'layerId': 2, 'layerName': 'NUTS_2013',
+                  'value': 'LT0'},
+                 {'attributes': {'CNTR_CODE': 'LT', 'LEVL_CODE': '2',
+                   'NAME_LATN': 'Lietuva', 'NUTS_ID': 'LT00', 'NUTS_NAME': 'Lietuva',
+                   'OBJECTID': '332',
+                   'SHRT_ENGL': 'Lithuania'},
+                  'displayFieldName': 'NUTS_ID',
+                  'layerId': 2, 'layerName': 'NUTS_2013',
+                  'value': 'LT00'},
+                 {'attributes': {'CNTR_CODE': 'LT', 'LEVL_CODE': '3',
+                   'NAME_LATN': 'Vilniaus apskritis', 'NUTS_ID': 'LT00A', 'NUTS_NAME': 'Vilniaus apskritis',
+                   'OBJECTID': '1066',
+                   'SHRT_ENGL': 'Lithuania'},
+                  'displayFieldName': 'NUTS_ID',
+                  'layerId': 2, 'layerName': 'NUTS_2013',
+                  'value': 'LT00A'}]
             
         Or one can also run:
+        
+        ::
             
-        >>> serv.place2nuts('Valencia, Spain', level=2)
-            {'attributes': {'CNTR_CODE': 'ES', 'LEVL_CODE': '2',
-              'NAME_LATN': 'Comunidad Valenciana', 'NUTS_ID': 'ES52', 'NUTS_NAME': 'Comunidad Valenciana',
-              'OBJECTID': '260',
-              'SHRT_ENGL': 'Spain'},
-             'displayFieldName': 'NUTS_ID',
-             'layerId': 2, 'layerName': 'NUTS_2013',
-             'value': 'ES52'}        
+            >>> serv.place2nuts('Valencia, Spain', level=2)
+                {'attributes': {'CNTR_CODE': 'ES', 'LEVL_CODE': '2',
+                  'NAME_LATN': 'Comunidad Valenciana', 'NUTS_ID': 'ES52', 'NUTS_NAME': 'Comunidad Valenciana',
+                  'OBJECTID': '260',
+                  'SHRT_ENGL': 'Spain'},
+                 'displayFieldName': 'NUTS_ID',
+                 'layerId': 2, 'layerName': 'NUTS_2013',
+                 'value': 'ES52'}        
             
         Note
         ----
@@ -1574,6 +1666,8 @@ class GISCOService(OSMService):
     def coord2route(self, coord, **kwargs):
         """Retrieve the route associated to a list of coordinates providing with
         the different steps/destinations along the route. 
+        
+        ::
         
             >>>  route, waypoints = serv.coord2route(coord, **kwargs)
 
@@ -1606,23 +1700,25 @@ class GISCOService(OSMService):
         Let us retrieve the route between Sofia and Prague, using the other methods
         defined by the service:
         
-        >>> serv = services.GISCOService()
-        >>> sofia = serv.place2coord(place='Sofia, Bulgaria', unique=True)
-        >>> print(sofia)
-            [42.6978634, 23.3221789]
-        >>> prague = serv.place2coord(place='Prague, Czech Republic', unique=True)
-        >>> rte, pts = serv.coord2route([sofia, prague])
-        >>> print(rte)
-            {'distance': 3457666.8,
-             'duration': 200144.5,
-             'geometry': '{|rpHgqrcGp}q@lq~@qjNl_tAr~bBvtw@|{dAfzzBzmMt|kBvglEbqm@`wcBzn{@rby@rsrOx|bArrgDpZpndCwtUnho@blm@pfvNi{iAlajD~eJnisAl{t@da|@a}F`fw@|cw@~h}BxxAvfw@gdo@plpBxkVfhsBrh}Dj_dAjbZxjrAhsdChprBlo}@fiHiGz_~El`k@vul@fgfC`nf@l`IvzwFxo]zn}@lzaBbeoAtgPhj{BzcwBlfW~d}Dg~vA`vnBdkpDb|pBmvM`rfAfy_@znb@exu@||hAmx\\frWhnOfoC`vgAnkX}~oBzjeAkih@dz\\iltBhgx@pnl@bbyEmwbAjx{GoohFh{rAzheA',
-             'legs': [{'distance': 3457666.8,
-               'duration': 200144.5,
-               'steps': [],
-               'summary': ''}]}
-        >>> print(pts)
-            [{'hint': 'OF_ThAvR_YQAAAAAIgAAAHgBAABZLQAAAAAAAIMhswJScQAAZoeLAqsO_AKHhIsCKUb8Ai4AAQEZfn5e', 'name': '', 'location': [42.698598, 50.073259]}, 
-             {'hint': 'bqpLg3shJoQAAAAACwAAAAAAAAA0AgAANgAAADa0BQJScQAA2Wp6AcfzFAJC3mMBBQ3cAAcAAQEZfn5e', 'name': '', 'location': [24.799961, 34.927559]}]
+        ::
+        
+            >>> serv = services.GISCOService()
+            >>> sofia = serv.place2coord(place='Sofia, Bulgaria', unique=True)
+            >>> print(sofia)
+                [42.6978634, 23.3221789]
+            >>> prague = serv.place2coord(place='Prague, Czech Republic', unique=True)
+            >>> rte, pts = serv.coord2route([sofia, prague])
+            >>> print(rte)
+                {'distance': 3457666.8,
+                 'duration': 200144.5,
+                 'geometry': '{|rpHgqrcGp}q@lq~@qjNl_tAr~bBvtw@|{dAfzzBzmMt|kBvglEbqm@`wcBzn{@rby@rsrOx|bArrgDpZpndCwtUnho@blm@pfvNi{iAlajD~eJnisAl{t@da|@a}F`fw@|cw@~h}BxxAvfw@gdo@plpBxkVfhsBrh}Dj_dAjbZxjrAhsdChprBlo}@fiHiGz_~El`k@vul@fgfC`nf@l`IvzwFxo]zn}@lzaBbeoAtgPhj{BzcwBlfW~d}Dg~vA`vnBdkpDb|pBmvM`rfAfy_@znb@exu@||hAmx\\frWhnOfoC`vgAnkX}~oBzjeAkih@dz\\iltBhgx@pnl@bbyEmwbAjx{GoohFh{rAzheA',
+                 'legs': [{'distance': 3457666.8,
+                   'duration': 200144.5,
+                   'steps': [],
+                   'summary': ''}]}
+            >>> print(pts)
+                [{'hint': 'OF_ThAvR_YQAAAAAIgAAAHgBAABZLQAAAAAAAIMhswJScQAAZoeLAqsO_AKHhIsCKUb8Ai4AAQEZfn5e', 'name': '', 'location': [42.698598, 50.073259]}, 
+                 {'hint': 'bqpLg3shJoQAAAAACwAAAAAAAAA0AgAANgAAADa0BQJScQAA2Wp6AcfzFAJC3mMBBQ3cAAcAAQEZfn5e', 'name': '', 'location': [24.799961, 34.927559]}]
            
         See also
         --------
@@ -1665,7 +1761,9 @@ class GISCOService(OSMService):
     def place2route(self, place, **kwargs):
         """Retrieve the route associated to a list of (topo) name(s) providing 
         with the different steps/destinations along the route. 
-        
+         
+        ::
+       
             >>>  route, waypoints = serv.place2route(place, **kwargs)
 
         Arguments
@@ -1690,21 +1788,23 @@ class GISCOService(OSMService):
         We reproduce here the example already used in :meth:`~GISCOService.coord2route`
         but parsing directly the toponames to the method: 
         
-        >>> serv = services.GISCOService()
-        >>> serv.place2route(place=['Sofia, Bulgaria','Prague, Czech Republic'])
-            ({'distance': 3457666.8,
-              'duration': 200144.5,
-              'geometry': '{|rpHgqrcGp}q@lq~@qjNl_tAr~bBvtw@|{dAfzzBzmMt|kBvglEbqm@`wcBzn{@rby@rsrOx|bArrgDpZpndCwtUnho@blm@pfvNi{iAlajD~eJnisAl{t@da|@a}F`fw@|cw@~h}BxxAvfw@gdo@plpBxkVfhsBrh}Dj_dAjbZxjrAhsdChprBlo}@fiHiGz_~El`k@vul@fgfC`nf@l`IvzwFxo]zn}@lzaBbeoAtgPhj{BzcwBlfW~d}Dg~vA`vnBdkpDb|pBmvM`rfAfy_@znb@exu@||hAmx\\frWhnOfoC`vgAnkX}~oBzjeAkih@dz\\iltBhgx@pnl@bbyEmwbAjx{GoohFh{rAzheA',
-              'legs': [{'distance': 3457666.8,
-                'duration': 200144.5,
-                'steps': [],
-                'summary': ''}]},
-             [{'hint': 'OF_ThAvR_YQAAAAAIgAAAHgBAABZLQAAAAAAAIMhswJScQAAZoeLAqsO_AKHhIsCKUb8Ai4AAQEZfn5e',
-               'location': [42.698598, 50.073259],
-               'name': ''},
-              {'hint': 'bqpLg3shJoQAAAAACwAAAAAAAAA0AgAANgAAADa0BQJScQAA2Wp6AcfzFAJC3mMBBQ3cAAcAAQEZfn5e',
-               'location': [24.799961, 34.927559],
-               'name': ''}])
+        ::
+        
+            >>> serv = services.GISCOService()
+            >>> serv.place2route(place=['Sofia, Bulgaria','Prague, Czech Republic'])
+                ({'distance': 3457666.8,
+                  'duration': 200144.5,
+                  'geometry': '{|rpHgqrcGp}q@lq~@qjNl_tAr~bBvtw@|{dAfzzBzmMt|kBvglEbqm@`wcBzn{@rby@rsrOx|bArrgDpZpndCwtUnho@blm@pfvNi{iAlajD~eJnisAl{t@da|@a}F`fw@|cw@~h}BxxAvfw@gdo@plpBxkVfhsBrh}Dj_dAjbZxjrAhsdChprBlo}@fiHiGz_~El`k@vul@fgfC`nf@l`IvzwFxo]zn}@lzaBbeoAtgPhj{BzcwBlfW~d}Dg~vA`vnBdkpDb|pBmvM`rfAfy_@znb@exu@||hAmx\\frWhnOfoC`vgAnkX}~oBzjeAkih@dz\\iltBhgx@pnl@bbyEmwbAjx{GoohFh{rAzheA',
+                  'legs': [{'distance': 3457666.8,
+                    'duration': 200144.5,
+                    'steps': [],
+                    'summary': ''}]},
+                 [{'hint': 'OF_ThAvR_YQAAAAAIgAAAHgBAABZLQAAAAAAAIMhswJScQAAZoeLAqsO_AKHhIsCKUb8Ai4AAQEZfn5e',
+                   'location': [42.698598, 50.073259],
+                   'name': ''},
+                  {'hint': 'bqpLg3shJoQAAAAACwAAAAAAAAA0AgAANgAAADa0BQJScQAA2Wp6AcfzFAJC3mMBBQ3cAAcAAQEZfn5e',
+                   'location': [24.799961, 34.927559],
+                   'name': ''}])
            
         See also
         --------
@@ -1926,6 +2026,8 @@ _googlePlacesAPI.__doc__ =                                                  \
 class APIService(_Service):
     """Class providing conversion methods and geocoding tools that run the |GISCO| 
     online web-service, itself based on |OSM| |Nominatim| API.
+        
+    ::
        
         >>> serv = services.APIService(**kwargs)
             
@@ -2015,7 +2117,9 @@ class APIService(_Service):
     def place2coord(self, place, **kwargs):
         """Retrieve the geographical coordinates of a given place provided by 
         its (topo)name.
-        
+                
+        ::
+
             >>> coord = serv.place2coord(place, **kwargs)
 
         Arguments
@@ -2059,6 +2163,8 @@ class APIService(_Service):
         """Retrieve the (topo)name of a given location provided by its geographical 
         coordinates using the API geocoding service.
         
+        ::
+        
             >>> place = serv.coord2place(coord, **kwargs)
 
         Arguments
@@ -2096,8 +2202,3 @@ class APIService(_Service):
                 # happyVerbose('%s => %s' % (p, coord))
                 pass
         return places 
-
-
-## Bremen, Germany => NUTS ID: DE50 - NUTS name: Bremen
-## Florence, Italy => NUTS ID: ITI1 - NUTS name: Toscana
-## Brussels, Belgium => NUTS ID: BE10 - NUTS name: Région de Bruxelles-Capitale / Brussels Hoofdstedelijk Gewest	

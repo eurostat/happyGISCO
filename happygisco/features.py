@@ -137,6 +137,8 @@ class Location(_Feature):
     """Generic class used so to define a geolocation, *e.g.* a (topo)name or a 
     set of geographical coordinates.
         
+    ::
+        
         >>> loc = features.GeoLocation(*args, **kwargs)
     
     Arguments
@@ -222,6 +224,8 @@ class Location(_Feature):
         """Convert place names to geographic coordinates (default) and reciprocally, 
         depending on the type of input arguments passed.
         
+        ::
+        
             >>> place = loc.geocode(**kwargs)
         
         Keyword Arguments
@@ -246,16 +250,19 @@ class Location(_Feature):
 
         Examples
         --------
-        >>> loc = features.Location('Paris, France')
-        >>> print loc.geocode()
-            (48.856614, 2.3522219)
-        >>> paris = serv.coord2('48.85693, 2.3412')
-        >>> print paris
-            [u'76 Quai des Orf\xe8vres, 75001 Paris, France', u"Saint-Germain-l'Auxerrois, Paris, France", 
-             u'75001 Paris, France', u'1er Arrondissement, Paris, France', u'Paris, France', 
-             u'Paris, France', u'\xcele-de-France, France', u'France']
-        >>> paris == serv.code(48.85693, 2.3412, reverse=True)
-            True
+        
+        ::
+
+            >>> loc = features.Location('Paris, France')
+            >>> print loc.geocode()
+                (48.856614, 2.3522219)
+            >>> paris = serv.coord2('48.85693, 2.3412')
+            >>> print paris
+                [u'76 Quai des Orf\xe8vres, 75001 Paris, France', u"Saint-Germain-l'Auxerrois, Paris, France", 
+                 u'75001 Paris, France', u'1er Arrondissement, Paris, France', u'Paris, France', 
+                 u'Paris, France', u'\xcele-de-France, France', u'France']
+            >>> paris == serv.code(48.85693, 2.3412, reverse=True)
+                True
         
         See also
         --------
@@ -270,7 +277,9 @@ class Location(_Feature):
     def reverse(self, **kwargs):
         """Convert geographic location (passed as a tuple of coordinates or a string 
         with those coordinates). 
-        
+         
+        ::
+       
             >>> place = loc.reverse(**kwargs)
 
         Keyword arguments
@@ -290,12 +299,15 @@ class Location(_Feature):
 
         Examples
         --------
-        >>> loc = features.Location('48.85693, 2.3412')
-        >>> paris = loc.reverse()
-        >>> print paris
-            [u'76 Quai des Orf\xe8vres, 75001 Paris, France', u"Saint-Germain-l'Auxerrois, Paris, France", 
-             u'75001 Paris, France', u'1er Arrondissement, Paris, France', u'Paris, France', 
-             u'Paris, France', u'\xcele-de-France, France', u'France']
+        
+        ::
+
+            >>> loc = features.Location('48.85693, 2.3412')
+            >>> paris = loc.reverse()
+            >>> print paris
+                [u'76 Quai des Orf\xe8vres, 75001 Paris, France', u"Saint-Germain-l'Auxerrois, Paris, France", 
+                 u'75001 Paris, France', u'1er Arrondissement, Paris, France', u'Paris, France', 
+                 u'Paris, France', u'\xcele-de-France, France', u'France']
         
         See also
         --------
@@ -314,6 +326,8 @@ class Location(_Feature):
     def distance(self, *args, **kwargs):            
         """Method used for computing pairwise distances between given locations, 
         passed indifferently as places names or geographic coordinates.
+        
+        ::
         
             >>> D = loc.distance(*args, **kwargs)
     
@@ -346,16 +360,19 @@ class Location(_Feature):
             
         Examples
         --------      
-        >>> loc = features.Location([26.062951, -80.238853])
-        >>> print loc.distance([26.060484,-80.207268], 
-                               dist='vincenty', unit='m')
-            3172.3596179302895
-        >>> print loc.distance([26.060484,-80.207268],
-                               dist='great_circle', unit='km')
-            3.167782321855102
-        >>> print loc.distance('Paris, France', 
-                               dist='great_circle', unit='km')
-            7338.5353364838438
+        
+        ::
+
+            >>> loc = features.Location([26.062951, -80.238853])
+            >>> print loc.distance([26.060484,-80.207268], 
+                                   dist='vincenty', unit='m')
+                3172.3596179302895
+            >>> print loc.distance([26.060484,-80.207268],
+                                   dist='great_circle', unit='km')
+                3.167782321855102
+            >>> print loc.distance('Paris, France', 
+                                   dist='great_circle', unit='km')
+                7338.5353364838438
         """
         func = lambda *a, **kw: [kw.pop(_Decorator.KW_PLACE), kw.pop(_Decorator.KW_COORD)]
         try:

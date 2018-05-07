@@ -38,7 +38,7 @@
 Base implementations (generic methods and classes) used trhoughout :mod:`happygisco`.
 
 **Description**
-
+  
 **Note**
 
 The :class:`_Decorator` class and its subclasses exposed in this module **can be 
@@ -278,6 +278,8 @@ class _Service(object):
     def build_url(cls, *args, **kwargs):
         """Create a complete query URL to be used by a web-service.
         
+        ::
+        
             >>> url = _Service.build_url(*args, **kwargs)
             
         Arguments
@@ -316,30 +318,36 @@ class _Service(object):
         -------
         Let us, for instance, build a URL query to *Eurostat* Rest API (just enter 
         the output URL in your browser to check the output):
+        
+        ::
             
-        >>> base._Service.build_url(settings.ESTAT_URL,
-                                    path='wdds/rest/data/v2.1/json/en',
-                                    query='ilc_li03', 
-                                    precision=1,
-                                    indic_il='LI_R_MD60',
-                                    time='2015')
-            'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li03?precision=1&indic_il=LI_R_MD60&time=2015'
+            >>> base._Service.build_url(settings.ESTAT_URL,
+                                        path='wdds/rest/data/v2.1/json/en',
+                                        query='ilc_li03', 
+                                        precision=1,
+                                        indic_il='LI_R_MD60',
+                                        time='2015')
+                'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li03?precision=1&indic_il=LI_R_MD60&time=2015'
         
         Note that another way to call the method is:
+        
+        ::
 
-        >>> base._Service.build_url(domain=settings.ESTAT_URL,
-                                    path='wdds/rest/data/v2.1/json/en',
-                                    query='ilc_li01', 
-                                    **{'precision': 1, 'hhtyp': 'A1', 'time': '2010'})
-            'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li01?precision=1&hhtyp=A1&time=2010'
+            >>> base._Service.build_url(domain=settings.ESTAT_URL,
+                                        path='wdds/rest/data/v2.1/json/en',
+                                        query='ilc_li01', 
+                                        **{'precision': 1, 'hhtyp': 'A1', 'time': '2010'})
+                'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li01?precision=1&hhtyp=A1&time=2010'
         
         Similarly, we will be able to access to |GISCO| service (see :meth:`GISCOService.url_geocode`
         below):
- 
-        >>> base._Service.build_url(domain=settings.GISCO_URL,
-                                    query='api', 
-                                    **{'q': 'Berlin+Germany', 'limit': 2})
-            'http://europa.eu/webtools/rest/gisco/api?q=Berlin+Germany&limit=2'  
+         
+        ::
+
+            >>> base._Service.build_url(domain=settings.GISCO_URL,
+                                        query='api', 
+                                        **{'q': 'Berlin+Germany', 'limit': 2})
+                'http://europa.eu/webtools/rest/gisco/api?q=Berlin+Germany&limit=2'  
         
         See also
         --------
@@ -528,6 +536,8 @@ class _Decorator(object):
         """Generic class decorator of functions and methods used to parse place 
         :literal:`(lat,Lon)` coordinates.
         
+        ::
+        
             >>> new_func = _Decorator.parse_coordinate(func)
         
         Arguments
@@ -560,34 +570,40 @@ class _Decorator(object):
         Examples
         --------        
         Some dummy examples:
+        
+        ::
             
-        >>> func = lambda coord, *args, **kwargs: coord
-        >>> new_func = _Decorator.parse_coordinate(func)
-        >>> new_func(coord=[[1,-1],[2,-2]], order='Ll')
-            [[-1, 1], [-2, 2]]
-        >>> new_func(**{'lat':[1,2], 'Lon': [-1,-2]})
-            [[1, -1], [2, -2]]
-        >>> new_func(lat=[1,2], Lon=[-1,-2], order='Ll')
-            [[-1, 1], [-2, 2]]
-        >>> new_func(**{'y':[1,2], 'x': [-1,-2]})
-            [[1, -1], [2, -2]]
+            >>> func = lambda coord, *args, **kwargs: coord
+            >>> new_func = _Decorator.parse_coordinate(func)
+            >>> new_func(coord=[[1,-1],[2,-2]], order='Ll')
+                [[-1, 1], [-2, 2]]
+            >>> new_func(**{'lat':[1,2], 'Lon': [-1,-2]})
+                [[1, -1], [2, -2]]
+            >>> new_func(lat=[1,2], Lon=[-1,-2], order='Ll')
+                [[-1, 1], [-2, 2]]
+            >>> new_func(**{'y':[1,2], 'x': [-1,-2]})
+                [[1, -1], [2, -2]]
             
         Note that the new decorated method also supports the parsing of the coordinates 
         as positional arguments (usage not recommended):
+        
+        ::
             
-        >>> new_func([1,-1])
-            [[1,-1]]
-        >>> new_func([1,2],[-1,-2])
-            [[1, -1], [2, -2]]
-        >>> new_func(coord=[[1,-1],[2,-2]])
-            [[1, -1], [2, -2]]
+            >>> new_func([1,-1])
+                [[1,-1]]
+            >>> new_func([1,2],[-1,-2])
+                [[1, -1], [2, -2]]
+            >>> new_func(coord=[[1,-1],[2,-2]])
+                [[1, -1], [2, -2]]
 
         Therefore, things like that should be avoided:
+        
+        ::
 
-        >>> new_func([[1,-1],[2,-2]], lat=[1,2], Lon=[-1,-2])
-            happyError: !!! dont mess up with me - duplicated coordinate argument parsed !!!
-        >>> new_func(coord=[[1,-1],[2,-2]], lat=[1,2], Lon=[-1,-2])
-            happyError: !!! AssertionError: too many input coordinate arguments !!!
+            >>> new_func([[1,-1],[2,-2]], lat=[1,2], Lon=[-1,-2])
+                happyError: !!! dont mess up with me - duplicated coordinate argument parsed !!!
+            >>> new_func(coord=[[1,-1],[2,-2]], lat=[1,2], Lon=[-1,-2])
+                happyError: !!! AssertionError: too many input coordinate arguments !!!
              
         Notes
         -----
@@ -688,6 +704,8 @@ class _Decorator(object):
         """Generic class decorator of functions and methods used to parse place
         (topo,geo) names.
         
+        ::
+        
             >>> new_func = _Decorator.parse_place(func)
         
         Arguments
@@ -710,32 +728,38 @@ class _Decorator(object):
         Examples
         --------
         Very basic parsing examples:
+        
+        ::
             
-        >>> func = lambda place, *args, **kwargs: place
-        >>> new_func = _Decorator.parse_place(func)
-        >>> new_func(place='Bruxelles, Belgium')
-            ['Bruxelles, Belgium']
-        >>> new_func(city=['Athens','Heraklion'],country='Hellas')
-            ['Athens, Hellas', 'Heraklion, Hellas']
-        >>> new_func(**{'address':['72 avenue Parmentier','101 Avenue de la République'], 
-                        'city':'Paris', 
-                        'country':'France'})
-            ['72 avenue Parmentier, Paris, France', 
-            '101 Avenue de la République, Paris, France']
-        >>> new_func(place=['Eurostat', 'DIGIT', 'EIB'], 
-                     city='Luxembourg')
-            ['Eurostat, Luxembourg', 'DIGIT, Luxembourg', 'EIB, Luxembourg']
+            >>> func = lambda place, *args, **kwargs: place
+            >>> new_func = _Decorator.parse_place(func)
+            >>> new_func(place='Bruxelles, Belgium')
+                ['Bruxelles, Belgium']
+            >>> new_func(city=['Athens','Heraklion'],country='Hellas')
+                ['Athens, Hellas', 'Heraklion, Hellas']
+            >>> new_func(**{'address':['72 avenue Parmentier','101 Avenue de la République'], 
+                            'city':'Paris', 
+                            'country':'France'})
+                ['72 avenue Parmentier, Paris, France', 
+                '101 Avenue de la République, Paris, France']
+            >>> new_func(place=['Eurostat', 'DIGIT', 'EIB'], 
+                         city='Luxembourg')
+                ['Eurostat, Luxembourg', 'DIGIT, Luxembourg', 'EIB, Luxembourg']
             
         Note that the new decorated method also supports the parsing of the place
         (topo)name as a positional argument (usage not recommended):
+        
+        ::
 
-        >>> new_func('Athens, Hellas')
-            ['Athens, Hellas']
+            >>> new_func('Athens, Hellas')
+                ['Athens, Hellas']
 
         Therefore, things like that should be avoided:
+        
+        ::
 
-        >>> new_func('Athens, Hellas', place='Berlin, Germany')
-            happyError: !!! dont mess up with me - duplicated place argument parsed !!!
+            >>> new_func('Athens, Hellas', place='Berlin, Germany')
+                happyError: !!! dont mess up with me - duplicated place argument parsed !!!
             
         Note
         ----
@@ -821,6 +845,8 @@ class _Decorator(object):
         """Generic class decorator of functions and methods used to parse place 
         :literal:`(lat,Lon)` coordinates or place names.
         
+        ::
+        
             >>> new_func = _Decorator.parse_place_or_coordinate(func)
         
         Arguments
@@ -845,13 +871,15 @@ class _Decorator(object):
         Examples
         --------
         Some dummy examples:
+        
+        ::
             
-        >>> func = lambda *args, **kwargs: [kwargs.get('coord'), kwargs.get('place')]
-        >>> new_func = _Decorator.parse_place_or_coordinate(func)
-        >>> new_func(lat=[1,2], Lon=[-1,-2])
-            [[[1, -1], [2, -2]], None]
-        >>> new_func(place='Bruxelles, Belgium')
-            [None, ['Bruxelles, Belgium']]
+            >>> func = lambda *args, **kwargs: [kwargs.get('coord'), kwargs.get('place')]
+            >>> new_func = _Decorator.parse_place_or_coordinate(func)
+            >>> new_func(lat=[1,2], Lon=[-1,-2])
+                [[[1, -1], [2, -2]], None]
+            >>> new_func(place='Bruxelles, Belgium')
+                [None, ['Bruxelles, Belgium']]
         
         Note
         ----
@@ -897,6 +925,8 @@ class _Decorator(object):
         parameters (geometry features) formated according to |GISCO| geometry 
         responses (see |GISCOWIKI|).
         
+        ::
+        
             >>> new_func = _Decorator.parse_area(func)
         
         Arguments
@@ -920,90 +950,100 @@ class _Decorator(object):
         Examples
         --------
         Some dummy examples:
+        
+        ::
             
-        >>> func = lambda *args, **kwargs: kwargs.get('coord')
-        >>> area = {'A': 1, 'B': 2}
-        >>> _Decorator.parse_area(func)(area=area)
-            happyError: !!! geometry attributes not recognised !!!
-        >>> area = {'geometry': {'coordinates': [1, 2], 'type': 'Point'},
-                    'properties': {'city': 'somewhere', 
-                                   'country': 'some country',
-                                   'street': 'sesame street',
-                                   'osm_key': 'place'},
-                    'type': 'Feature'}
-        >>> _Decorator.parse_area(func)(area=area)
-            [[2, 1]]
-        >>> func = lambda *args, **kwargs: kwargs.get('place')
-        >>> _Decorator.parse_area(func)(area=area, filter='place')
-            ['sesame street, somewhere, some country']
+            >>> func = lambda *args, **kwargs: kwargs.get('coord')
+            >>> area = {'A': 1, 'B': 2}
+            >>> _Decorator.parse_area(func)(area=area)
+                happyError: !!! geometry attributes not recognised !!!
+            >>> area = {'geometry': {'coordinates': [1, 2], 'type': 'Point'},
+                        'properties': {'city': 'somewhere', 
+                                       'country': 'some country',
+                                       'street': 'sesame street',
+                                       'osm_key': 'place'},
+                        'type': 'Feature'}
+            >>> _Decorator.parse_area(func)(area=area)
+                [[2, 1]]
+            >>> func = lambda *args, **kwargs: kwargs.get('place')
+            >>> _Decorator.parse_area(func)(area=area, filter='place')
+                ['sesame street, somewhere, some country']
         
         Also note that the argument can be parsed as a positional argument (usage
         not recommended):
+        
+        ::
             
-        >>> _Decorator.parse_area(func)(area)
-            []
-        >>> _Decorator.parse_area(func)(area, order='Ll')
-            [[1, 2]]
+            >>> _Decorator.parse_area(func)(area)
+                []
+            >>> _Decorator.parse_area(func)(area, order='Ll')
+                [[1, 2]]
 
         and an actual one:
+        
+        ::
             
-        >>> serv = services.GISCOService()
-        >>> area = serv.place2area(place='Berlin,Germany')
-        >>> print(area)
-            [{'geometry': {'coordinates': [13.3888599, 52.5170365], 'type': 'Point'},
-              'properties': {'city': 'Berlin', 'country': 'Germany',
-               'name': 'Berlin',
-               'osm_id': 240109189, 'osm_key': 'place', 'osm_type': 'N', 'osm_value': 'city',
-               'postcode': '10117', 'state': 'Berlin'},
-              'type': 'Feature'},
-             {'geometry': {'coordinates': [13.4385964, 52.5198535], 'type': 'Point'},
-              'properties': {'country': 'Germany',
-               'extent': [13.08835, 52.67551, 13.76116, 52.33826],
-               'name': 'Berlin',
-               'osm_id': 62422, 'osm_key': 'place', 'osm_type': 'R', 'osm_value': 'state'},
-              'type': 'Feature'},
-             {'geometry': {'coordinates': [13.393560634296435, 52.51875095], 'type': 'Point'},
-              'properties': {'city': 'Berlin', 'country': 'Germany',
-               'extent': [13.3906703, 52.5200704, 13.3948782, 52.5174944],
-               'name': 'Humboldt University in Berlin Mitte Campus',
-               'osm_id': 120456814, 'osm_key': 'amenity', 'osm_type': 'W', 'osm_value': 'university',
-               'postcode': '10117', 'state': 'Berlin', 'street': 'Dorotheenstraße'},
-              'type': 'Feature'},
-             ...
-              {'geometry': {'coordinates': [13.3869856, 52.5156648], 'type': 'Point'},
-              'properties': {'city': 'Berlin', 'country': 'Germany',
-               'housenumber': '55-57',
-               'name': 'Komische Oper Berlin',
-               'osm_id': 318525456, 'osm_key': 'amenity', 'osm_type': 'N', 'osm_value': 'theatre',
-               'postcode': '10117', 'state': 'Berlin', 'street': 'Behrenstraße'},
-              'type': 'Feature'}]
+            >>> serv = services.GISCOService()
+            >>> area = serv.place2area(place='Berlin,Germany')
+            >>> print(area)
+                [{'geometry': {'coordinates': [13.3888599, 52.5170365], 'type': 'Point'},
+                  'properties': {'city': 'Berlin', 'country': 'Germany',
+                   'name': 'Berlin',
+                   'osm_id': 240109189, 'osm_key': 'place', 'osm_type': 'N', 'osm_value': 'city',
+                   'postcode': '10117', 'state': 'Berlin'},
+                  'type': 'Feature'},
+                 {'geometry': {'coordinates': [13.4385964, 52.5198535], 'type': 'Point'},
+                  'properties': {'country': 'Germany',
+                   'extent': [13.08835, 52.67551, 13.76116, 52.33826],
+                   'name': 'Berlin',
+                   'osm_id': 62422, 'osm_key': 'place', 'osm_type': 'R', 'osm_value': 'state'},
+                  'type': 'Feature'},
+                 {'geometry': {'coordinates': [13.393560634296435, 52.51875095], 'type': 'Point'},
+                  'properties': {'city': 'Berlin', 'country': 'Germany',
+                   'extent': [13.3906703, 52.5200704, 13.3948782, 52.5174944],
+                   'name': 'Humboldt University in Berlin Mitte Campus',
+                   'osm_id': 120456814, 'osm_key': 'amenity', 'osm_type': 'W', 'osm_value': 'university',
+                   'postcode': '10117', 'state': 'Berlin', 'street': 'Dorotheenstraße'},
+                  'type': 'Feature'},
+                 ...
+                  {'geometry': {'coordinates': [13.3869856, 52.5156648], 'type': 'Point'},
+                  'properties': {'city': 'Berlin', 'country': 'Germany',
+                   'housenumber': '55-57',
+                   'name': 'Komische Oper Berlin',
+                   'osm_id': 318525456, 'osm_key': 'amenity', 'osm_type': 'N', 'osm_value': 'theatre',
+                   'postcode': '10117', 'state': 'Berlin', 'street': 'Behrenstraße'},
+                  'type': 'Feature'}]
                     
         We can for instance use the :meth:`parse_area` to parse (filter) the 
         data :data:`area` and retrieve the coordinates:
+        
+        ::
             
-        >>> func = lambda **kwargs: kwargs.get('coord')
-        >>> new_func = _Decorator.parse_area(func)
-        >>> hasattr(new_func, '__call__')
-            True
-        >>> new_func(area=area, filter='coord')
-            [[52.5170365, 13.3888599], [52.5198535, 13.4385964]]
-        >>> new_func(area=area, filter='coord', unique=True, order='Ll')
-            [[13.3888599, 52.5170365]]
+            >>> func = lambda **kwargs: kwargs.get('coord')
+            >>> new_func = _Decorator.parse_area(func)
+            >>> hasattr(new_func, '__call__')
+                True
+            >>> new_func(area=area, filter='coord')
+                [[52.5170365, 13.3888599], [52.5198535, 13.4385964]]
+            >>> new_func(area=area, filter='coord', unique=True, order='Ll')
+                [[13.3888599, 52.5170365]]
             
         One can also simlarly retrieve the name of the places:
+        
+        ::
 
-        >>> func = lambda **kwargs: kwargs.get('place')
-        >>> new_func = _Decorator.parse_area(func)
-        >>> hasattr(new_func, '__call__')
-            True
-        >>> new_func(area=area, filter='place')
-            ['Berlin, 10117, Germany', 'Germany', 'Dorotheenstraße, Berlin, 10117, Germany',
-            'Unter den Linden, Berlin, 10117, Germany', 'Olympischer Platz, Berlin, 14053, Germany', 
-            'Sauerbruchweg, Berlin, 10117, Germany', 'Eingangsebene, Berlin, 10557, Germany', 
-            'Niederkirchnerstraße, Berlin, 10117, Germany', 'Friedrichstraße, Berlin, 10117, Germany', 
-            'Bismarckstraße, Berlin, 10627, Germany', 'Berlin Ostbahnhof, Berlin, 10243, Germany', 
-            'Pflugstraße, Berlin, 10115, Germany', 'Unter den Linden, Berlin, 10117, Germany', 
-            'Hanne-Sobek-Platz, Berlin, 13357, Germany', 'Behrenstraße, Berlin, 10117, Germany']
+            >>> func = lambda **kwargs: kwargs.get('place')
+            >>> new_func = _Decorator.parse_area(func)
+            >>> hasattr(new_func, '__call__')
+                True
+            >>> new_func(area=area, filter='place')
+                ['Berlin, 10117, Germany', 'Germany', 'Dorotheenstraße, Berlin, 10117, Germany',
+                'Unter den Linden, Berlin, 10117, Germany', 'Olympischer Platz, Berlin, 14053, Germany', 
+                'Sauerbruchweg, Berlin, 10117, Germany', 'Eingangsebene, Berlin, 10557, Germany', 
+                'Niederkirchnerstraße, Berlin, 10117, Germany', 'Friedrichstraße, Berlin, 10117, Germany', 
+                'Bismarckstraße, Berlin, 10627, Germany', 'Berlin Ostbahnhof, Berlin, 10243, Germany', 
+                'Pflugstraße, Berlin, 10115, Germany', 'Unter den Linden, Berlin, 10117, Germany', 
+                'Hanne-Sobek-Platz, Berlin, 13357, Germany', 'Behrenstraße, Berlin, 10117, Germany']
             
         Notes
         -----
@@ -1145,6 +1185,8 @@ class _Decorator(object):
         information from JSON-like dictionary parameters formated according to 
         |GISCO| |NUTS| responses (see |GISCOWIKI|).
         
+        ::
+        
             >>> new_func = _Decorator.parse_nuts(func)
         
         Arguments
@@ -1167,61 +1209,65 @@ class _Decorator(object):
         Examples
         --------
         Some dummy examples:
+        
+        ::
             
-        >>> func = lambda *args, **kwargs: kwargs.get('nuts')
-        >>> nuts = {'A': 1, 'B': 2}
-        >>> _Decorator.parse_nuts(func)(nuts)
-            []
-        >>> _Decorator.parse_nuts(func)(nuts=nuts)
-            happyError: !!! NUTS attributes not recognised !!!
-        >>> nuts = {'attributes': {'CNTR_CODE': 'EU', 'LEVL_CODE': '0'},
-                    'NUTS_NAME': 'EU',
-                    'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
-                    'value': 'EU'}
-        >>> [nuts] == _Decorator.parse_nuts(func)(**nuts)
-            True
-        >>> [nuts] == _Decorator.parse_nuts(func)(nuts=nuts)
-            True
+            >>> func = lambda *args, **kwargs: kwargs.get('nuts')
+            >>> nuts = {'A': 1, 'B': 2}
+            >>> _Decorator.parse_nuts(func)(nuts)
+                []
+            >>> _Decorator.parse_nuts(func)(nuts=nuts)
+                happyError: !!! NUTS attributes not recognised !!!
+            >>> nuts = {'attributes': {'CNTR_CODE': 'EU', 'LEVL_CODE': '0'},
+                        'NUTS_NAME': 'EU',
+                        'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
+                        'value': 'EU'}
+            >>> [nuts] == _Decorator.parse_nuts(func)(**nuts)
+                True
+            >>> [nuts] == _Decorator.parse_nuts(func)(nuts=nuts)
+                True
         
         and an even dummier one:
+        
+        ::
             
-        >>> serv = services.GISCOService()
-        >>> nuts = serv.place2nuts(place='Lisbon,Portugal')
-        >>> print(nuts)
-            [{'attributes': {'CNTR_CODE': 'PT', 'LEVL_CODE': '0',
-               'NAME_LATN': 'PORTUGAL', 'NUTS_ID': 'PT',
-               'NUTS_NAME': 'PORTUGAL', 'OBJECTID': '28',
-               'SHRT_ENGL': 'Portugal'},
-              'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
-              'value': 'PT'},
-             {'attributes': {'CNTR_CODE': 'PT', 'LEVL_CODE': '1',
-               'NAME_LATN': 'CONTINENTE', 'NUTS_ID': 'PT1',
-               'NUTS_NAME': 'CONTINENTE', 'OBJECTID': '113',
-               'SHRT_ENGL': 'Portugal'},
-              'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
-              'value': 'PT1'},
-             {'attributes': {'CNTR_CODE': 'PT', 'LEVL_CODE': '2',
-               'NAME_LATN': 'Área Metropolitana de Lisboa', 'NUTS_ID': 'PT17',
-               'NUTS_NAME': 'Área Metropolitana de Lisboa', 'OBJECTID': '376',
-               'SHRT_ENGL': 'Portugal'},
-              'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
-              'value': 'PT17'},
-             {'attributes': {'CNTR_CODE': 'PT', 'LEVL_CODE': '3',
-               'NAME_LATN': 'Área Metropolitana de Lisboa', 'NUTS_ID': 'PT170',
-               'NUTS_NAME': 'Área Metropolitana de Lisboa', 'OBJECTID': '1233',
-               'SHRT_ENGL': 'Portugal'},
-              'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
-              'value': 'PT170'}]
-        >>> res = settings._Decorator.parse_nuts(func)(nuts)
-        >>> all([res[i] == nuts[i] for i in range(len(res))])
-            True
-        >>> settings._Decorator.parse_nuts(func)(nuts, level=2)
-             {'attributes': {'CNTR_CODE': 'PT', 'LEVL_CODE': '2',
-               'NAME_LATN': 'Área Metropolitana de Lisboa', 'NUTS_ID': 'PT17',
-               'NUTS_NAME': 'Área Metropolitana de Lisboa', 'OBJECTID': '376',
-               'SHRT_ENGL': 'Portugal'},
-              'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
-              'value': 'PT17'},
+            >>> serv = services.GISCOService()
+            >>> nuts = serv.place2nuts(place='Lisbon,Portugal')
+            >>> print(nuts)
+                [{'attributes': {'CNTR_CODE': 'PT', 'LEVL_CODE': '0',
+                   'NAME_LATN': 'PORTUGAL', 'NUTS_ID': 'PT',
+                   'NUTS_NAME': 'PORTUGAL', 'OBJECTID': '28',
+                   'SHRT_ENGL': 'Portugal'},
+                  'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
+                  'value': 'PT'},
+                 {'attributes': {'CNTR_CODE': 'PT', 'LEVL_CODE': '1',
+                   'NAME_LATN': 'CONTINENTE', 'NUTS_ID': 'PT1',
+                   'NUTS_NAME': 'CONTINENTE', 'OBJECTID': '113',
+                   'SHRT_ENGL': 'Portugal'},
+                  'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
+                  'value': 'PT1'},
+                 {'attributes': {'CNTR_CODE': 'PT', 'LEVL_CODE': '2',
+                   'NAME_LATN': 'Área Metropolitana de Lisboa', 'NUTS_ID': 'PT17',
+                   'NUTS_NAME': 'Área Metropolitana de Lisboa', 'OBJECTID': '376',
+                   'SHRT_ENGL': 'Portugal'},
+                  'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
+                  'value': 'PT17'},
+                 {'attributes': {'CNTR_CODE': 'PT', 'LEVL_CODE': '3',
+                   'NAME_LATN': 'Área Metropolitana de Lisboa', 'NUTS_ID': 'PT170',
+                   'NUTS_NAME': 'Área Metropolitana de Lisboa', 'OBJECTID': '1233',
+                   'SHRT_ENGL': 'Portugal'},
+                  'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
+                  'value': 'PT170'}]
+            >>> res = settings._Decorator.parse_nuts(func)(nuts)
+            >>> all([res[i] == nuts[i] for i in range(len(res))])
+                True
+            >>> settings._Decorator.parse_nuts(func)(nuts, level=2)
+                 {'attributes': {'CNTR_CODE': 'PT', 'LEVL_CODE': '2',
+                   'NAME_LATN': 'Área Metropolitana de Lisboa', 'NUTS_ID': 'PT17',
+                   'NUTS_NAME': 'Área Metropolitana de Lisboa', 'OBJECTID': '376',
+                   'SHRT_ENGL': 'Portugal'},
+                  'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
+                  'value': 'PT17'},
 
         Notes
         -----
@@ -1238,7 +1284,7 @@ class _Decorator(object):
         --------
         :meth:`~_Decorator.parse_area`, :meth:`services.GISCOService.place2area`, 
         :meth:`~geoDecorators.parse_coordinate`, :meth:`services.GISCOService.coord2nuts`, 
-        :meth:`services.GISCOService.place2nuts`.
+        :meth:`services.GISCOService.place2nuts`.            
         """
         KW_RESULTS      = 'results'
         KW_ATTRIBUTES   = 'attributes'
@@ -1315,6 +1361,8 @@ class _Decorator(object):
         """Generic class decorator of functions and methods used to parse a projection
         reference system.
         
+        ::
+        
             >>> new_func = _Decorator.parse_projection(func)
         
         Arguments
@@ -1336,18 +1384,21 @@ class _Decorator(object):
         
         Examples
         --------          
-        >>> func = lambda *args, **kwargs: kwargs.get('proj')
-        >>> _Decorator.parse_projection(func)(proj='dumb')
-            happyError: !!! projection dumb not supported !!!
-        >>> _Decorator.parse_projection(func)(proj='WGS84')
-            4326
-        >>> _Decorator.parse_projection(func)(proj='EPSG3857')
-            3857
-        >>> _Decorator.parse_projection(func)(proj=3857)
-            3857
-        >>> _Decorator.parse_projection(func)(proj='LAEA')
-            3035
+        
+        ::
             
+            >>> func = lambda *args, **kwargs: kwargs.get('proj')
+            >>> _Decorator.parse_projection(func)(proj='dumb')
+                happyError: !!! projection dumb not supported !!!
+            >>> _Decorator.parse_projection(func)(proj='WGS84')
+                4326
+            >>> _Decorator.parse_projection(func)(proj='EPSG3857')
+                3857
+            >>> _Decorator.parse_projection(func)(proj=3857)
+                3857
+            >>> _Decorator.parse_projection(func)(proj='LAEA')
+                3035
+                
         See also
         --------
         :meth:`~geoDecorators.parse_coordinate`.
@@ -1371,6 +1422,8 @@ class _Decorator(object):
         """Generic class decorator of functions and methods used to parse a 
         reference year for NUTS regulation.
         
+        ::
+        
             >>> new_func = _Decorator.parse_year(func)
         
         Arguments
@@ -1392,11 +1445,14 @@ class _Decorator(object):
         
         Examples
         --------          
-        >>> func = lambda *args, **kwargs: kwargs.get('year')
-        >>> _Decorator.parse_year(func)(year=2000)
-            happyError: !!! year 2000 not supported !!!
-        >>> _Decorator.parse_year(func)(year=2013)
-            2013
+        
+        ::
+
+            >>> func = lambda *args, **kwargs: kwargs.get('year')
+            >>> _Decorator.parse_year(func)(year=2000)
+                happyError: !!! year 2000 not supported !!!
+            >>> _Decorator.parse_year(func)(year=2013)
+                2013
 
         Note
         ----
@@ -1424,6 +1480,8 @@ class _Decorator(object):
         """Generic class decorator of functions and methods used to parse a 
         filename.
         
+        ::
+        
             >>> new_func = _Decorator.parse_file(func)
         
         Arguments
@@ -1446,11 +1504,14 @@ class _Decorator(object):
         
         Examples
         --------          
-        >>> func = lambda *args, **kwargs: kwargs.get('file')
-        >>> _Decorator.parse_file(func)(file='test.txt')
-            test.txt
-        >>> _Decorator.parse_file(func)(dir='/home/sweet/home/',base='test.txt')
-            '/home/sweet/home/test.txt'
+        
+        ::
+
+            >>> func = lambda *args, **kwargs: kwargs.get('file')
+            >>> _Decorator.parse_file(func)(file='test.txt')
+                test.txt
+            >>> _Decorator.parse_file(func)(dir='/home/sweet/home/',base='test.txt')
+                '/home/sweet/home/test.txt'
             
         See also
         --------

@@ -194,12 +194,13 @@ extensions          = ['sphinx.ext.autodoc',
                        'sphinx.ext.intersphinx',
                        'sphinx.ext.todo',
                        'sphinx.ext.coverage',
-                       'sphinx.ext.imgmath',
+                       'sphinx.ext.mathjax',
+                       #'sphinx.ext.imgmath',
                        'sphinx.ext.ifconfig',
                        'sphinx.ext.viewcode',
                        'sphinx.ext.githubpages',
                        'sphinx.ext.napoleon',
-                       #'sphinxcontrib.napoleon'
+                       'sphinxjp.themes.basicstrap'
                        ]
 
 # Napoleon settings
@@ -244,24 +245,47 @@ highlight_language  = 'python3'
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style      = 'sphinx'
 
-
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
-html_theme          = 'default'
+## basicstrap - https://pythonhosted.org/sphinxjp.themes.basicstrap/index.html
+#html_theme          = 'basicstrap'
+## default
+# html_theme          = 'default'
 ## nature
 #html_theme = 'nature'
 ##'alabaster'
 #html_theme = 'alabaster'
+## ReadTheDocs special theme
+html_theme          = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
-
+if html_theme == 'basicstrap':
+    html_theme_options = {
+        'header_inverse': True,
+        'relbar_inverse': True,
+        'inner_theme': True,
+        'inner_theme_name': 'bootswatch-cosmo',
+    }    
+elif html_theme == 'sphinx_rtd_theme':
+    html_theme_options = {
+        'logo_only': False,
+        'display_version': True,
+        'prev_next_buttons_location': 'bottom',
+        'style_external_links': False,
+        'collapse_navigation': True,
+        'sticky_navigation': True,
+        'navigation_depth': 2,
+        'includehidden': True,
+        'titles_only': False
+    }
+else:
+    html_theme_options = {}
+    
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
@@ -285,13 +309,10 @@ html_static_path    = ['_static']
 #
 # The default sidebars (for documents that don't match any pattern) are
 # defined by theme itself.  Builtin themes are using these templates by
-# default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
-# 'searchbox.html']``.
-#
-# html_sidebars = {}
-##html_sidebars = {
-##   '**': ['searchbox.html', 'globaltoc.html', 'sourcelink.html'],
-##}
+# default: ``['localtoc.html', 'relations.html', 'sourcelink.html', 'searchbox.html']``.
+html_sidebars = {
+   '**': ['searchbox.html', 'globaltoc.html'],
+}
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.

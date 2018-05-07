@@ -49,6 +49,7 @@ Submodules
 .. toctree::
    :titlesonly:
    :maxdepth: 2
+   :name: toc
 
    settings
    base
