@@ -286,7 +286,7 @@ class Location(_Feature):
         Returns
         -------
         place : str
-            a place name.        
+            a place (topo)name.        
 
         Raises
         ------
@@ -556,7 +556,7 @@ class Area(_Feature):
     
     @property
     def coord(self):
-        """Geographic coordinates :literal:`(lat,Lon)` attribute (:data:`getter`) 
+        """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) 
         of a :class:`NUTS` instance.
         This is an educated guess from the actual geometry NUTS name.
         """ 
@@ -572,7 +572,7 @@ class Area(_Feature):
     
     @property
     def name(self):
-        """Name attribute (:data:`getter`) of a :class:`Area` instance. 
+        """Name property (:data:`getter`) of a :class:`Area` instance. 
         A name type is :class:`str`.
         """
         try:
@@ -585,7 +585,7 @@ class Area(_Feature):
     
     @property
     def extent(self):
-        """Extent attribute (:data:`getter`) of a :class:`Area` instance. 
+        """Extent property (:data:`getter`) of a :class:`Area` instance. 
         A extent type is :class:`list`.
         """
         try:
