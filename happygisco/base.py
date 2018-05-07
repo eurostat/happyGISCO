@@ -121,6 +121,8 @@ class _Service(object):
     def get_status(self, url):
         """Retrieve the header of a URL and return the server's status code.
         
+        ::
+        
             >>> status = serv.get_status(url)
             
         Arguments
@@ -275,12 +277,12 @@ class _Service(object):
     
     #/************************************************************************/
     @classmethod
-    def build_url(cls, *args, **kwargs):
+    def build_url(cls, domain=None, **kwargs):
         """Create a complete query URL to be used by a web-service.
         
         ::
         
-            >>> url = _Service.build_url(*args, **kwargs)
+            >>> url = _Service.build_url(domain, **kwargs)
             
         Arguments
         ---------
@@ -320,23 +322,23 @@ class _Service(object):
         the output URL in your browser to check the output):
         
         ::
-            
-            >>> base._Service.build_url(settings.ESTAT_URL,
-                                        path='wdds/rest/data/v2.1/json/en',
-                                        query='ilc_li03', 
-                                        precision=1,
-                                        indic_il='LI_R_MD60',
-                                        time='2015')
+            >>> from happygisco.base import _Service
+            >>> _Service.build_url(settings.ESTAT_URL,
+                                   path='wdds/rest/data/v2.1/json/en',
+                                   query='ilc_li03', 
+                                   precision=1,
+                                   indic_il='LI_R_MD60',
+                                   time='2015')
                 'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li03?precision=1&indic_il=LI_R_MD60&time=2015'
         
         Note that another way to call the method is:
         
         ::
 
-            >>> base._Service.build_url(domain=settings.ESTAT_URL,
-                                        path='wdds/rest/data/v2.1/json/en',
-                                        query='ilc_li01', 
-                                        **{'precision': 1, 'hhtyp': 'A1', 'time': '2010'})
+            >>> _Service.build_url(domain=settings.ESTAT_URL,
+                                   path='wdds/rest/data/v2.1/json/en',
+                                   query='ilc_li01', 
+                                   **{'precision': 1, 'hhtyp': 'A1', 'time': '2010'})
                 'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li01?precision=1&hhtyp=A1&time=2010'
         
         Similarly, we will be able to access to |GISCO| service (see :meth:`GISCOService.url_geocode`
@@ -344,9 +346,9 @@ class _Service(object):
          
         ::
 
-            >>> base._Service.build_url(domain=settings.GISCO_URL,
-                                        query='api', 
-                                        **{'q': 'Berlin+Germany', 'limit': 2})
+            >>> _Service.build_url(domain=settings.GISCO_URL,
+                                   query='api', 
+                                   **{'q': 'Berlin+Germany', 'limit': 2})
                 'http://europa.eu/webtools/rest/gisco/api?q=Berlin+Germany&limit=2'  
         
         See also
@@ -354,8 +356,7 @@ class _Service(object):
         :meth:`~_Service.get_status`, :meth:`~_Service.get_response`.
         """
         # retrieve parameters/build url
-        if args not in (None,()):       domain = args[0]
-        else:                           domain = kwargs.pop('domain','')
+        if domain is None:      domain = kwargs.pop('domain','')
         url = domain.strip("/")
         protocol = kwargs.pop('protocol', settings.DEF_PROTOCOL)
         if protocol not in settings.PROTOCOLS:
