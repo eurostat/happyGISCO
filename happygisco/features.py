@@ -99,7 +99,7 @@ def __lat(inst):
     return lat if lat is None or len(lat)>1 else lat[0]
 _Feature.lat = property(__lat) 
 _Feature.lat.__doc__ =                                                      \
-    """Latitude attribute (:data:`getter`) of a :class:`_Feature` instance. 
+    """Latitude property (:data:`getter`) of a :class:`_Feature` instance. 
     A `lat` type is (a list of) :class:`float`\ .
     """
 def __Lon(inst):
@@ -113,7 +113,7 @@ def __Lon(inst):
     return Lon if Lon is None or len(Lon)>1 else Lon[0]
 _Feature.Lon = property(__Lon) 
 _Feature.Lon.__doc__ =                                                      \
-    """Longitude attribute (:data:`getter`) of a :class:`_Feature` instance. 
+    """Longitude property (:data:`getter`) of a :class:`_Feature` instance. 
     A `Lon` type is (a list of) :class:`float`\ .
     """
     
@@ -124,8 +124,8 @@ def __coordinates(inst):
         return [inst.lat, inst.Lon]
 _Feature.coordinates = property(__coordinates) 
 _Feature.coordinates.__doc__ =                                              \
-    """Geographical coordinates :literal:`(lat,Lon)` attribute (:data:`getter`) 
-    of a :class:`_Feature` instance.
+    """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) of 
+    a :class:`_Feature` instance.
     """ 
 
 #%%
@@ -135,7 +135,7 @@ _Feature.coordinates.__doc__ =                                              \
             
 class Location(_Feature):
     """Generic class used so to define a geolocation, *e.g.* a (topo)name or a 
-    set of geographical coordinates.
+    set of geographic coordinates.
         
     ::
         
@@ -149,18 +149,18 @@ class Location(_Feature):
         keyword argument :data:`place` in :data:`kwargs` (see below), otherwise 
         all keyword arguments are ignored.
     coord : float, tuple[float]
-        a pair of (tuple of) floats, defining the coordinates :literal:`(lat,Lon)`,
+        a pair of (tuple of) floats, defining the :literal:`(lat,Lon)` coordinates,
         for instance 48.8566 and 2.3515 to locate Paris; possibly left empty, so as 
         to consider the keyword argument :literal:`place` in :data:`kwargs`.
         
     Keyword Arguments
     -----------------
     place,coord : 
-        same as above; ignored when the arguments :data:`coord` or  :data:`place` 
+        same as above; ignored when the arguments :data:`coord` or :data:`place` 
         are parsed.
     radius : float
-        accuracy radius around the geolocation :data:`[lat,Lon]`; default:
-        :data:`radius` is set to 0.001km, _i.e._ 1m.
+        accuracy radius around the geolocation :data:`coord` (or :data:`place`); 
+        default: :data:`radius` is set to 0.001km, _i.e._ 1m.
     """
 
     #/************************************************************************/
@@ -196,7 +196,7 @@ class Location(_Feature):
     #/************************************************************************/
     @property
     def coord(self):
-        """Geographical :literal:`(lat,Lon)` coordinates attribute (:data:`getter`/:data:`setter`) 
+        """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`/:data:`setter`) 
         of a :class:`Location` instance.
         """ 
         if self.__coord in ([],[None,None],None):
@@ -221,52 +221,49 @@ class Location(_Feature):
 
     #/************************************************************************/
     def geocode(self, **kwargs):   
-        """Convert place names to geographic coordinates (default) and reciprocally, 
-        depending on the type of input arguments passed.
+        """Convert the object place name to geographic coordinates.
         
         ::
         
-            >>> place = loc.geocode(**kwargs)
+            >>> coord = loc.geocode(**kwargs)
         
         Keyword Arguments
         -----------------        
         kwargs : dict  
-            
+            see keyword arguments of the :meth:`place2coord` methods.
 
         Returns
         -------
-        place : tuple, str
-            a place name or a :data:`(lat,Lon)` tuple.
+        coord : list
+            a list/tuple of :literal:`(lat,Lon)` geographic coordinates associated
+            to the :data:`place` attribute of the :class:`Location` object :data:`loc`.
 
         Raises
         ------
         happyError
             when unable to recognize address/location.
 
-        Note
-        ----
-        It may return no results if it is passed a non-existent address or a lat/lng 
-        in a remote location.
-
         Examples
         --------
         
         ::
 
-            >>> loc = features.Location('Paris, France')
+            >>> loc = features.Location(place='Paris, France', service='GoogleV3')
             >>> print loc.geocode()
                 (48.856614, 2.3522219)
-            >>> paris = serv.coord2('48.85693, 2.3412')
+            >>> paris = features.serv.coord2place('48.85693, 2.3412')
             >>> print paris
                 [u'76 Quai des Orf\xe8vres, 75001 Paris, France', u"Saint-Germain-l'Auxerrois, Paris, France", 
                  u'75001 Paris, France', u'1er Arrondissement, Paris, France', u'Paris, France', 
                  u'Paris, France', u'\xcele-de-France, France', u'France']
-            >>> paris == serv.code(48.85693, 2.3412, reverse=True)
+            >>> paris == features.serv.code(48.85693, 2.3412, reverse=True)
                 True
         
         See also
         --------
-        :meth:`~Location.reverse`
+        :meth:`base._Service.place2coord`, :meth:`services.OSMService.place2coord`, 
+        :meth:`services.GISCOService.place2coord`, :meth:`services.APIService.place2coord`, 
+        :meth:`~Location.reverse`.
         """
         try:
             return self.service.place2coord(place=self.place, **kwargs)
@@ -275,8 +272,7 @@ class Location(_Feature):
 
     #/************************************************************************/
     def reverse(self, **kwargs):
-        """Convert geographic location (passed as a tuple of coordinates or a string 
-        with those coordinates). 
+        """Convert the object geographic coordinates to a place (topo)name. 
          
         ::
        
@@ -284,8 +280,8 @@ class Location(_Feature):
 
         Keyword arguments
         -----------------
-        kwargs: tuple, str
-            .
+        kwargs : dict  
+            see keyword arguments of the :meth:`coord2place` methods.
 
         Returns
         -------
@@ -308,10 +304,17 @@ class Location(_Feature):
                 [u'76 Quai des Orf\xe8vres, 75001 Paris, France', u"Saint-Germain-l'Auxerrois, Paris, France", 
                  u'75001 Paris, France', u'1er Arrondissement, Paris, France', u'Paris, France', 
                  u'Paris, France', u'\xcele-de-France, France', u'France']
+
+        Note
+        ----
+        It may return no results in case the :literal:`(lat,Lon)` geographic
+        coordinates of a remote location were parsed.
         
         See also
         --------
-        :meth:`~Location.geocode`
+        :meth:`base._Service.coord2place`, :meth:`services.OSMService.coord2place`, 
+        :meth:`services.GISCOService.coord2place`, :meth:`services.APIService.coord2place`, 
+        :meth:`~Location.geocode`.
         """
         # geocode may return no results if it is passed a  
         # non-existent address or a lat/lng in a remote location
@@ -324,8 +327,9 @@ class Location(_Feature):
     #/************************************************************************/
     @_Decorator.parse_place_or_coordinate
     def distance(self, *args, **kwargs):            
-        """Method used for computing pairwise distances between given locations, 
-        passed indifferently as places names or geographic coordinates.
+        """Method used for computing pairwise distances between this object location 
+        and other geolocatoins passed indifferently as places names or geographic 
+        coordinates.
         
         ::
         
@@ -431,16 +435,10 @@ class NUTS(_Feature):
             attr = [n[attr_name] for n in self.__nuts]
             return attr if len(attr)>1 else attr[0]
 
-    #/************************************************************************/
-    @property
-    def feature(self):
-        """
-        """
-        return self.__nuts if len(self.__nuts)>1 else self.__nuts[0]
-    
+    #/************************************************************************/    
     @property
     def coord(self):
-        """Geographical :literal:`(lat,Lon)` coordinates attribute (:data:`getter`) 
+        """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) 
         of a :class:`NUTS` instance.
         This is an educated guess from the actual geometry NUTS name.
         """ 
@@ -455,7 +453,7 @@ class NUTS(_Feature):
 
     @property
     def level(self):
-        """Level attribute (:data:`getter`) of a :class:`NUTS` instance. 
+        """Level property (:data:`getter`) of a :class:`NUTS` instance. 
         A `level` type is (a list of) :class:`int`\ .
         """
         try:
@@ -468,7 +466,7 @@ class NUTS(_Feature):
     
     @property
     def id(self):
-        """
+        """Identity property.
         """
         try:
             _id = [n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_ID] \
@@ -480,7 +478,7 @@ class NUTS(_Feature):
     
     @property
     def name(self):
-        """Name attribute (:data:`getter`) of a :class:`NUTS` instance. 
+        """Name property (:data:`getter`) of a :class:`NUTS` instance. 
         A name type is :class:`str`.
         """
         try:
@@ -493,7 +491,7 @@ class NUTS(_Feature):
     
     @property
     def value(self):
-        """Value attribute (:data:`getter`) of a :class:`NUTS` instance. 
+        """Value property (:data:`getter`) of a :class:`NUTS` instance. 
         A value type is :class:`str`.
         """
         try:
@@ -558,7 +556,7 @@ class Area(_Feature):
     
     @property
     def coord(self):
-        """Geographical :literal:`(lat,Lon)` coordinates attribute (:data:`getter`) 
+        """Geographic coordinates :literal:`(lat,Lon)` attribute (:data:`getter`) 
         of a :class:`NUTS` instance.
         This is an educated guess from the actual geometry NUTS name.
         """ 

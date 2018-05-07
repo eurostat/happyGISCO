@@ -106,7 +106,7 @@ class _Service(object):
     #/************************************************************************/
     @property
     def session(self):
-        """Session attribute (:data:`getter`/:data:`setter`) of an instance of
+        """Session property (:data:`getter`/:data:`setter`) of an instance of
         a class :class:`_Service`. `session` is actually an instance of a
         :class:`requests.session.Session` class.
         """ # A session type is :class:`requests.session.Session`.
@@ -401,7 +401,7 @@ class _Tool(object):
 #==============================================================================
             
 class _Feature(object):    
-    """Base class for geographical features.
+    """Base class for geographic features.
     
         >>> feat = base._Feature()
     """
@@ -426,7 +426,7 @@ class _Feature(object):
     #/************************************************************************/
     @property
     def service(self):
-        """Service attribute (:data:`getter`) of a :class:`_Feature` instance. 
+        """Service property (:data:`getter`) of a :class:`_Feature` instance. 
         A :data:`service` object will be generally a :class:`~happygisco.services.GISCOService` 
         or a :class:`~happygisco.services.APIService` instance.
         """
@@ -434,7 +434,7 @@ class _Feature(object):
        
     @property
     def tool(self):
-        """Geospatial too attribute (:data:`getter`) of a :class:`_Feature` instance.
+        """Geospatial tool property (:data:`getter`) of a :class:`_Feature` instance.
         A :data:`service` object will be generally a :class:`~happygisco.tools.GDALTool` 
         instance.
         """
@@ -443,10 +443,16 @@ class _Feature(object):
     @property
     def coord(self):
         # ignore: this will be overwritten              
-        """Geographical coordinates :literal:`(lat,Lon)` attribute (:data:`getter`) 
+        """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) 
         of a :class:`_Feature` instance.
         """ 
         return self.__coord
+
+    @property
+    def feature(self):
+        """Feature property (:data:`getter`) of a :class:`_Feature` instance.
+        """
+        return self.__nuts if len(self.__nuts)>1 else self.__nuts[0]
 
 #%%
 #==============================================================================
@@ -455,7 +461,7 @@ class _Feature(object):
     
 class _Decorator(object):
     """Class implementing dummy decorators of methods and functions used to parse 
-    and check arguments as geographical features, *e.g.* place, coordinates or 
+    and check arguments as geographic features, *e.g.* place, coordinates or 
     geometries.
     
     Methods from the :mod:`services` module rely on these classes.
@@ -491,7 +497,7 @@ class _Decorator(object):
 
     #/************************************************************************/
     class __parse(object):
-        """Base parsing class for geographical entities. All decorators in 
+        """Base parsing class for geographic entities. All decorators in 
         :class:`_Decorator` will inherit from this class.
         """
         def __init__(self, func, obj=None, cls=None, method_type='function'):
@@ -564,7 +570,7 @@ class _Decorator(object):
         Returns
         -------
         new_func : callable
-            the decorated function that now accepts geographical coordinates as 
+            the decorated function that now accepts geographic coordinates as 
             positional argument(s), plus some additional keyword arguments (see 
             *Notes* below).
         
@@ -616,7 +622,7 @@ class _Decorator(object):
           in `data:`**kwargs` already supported by the input method/function :data:`func`, 
           an extra keyword argument:
               + :data:`order` : a flag used to define the order of the output parsed 
-                geographical coordinates; it can be either :literal:`'lL'` for 
+                geographic coordinates; it can be either :literal:`'lL'` for 
                 :literal:`(lat,Lon)` order or :literal:`'Ll'` for a :literal:`(Lon,lat)` 
                 order; default is :literal:`'lL'`.
         * The output decorated method :data:`new_func` can parse the following keys: 
@@ -689,13 +695,13 @@ class _Decorator(object):
                 if not isinstance(lat,(list,tuple)):  
                     lat, lon = [lat,], [lon,]
                 if not len(lat) == len(lon):
-                    raise happyError('incompatible geographical coordinates')
+                    raise happyError('incompatible geographic coordinates')
                 coord = [list(_) for _ in zip(lat, lon)]
             elif all([happyType.ismapping(coord[i]) for i in range(len(coord))]):
                 coord = [[coord[i].get(_Decorator.KW_LAT), coord[i].get(_Decorator.KW_LON)]     \
                           for i in range(len(coord))]      
             if coord in ([],None):
-                raise happyError('wrong geographical coordinates')
+                raise happyError('wrong geographic coordinates')
             if order != 'lL':                   coord = [_[::-1] for _ in coord] # order = 'Ll'
             if settings.REDUCE_ANSWER and len(coord)==1:    coord = coord[0]
             return self.func(coord, **kwargs)
@@ -865,7 +871,7 @@ class _Decorator(object):
         -------
         new_func : callable
             the decorated function that now accepts  :data:`coord` or :data:`lat` 
-            and :data:`Lon` as new keyword argument(s) to parse geographical 
+            and :data:`Lon` as new keyword argument(s) to parse geographic 
             coordinates, plus some additional keyword argument (see *Notes* of
             :meth:`~_Decorator.parse_coordinate` method).
         
@@ -911,12 +917,12 @@ class _Decorator(object):
             try:
                 assert not(place in ('',None) and coord in ([],None))
             except:
-                raise happyError('no geographical entity parsed to define the place')
+                raise happyError('no geographic entity parsed to define the place')
             if settings.EXCLUSIVE_ARGUMENTS is True:
                 try:
                     assert place in ('',None) or coord in ([],None)
                 except:
-                    raise happyError('too many geographical entities parsed to define the place')
+                    raise happyError('too many geographic entities parsed to define the place')
             return self.func(*args, **kwargs)
 
     #/************************************************************************/
@@ -945,7 +951,7 @@ class _Decorator(object):
         -------
         new_func : callable
             the decorated function that now accepts :data:`area` as a keyword 
-            argument to parse geographical coordinates, plus some additional keyword 
+            argument to parse geographic coordinates, plus some additional keyword 
             arguments (see *Notes* below).
         
         Examples
@@ -1059,7 +1065,7 @@ class _Decorator(object):
                 filtered out, the first available one; default to :data:`False`, 
                 hence all geometries are parsed;
               + :data:`order` - a flag used to define the order of the output filtered 
-                geographical coordinates; it can be either :literal:`'lL'` for 
+                geographic coordinates; it can be either :literal:`'lL'` for 
                 :literal:`(lat,Lon)` order or :literal:`'Ll'` for a :literal:`(Lon,lat)` 
                 order; default is :literal:`'lL'`.    
                 
@@ -1381,7 +1387,7 @@ class _Decorator(object):
         -------
         new_func : callable
             the decorated function that now accepts  :data:`proj` as a keyword 
-            argument to parse the geographical projection system.
+            argument to parse the geographic projection system.
         
         Examples
         --------          

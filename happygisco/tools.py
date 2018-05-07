@@ -1680,7 +1680,8 @@ class GDALTool(_Tool):
     Arguments
     ---------
     driver_name : str
-        name of the driver used for vector files
+        name of the driver used for vector files; default is :data:`settings.DRIVER_NAME`,
+        *e.g.* :literal:`'ESRI Shapefile'` to load common shapefiles.
     """
     
     #/************************************************************************/
@@ -1703,10 +1704,16 @@ class GDALTool(_Tool):
     #/************************************************************************/    
     @property
     def driver(self):
+        """Driver property (:data:`getter`) associated to the :class:`GDALTool` 
+        instance, *e.g.* see :meth:`ogr.GetDriver` method. 
+        """
         return self.__driver
             
     @property
     def driver_name(self):
+        """Driver name property (:data:`getter`/:data:`setter`) associated to the 
+        :class:`GDALTool` instance, *e.g.* see :meth:`ogr.GetDriverByName` method. 
+        """
         return self.__driver_name
     @driver_name.setter#analysis:ignore
     def driver_name(self, driver_name):

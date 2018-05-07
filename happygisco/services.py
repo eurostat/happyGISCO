@@ -42,7 +42,7 @@ Perform operations using online web-services, *e.g.*:
 
 * query and collection through |GISCO| web-services,
 * query and collection through external GIS web-services,
-* simple geographical data handling and processing.
+* simple geographical data handling and geospatial processing.
     
 **Dependencies**
 
@@ -514,7 +514,7 @@ class OSMService(_Service):
     @_Decorator.parse_coordinate
     def coord2area(self, coord, **kwargs): # specific use
         """Retrieve the place (topo)name of a given location provided by its 
-        geographical coordinates using |OSM| service.
+        geographic coordinates using |OSM| service.
                 
         ::
 
@@ -523,7 +523,7 @@ class OSMService(_Service):
         Arguments
         ---------
         coord : float, list[float]
-            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographic
             coordinates.
         
         Keyword arguments
@@ -536,7 +536,7 @@ class OSMService(_Service):
         -------
         area : dict, list[dict]
             a (list of) geometry(ies), *i.e.* a dictionary describing the geographical
-            information related to the input geographical coordinate(s) in :data:`coord`, 
+            information related to the input geographic coordinate(s) in :data:`coord`, 
             one for each coordinate listed.
         
         Raises
@@ -598,7 +598,7 @@ class OSMService(_Service):
 
     @_Decorator.parse_place
     def place2coord(self, place, **kwargs):
-        """Retrieve the geographical coordinates of a given place provided by its 
+        """Retrieve the  geographic coordinates of a given place provided by its 
         (topo)name using |OSM| service.
         
         ::
@@ -619,14 +619,14 @@ class OSMService(_Service):
             when set to :data:`True`, a single geometry is filtered out, the first 
             available one; default to :data:`False`, hence all geometries are parsed.
         order : str
-            a flag used to define the order of the output geographical coordinates; 
+            a flag used to define the order of the output geographic coordinates; 
             it can be either :literal:`'lL'` for :literal:`(lat,Lon)` order or 
             :literal:`'Ll'` for a :literal:`(lon,lat)` order; default is :literal:`'lL'`.            
             
         Returns
         -------
         coord : list[float], list[list]
-            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographic
             coordinates.
 
         Examples
@@ -671,7 +671,7 @@ class OSMService(_Service):
 
     @_Decorator.parse_coordinate
     def coord2place(self, coord, **kwargs):
-        """Retrieve the (topo)name of a given location provided by its geographical 
+        """Retrieve the (topo)name of a given location provided by its geographic 
         coordinates using |OSM| service.
         
         ::
@@ -681,7 +681,7 @@ class OSMService(_Service):
         Arguments
         ---------
         coord : float, list[float]
-            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographic
             coordinates.
         
         Keyword arguments
@@ -774,7 +774,7 @@ class GISCOService(OSMService):
     #/************************************************************************/
     @property
     def domain(self):
-        """Domain attribute (:data:`getter`/:data:`setter`) defining the domain
+        """Domain property (:data:`getter`/:data:`setter`) defining the domain
         URL, *e.g.* :data:`settings.GISCO_URL`, of an instance of this class. 
         """ # A domain type is :class:`str`.
         return self.__domain
@@ -787,7 +787,7 @@ class GISCOService(OSMService):
     #/************************************************************************/
     @property
     def arcgis(self):
-        """Domain attribute (:data:`getter`/:data:`setter`) defining the ArcGIS
+        """Domain property (:data:`getter`/:data:`setter`) defining the ArcGIS
         URL, *e.g.* :data:`settings.GISCO_ARCGIS`, of the an instance of this class. 
         """ # A domain type is :class:`str`.
         return self.__arcgis
@@ -1087,8 +1087,8 @@ class GISCOService(OSMService):
     #/************************************************************************/
     @_Decorator.parse_place
     def place2area(self, place, **kwargs): 
-        """Retrieve geographical information) associated to a given place as a
-        geometry using |GISCO| service.
+        """Retrieve the geographical information associated to a given place as
+        a geometry using |GISCO| service.
         
         ::
         
@@ -1186,8 +1186,8 @@ class GISCOService(OSMService):
     #/************************************************************************/
     @_Decorator.parse_place
     def place2coord(self, place, **kwargs): # specific use
-        """Retrieve the geographical coordinates of a given place provided by 
-        its (topo)name using |GISCO| service.
+        """Retrieve the geographic coordinates of a given place provided by its 
+        (topo)name using |GISCO| service.
         
         ::
         
@@ -1207,14 +1207,14 @@ class GISCOService(OSMService):
             when set to :data:`True`, a single geometry is filtered out, the first 
             available one; default to :data:`False`, hence all geometries are parsed.
         order : str
-            a flag used to define the order of the output geographical coordinates; 
+            a flag used to define the order of the output geographic coordinates; 
             it can be either :literal:`'lL'` for :literal:`(lat,Lon)` order or 
             :literal:`'Ll'` for a :literal:`(lon,lat)` order; default is :literal:`'lL'`.            
             
         Returns
         -------
         coord : list[float], list[list]
-            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographic
             coordinates.
 
         Examples
@@ -1253,7 +1253,7 @@ class GISCOService(OSMService):
     @_Decorator.parse_coordinate
     def coord2area(self, coord, **kwargs): # specific use
         """Retrieve the place (topo)name of a given location provided by its 
-        geographical coordinates using |GISCO| service.
+        geographic coordinates using |GISCO| service.
         
         ::
         
@@ -1262,7 +1262,7 @@ class GISCOService(OSMService):
         Arguments
         ---------
         coord : float, list[float]
-            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographic
             coordinates.
         
         Keyword arguments
@@ -1275,7 +1275,7 @@ class GISCOService(OSMService):
         -------
         area : dict, list[dict]
             a (list of) geometry(ies), *i.e.* a dictionary describing the geographical
-            information related to the input geographical coordinate(s) in :data:`coord`, 
+            information related to the input geographic coordinate(s) in :data:`coord`, 
             one for each coordinate listed.
         
         Raises
@@ -1343,7 +1343,7 @@ class GISCOService(OSMService):
     #/************************************************************************/
     @_Decorator.parse_coordinate
     def coord2place(self, coord, **kwargs): # specific use
-        """Retrieve the (topo)name of a given location provided by its geographical 
+        """Retrieve the (topo)name of a given location provided by its geographic 
         coordinates using |GISCO| service.
         
         ::
@@ -1353,7 +1353,7 @@ class GISCOService(OSMService):
         Arguments
         ---------
         coord : list[float], list[list]
-            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographic
             coordinates.
         
         Keyword arguments
@@ -1467,7 +1467,7 @@ class GISCOService(OSMService):
     @_Decorator.parse_coordinate
     def coord2nuts(self, coord, **kwargs):
         """Retrieve the various |NUTS| geometries (all levels) associated to given 
-        geolocation(s) provided as geographical :literal:`(lat,Lon)` coordinates.
+        geolocation(s) provided as geographic coordinates.
         
         ::
         
@@ -1476,7 +1476,7 @@ class GISCOService(OSMService):
         Arguments
         ---------
         coord : list[float], list[list]
-            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographic
             coordinates.
         
         Keyword arguments
@@ -1676,7 +1676,7 @@ class GISCOService(OSMService):
         coord : list[list]
             list of geolocations defining the different steps/destinations along 
             the route; the steps are expressed as tuple/list of :literal:`(lat,Lon)` 
-            geographical coordinates; needs to be of length 2 at least.
+            geographic coordinates; needs to be of length 2 at least.
         
         Returns
         -------
@@ -2092,7 +2092,7 @@ class APIService(_Service):
     #/************************************************************************/
     @property
     def coder(self):
-        """Coder attribute (:data:`getter`) of a :class:`APIService` instance. 
+        """Coder property (:data:`getter`) of a :class:`APIService` instance. 
         A `coder` type is a either :class:`~happygisco.services._googlePlacesAPI`,  
         or a :class:`~happygisco.services._googleMapsAPI`, or  
         :class:`~happygisco.services._geoCoderAPI` object.
@@ -2101,7 +2101,7 @@ class APIService(_Service):
             
     @property
     def coder_key(self):
-        """Service attribute (:data:`getter`/:data:`setter`) of a :class:`APIService` 
+        """Service property (:data:`getter`/:data:`setter`) of a :class:`APIService` 
         instance. 
         A `coder_key` type is a :class:`str` object.
         """
@@ -2115,7 +2115,7 @@ class APIService(_Service):
     #/************************************************************************/
     @_Decorator.parse_place
     def place2coord(self, place, **kwargs):
-        """Retrieve the geographical coordinates of a given place provided by 
+        """Retrieve the geographic coordinates of a given place provided by 
         its (topo)name.
                 
         ::
@@ -2135,7 +2135,7 @@ class APIService(_Service):
         Returns
         -------
         coord : list[float], list[list]
-            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            geolocation(s) expressed as tuple/list of geographic :literal:`(lat,Lon)` 
             coordinates.
         
         See also
@@ -2160,7 +2160,7 @@ class APIService(_Service):
     #/************************************************************************/
     @_Decorator.parse_coordinate
     def coord2place(self, coord, **kwargs):
-        """Retrieve the (topo)name of a given location provided by its geographical 
+        """Retrieve the (topo)name of a given location provided by its geographic
         coordinates using the API geocoding service.
         
         ::
@@ -2170,7 +2170,7 @@ class APIService(_Service):
         Arguments
         ---------
         coord : float, list[float]
-            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographical 
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographic
             coordinates.
         
         Keyword arguments

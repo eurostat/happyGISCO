@@ -44,7 +44,7 @@ for:
 
 * query and collection through |Eurostat| |GISCO| webservices,
 * query and collection through external GIS webservices,
-* simple geographical data handling and processing.
+* simple geographical data handling and geospatial processing.
 
 **Note**
 
