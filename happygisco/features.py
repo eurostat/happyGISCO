@@ -557,7 +557,7 @@ class Area(_Feature):
     @property
     def coord(self):
         """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) 
-        of a :class:`NUTS` instance.
+        of an :class:`Area` instance.
         This is an educated guess from the actual geometry NUTS name.
         """ 
         if self.__coord in ([],[None,None],None):
@@ -572,7 +572,7 @@ class Area(_Feature):
     
     @property
     def name(self):
-        """Name property (:data:`getter`) of a :class:`Area` instance. 
+        """Name property (:data:`getter`) of an :class:`Area` instance. 
         A name type is :class:`str`.
         """
         try:
@@ -585,7 +585,7 @@ class Area(_Feature):
     
     @property
     def extent(self):
-        """Extent property (:data:`getter`) of a :class:`Area` instance. 
+        """Extent property (:data:`getter`) of an :class:`Area` instance. 
         A extent type is :class:`list`.
         """
         try:
