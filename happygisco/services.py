@@ -1664,8 +1664,8 @@ class GISCOService(OSMService):
     #/************************************************************************/
     @_Decorator.parse_coordinate
     def coord2route(self, coord, **kwargs):
-        """Retrieve the route associated to a list of coordinates providing with
-        the different steps/destinations along the route. 
+        """Retrieve the route going through the various steps/destinations represented 
+        by a list of geographic coordinates. 
         
         ::
         
@@ -1759,8 +1759,8 @@ class GISCOService(OSMService):
     #/************************************************************************/
     @_Decorator.parse_place
     def place2route(self, place, **kwargs):
-        """Retrieve the route associated to a list of (topo) name(s) providing 
-        with the different steps/destinations along the route. 
+        """Retrieve the route going through the various steps/destinations represented 
+        by a list of (topo) name(s). 
          
         ::
        
@@ -1776,7 +1776,8 @@ class GISCOService(OSMService):
         Returns
         -------
         route, waypoints : 
-            see :meth:`~GISCOService.coord2route` method.
+            shortest route and waypoints along the route; see :meth:`~GISCOService.coord2route`
+            method.
         
         Raises
         ------

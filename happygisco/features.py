@@ -4,12 +4,32 @@
 """
 .. _mod_features
 
+
+.. Links
+
+.. _Eurostat: http://ec.europa.eu/eurostat/web/main
+.. |Eurostat| replace:: `Eurostat <Eurostat_>`_
+.. _GISCO: http://ec.europa.eu/eurostat/web/gisco
+.. |GISCO| replace:: `GISCO <GISCO_>`_
+.. _NUTS: http://ec.europa.eu/eurostat/web/nuts/background
+.. |NUTS| replace:: `NUTS background <NUTS_>`_
+.. _OSM: https://www.openstreetmap.org
+.. |OSM| replace:: `Open Street Map <OSM_>`_
+.. _Google_Maps: https://developers.google.com/maps/
+.. |Google_Maps| replace:: `Google Maps <Google_Maps_>`_
+.. _Google_Places: https://developers.google.com/places/
+.. |Google_Places| replace:: `Google Places <Google_Places_>`_
+.. _geopy: https://github.com/geopy/geopy
+.. |geopy| replace:: `geopy <geopy_>`_
+
 Module for place/location features definition and description.
 
 **Description**
 
-Define the main classes for the representation of place/location features, as well 
-as NUTS regions, to which geotransformations are associated.
+The module :mod:`features` describes the main classes for the representation of 
+place/location entities, as well as generic area geometries and common NUTS regions. 
+Geographic operations are associated to the different entities through the definition 
+of dedicated methods.
     
 **Dependencies**
 
@@ -18,7 +38,6 @@ as NUTS regions, to which geotransformations are associated.
 *call*         :mod:`settings`, :mod:`base`, :mod:`services`, :mod:`tools`         
 
 **Contents**
-
 """
 
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
@@ -155,9 +174,6 @@ class Location(_Feature):
         
     Keyword Arguments
     -----------------
-    place,coord : 
-        same as above; ignored when the arguments :data:`coord` or :data:`place` 
-        are parsed.
     radius : float
         accuracy radius around the geolocation :data:`coord` (or :data:`place`); 
         default: :data:`radius` is set to 0.001km, _i.e._ 1m.
@@ -174,8 +190,8 @@ class Location(_Feature):
     #/************************************************************************/
     @property
     def place(self):
-        """Place attribute (:data:`getter/setter`/:data:`setter`) of a :class:`Location` 
-        instance. A `place` type is  (a list of) :class:`str`\ .
+        """Place property (:data:`getter/setter`/:data:`setter`) of a :class:`Location` 
+        instance. A `place` type is  (a list of) :class:`str`.
         """
         if self.__place in ('',[''],None):
             try:
@@ -221,7 +237,8 @@ class Location(_Feature):
 
     #/************************************************************************/
     def geocode(self, **kwargs):   
-        """Convert the object place name to geographic coordinates.
+        """Convert the object place name to geographic coordinates using the 
+        service used to initialise this instance.
         
         ::
         
@@ -258,6 +275,12 @@ class Location(_Feature):
                  u'Paris, France', u'\xcele-de-France, France', u'France']
             >>> paris == features.serv.code(48.85693, 2.3412, reverse=True)
                 True
+
+        Note
+        ----
+        The output of the :meth:`geocode` method will not coincide with the :data:`coord`
+        attribute of the considered instance in the case the latter was parsed for its 
+        initialisation.
         
         See also
         --------
@@ -272,7 +295,8 @@ class Location(_Feature):
 
     #/************************************************************************/
     def reverse(self, **kwargs):
-        """Convert the object geographic coordinates to a place (topo)name. 
+        """Convert the object geographic coordinates to a place (topo)name using the 
+        service used to initialise this instance. 
          
         ::
        
@@ -305,10 +329,14 @@ class Location(_Feature):
                  u'75001 Paris, France', u'1er Arrondissement, Paris, France', u'Paris, France', 
                  u'Paris, France', u'\xcele-de-France, France', u'France']
 
-        Note
-        ----
-        It may return no results in case the :literal:`(lat,Lon)` geographic
-        coordinates of a remote location were parsed.
+        Notes
+        -----
+        * The output of the :meth:`reverse` method will not coincide with the :data:`plade`
+          attribute of the considered instance in the case the latter was parsed for its 
+          initialisation.
+        * The :meth:`reverse` may return no results in the case the :literal:`(lat,Lon)` 
+          geographic coordinates defined in the :data:`coord` attribute represent a 
+          *"remote"* location.
         
         See also
         --------
@@ -327,9 +355,8 @@ class Location(_Feature):
     #/************************************************************************/
     @_Decorator.parse_place_or_coordinate
     def distance(self, *args, **kwargs):            
-        """Method used for computing pairwise distances between this object location 
-        and other geolocatoins passed indifferently as places names or geographic 
-        coordinates.
+        """Compute pairwise distances between this instance location and other locations 
+        parsed indifferently as places names or geographic coordinates.
         
         ::
         
@@ -337,7 +364,7 @@ class Location(_Feature):
     
         Arguments
         ---------
-        args : tuple, str
+        args : list, str
             a pair of locations represented either as tuple of (lat,Lon) coordinates
             or string of place name.
             
@@ -358,7 +385,7 @@ class Location(_Feature):
         
         Raises
         ------
-        IOError:
+        IOError
             when wrong unit/code for geodesic distance or when unable to find/recognize
             locations.
             
@@ -367,7 +394,7 @@ class Location(_Feature):
         
         ::
 
-            >>> loc = features.Location([26.062951, -80.238853])
+            >>> loc = features.Location([26.062951, -80.238853], service='GISCO')
             >>> print loc.distance([26.060484,-80.207268], 
                                    dist='vincenty', unit='m')
                 3172.3596179302895
@@ -377,6 +404,17 @@ class Location(_Feature):
             >>> print loc.distance('Paris, France', 
                                    dist='great_circle', unit='km')
                 7338.5353364838438
+                
+        Note
+        ----
+        Depending on the service parsed to initialise this instance, the method
+        used for the effective distance calculation may be either the :meth:`distance`
+        method of the |geopy| package or the :meth:`distance method of the |Google_Maps|
+        API.
+        
+        See also
+        --------
+        :meth:`services._googleMapsAPI.distance`, :meth:`tools.GeoCoordinate.distance`.
         """
         func = lambda *a, **kw: [kw.pop(_Decorator.KW_PLACE), kw.pop(_Decorator.KW_COORD)]
         try:
@@ -386,11 +424,55 @@ class Location(_Feature):
         else:
             if coord in ([],None):
                 coord = self.service.place2coord(place)
-        return tools.GeoCoordinate.distance(self.coord, coord, **kwargs)
+        try:
+            return self.service.distance(self.coord, coord, **kwargs)
+        except:
+            return tools.GeoCoordinate.distance(self.coord, coord, **kwargs)
     
     #/************************************************************************/
     @_Decorator.parse_place_or_coordinate
-    def route(self, *args, **kwargs):
+    def routing(self, *args, **kwargs):
+        """Compute the route starting at this instance location and going through
+        the various steps/destinations represented by a list of (topo) name(s) or
+        geographic coordinates. 
+        
+        ::
+            
+            >>> route, waypoints = loc.routing(*args, **kwargs)
+    
+        Arguments
+        ---------
+        args : list, list[str]
+            list of locations represented either as list of :literal:`(lat,Lon)` 
+            geographic coordinates or string of place (topo)name(s).
+            
+            
+        Keyword arguments
+        -----------------
+        kwargs : dict
+            see method :meth:`services.GISCOService.coord2route`.
+            
+        Returns
+        -------
+        route, waypoints : 
+            shortest route and waypoints along the route; see :meth:`services.GISCOService.coord2route`
+            method.
+            
+        Example
+        -------
+            
+        Note
+        ----
+        This method is available only when the service parsed to initialise this
+        instance is an instance of :class:`services.GISCOService` class.
+
+        See also
+        --------
+        :meth:`services.GISCOService.coord2route`, :meth:`services.GISCOService.place2route`.
+        """
+        if not isinstance(self.service, services.GISCOService):
+            happyWarning('routing method available only with GISCO service')
+            return
         try:
             place = kwargs.pop(_Decorator.KW_PLACE)
         except:
@@ -410,7 +492,41 @@ class Location(_Feature):
     
     #/************************************************************************/
     def findnuts(self, **kwargs):
-        return self.service.place2nuts(self.place, **kwargs)
+        """Compute the route starting at this instance location and going through
+        the various steps/destinations represented by a list of (topo) name(s) or
+        geographic coordinates. 
+        
+        ::
+            
+            >>> id = loc.findnuts(**kwargs)
+    
+        Keyword arguments
+        -----------------
+        kwargs : dict
+            see method :meth:`services.GISCOService.coord2nuts`.
+            
+        Returns
+        -------
+        nuts : dict, list[dict]
+            a (list of) dictionary(ies) representing NUTS geometries; see
+            :meth:`services.GISCOService.coord2nuts` method.
+
+        Example
+        -------
+            
+        Note
+        ----
+        This method is available only when the service parsed to initialise this
+        instance is an instance of :class:`services.GISCOService` class.
+
+        See also
+        --------
+        :meth:`services.GISCOService.coord2nuts`, :meth:`services.GISCOService.place2nuts`.
+        """
+        if not isinstance(self.service, services.GISCOService):
+            happyWarning('findnuts method available only with GISCO service')
+            return
+        return self.service.coord2nuts(self.coord, **kwargs)
 
 #%%
 #==============================================================================
@@ -418,7 +534,17 @@ class Location(_Feature):
 #==============================================================================
        
 class NUTS(_Feature):
-    """
+    """Class representing a |NUTS| geometry and defining simple description of its
+    contents.
+        
+    ::
+        
+        >>> nuts = features.NUTS(*args)
+    
+    Arguments
+    ---------
+    nuts : dict, list[dict]
+        a (list of) dictionary(ies) representing a single NUTS geometry.
     """
 
     #/************************************************************************/
@@ -500,10 +626,44 @@ class NUTS(_Feature):
             return None
         else:
             return value if len(value)>1 else value[0]
-        
+    
+    @property
+    def place(self):
+        """Place property of a :class:`NUTS` instance. This is actually a "shortcut"
+        to :data:`name` property.
+        """
+        return self.name
+    
     #/************************************************************************/
     def geocode(self, **kwargs):
-        """
+        """Convert the NUTS name to geographic coordinates using the service used 
+        to initialise this instance.
+        
+        ::
+            
+            >>> coord = nuts.geocode(**kwargs)
+            
+        Keyword arguments
+        -----------------
+        kwargs : 
+            see :meth:`place2coord` method.
+            
+        Returns
+        -------
+        coord : list, list[float]
+            :literal:`(lat,Lon)` geographic coordinates associated to the name of
+            this NUTS instance.
+            
+        Note
+        ----
+        The geographic coordinates output by the method :meth:`geocode` does not
+        represent the centroid of the NUTS geometry. There is also no guarantee
+        it is actually contained inside the NUTS geometry itself.
+        
+        See also
+        --------
+        :meth:`base._Service.place2coord`, :meth:`services.OSMService.place2coord`, 
+        :meth:`services.GISCOService.place2coord`, :meth:`services.APIService.place2coord`.
         """
         try:
             return self.service.place2coord(place=self.name, **kwargs)
@@ -546,13 +706,6 @@ class Area(_Feature):
         except AttributeError:
             attr = [n[attr_name] for n in self.__area]
             return attr if len(attr)>1 else attr[0]
- 
-    #/************************************************************************/
-    @property
-    def feature(self):
-        """
-        """
-        return self.__area if len(self.__area)>1 else self.__area[0]
     
     @property
     def coord(self):

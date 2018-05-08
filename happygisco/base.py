@@ -64,7 +64,7 @@ __all__         = ['_Service', '_Feature', '_Tool', '_Decorator']
 # generic import
 import os, sys#analysis:ignore
 import itertools
-import functools#analysis:ignore
+import functools
 
 # local imports
 from happygisco import settings
