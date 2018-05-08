@@ -13,7 +13,7 @@
 .. _GISCOWIKI: https://webgate.ec.europa.eu/fpfis/wikis/display/GISCO/Geospatial+information+services+for+the+European+Commission+and+other+EU+users
 .. |GISCOWIKI| replace:: `GISCO offline wiki <GISCOWIKI_>`_
 .. _NUTS: http://ec.europa.eu/eurostat/web/nuts/background
-.. |NUTS| replace:: `NUTS background <NUTS_>`_
+.. |NUTS| replace:: `NUTS <NUTS_>`_
 .. _OSM: https://www.openstreetmap.org
 .. |OSM| replace:: `Open Street Map <OSM_>`_
 .. _Nominatim: https://wiki.openstreetmap.org/wiki/Nominatim

@@ -49,7 +49,7 @@ They are provided here for the sake of an exhaustive documentation.
 
 *require*:      :mod:`os`, :mod:`sys`, :mod:`itertools`
 
-*optional*:     :mod:`requests`, :mod:`functools`
+*optional*:     :mod:`requests`
 
 *call*:         :mod:`settings`         
 
@@ -64,7 +64,6 @@ __all__         = ['_Service', '_Feature', '_Tool', '_Decorator']
 # generic import
 import os, sys#analysis:ignore
 import itertools
-import functools
 
 # local imports
 from happygisco import settings
@@ -408,20 +407,20 @@ class _Feature(object):
 
     #/************************************************************************/
     def __init__(self):
-        self.__coord = None
-        self.__service, self.__tool = None, None
+        self._coord = None
+        self._service, self._tool = None, None
         try:
             assert True
         except:
             happyWarning('tool(s) not available')
         else:
-            self.__tool = _Tool()
+            self._tool = _Tool()
         try:
             assert SERVICE_AVAILABLE
         except:
             happyWarning('web service(s) not available')
         else:
-            self.__service = _Service()
+            self._service = _Service()
        
     #/************************************************************************/
     @property
@@ -430,7 +429,7 @@ class _Feature(object):
         A :data:`service` object will be generally a :class:`~happygisco.services.GISCOService` 
         or a :class:`~happygisco.services.APIService` instance.
         """
-        return self.__service
+        return self._service
        
     @property
     def tool(self):
@@ -438,7 +437,7 @@ class _Feature(object):
         A :data:`service` object will be generally a :class:`~happygisco.tools.GDALTool` 
         instance.
         """
-        return self.__tool
+        return self._tool
     
     @property
     def coord(self):
@@ -446,13 +445,7 @@ class _Feature(object):
         """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) 
         of a :class:`_Feature` instance.
         """ 
-        return self.__coord
-
-    @property
-    def feature(self):
-        """Feature property (:data:`getter`) of a :class:`_Feature` instance.
-        """
-        return self.__nuts if len(self.__nuts)>1 else self.__nuts[0]
+        return self._coord
 
 #%%
 #==============================================================================

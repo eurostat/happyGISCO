@@ -1,4 +1,4 @@
-:mod:`features` module: Simple geographical features
+:mod:`features` module: Simple geographical entities
 ----------------------------------------------------
 
 .. automodule:: features

@@ -12,7 +12,7 @@
 .. _GISCO: http://ec.europa.eu/eurostat/web/gisco
 .. |GISCO| replace:: `GISCO <GISCO_>`_
 .. _NUTS: http://ec.europa.eu/eurostat/web/nuts/background
-.. |NUTS| replace:: `NUTS background <NUTS_>`_
+.. |NUTS| replace:: `NUTS <NUTS_>`_
 .. _OSM: https://www.openstreetmap.org
 .. |OSM| replace:: `Open Street Map <OSM_>`_
 .. _Google_Maps: https://developers.google.com/maps/
@@ -27,9 +27,9 @@ Module for place/location features definition and description.
 **Description**
 
 The module :mod:`features` describes the main classes for the representation of 
-place/location entities, as well as generic area geometries and common NUTS regions. 
-Geographic operations are associated to the different entities through the definition 
-of dedicated methods.
+place/location entities, as well as generic area geometries and common |NUTS| regions. 
+Some basic geographic operations are associated to the different entities through 
+the definition of dedicated methods.
     
 **Dependencies**
 
@@ -78,7 +78,7 @@ def __init(inst, *args, **kwargs):
     except:
         happyWarning('GDAL services not available')
     else:
-        inst.__tool = tools.GDALTool()
+        inst._tool = tools.GDALTool()
     try:
         assert API_SERVICE or GISCO_SERVICE
     except:
@@ -88,31 +88,31 @@ def __init(inst, *args, **kwargs):
         if service is None: # whatever works
             try:
                 assert GISCO_SERVICE is True
-                inst.__service = services.GISCOService(coder=service)
+                inst._service = services.GISCOService(coder=service)
             except:
                 try:
                     assert API_SERVICE is True
-                    inst.__service = services.APIService(coder=service)
+                    inst._service = services.APIService(coder=service)
                 except:
                     raise IOError('no service available')
         elif isinstance(service,str):
             if service in services.GISCOService.CODER:
-                inst.__service = services.GISCOService(coder=service)
+                inst._service = services.GISCOService(coder=service)
             elif service in services.APIService.CODER:
-                inst.__service = services.APIService(coder=service)
+                inst._service = services.APIService(coder=service)
             else:
                 raise IOError('service %s not available' % service)
-        if not isinstance(inst.__service,(services.GISCOService,services.APIService)):
+        if not isinstance(inst._service,(services.GISCOService,services.APIService)):
             raise IOError('service %s not supported' % service)
 _Feature.__init__ = __init
 
 #/****************************************************************************/
 def __lat(inst):
     try:
-        lat = inst.__coord[0]
+        lat = inst.coord[0]
     except:
         try:
-            lat = inst.__coord.get(_Decorator.KW_LAT)
+            lat = inst.coord.get(_Decorator.KW_LAT)
         except:  # AttributeError
             raise happyError('coordinates parameter not set')
     return lat if lat is None or len(lat)>1 else lat[0]
@@ -183,8 +183,8 @@ class Location(_Feature):
     @_Decorator.parse_place_or_coordinate
     def __init__(self,**kwargs):
         # kwargs.pop('order',None)
-        self.__place = kwargs.pop(_Decorator.KW_PLACE, None)
-        self.__coord = kwargs.pop(_Decorator.KW_COORD, None)
+        self._place = kwargs.pop(_Decorator.KW_PLACE, None)
+        self._coord = kwargs.pop(_Decorator.KW_COORD, None)
         super(Location,self).__init__(**kwargs)
 
     #/************************************************************************/
@@ -193,21 +193,21 @@ class Location(_Feature):
         """Place property (:data:`getter/setter`/:data:`setter`) of a :class:`Location` 
         instance. A `place` type is  (a list of) :class:`str`.
         """
-        if self.__place in ('',[''],None):
+        if self._place in ('',[''],None):
             try:
                 place = self.reverse()
             except:     
                 raise happyError('place not found') 
             else:
-                self.__place = place
-        return self.__place if len(self.__place)>1 else self.__place[0]    
+                self._place = place
+        return self._place if len(self._place)>1 else self._place[0]    
     @place.setter
     def place(self,place):
         try:
             place = _Decorator.parse_place(lambda p: p)(place)
         except:
             raise happyError('unrecognised address/location argument') 
-        self.__place = place
+        self._place = place
 
     #/************************************************************************/
     @property
@@ -215,21 +215,21 @@ class Location(_Feature):
         """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`/:data:`setter`) 
         of a :class:`Location` instance.
         """ 
-        if self.__coord in ([],[None,None],None):
+        if self._coord in ([],[None,None],None):
             try:
                 coord = self.geocode(unique=True)
             except:     
                 raise happyError('coordinates not found') 
             else:
-                self.__coord = coord
-        return self.__coord # if len(self.__coord)>1 else self.__coord[0]    
+                self._coord = coord
+        return self._coord # if len(self._coord)>1 else self._coord[0]    
     @coord.setter
     def coord(self,coord):
         try:
             coord = _Decorator.parse_coordinates(lambda c: c)(coord)
         except:
             raise happyError('unrecognised coordinates argument') 
-        self.__coord = coord
+        self._coord = coord
 
     #/************************************************************************/
     def __repr__(self):
@@ -550,7 +550,7 @@ class NUTS(_Feature):
     #/************************************************************************/
     @_Decorator.parse_nuts
     def __init__(self, **kwargs):
-        self.__nuts = kwargs.pop(_Decorator.KW_NUTS, [])
+        self._nuts = kwargs.pop(_Decorator.KW_NUTS, [])
         super(NUTS,self).__init__(**kwargs)
     
     #/************************************************************************/
@@ -558,24 +558,30 @@ class NUTS(_Feature):
         try:
             return super(NUTS,self).__getattribute__(attr_name) 
         except AttributeError:
-            attr = [n[attr_name] for n in self.__nuts]
+            attr = [n[attr_name] for n in self._nuts]
             return attr if len(attr)>1 else attr[0]
 
     #/************************************************************************/    
+    @property
+    def feature(self):
+        """Feature property (:data:`getter`) of a :class:`NUTS` instance.
+        """
+        return self._nuts if len(self._nuts)>1 else self._nuts[0]
+
     @property
     def coord(self):
         """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) 
         of a :class:`NUTS` instance.
         This is an educated guess from the actual geometry NUTS name.
         """ 
-        if self.__coord in ([],[None,None],None):
+        if self._coord in ([],[None,None],None):
             try:
                 coord = self.geocode(unique=True)
             except:     
                 raise happyError('coordinates not found') 
             else:
-                self.__coord = coord
-        return self.__coord # if len(self.__coord)>1 else self.__coord[0]    
+                self._coord = coord
+        return self._coord # if len(self._coord)>1 else self._coord[0]    
 
     @property
     def level(self):
@@ -584,7 +590,7 @@ class NUTS(_Feature):
         """
         try:
             level = [int(n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL]) \
-                    for n in self.__nuts]
+                    for n in self.feature]
         except:
             return None
         else:
@@ -596,7 +602,7 @@ class NUTS(_Feature):
         """
         try:
             _id = [n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_ID] \
-                    for n in self.__nuts]
+                    for n in self.feature]
         except:
             return None
         else:
@@ -609,7 +615,7 @@ class NUTS(_Feature):
         """
         try:
             name = [n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_NAME] \
-                    for n in self.__nuts]
+                    for n in self.feature]
         except:
             return None
         else:
@@ -621,7 +627,7 @@ class NUTS(_Feature):
         A value type is :class:`str`.
         """
         try:
-            value = [n[_Decorator.parse_nuts.KW_VALUE] for n in self.__nuts]
+            value = [n[_Decorator.parse_nuts.KW_VALUE] for n in self.feature]
         except:
             return None
         else:
@@ -695,7 +701,7 @@ class Area(_Feature):
     #/************************************************************************/
     @_Decorator.parse_nuts
     def __init__(self, **kwargs):
-        self.__area = kwargs.pop(_Decorator.KW_AREA, [])
+        self._area = kwargs.pop(_Decorator.KW_AREA, [])
         super(Area,self).__init__(**kwargs)
     
     #/************************************************************************/
@@ -704,8 +710,15 @@ class Area(_Feature):
         try:
             return super(Area,self).__getattribute__(attr_name) 
         except AttributeError:
-            attr = [n[attr_name] for n in self.__area]
+            attr = [n[attr_name] for n in self._area]
             return attr if len(attr)>1 else attr[0]
+
+    #/************************************************************************/
+    @property
+    def feature(self):
+        """Feature property (:data:`getter`) of an :class:`Area` instance.
+        """
+        return self._area if len(self._area)>1 else self._area[0]
     
     @property
     def coord(self):
@@ -713,15 +726,15 @@ class Area(_Feature):
         of an :class:`Area` instance.
         This is an educated guess from the actual geometry NUTS name.
         """ 
-        if self.__coord in ([],[None,None],None):
+        if self._coord in ([],[None,None],None):
             try:
                 func = lambda *a, **kw: kw.get(_Decorator.KW_COORD)
-                coord = _Decorator.parse_area(func)(self.geometry, filter='coord')
+                coord = _Decorator.parse_area(func)(self.feature, filter='coord')
             except:     
                 raise happyError('coordinates not found') 
             else:
-                self.__coord = coord
-        return self.__coord # if len(self.__coord)>1 else self.__coord[0]    
+                self._coord = coord
+        return self._coord # if len(self._coord)>1 else self._coord[0]    
     
     @property
     def name(self):
@@ -730,7 +743,7 @@ class Area(_Feature):
         """
         try:
             name = [a[_Decorator.parse_area.KW_PROPERTIES][_Decorator.parse_area.KW_NAME] \
-                    for a in self.__area]
+                    for a in self.feature]
         except:
             return None
         else:
@@ -743,7 +756,7 @@ class Area(_Feature):
         """
         try:
             extent = [a[_Decorator.parse_area.KW_PROPERTIES][_Decorator.parse_area.KW_EXTENT] \
-                    for a in self.__area]
+                    for a in self.feature]
         except:
             return None
         else:
