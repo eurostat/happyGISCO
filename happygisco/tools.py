@@ -113,55 +113,57 @@ class GeoLocation(object):
       
     #/************************************************************************/
     @classmethod
-    def from_degrees(cls, deg_lat, deg_lon):
+    def from_degrees(cls, deg_lat, deg_Lon):
         rad_lat = math.radians(deg_lat)
-        rad_lon = math.radians(deg_lon)
-        ## return GeoLocation(rad_lat, rad_lon, deg_lat, deg_lon)
+        rad_Lon = math.radians(deg_Lon)
+        ## return GeoLocation(rad_lat, rad_Lon, deg_lat, deg_Lon)
         # to ensure inheritance
-        return cls(rad_lat, rad_lon, deg_lat, deg_lon)
+        return cls(rad_lat, rad_Lon, deg_lat, deg_Lon)
         
     #/************************************************************************/
     @classmethod
-    def from_radians(cls, rad_lat, rad_lon):
+    def from_radians(cls, rad_lat, rad_Lon):
         deg_lat = math.degrees(rad_lat)
-        deg_lon = math.degrees(rad_lon)
-        ## return GeoLocation(rad_lat, rad_lon, deg_lat, deg_lon)
-        return cls(rad_lat, rad_lon, deg_lat, deg_lon)
+        deg_Lon = math.degrees(rad_Lon)
+        ## return GeoLocation(rad_lat, rad_Lon, deg_lat, deg_Lon)
+        return cls(rad_lat, rad_Lon, deg_lat, deg_Lon)
         
     #/************************************************************************/
-    def __init__(self, rad_lat, rad_lon, deg_lat, deg_lon):
+    def __init__(self, rad_lat, rad_Lon, deg_lat, deg_Lon):
         # initialise an instance of GeoLocation
         self.rad_lat = float(rad_lat)
-        self.rad_lon = float(rad_lon)
+        self.rad_Lon = float(rad_Lon)
         self.deg_lat = float(deg_lat)
-        self.deg_lon = float(deg_lon)
+        self.deg_Lon = float(deg_Lon)
         self.__check_bounds()
         
     #/************************************************************************/
     def __check_bounds(self):
         if (self.rad_lat < GeoLocation.MIN_LAT 
                 or self.rad_lat > GeoLocation.MAX_LAT 
-                or self.rad_lon < GeoLocation.MIN_LON 
-                or self.rad_lon > GeoLocation.MAX_LON):
+                or self.rad_Lon < GeoLocation.MIN_LON 
+                or self.rad_Lon > GeoLocation.MAX_LON):
             raise happyError("Illegal arguments")
         
     #/************************************************************************/
     def __str__(self):
         ## degree_sign= u'\N{DEGREE SIGN}'
-        return ("({0:.5f}deg, {1:.5f}deg) = ({2:.6f}rad, {3:.6f}rad)").format(
-            self.deg_lat, self.deg_lon, self.rad_lat, self.rad_lon)
+        return ("(lat,Lon) : ({0:.5f}, {1:.5f}) deg = ({2:.6f}, {3:.6f}) rad").format(
+            self.deg_lat, self.deg_Lon, self.rad_lat, self.rad_Lon)
             
     #/************************************************************************/
     def distance_to(self, other, radius=EARTH_RADIUS):
         # compute the great circle distance between this GeoLocation instance and 
-        # the other.
+        # the "other".
         # returns the distance from the geolocation represented by the current 
         # instance to other geolocation
+        if not isinstance(other,GeoLocation):
+            raise happyError('distance must be computed to another instance of the GeoLocation class')
         return radius * math.acos(
                 math.sin(self.rad_lat) * math.sin(other.rad_lat) +
                 math.cos(self.rad_lat) * 
                 math.cos(other.rad_lat) * 
-                math.cos(self.rad_lon - other.rad_lon)
+                math.cos(self.rad_Lon - other.rad_Lon)
             )
             
     #/************************************************************************/
@@ -178,24 +180,24 @@ class GeoLocation(object):
         min_lat = self.rad_lat - rad_dist
         max_lat = self.rad_lat + rad_dist
         if min_lat > GeoLocation.MIN_LAT and max_lat < GeoLocation.MAX_LAT:
-            delta_lon = math.asin(math.sin(rad_dist) / math.cos(self.rad_lat))
+            delta_Lon = math.asin(math.sin(rad_dist) / math.cos(self.rad_lat))
             
-            min_lon = self.rad_lon - delta_lon
-            if min_lon < GeoLocation.MIN_LON:
-                min_lon += 2 * math.pi
+            min_Lon = self.rad_Lon - delta_Lon
+            if min_Lon < GeoLocation.MIN_LON:
+                min_Lon += 2 * math.pi
                 
-            max_lon = self.rad_lon + delta_lon
-            if max_lon > GeoLocation.MAX_LON:
-                max_lon -= 2 * math.pi
+            max_Lon = self.rad_Lon + delta_Lon
+            if max_Lon > GeoLocation.MAX_LON:
+                max_Lon -= 2 * math.pi
         # a pole is within the distance
         else:
             min_lat = max(min_lat, GeoLocation.MIN_LAT)
             max_lat = min(max_lat, GeoLocation.MAX_LAT)
-            min_lon = GeoLocation.MIN_LON
-            max_lon = GeoLocation.MAX_LON
+            min_Lon = GeoLocation.MIN_LON
+            max_Lon = GeoLocation.MAX_LON
         
-        return [ GeoLocation.from_radians(min_lat, min_lon), 
-            GeoLocation.from_radians(max_lat, max_lon) ]
+        return [ GeoLocation.from_radians(min_lat, min_Lon), 
+            GeoLocation.from_radians(max_lat, max_Lon) ]
 
 #%%
 #==============================================================================
@@ -617,13 +619,13 @@ class GeoAngle(object):
         ---------
         to_ : str
             desired 'final' unit: any string in :literal:`['deg','rad','dps']`; default
-            to :literal:`'deg'`\ .
+            to :literal:`'deg'`.
         
         Keyword Arguments
         -----------------
         kwargs : dict
             dictionary of composed angles indexed by their unit, which can be, again,
-            any string in :literal:`['deg','rad','dps']`\ .
+            any string in :literal:`['deg','rad','dps']`.
             
         Raises
         ------
@@ -645,7 +647,7 @@ class GeoAngle(object):
             dps = False
         ang = 0.
         for u in cls.ANG_UNITS.keys():
-            if u in kwargs: ang += cls.ang_units_to(u, to_, kwargs.get(u,0.))
+            if u in kwargs: ang += cls.ang_units_to(u, to_, kwargs.get(u)) # from_=u, to_=to_
         if dps is True: # we convert back the sum in dps
             ang = cls.ang_units_to(cls.DEG_ANG_UNIT, cls.DPS_ANG_UNIT, ang)
         return ang
@@ -668,7 +670,7 @@ class GeoCoordinate(GeoLocation):
         
     ::
  
-        >>> x = GeoCoordinate(*args, **kwargs)
+        >>> c = GeoCoordinate(*args, **kwargs)
             
     Arguments
     ---------
@@ -713,7 +715,8 @@ class GeoCoordinate(GeoLocation):
     
     #/************************************************************************/
     def __init__(self, *args, **kwargs):
-        deg = dps = [None, None]
+        deg = [None, None] 
+        dps = [None, None]
         if args in((),(None,)):
             return
         elif len(args)==2:
@@ -731,28 +734,28 @@ class GeoCoordinate(GeoLocation):
         elif len(args)!=4:
             raise happyError('wrong number of input arguments')
         super(GeoCoordinate,self).__init__(*args)
-        self.dps_lat, self.dps_lon = dps
+        self.dps_lat, self.dps_Lon = dps
 
     #/************************************************************************/
     @classmethod 
-    def from_radians(cls, rad_lat, rad_lon):
+    def from_radians(cls, rad_lat, rad_Lon):
         """Return a geolocation instance from :literal:`(lat,Lon)` coordinates 
         expressed in degrees.
         
         ::
         
-            >>> x = GeoCoordinate.from_radians(rad_lat, rad_lon)
+            >>> c = GeoCoordinate.from_radians(rad_lat, rad_Lon)
          
         Arguments
         ---------        
-        rad_lat,rad_lon : tuple
+        rad_lat,rad_Lon : tuple
             latitude and longitude (respectively) expressed in radians.
 
         Returns
         -------
-        x : :class:`~happygisco.tools.GeoCoordinate`
+        c : :class:`~tools.GeoCoordinate`
             a :class:`GeoCoordinate` instance from the input :literal:`(lat,Lon)` 
-            coordinates :data:`(rad_lat,rad_lon)`.
+            coordinates :data:`(rad_lat,rad_Lon)`.
             
         Example
         -------
@@ -761,28 +764,28 @@ class GeoCoordinate(GeoLocation):
         --------
         :meth:`from_dps`, :meth:`from_degrees`\ .        
         """
-        return cls(rad_lat, rad_lon, unit_angle=GeoAngle.RAD_ANG_UNIT)
+        return cls(rad_lat, rad_Lon, unit_angle=GeoAngle.RAD_ANG_UNIT)
     
     #/************************************************************************/
     @classmethod 
-    def from_degrees(cls, deg_lat, deg_lon):
+    def from_degrees(cls, deg_lat, deg_Lon):
         """Return a geolocation instance from :literal:`(lat,Lon)` coordinates 
         expressed in degrees.
         
         ::
         
-            >>> x = GeoCoordinate.from_degrees(deg_lat, deg_lon)
+            >>> c = GeoCoordinate.from_degrees(deg_lat, deg_Lon)
          
         Arguments
         ---------        
-        deg_lat,deg_lon : tuple
+        deg_lat,deg_Lon : tuple
             latitude and longitude (respectively) expressed in degrees.
 
         Returns
         -------
-        x : :class:`~happygisco.tools.GeoCoordinate`
+        c : :class:`~happygisco.tools.GeoCoordinate`
             a :class:`GeoCoordinate` instance from the input :literal:`(lat,Lon)` 
-            coordinates :data:`(deg_lat,deg_lon)`.
+            coordinates :data:`(deg_lat,deg_Lon)`.
             
         Example
         -------
@@ -791,29 +794,29 @@ class GeoCoordinate(GeoLocation):
         --------
         :meth:`from_dps`, :meth:`from_radians`\ .         
         """
-        return cls(deg_lat, deg_lon, unit_angle=GeoAngle.DEG_ANG_UNIT)
+        return cls(deg_lat, deg_Lon, unit_angle=GeoAngle.DEG_ANG_UNIT)
    
     #/************************************************************************/
     @classmethod 
-    def from_dps(cls, dps_lat, dps_lon): # new generator
+    def from_dps(cls, dps_lat, dps_Lon): # new generator
         """Return a geolocation instance from :literal:`(lat,Lon)` coordinates 
         expressed in DPS format.
         
         ::
         
-            >>> x = GeoCoordinate.from_dps(dps_lat, dps_lon)
+            >>> c = GeoCoordinate.from_dps(dps_lat, dps_Lon)
          
         Arguments
         ---------        
-        dps_lat,dps_lon : tuple
+        dps_lat,dps_Lon : tuple
             latitude and longitude (respectively) expressed in DPS format: 
             (degrees, primes, seconds).
 
         Returns
         -------
-        x : :class:`~happygisco.tools.GeoCoordinate`
+        c : :class:`~happygisco.tools.GeoCoordinate`
             a :class:`GeoCoordinate` instance from the input :literal:`(lat,Lon)` 
-            coordinates :data:`(dps_lat,dps_lon)`.
+            coordinates :data:`(dps_lat,dps_Lon)`.
             
         Example
         -------
@@ -823,16 +826,16 @@ class GeoCoordinate(GeoLocation):
         :meth:`from_degrees`, :meth:`from_radians`\ .         
         """
         ## deg_lat = cls.dps2deg(dps_lat)
-        ## deg_lon = cls.dps2deg(dps_lon)
-        ## return cls(deg_lat, deg_lon, unit_angle=GeoAngle.DEG_ANG_UNIT)
-        return cls(dps_lat, dps_lon, unit_angle=GeoAngle.DPS_ANG_UNIT)
+        ## deg_Lon = cls.dps2deg(dps_Lon)
+        ## return cls(deg_lat, deg_Lon, unit_angle=GeoAngle.DEG_ANG_UNIT)
+        return cls(dps_lat, dps_Lon, unit_angle=GeoAngle.DPS_ANG_UNIT)
         
     #/************************************************************************/
     def __str__(self):
-        """String printing method.
-        """
+        # string printing method.
         try:
-            return super(GeoCoordinate,self).__str__()
+            return super(GeoCoordinate,self).__str__()  \
+                + " = ({0}, {1}) dps".format(self.dps_lat, self.dps_Lon)
         except:
             return ''
         
@@ -878,11 +881,11 @@ class GeoCoordinate(GeoLocation):
         
         ::
         
-            >>> dx = GeoCoordinate.londeg2m(dlon, alat)
+            >>> dx = GeoCoordinate.londeg2m(dLon, alat)
 
         Arguments
         ---------
-        dlon : float
+        dLon : float
             longitude difference in degrees.
         alat : float
             average latitude at which the distance is calculated (between the two 
@@ -946,7 +949,7 @@ class GeoCoordinate(GeoLocation):
         
         ::
         
-            >>> dlon = GeoCoordinate.lonm2deg(dx, alat)
+            >>> dLon = GeoCoordinate.lonm2deg(dx, alat)
 
         Arguments
         ---------
@@ -958,7 +961,7 @@ class GeoCoordinate(GeoLocation):
             
         Returns
         -------
-        dlon : float
+        dLon : float
             longitude difference in degrees.
             
         Example
@@ -984,11 +987,11 @@ class GeoCoordinate(GeoLocation):
         """Method overriding super method from :class:`~tools.GeoLocation`  
         for computing bounding coordinates of all points on the surface of a sphere 
         that have a great circle distance to the point represented by this 
-        :class:GeoLocation` instance that is less or equal to the distance argument.
+        :class:GeoCoordinate` instance that is less or equal to the distance argument.
         
         ::
         
-            >>> bbox = x.bounding_locations(dist, **kwargs)
+            >>> bbox = c.bounding_locations(dist, **kwargs)
 
         Arguments
         ---------
@@ -1083,7 +1086,7 @@ class GeoCoordinate(GeoLocation):
         bb_sw, bb_ne = geoloc.bounding_locations(distance, **kwargs)
         # extract bounding box in radians an reconvert in desired unit
         bbox = map(lambda x: GeoAngle.ang_units_to(GeoAngle.RAD_ANG_UNIT,ang_unit,x), 
-                   [bb_sw.rad_lat, bb_sw.rad_lon, bb_ne.rad_lat, bb_ne.rad_lon])
+                   [bb_sw.rad_lat, bb_sw.rad_Lon, bb_ne.rad_lat, bb_ne.rad_Lon])
         return list(bbox)
  
     #/************************************************************************/
@@ -1134,12 +1137,12 @@ class GeoCoordinate(GeoLocation):
      #/************************************************************************/
     def distance_to(self, other, **kwargs): # override method distance_to
         """Method overriding super method from :class:`tools.GeoLocation`
-        for computing the great circle distance between this :class:`GeoLocation` 
+        for computing the great circle distance between this :class:`GeoCoordinate` 
         instance and another (where measurement unit is passed as an argument).
         
         ::
         
-            >>> R = x.distance_to(other, **kwargs)
+            >>> R = c.distance_to(other, **kwargs)
 
         Arguments
         ---------
@@ -1723,21 +1726,24 @@ class GDALTool(_Tool):
 
     #/************************************************************************/
     @_Decorator.parse_file
-    def file2layer(self, filename):
+    def file2layer(self, **kwargs):
         """
             >>> layer = tool.file2layer(filename)
         """
-        if not isinstance(filename, str):
-            raise IOError('wrong type for FILENAME parameter')
+        filename = kwargs.pop(_Decorator.KW_FILE,'') 
+        try:
+            assert filename not in ('', None)
+        except:
+            raise happyError('input file not found')
         try:
             assert self.driver is not None
         except:
-            raise IOError('offline driver not available')
+            raise happyError('offline driver not available')
         try:
             data = self.driver.Open(filename, 0) # 0 means read-only
             assert data is not None
         except:
-            raise IOError('file %s not open' % filename)
+            raise happyError('file %s not open' % filename)
         else:
             if settings.VERBOSE: print('file %s opened' % filename)
         try:
@@ -1749,15 +1755,15 @@ class GDALTool(_Tool):
 
     #/************************************************************************/
     @_Decorator.parse_coordinate
-    def coord2vec(self, lat, lon, **kwargs):
+    def coord2vec(self, coord, **kwargs):
         """
             >>> vec = tool.coord2vec(coord, **kwargs)
         """
         vector = ogr.Geometry(ogr.wkbMultiPoint)
-        for i in range(len(lat)):
+        for i in range(len(coord)):
             try:
                 pt = ogr.Geometry(ogr.wkbPoint)
-                pt.AddPoint(lon[i], lat[i]) 
+                pt.AddPoint(coord[i][::-1]) # first Lon, then lat
             except:
                 happyVerbose('\ncould not add geolocation')
             else:
@@ -1791,27 +1797,24 @@ class GDALTool(_Tool):
         return answer
 
     #/************************************************************************/
-    def coord2id(self, *args, **kwargs):
+    @_Decorator.parse_coordinate
+    @_Decorator.parse_file
+    def coord2id(self, coord, **kwargs):
         """
             >>> id = tool.coord2id(*args, **kwargs)
         """
+        filename = kwargs.pop(_Decorator.KW_FILE,'') 
         try:
-            lat, lon = _Decorator.parse_coordinate(lambda l, L: [l, L])(*args, **kwargs)
-            assert not (lat in ([], None) or lon in ([], None)) 
-        except:
-            raise IOError('could not retrieve coordinate')
-        try:
-            filename = _Decorator.parse_file(lambda f: f)(**kwargs) 
             assert filename not in ('', None)
         except:
-            raise IOError('could not retrieve filename')
+            raise happyError('input file not found')
         try:
             layer = self.file2layer(filename)
             assert layer not in (None,[])
         except:
-            raise IOError('could not load feature layer')
+            raise happyError('could not load feature layer')
         try:
-            vector = self.coord2vec(lat, lon)
+            vector = self.coord2vec(coord)
             assert vector not in (None,[])
         except:
             raise IOError('could not load geolocation vector')
