@@ -226,6 +226,11 @@ class GeoCoordinateTestCase(unittest.TestCase):
     #/************************************************************************/
     def test_1_from_degrees_radians_dps(self):
         # test degree to radian conversion
+        coord = GeoCoordinate.from_radians(math.pi/4,math.pi/2)
+        self.assertTrue(isinstance(coord, GeoCoordinate))
+        self.assertEqual(coord.rad_Lon, math.pi/2)
+        self.assertEqual(coord.deg_lat, 45)
+        self.assertEqual(coord.dps_Lon, (90, 0, 0.0))
         coord1 = GeoCoordinate.from_degrees(26.062951, -80.238853)
         coord2 = GeoCoordinate.from_radians(coord1.rad_lat, coord1.rad_Lon)
         coord3 = GeoCoordinate.from_dps(coord1.dps_lat, coord1.dps_Lon)

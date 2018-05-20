@@ -759,6 +759,18 @@ class GeoCoordinate(GeoLocation):
             
         Example
         -------
+        
+        ::
+            >>> import math 
+            >>> loc = GeoCoordinate.from_radians(math.pi/4,math.pi/2)
+            >>> isinstance(loc, GeoCoordinate)
+                True
+            >>> loc.rad_Lon == math.pi/2
+                True
+            >>> loc.deg_lat == 45
+                True
+            >>> loc.dps_Lon == (90, 0, 0.0)
+                True
 
         See also
         --------
@@ -789,7 +801,28 @@ class GeoCoordinate(GeoLocation):
             
         Example
         -------
+        
+        ::
+            >>> import math 
+            >>> loc = GeoCoordinate.from_degrees(45,90)
+            >>> isinstance(loc, GeoCoordinate)
+                True
+            >>> loc.rad_Lon == math.pi/2
+                True
+            >>> loc.dps_lat == (45, 0, 0.0)
+                True
+            >>> loc.dps_Lon == (90, 0, 0.0)
+                True
 
+        Let us create the geolocation associated of Bee (VB), Italia from its
+        actual coordinates:
+            
+            >>> bee = GeoCoordinate.from_degrees(45.9611, 8.5809)
+            >>> print(bee)
+                (lat,Lon) : (45.96110, 8.58090) deg 
+                    = (0.802173, 0.149765) rad 
+                    = ((45, 57, 39.96), (8, 34, 51.24)) dps
+ 
         See also
         --------
         :meth:`from_dps`, :meth:`from_radians`\ .         
@@ -820,6 +853,18 @@ class GeoCoordinate(GeoLocation):
             
         Example
         -------
+        
+        ::
+            >>> import math 
+            >>> loc = GeoCoordinate.from_dps((45, 0, 0.0),(90, 0, 0.0))
+            >>> isinstance(loc, GeoCoordinate)
+                True
+            >>> loc.rad_Lon == math.pi/2
+                True
+            >>> loc.deg_lat == 45
+                True
+            >>> loc.deg_Lon == 90
+                True
 
         See also
         --------
@@ -864,10 +909,27 @@ class GeoCoordinate(GeoLocation):
             
         Example
         -------
+        
+        What do 0.1 degree latitude difference at the latitude of Bee (VB), Italia,
+        correspond to in meters? Approximately 11.11km!
+        
+        ::
             
+            >>> GeoCoordinate.latdeg2m(0.1, 45.9611)
+                11114.987939044277
+                
+        References
+        ----------
+        * Wikipedia `latitude page <https://en.wikipedia.org/wiki/Latitude>`_.
+        * `Calculation of distance represented by degrees of Latitude and Longitude <https://www.colorado.edu/geography/gcraft/warmup/aquifer/html/distance.html>`_.
+        * `Finding distances based on Latitude and Longitude <https://andrew.hedges.name/experiments/haversine/>`_.
+        * `Calculate distance between two latitude-longitude points? (Haversine formula) <https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula>`_.
+        * `Jcoord <http://www.jstott.me.uk/jcoord/>_` conversion tool between latitude/longitude.
+
         See also
         --------
-        :meth:`~GeoCoordinate.latm2deg`, :meth:`~GeoCoordinate.latm2deg`.
+        :meth:`~GeoCoordinate.latm2deg`, :meth:`~GeoCoordinate.londeg2m`,
+        :meth:`~GeoCoordinate.distance_to_from`.
         """
         rlat = GeoAngle.deg2rad(alat) 
         p = 111132.09 - 566.05 * math.cos(2 * rlat) + 1.2 * math.cos(4 * rlat)
@@ -898,10 +960,27 @@ class GeoCoordinate(GeoLocation):
             
         Example
         -------
+        
+        What do 0.1 degree longitude difference at the latitude of Bee (VB), Italia,
+        correspond to in meters? Approximately 7.75km!
+        
+        ::
+            
+            >>> GeoCoordinate.londeg2m(0.1, 45.9611)
+                7751.998346588658
+                
+        References
+        ----------
+        * Wikipedia `longitude page <https://en.wikipedia.org/wiki/Longitude>_`.
+        * `Calculation of distance represented by degrees of Latitude and Longitude <https://www.colorado.edu/geography/gcraft/warmup/aquifer/html/distance.html>`_.
+        * `Finding distances based on Latitude and Longitude <https://andrew.hedges.name/experiments/haversine/>`_.
+        * `Calculate distance between two latitude-longitude points? (Haversine formula) <https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula>`_.
+        * `Jcoord <http://www.jstott.me.uk/jcoord/>_` conversion tool between latitude/longitude.
             
         See also
         --------
-        :meth:`~GeoCoordinate.lonm2deg`, :meth:`~GeoCoordinate.latdeg2m`.
+        :meth:`~GeoCoordinate.lonm2deg`, :meth:`~GeoCoordinate.latdeg2m`,
+        :meth:`~GeoCoordinate.distance_to_from`.
         """
         rlat = GeoAngle.deg2rad(alat) 
         p = 111415.13 * math.cos(rlat) - 94.55 * math.cos(3 * rlat)
@@ -932,10 +1011,15 @@ class GeoCoordinate(GeoLocation):
             
         Example
         -------
-            
+                
+        References
+        ----------
+        See references in :meth:`~GeoCoordinate.latdeg2m`.
+        
         See also
         --------
-        :meth:`~GeoCoordinate.latdeg2m`, :meth:`~GeoCoordinate.lonm2deg`.
+        :meth:`~GeoCoordinate.latdeg2m`, :meth:`~GeoCoordinate.lonm2deg`,
+        :meth:`~GeoCoordinate.distance_to_from`.
         """
         rlat = GeoAngle.deg2rad(alat) 
         p = 111132.09 - 566.05 * math.cos(2 * rlat) + 1.2 * math.cos(4 * rlat)
@@ -966,10 +1050,15 @@ class GeoCoordinate(GeoLocation):
             
         Example
         -------
+                
+        References
+        ----------
+        See references in :meth:`~GeoCoordinate.londeg2m`.
             
         See also
         --------
-        :meth:`~GeoCoordinate.latm2deg`, :meth:`~GeoCoordinate.londeg2m`.
+        :meth:`~GeoCoordinate.londeg2m`, :meth:`~GeoCoordinate.latm2deg`,
+        :meth:`~GeoCoordinate.distance_to_from`.
         """
         rlat = GeoAngle.deg2rad(alat) 
         p = 111415.13 * math.cos(rlat) - 94.55 * math.cos(3 * rlat)
