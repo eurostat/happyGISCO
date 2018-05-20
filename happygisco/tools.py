@@ -196,8 +196,8 @@ class GeoLocation(object):
             min_Lon = GeoLocation.MIN_LON
             max_Lon = GeoLocation.MAX_LON
         
-        return [ GeoLocation.from_radians(min_lat, min_Lon), 
-            GeoLocation.from_radians(max_lat, max_Lon) ]
+        return [ getattr(self.__class__,'from_radians')(min_lat, min_Lon), 
+                getattr(self.__class__,'from_radians')(max_lat, max_Lon) ]
 
 #%%
 #==============================================================================
@@ -651,238 +651,6 @@ class GeoAngle(object):
         if dps is True: # we convert back the sum in dps
             ang = cls.ang_units_to(cls.DEG_ANG_UNIT, cls.DPS_ANG_UNIT, ang)
         return ang
-
-#%%
-#==============================================================================
-# CLASS GeoCoordinate
-#==============================================================================
-
-class GeoCoordinate(GeoLocation):
-    """Class of geographic/location attributes and methods used to define, describe 
-    and represent the geospatial status of an object.
-    
-    This class emulates :class:`~tools.GeoLocation`.
-    It inherits, for instance, the methods :meth:`_check_bounds` from the original 
-    class that aim at checking for :literal:`(lat, Lon)` coordinates consistency; 
-    instead, methods :meth:`distance_to` (computation of great circle distance 
-    between geolocations) and :meth:`bounding_locations` (computation of the 
-    bounding coordinates of all points) are overriden.
-        
-    ::
- 
-        >>> c = GeoCoordinate(*args, **kwargs)
-            
-    Arguments
-    ---------
-    args : tuple[float]
-        arguments in :data:`args` define uniquely an instance of this class; it
-        can be either:     
-            * a pair of :literal:`(lat,Lon)` expressed in radians,
-            * a pair of :literal:`(lat,Lon)` expressed in degrees,
-            * a pair of :literal:`(lat,Lon)` expressed in DPS format 
-              (degrees, primes, seconds),
-            * a 4-tuple of :literal:`(lat,Lon)` expressed both in radians and degrees 
-              (in this order).
-
-    Keyword arguments
-    -----------------
-    unit_angle : str
-        name of the unit used for the definition of the angles parsed through 
-        :data:`args`; default is :data:`GeoAngle.DEG_ANG_UNIT`, *i.e.* 'deg'.
-
-    Attributes
-    ----------     
-    MIN_LATITUDE : 
-        dummy min latitude value in degree: -90.
-    MAX_LATITUDE : 
-        ibid for max latitude: 90.
-    MIN_LONGITUDE : 
-        dummy min longitude value in degree: -180. 
-    MAX_LONGITUDE : 
-        ibid for max longitude: 180. 
-    """
-
-    #/************************************************************************/
-    # dummy...
-    MIN_LATITUDE, MAX_LATITUDE = -90., 90.
-    MIN_LONGITUDE, MAX_LONGITUDE = -180., 180. 
-    # or shall we consider over Europe only?
-
-    DIST_FUNCS = {'great_circle':'GreatCircleDistance',
-                 'vincenty': 'VincentyDistance'} # names used in geopy
-
-    DECIMAL_PRECISION   = 5 #10
-    
-    #/************************************************************************/
-    def __init__(self, *args, **kwargs):
-        deg = [None, None] 
-        dps = [None, None]
-        if args in((),(None,)):
-            return
-        elif len(args)==2:
-            unit = kwargs.pop('unit_angle', GeoAngle.DEG_ANG_UNIT)
-            for i in range(2): # convert to degrees whatever the input is
-                try:    
-                    dps[i] = GeoAngle.convert_angle_units(GeoAngle.DPS_ANG_UNIT, **{unit: args[i]})
-                    deg[i] = GeoAngle.convert_angle_units(GeoAngle.DEG_ANG_UNIT, **{unit: args[i]})
-                except: raise happyError('unit {} not implemented'.format(unit))
-            if unit==GeoAngle.RAD_ANG_UNIT:
-                rad = list(args)
-            else:
-                rad = [GeoAngle.deg2rad(l) for l in deg]
-            args = rad + deg
-        elif len(args)!=4:
-            raise happyError('wrong number of input arguments')
-        super(GeoCoordinate,self).__init__(*args)
-        self.dps_lat, self.dps_Lon = dps
-
-    #/************************************************************************/
-    @classmethod 
-    def from_radians(cls, rad_lat, rad_Lon):
-        """Return a geolocation instance from :literal:`(lat,Lon)` coordinates 
-        expressed in degrees.
-        
-        ::
-        
-            >>> c = GeoCoordinate.from_radians(rad_lat, rad_Lon)
-         
-        Arguments
-        ---------        
-        rad_lat,rad_Lon : tuple
-            latitude and longitude (respectively) expressed in radians.
-
-        Returns
-        -------
-        c : :class:`~tools.GeoCoordinate`
-            a :class:`GeoCoordinate` instance from the input :literal:`(lat,Lon)` 
-            coordinates :data:`(rad_lat,rad_Lon)`.
-            
-        Example
-        -------
-        
-        ::
-            >>> import math 
-            >>> loc = GeoCoordinate.from_radians(math.pi/4,math.pi/2)
-            >>> isinstance(loc, GeoCoordinate)
-                True
-            >>> loc.rad_Lon == math.pi/2
-                True
-            >>> loc.deg_lat == 45
-                True
-            >>> loc.dps_Lon == (90, 0, 0.0)
-                True
-
-        See also
-        --------
-        :meth:`from_dps`, :meth:`from_degrees`\ .        
-        """
-        return cls(rad_lat, rad_Lon, unit_angle=GeoAngle.RAD_ANG_UNIT)
-    
-    #/************************************************************************/
-    @classmethod 
-    def from_degrees(cls, deg_lat, deg_Lon):
-        """Return a geolocation instance from :literal:`(lat,Lon)` coordinates 
-        expressed in degrees.
-        
-        ::
-        
-            >>> c = GeoCoordinate.from_degrees(deg_lat, deg_Lon)
-         
-        Arguments
-        ---------        
-        deg_lat,deg_Lon : tuple
-            latitude and longitude (respectively) expressed in degrees.
-
-        Returns
-        -------
-        c : :class:`~happygisco.tools.GeoCoordinate`
-            a :class:`GeoCoordinate` instance from the input :literal:`(lat,Lon)` 
-            coordinates :data:`(deg_lat,deg_Lon)`.
-            
-        Example
-        -------
-        
-        ::
-            >>> import math 
-            >>> loc = GeoCoordinate.from_degrees(45,90)
-            >>> isinstance(loc, GeoCoordinate)
-                True
-            >>> loc.rad_Lon == math.pi/2
-                True
-            >>> loc.dps_lat == (45, 0, 0.0)
-                True
-            >>> loc.dps_Lon == (90, 0, 0.0)
-                True
-
-        Let us create the geolocation associated of Bee (VB), Italia from its
-        actual coordinates:
-            
-            >>> bee = GeoCoordinate.from_degrees(45.9611, 8.5809)
-            >>> print(bee)
-                (lat,Lon) : (45.96110, 8.58090) deg 
-                    = (0.802173, 0.149765) rad 
-                    = ((45, 57, 39.96), (8, 34, 51.24)) dps
- 
-        See also
-        --------
-        :meth:`from_dps`, :meth:`from_radians`\ .         
-        """
-        return cls(deg_lat, deg_Lon, unit_angle=GeoAngle.DEG_ANG_UNIT)
-   
-    #/************************************************************************/
-    @classmethod 
-    def from_dps(cls, dps_lat, dps_Lon): # new generator
-        """Return a geolocation instance from :literal:`(lat,Lon)` coordinates 
-        expressed in DPS format.
-        
-        ::
-        
-            >>> c = GeoCoordinate.from_dps(dps_lat, dps_Lon)
-         
-        Arguments
-        ---------        
-        dps_lat,dps_Lon : tuple
-            latitude and longitude (respectively) expressed in DPS format: 
-            (degrees, primes, seconds).
-
-        Returns
-        -------
-        c : :class:`~happygisco.tools.GeoCoordinate`
-            a :class:`GeoCoordinate` instance from the input :literal:`(lat,Lon)` 
-            coordinates :data:`(dps_lat,dps_Lon)`.
-            
-        Example
-        -------
-        
-        ::
-            >>> import math 
-            >>> loc = GeoCoordinate.from_dps((45, 0, 0.0),(90, 0, 0.0))
-            >>> isinstance(loc, GeoCoordinate)
-                True
-            >>> loc.rad_Lon == math.pi/2
-                True
-            >>> loc.deg_lat == 45
-                True
-            >>> loc.deg_Lon == 90
-                True
-
-        See also
-        --------
-        :meth:`from_degrees`, :meth:`from_radians`\ .         
-        """
-        ## deg_lat = cls.dps2deg(dps_lat)
-        ## deg_Lon = cls.dps2deg(dps_Lon)
-        ## return cls(deg_lat, deg_Lon, unit_angle=GeoAngle.DEG_ANG_UNIT)
-        return cls(dps_lat, dps_Lon, unit_angle=GeoAngle.DPS_ANG_UNIT)
-        
-    #/************************************************************************/
-    def __str__(self):
-        # string printing method.
-        try:
-            return super(GeoCoordinate,self).__str__()  \
-                + " = ({0}, {1}) dps".format(self.dps_lat, self.dps_Lon)
-        except:
-            return ''
         
     #/************************************************************************/
     @classmethod
@@ -1011,6 +779,14 @@ class GeoCoordinate(GeoLocation):
             
         Example
         -------
+        
+        What do 100km latitude difference at the latitude of Bee (VB), Italia,
+        correspond to in degrees? Approximately 0.9 degrees!
+        
+        ::
+            
+            >>> GeoCoordinate.latm2deg(100000, 45.9611)
+                0.8996860864664017
                 
         References
         ----------
@@ -1050,6 +826,14 @@ class GeoCoordinate(GeoLocation):
             
         Example
         -------
+        
+        What do 100km longitude difference at the latitude of Bee (VB), Italia,
+        correspond to in degrees? Approximately 1.29 degrees!
+        
+        ::
+            
+            >>> GeoCoordinate.lonm2deg(100000, 45.9611)
+                1.2899899552223972
                 
         References
         ----------
@@ -1063,6 +847,246 @@ class GeoCoordinate(GeoLocation):
         rlat = GeoAngle.deg2rad(alat) 
         p = 111415.13 * math.cos(rlat) - 94.55 * math.cos(3 * rlat)
         return dx / p
+
+#%%
+#==============================================================================
+# CLASS GeoCoordinate
+#==============================================================================
+
+class GeoCoordinate(GeoLocation):
+    """Class of geographic/location attributes and methods used to define, describe 
+    and represent the geospatial status of an object.
+    
+    This class emulates :class:`~tools.GeoLocation`.
+    It inherits, for instance, the methods :meth:`_check_bounds` from the original 
+    class that aim at checking for :literal:`(lat, Lon)` coordinates consistency; 
+    instead, methods :meth:`distance_to` (computation of great circle distance 
+    between geolocations) and :meth:`bounding_locations` (computation of the 
+    bounding coordinates of all points) are overriden.
+        
+    ::
+ 
+        >>> coord = GeoCoordinate(*args, **kwargs)
+            
+    Arguments
+    ---------
+    args : tuple[float]
+        arguments in :data:`args` define uniquely an instance of this class; it
+        can be either:     
+            * a pair of :literal:`(lat,Lon)` expressed in radians,
+            * a pair of :literal:`(lat,Lon)` expressed in degrees,
+            * a pair of :literal:`(lat,Lon)` expressed in DPS format 
+              (degrees, primes, seconds),
+            * a 4-tuple of :literal:`(lat,Lon)` expressed both in radians and degrees 
+              (in this order).
+
+    Keyword arguments
+    -----------------
+    unit_angle : str
+        name of the unit used for the definition of the angles parsed through 
+        :data:`args`; default is :data:`GeoAngle.DEG_ANG_UNIT`, *i.e.* 'deg'.
+
+    Attributes
+    ----------     
+    MIN_LATITUDE : 
+        dummy min latitude value in degree: -90.
+    MAX_LATITUDE : 
+        ibid for max latitude: 90.
+    MIN_LONGITUDE : 
+        dummy min longitude value in degree: -180. 
+    MAX_LONGITUDE : 
+        ibid for max longitude: 180. 
+    """
+
+    #/************************************************************************/
+    # dummy...
+    MIN_LATITUDE, MAX_LATITUDE = -90., 90.
+    MIN_LONGITUDE, MAX_LONGITUDE = -180., 180. 
+    # or shall we consider over Europe only?
+
+    DIST_FUNCS = {'great_circle':'GreatCircleDistance',
+                 'vincenty': 'VincentyDistance'} # names used in geopy
+
+    DECIMAL_PRECISION   = 5 #10
+    
+    #/************************************************************************/
+    def __init__(self, *args, **kwargs):
+        deg = [None, None] 
+        dps = [None, None]
+        if args in((),(None,)):
+            return
+        elif len(args)==2:
+            unit = kwargs.pop('unit_angle', GeoAngle.DEG_ANG_UNIT)
+            for i in range(2): # convert to degrees whatever the input is
+                try:    
+                    dps[i] = GeoAngle.convert_angle_units(GeoAngle.DPS_ANG_UNIT, **{unit: args[i]})
+                    deg[i] = GeoAngle.convert_angle_units(GeoAngle.DEG_ANG_UNIT, **{unit: args[i]})
+                except: raise happyError('unit {} not implemented'.format(unit))
+            if unit==GeoAngle.RAD_ANG_UNIT:
+                rad = list(args)
+            else:
+                rad = [GeoAngle.deg2rad(l) for l in deg]
+            args = rad + deg
+        elif len(args)!=4:
+            raise happyError('wrong number of input arguments')
+        super(GeoCoordinate,self).__init__(*args)
+        self.dps_lat, self.dps_Lon = dps
+
+    #/************************************************************************/
+    @classmethod 
+    def from_radians(cls, rad_lat, rad_Lon):
+        """Return a geolocation instance from :literal:`(lat,Lon)` coordinates 
+        expressed in degrees.
+        
+        ::
+        
+            >>> coord = GeoCoordinate.from_radians(rad_lat, rad_Lon)
+         
+        Arguments
+        ---------        
+        rad_lat,rad_Lon : tuple
+            latitude and longitude (respectively) expressed in radians.
+
+        Returns
+        -------
+        coord : :class:`~tools.GeoCoordinate`
+            a :class:`GeoCoordinate` instance from the input :literal:`(lat,Lon)` 
+            coordinates :data:`(rad_lat,rad_Lon)`.
+            
+        Example
+        -------
+        
+        ::
+            >>> import math 
+            >>> loc = GeoCoordinate.from_radians(math.pi/4,math.pi/2)
+            >>> isinstance(loc, GeoCoordinate)
+                True
+            >>> loc.rad_Lon == math.pi/2
+                True
+            >>> loc.deg_lat == 45
+                True
+            >>> loc.dps_Lon == (90, 0, 0.0)
+                True
+
+        See also
+        --------
+        :meth:`from_dps`, :meth:`from_degrees`\ .        
+        """
+        return cls(rad_lat, rad_Lon, unit_angle=GeoAngle.RAD_ANG_UNIT)
+    
+    #/************************************************************************/
+    @classmethod 
+    def from_degrees(cls, deg_lat, deg_Lon):
+        """Return a geolocation instance from :literal:`(lat,Lon)` coordinates 
+        expressed in degrees.
+        
+        ::
+        
+            >>> coord = GeoCoordinate.from_degrees(deg_lat, deg_Lon)
+         
+        Arguments
+        ---------        
+        deg_lat,deg_Lon : tuple
+            latitude and longitude (respectively) expressed in degrees.
+
+        Returns
+        -------
+        coord : :class:`~happygisco.tools.GeoCoordinate`
+            a :class:`GeoCoordinate` instance from the input :literal:`(lat,Lon)` 
+            coordinates :data:`(deg_lat,deg_Lon)`.
+            
+        Example
+        -------
+        
+        ::
+            >>> import math 
+            >>> loc = GeoCoordinate.from_degrees(45,90)
+            >>> isinstance(loc, GeoCoordinate)
+                True
+            >>> loc.rad_Lon == math.pi/2
+                True
+            >>> loc.dps_lat == (45, 0, 0.0)
+                True
+            >>> loc.dps_Lon == (90, 0, 0.0)
+                True
+
+        Let us create the geolocation associated of Bee (VB), Italia from its
+        actual coordinates:
+            
+            >>> bee = GeoCoordinate.from_degrees(45.9611, 8.5809)
+            >>> print(bee)
+                (lat,Lon) : (45.96110, 8.58090) deg 
+                    = (0.802173, 0.149765) rad 
+                    = ((45, 57, 39.96), (8, 34, 51.24)) dps
+ 
+        See also
+        --------
+        :meth:`from_dps`, :meth:`from_radians`\ .         
+        """
+        return cls(deg_lat, deg_Lon, unit_angle=GeoAngle.DEG_ANG_UNIT)
+   
+    #/************************************************************************/
+    @classmethod 
+    def from_dps(cls, dps_lat, dps_Lon): # new generator
+        """Return a geolocation instance from :literal:`(lat,Lon)` coordinates 
+        expressed in DPS format.
+        
+        ::
+        
+            >>> coord = GeoCoordinate.from_dps(dps_lat, dps_Lon)
+         
+        Arguments
+        ---------        
+        dps_lat,dps_Lon : tuple
+            latitude and longitude (respectively) expressed in DPS format: 
+            (degrees, primes, seconds).
+
+        Returns
+        -------
+        coord : :class:`~happygisco.tools.GeoCoordinate`
+            a :class:`GeoCoordinate` instance from the input :literal:`(lat,Lon)` 
+            coordinates :data:`(dps_lat,dps_Lon)`.
+            
+        Example
+        -------
+        
+        ::
+            >>> import math 
+            >>> loc = GeoCoordinate.from_dps((45, 0, 0.0),(90, 0, 0.0))
+            >>> isinstance(loc, GeoCoordinate)
+                True
+            >>> loc.rad_Lon == math.pi/2
+                True
+            >>> loc.deg_lat == 45
+                True
+            >>> loc.deg_Lon == 90
+                True
+
+        See also
+        --------
+        :meth:`from_degrees`, :meth:`from_radians`\ .         
+        """
+        ## deg_lat = cls.dps2deg(dps_lat)
+        ## deg_Lon = cls.dps2deg(dps_Lon)
+        ## return cls(deg_lat, deg_Lon, unit_angle=GeoAngle.DEG_ANG_UNIT)
+        return cls(dps_lat, dps_Lon, unit_angle=GeoAngle.DPS_ANG_UNIT)
+ 
+    #/************************************************************************/
+    @property
+    def coordinates(self):
+        """:literal:`(lat,Lon)` geographic coordinates (in degrees) property 
+        (:data:`getter`) of a :class:`GeoCoordinate` instance.
+        """ 
+        return [self.deg_lat, self.deg_Lon]
+        
+    #/************************************************************************/
+    def __str__(self):
+        # string printing method.
+        try:
+            return super(GeoCoordinate,self).__str__()  \
+                + " = ({0}, {1}) dps".format(self.dps_lat, self.dps_Lon)
+        except:
+            return ''
     
     #/************************************************************************/
     # inherits:
@@ -1080,7 +1104,7 @@ class GeoCoordinate(GeoLocation):
         
         ::
         
-            >>> bbox = c.bounding_locations(dist, **kwargs)
+            >>> bbox = coord.bounding_locations(dist, **kwargs)
 
         Arguments
         ---------
@@ -1101,16 +1125,39 @@ class GeoCoordinate(GeoLocation):
         Returns
         -------
         bbox : list
-            a bounding box whose INcircle is the set of all points that have a great
-            circle distance to the point represented by the input geolocation that is
-            less or equal to the :data:`dist` parameter.
+            a pair of :literal:`(lat,Lon)` geographic coordinates (in degrees) 
+            that represent the SW corner and the NE corner (in this order) of a 
+            bounding box; this INcircle of this bounding box contains all the 
+            points that have a great circle distance to the point represented by 
+            the input geolocation which is less or equal to the :data:`dist` 
+            parameter.
             
         Example
         -------
+        
+        Let us define a boundinx box of 10km (in each direction) around Paris 
+        city centre:
             
+        ::
+            
+            >>> paris = GeoCoordinate(48.85693, 2.3412)
+            >>> bbox = paris.bounding_locations(10)
+            >>> SW, NE = bbox
+            >>> print(SW)
+                [48.76709847158804, 2.2046657132894265]
+            >>> print(NE)
+                [48.946761528411955, 2.477734286710574]
+            
+        Note
+        ----
+        Only the points in the INcircle inscribed in the bounding box are actually
+        at a distance lower than :data:`radius` from the geolocation :data:`coord`.
+        In particular, the SW and NE corners are approximately at a distance 
+        sqrt(2 * :data:`radius` **2) from the geolocation.
+        
         See also
         --------
-        :meth:`~GeoCoordinate.bounding_locations_from`.
+        :meth:`GeoLocation.bounding_locations`, :meth:`~GeoCoordinate.bounding_locations_from`.
         """
         # distance must be in the unit defined by 'unit'
         radius = kwargs.pop('radius', GeoDistance.EARTH_RADIUS_EQUATOR) # self.EARTH_RADIUS
@@ -1118,7 +1165,8 @@ class GeoCoordinate(GeoLocation):
         try:    radius = radius * GeoDistance.KM_TO[unit] 
         except: raise happyError('unit {} not implemented'.format(unit))
         # the result will depend on the unit defined by distance (in unit)
-        return super(GeoCoordinate,self).bounding_locations(distance, radius=radius)
+        bbox = super(GeoCoordinate,self).bounding_locations(distance, radius=radius)
+        return [bbox[0].coordinates, bbox[1].coordinates] 
         
     #/************************************************************************/
     @classmethod
@@ -1133,7 +1181,7 @@ class GeoCoordinate(GeoLocation):
     
         Arguments
         ---------
-        loc : list, tuple
+        loc : list/tuple
             a tuple of lenght 2 defining the :literal:`(lat,Lon)` coordinates of 
             a location; it must be set in the unit defined by :data:`unit_angle`
             (see below).
@@ -1151,10 +1199,25 @@ class GeoCoordinate(GeoLocation):
             
         Note
         ----
-        Generalise the :meth:`GeoLocation.bounding_locations` method.
+        Generalise the :meth:`GeoCoordinate.bounding_locations` method.
             
         Example
         -------
+        
+        Note that can pass indifferently a :class:`GeoCoordinate` instances or a 
+        list of :literal:`(lat,Lon)` geographical coordinates:
+        
+        ::
+            
+            >>> paris = GeoCoordinate(48.85693, 2.3412)
+            >>> bbox = GeoCoordinate.bounding_locations_from(paris,1)
+            >>> print(bbox)
+                [[48.8479468471588, 2.327546578583882],
+                 [48.865913152841195, 2.3548534214161183]]
+            >>> bbox_ = GeoCoordinate.bounding_locations_from(paris.coordinates,1)
+            >>> print(bbox_)
+                [[48.8479468471588, 2.327546578583882],
+                 [48.865913152841195, 2.3548534214161183]]
             
         See also
         --------
@@ -1162,25 +1225,29 @@ class GeoCoordinate(GeoLocation):
         """
         # ang_unit is both the unit of input and output locations
         ang_unit = kwargs.pop('unit_angle',GeoAngle.DEG_ANG_UNIT) 
-        # dist_unit = kwargs.pop('unit', cls.KM_DIST_UNIT)
-        if ang_unit==GeoAngle.DEG_ANG_UNIT:          geoloc = cls.from_degrees(*loc)
-        elif ang_unit==GeoAngle.RAD_ANG_UNIT:        geoloc = cls.from_radians(*loc)
-        elif ang_unit==GeoAngle.DPS_ANG_UNIT:        geoloc = cls.from_dps(*loc)
-        else: raise happyError('unit angle {} not implemented'.format(ang_unit))
-        #radius = kwargs.pop('earth_radius', None)
+        if not ang_unit in [GeoAngle.DEG_ANG_UNIT, GeoAngle.RAD_ANG_UNIT, GeoAngle.DPS_ANG_UNIT]:
+            raise happyError('unit angle {} not implemented'.format(ang_unit))
+        if isinstance(loc,GeoCoordinate):
+            geoloc = loc
+        else:
+            # dist_unit = kwargs.pop('unit', cls.KM_DIST_UNIT)
+            if ang_unit==GeoAngle.DEG_ANG_UNIT:          geoloc = cls.from_degrees(*loc)
+            elif ang_unit==GeoAngle.RAD_ANG_UNIT:        geoloc = cls.from_radians(*loc)
+            elif ang_unit==GeoAngle.DPS_ANG_UNIT:        geoloc = cls.from_dps(*loc)
+            #radius = kwargs.pop('earth_radius', None)
         radius = kwargs.pop('radius', GeoDistance.EARTH_RADIUS_EQUATOR) # GeoDistance.EARTH_RADIUS
         #if radius is None:
         #    radius = GeoDistance.estimate_radius_WGS84(geoloc.deg_lat)
         kwargs.update({'radius': radius})
         bb_sw, bb_ne = geoloc.bounding_locations(distance, **kwargs)
         # extract bounding box in radians an reconvert in desired unit
-        bbox = map(lambda x: GeoAngle.ang_units_to(GeoAngle.RAD_ANG_UNIT,ang_unit,x), 
-                   [bb_sw.rad_lat, bb_sw.rad_Lon, bb_ne.rad_lat, bb_ne.rad_Lon])
-        return list(bbox)
+        bbox = [list(map(lambda x: GeoAngle.ang_units_to(GeoAngle.DEG_ANG_UNIT,ang_unit,x),_)) \
+                for _ in geoloc.bounding_locations(distance, **kwargs)]
+        return bbox
  
     #/************************************************************************/
     @classmethod
-    def centroid(cls, *args):
+    def centroid(cls, *args, **kwargs):
         """Retrieve the approximate centroid of a polygon (bounding box). Accuracy 
         is not a major aspect here. 
         
@@ -1190,19 +1257,46 @@ class GeoCoordinate(GeoLocation):
 
         Arguments
         ---------
-        args : list of list/tuple
-            a list of :literal:`(lat,Lon)` coordinates representing the vertices 
-            of a polygon.
+        args : list[tuple], list[:class:`~happygisco.tools.GeoCoordinate`]
+            a list of :literal:`(lat,Lon)` geographical coordinates, or instances
+            of the :class:`GeoCoordinate` class, representing the vertices of a 
+            polygon.
+            
+        Keyword Arguments
+        -----------------
+        unit_angle : str
+            angle measurement unit, *i.e.* unit of the input :data:`args` parameter; 
+            useful when a mix of :class:`GeoCoordinate` instances and coordinate
+            tuples are passed, can be ignored otherwise: the output coordinates will 
+            be expressed in the same unit as the input parameters :data:`args` (see
+            below).
             
         Returns
         ------- 
         lat, Lon : tuple
-            :literal:`(lat,Lon)` coordinates of the centroid point, in the same 
-            unit as the parameters in :data:`args`.
+            :literal:`(lat,Lon)` geographical coordinates of the centroid point,
+            in the same unit as the input parameters :data:`args`.
             
         Example
         -------
+
+        Let us first retrieve the corner coordinates of a bounding box built around
+        Paris city centre:
             
+        ::
+            
+            >>> paris = GeoCoordinate(48.85693, 2.3412)
+            >>> bbox = paris.bounding_locations(1)
+            
+        then we can already retrieve the centroid of the polygon associated to
+        the corners only, and see it coincides with Paris location:
+            
+        ::
+            
+            >>> centroid =  GeoCoordinate.centroid(*bbox)      
+            >>> print(centroid)
+                (48.85693, 2.3412)
+ 
         Note
         ----
         Convert the polygon to a rectangle by selecting the points with: 
@@ -1214,9 +1308,14 @@ class GeoCoordinate(GeoLocation):
         then get the center of this rectangle as the centroid point.
         """
         lat_list, Lon_list = [], []
+        ang_unit = kwargs.pop('unit_angle',GeoAngle.DEG_ANG_UNIT)
         for arg in args:
-            lat_list.append(arg[0])
-            Lon_list.append(arg[1])
+            if isinstance(arg,GeoCoordinate):
+                lat_list.append(GeoAngle.ang_units_to('deg',ang_unit,arg.coordinates[0]))
+                Lon_list.append(GeoAngle.ang_units_to('deg',ang_unit,arg.coordinates[1]))
+            else:    
+                lat_list.append(arg[0])
+                Lon_list.append(arg[1])
         Lon_list.sort()
         lat_list.sort()
         lat = float(lat_list[0]) + ((float(lat_list[len(lat_list)-1]) - float(lat_list[0])) / 2.)
@@ -1231,7 +1330,7 @@ class GeoCoordinate(GeoLocation):
         
         ::
         
-            >>> R = c.distance_to(other, **kwargs)
+            >>> R = coord.distance_to(other, **kwargs)
 
         Arguments
         ---------
@@ -1243,13 +1342,34 @@ class GeoCoordinate(GeoLocation):
         unit,radius : 
             see :meth:`bounding_locations`.
             
+        Returns
+        -------
+        R : float
+            distance computed in the unit defined through the :data:`unit` keyword
+            argument (default is :literal:`km`).
+            
         Example
         -------
+        
+        We can easily retrieve the geodesic distance between two geolocations, for
+        instance between Paris, France and Bee, Italia (in km):
+            
+        ::
+            
+            >>> paris = GeoCoordinate(48.85693, 2.3412)
+            >>> bee = GeoCoordinate.from_degrees(45.9611, 8.5809)    
+            >>> print(bee.distance_to(paris))
+                569.7000178930588
             
         See also
         --------
         :meth:`~GeoCoordinate.distance`, :meth:`~GeoCoordinate.distance_to_from`.
         """
+        if not isinstance(other,GeoCoordinate):
+            try:
+                other = GeoCoordinate(*other)
+            except:
+                pass # crash next...
         radius = kwargs.pop('radius', GeoDistance.EARTH_RADIUS_EQUATOR) # GeoDistance.EARTH_RADIUS
         res = super(GeoCoordinate,self).distance_to(other, radius=radius)
         # res = GeoLocation.distance_to(self, other, radius=radius)
@@ -1267,11 +1387,11 @@ class GeoCoordinate(GeoLocation):
         
         ::
         
-            >>> lat, Lon = GeoCoordinate.distance_to_from(loc1, loc2, **kwargs)            
+            >>> R = GeoCoordinate.distance_to_from(loc1, loc2, **kwargs)            
 
         Arguments
         ---------
-        loc1,loc2 : tuple, list
+        loc1,loc2 : list,:class:`~happygisco.tools.GeoCoordinate`
             :literal:`(lat,Lon)` coordinates of the two location points, in the 
             same unit as the parameters in :data:`args`.
             
@@ -1280,9 +1400,22 @@ class GeoCoordinate(GeoLocation):
         unit_angle,unit : 
             see :meth:`bounding_locations_from`.
             
+        Returns
+        -------
+        lat, Lon : tuple
+            
         Example
         -------
-         
+        Following the schema of the :meth:`` method, one can equivalently retrieve
+        distances between geolocations:
+            
+        ::
+            
+            >>> paris = GeoCoordinate(48.85693, 2.3412)
+            >>> bee = GeoCoordinate.from_degrees(45.9611, 8.5809)    
+            >>> print(GeoCoordinate.distance_to_from(paris, bee))
+                569.7000178930588
+    
         Note
         ----
         Generalise the :meth:`distance_to` method.
@@ -1292,8 +1425,15 @@ class GeoCoordinate(GeoLocation):
         --------
         :meth:`~GeoCoordinate.distance`, :meth:`~GeoCoordinate.distance_to`.
         """
-        lat1, lng1 = loc1; lat2, lng2 = loc2
         ang_unit = kwargs.pop('unit_angle',GeoAngle.DEG_ANG_UNIT)
+        try:    
+            lat1, lng1 = [GeoAngle.ang_units_to('deg',ang_unit,_) for _ in loc1.coordinates]
+        except: 
+            lat1, lng1 = loc1
+        try:    
+            lat2, lng2 = [GeoAngle.ang_units_to('deg',ang_unit,_) for _ in loc2.coordinates]
+        except: 
+            lat2, lng2 = loc2
         # convert to radians 
         #lat1, lng1, lng2, lat2 = map(math.radians, [lng1, lat1, lng2, lat2])
         lat1, lng1 = map(lambda x: GeoAngle.ang_units_to(ang_unit,GeoAngle.RAD_ANG_UNIT,x), [lat1, lng1])
@@ -1327,7 +1467,7 @@ class GeoCoordinate(GeoLocation):
         ---------
         args : tuple
             a pair of locations represented as a tuple of :literal:`(lat,Lon)` 
-            coordinates.
+            geographical coordinates.
 
         Keyword Arguments
         -----------------        

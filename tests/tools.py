@@ -6,16 +6,6 @@
 
 Unit test of module :mod:`happygisco.tools`.
 
-**About**
-
-*credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
-
-*version*:      1
---
-*since*:        Sun Apr 15 02:17:00 2018
-
-**Description**
-
 **Usage**
 
     >>> from tests import tools
@@ -27,6 +17,9 @@ Unit test of module :mod:`happygisco.tools`.
                 
 *require*:      :mod:`unittest`, :mod:`warnings`, :mod:`numpy`
 """
+
+# *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
+# *since*:        Sun Apr 15 02:17:00 2018
 
 
 #==============================================================================
@@ -60,6 +53,11 @@ from happygisco.tools import GeoLocation, GeoDistance, GeoAngle, GeoCoordinate, 
 #==============================================================================
 # TESTING UNITS
 #==============================================================================
+
+PARIS               = {'place':    'Paris, France',
+                       'lat':  48.85693, # 48.856614, 
+                       'Lon': 2.3412   # 2.3522219
+                       } 
 
 #/****************************************************************************/
 # GeoLocationTestCase
@@ -153,12 +151,12 @@ class GeoAngleTestCase(unittest.TestCase):
 
     #/************************************************************************/
     def setUp(self):
-        self.tol = 0.1 # np.spacing(np.single(1e2)) 
+        self.delta = 0.001 # np.spacing(np.single(1e2)) 
 
     #/************************************************************************/
     def test_1_conversions(self):
         self.assertAlmostEqual(GeoAngle.dps2deg([48, 51, 52.9776]),
-                               48.864716)
+                               48.864716, delta=self.delta)
         self.assertEqual(GeoAngle.deg2dps(0),
                          (0, 0, 0.0))
         self.assertEqual(GeoAngle.deg2dps(90),
@@ -175,12 +173,12 @@ class GeoAngleTestCase(unittest.TestCase):
                          math.pi/4)
         self.assertEqual(GeoAngle.rad2dps(math.pi),
                          (180, 0, 0.0))
-        self.assertEqual(GeoAngle.rad2deg(dps2rad([45,0,0])),
+        self.assertEqual(GeoAngle.dps2rad([45,0,0]),
                          45)
         self.assertEqual(GeoAngle.rad2deg(math.pi),
                          180)
         self.assertAlmostEqual(GeoAngle.dps2rad([48, 51, 52.9776]),
-                               0.8528501822519535)
+                               0.8528501822519535, delta=self.delta)
         self.assertEqual(GeoAngle.rad2dps(GeoAngle.dps2rad([48, 51, 52.9776])),
                          (48, 51, 52.9776))
 
@@ -201,8 +199,17 @@ class GeoAngleTestCase(unittest.TestCase):
                          135)
         self.assertEqual(GeoAngle.convert_angle_units(to_='rad', deg=22.5, dps=(22, 30, 0.0)),
                          math.pi/4)
+        
+    def test_4_conversions(self):
+        self.assertAlmostEqual(GeoAngle.londeg2m(0.1, 45.9611), 
+                               7751.998346588658)
+        self.assertAlmostEqual(GeoAngle.latdeg2m(0.1, 45.9611),
+                               11114.987939044277)
+        self.assertAlmostEqual(GeoAngle.latm2deg(100000, 45.9611),
+                               0.8996860864664017, delta=self.delta)
+        self.assertAlmostEqual(GeoAngle.lonm2deg(100000, 45.9611),
+                               1.2899899552223972, delta=self.delta)
                         
-
 #/****************************************************************************/
 # GeoCoordinateTestCase
 #/****************************************************************************/
@@ -213,7 +220,8 @@ class GeoCoordinateTestCase(unittest.TestCase):
     #/************************************************************************/
     def setUp(self):
         self.tol = 0.1 # np.spacing(np.single(1e2)) 
-        self.lLr = (2.347, 48.85884, 14.50401801879798)
+        self.radius = 10 # km
+        self.lLr = (PARIS['lat'], PARIS['Lon'], self.radius)
         self.bbox = [2.2241, 48.81554, 2.4699, 48.90214]
         self.bbox_Ll = [48.81554, 2.2241, 48.90214, 2.4699] 
                         # self.bbox[:2][::-1] + self.bbox[2:][::-1]
@@ -242,27 +250,48 @@ class GeoCoordinateTestCase(unittest.TestCase):
         self.assertEqual(coord1.rad_Lon, coord2.rad_Lon)
         self.assertEqual(coord1.dps_lat, coord3.dps_lat)
         self.assertEqual(coord1.dps_Lon, coord3.dps_Lon)
+        coord0 = GeoCoordinate(26.062951, -80.238853) # default initialisation
+        self.assertEqual(coord0.deg_lat, coord1.deg_lat)
+        self.assertEqual(coord0.deg_Lon, coord1.deg_Lon)
+        self.assertEqual(coord0.rad_lat, coord1.rad_lat)
+        self.assertEqual(coord0.rad_Lon, coord1.rad_Lon)
+        
+    def test_2_conversions(self):
+        self.assertAlmostEqual(GeoCoordinate.londeg2m(0.1, 45.9611), 
+                               7751.998346588658)
+        self.assertAlmostEqual(GeoCoordinate.latdeg2m(0.1, 45.9611),
+                               11114.987939044277)
+        self.assertAlmostEqual(GeoCoordinate.latm2deg(100000, 45.9611),
+                               0.8996860864664017)
+        self.assertAlmostEqual(GeoCoordinate.lonm2deg(100000, 45.9611),
+                               1.2899899552223972)
         
     #/************************************************************************/
-    def test_3_distance(self):
-        """
-        # test some geolocation utilities
-        loc1 = GeoLocation.from_degrees(26.062951, -80.238853)        
-        loc2 = GeoLocation.from_degrees(26.060484,-80.207268)
-        dist_a = GeoDistance.distance_to_from((loc1.deg_lat,loc1.deg_Lon), (loc2.deg_lat,loc2.deg_Lon), 
-                                            rad=False, unit='km')
-        dist_b = loc1.distance_to(loc2)
-        self.assertLessEqual(np.abs(dist_a - dist_b),
-                             self.tol)                                
-
-
-    #/************************************************************************/
-    def test_bbox(self):
+    def test_3_bbox(self):
         lLr = GeoCoordinate.bbox2latlon(self.bbox)
         self.assertEqual(lLr[:2], 
                          self.lLr[:2])        
-        self.assertLessEqual(abs(lLr[2] - self.lLr[2]),
-                             self.tol)
+        self.assertAlmostEqual(lLr[2], self.lLr[2], delta=self.delta)
+        
+    #/************************************************************************/
+    def test_4_distance(self):
+        paris = GeoCoordinate(PARIS['lat'], PARIS['Lon'])
+        bbox = paris.bounding_locations(self.radius)
+        SW, NE = bbox
+        #SW = GeoCoordinate(bbox[0].deg_lat, bbox[0].deg_Lon)
+        #NE = GeoCoordinate(bbox[1].deg_lat, bbox[1].deg_Lon)
+        self.assertAlmostEqual(paris.distance_to(SW), 
+                               math.sqrt(2 * self.radius**2), places=1)
+        self.assertAlmostEqual(paris.distance_to(NE), 
+                               math.sqrt(2 * self.radius**2), places=1)
+        dist = GeoCoordinate.distance_to_from(SW, NE, unit='km')
+        self.assertAlmostEqual(dist,
+                               2*math.sqrt(2 * self.radius**2), places=2)
+        self.assertEqual(dist,
+                         GeoCoordinate(*NE).distance_to(SW))
+
+    #/************************************************************************/
+    def test_5_bbox(self):
         # GeoTool.bbox2latlon returns the (lat,Lon,rad) parameters defining the 
         # CIRCUMcirle of the bounding box 
         # GeoTool.latlon2bbox returns the bounding box whose INcircle is the
