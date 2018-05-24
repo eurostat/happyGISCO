@@ -1,3 +1,4 @@
+[![DOI](https://zenodo.org/badge/125985870.svg)](https://zenodo.org/badge/latestdoi/125985870) 
 happygisco
 =========
 
