@@ -1956,8 +1956,26 @@ class GDALTool(_Tool):
     #/************************************************************************/
     @_Decorator.parse_file
     def file2layer(self, **kwargs):
-        """
-            >>> layer = tool.file2layer(filename)
+        """Load a vector file using internally defined driver and returns the 
+        corresponding vector layer.
+        
+        ::
+            
+            >>> layer = tool.file2layer(**kwargs)
+            
+        Keyword argument
+        ----------------
+        file : str
+            name of the input file; should be supported by the predefined driver.
+            
+        Returns
+        -------
+        layer : :class:`osgeo.ogr.Layer`
+            output single vector layer stored in the input :data:`file`.
+            
+        See also
+        --------
+        :meth:`osgeo.ogr.Driver.Open`, :meth:`osgeo.ogr.DataSource.GetLayer`.
         """
         filename = kwargs.pop(_Decorator.KW_FILE,'') 
         try:
@@ -1984,9 +2002,22 @@ class GDALTool(_Tool):
 
     #/************************************************************************/
     @_Decorator.parse_coordinate
-    def coord2vec(self, coord, **kwargs):
-        """
-            >>> vec = tool.coord2vec(coord, **kwargs)
+    def coord2vec(self, coord):
+        """Transform a set of geographic coordinates into a vector geometry.
+        
+            >>> vector = tool.coord2vec(coord)
+            
+        Argument
+        --------
+        coord : float, list[float]
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographic
+            coordinates.
+            
+        See also
+        --------
+        :meth:`~tools.GDALTool.coord2id`, :meth:`osgeo.ogr.Geometry`,
+        :meth:`osgeo.ogr.Geometry.AddPoint`, :meth:`osgeo.ogr.Geometry.AddGeometry`, 
+        :meth:`osgeo.ogr.wkbMultiPoint`, :meth:`osgeo.ogr.wkbPoint`.
         """
         vector = ogr.Geometry(ogr.wkbMultiPoint)
         for i in range(len(coord)):
@@ -2001,8 +2032,36 @@ class GDALTool(_Tool):
     
     #/************************************************************************/
     def vec2id(self, layer, vector):
-        """
+        """Identify the feature(s) of a layer that contain(s) the point(s) of a given 
+        geometry.
+        
            >>> id = tool.vec2id(layer, vector)
+
+        Arguments
+        ---------
+        layer : :class:`osgeo.ogr.Layer`
+            input vector layer.
+        vector : :class:`osgeo.ogr.Geometry`
+            input vector geometry, *e.g.* storing :literal:`(lat,Lon)` geographical
+            coordinates.
+            
+        Returns
+        -------
+        id : list
+            list providing, for every point in :data:`vector`, the identifier of
+            the feature in :data:`layer` that contain that point; :data:`id` is
+            indexed by the order of the points stored in :data:`vector`.
+            
+        Note
+        ----
+        The features of interest can be retrieved from the indices in :data:`id` 
+        using the method :meth:`osgeo.ogr.Layer.GetFeature`.
+            
+        See also
+        --------
+        :meth:`~tools.GDALTool.coord2id`, :meth:`~tools.GDALTool.coord2vec`, 
+        :meth:`osgeo.ogr.Layer.GetFeatureCount`, :meth:`osgeo.ogr.Layer.GetGeometryCount`, 
+        :meth:`osgeo.ogr.Layer.GetFeature`, :meth:`osgeo.ogr.Geometry.GetGeometryRef`.
         """
         answer = [] # will be same lenght as self.vector
         featureCount = layer.GetFeatureCount()
@@ -2030,7 +2089,31 @@ class GDALTool(_Tool):
     @_Decorator.parse_file
     def coord2id(self, coord, **kwargs):
         """
-            >>> id = tool.coord2id(*args, **kwargs)
+            >>> id = tool.coord2id(coord, **kwargs)
+            
+        Argument
+        --------
+        coord : float, list[float]
+            geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographic
+            coordinates.
+            
+        Keyword argument
+        ----------------
+        file : str
+            name of the input file with vector layer; should be supported by the 
+            predefined driver.
+            
+        Returns
+        -------
+        id : list
+            list providing, for every coordinates of a given geolocation in :data:`coord`,
+            the identifier of the feature of the vector layer in :data:`file` that 
+            containes this geolocation.
+        
+        See also
+        --------
+        :meth:`~tools.GDALTool.coord2vec`, :meth:`~tools.GDALTool.vec2id`, 
+        :meth:`osgeo.ogr.Layer.GetFeature`.
         """
         filename = kwargs.pop(_Decorator.KW_FILE,'') 
         try:

@@ -171,7 +171,10 @@ class OSMService(_Service):
         -----------------
         kwargs : dict
             parameters used to build the query URL; allowed keyword arguments are: 
-            :data:`format, json_callback, accept-language, extratags, namedetails, q, street, city, county, state, country, postalcode, countrycodes, viewbox, bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson, polygon_kml, polygon_svg`, and :data:`polygon_text`;
+            :data:`format, json_callback, accept-language, extratags, namedetails, q, street, city,`
+            :data:`county, state, country, postalcode, countrycodes, viewbox, bounded,addressdetails,`
+            :data:`email, limit, dedupe, debug, polygon_geojson, polygon_kml,polygon_svg`, 
+            and :data:`polygon_text`;
             see |NominatimWIKI| on *background services* for more details.
                 
         Returns
@@ -227,7 +230,9 @@ class OSMService(_Service):
         -----------------
         kwargs : dict
             parameters used to build the query URL; allowed keyword arguments are: 
-            :data:`lat, lon, format, json_callback, accept-language, extratags, email, osm_type, osm_id, zoom, addressdetails, polygon_geojson, polygon_kml, polygon_svg`, and :data:`polygon_text`;
+            :data:`lat, lon, format, json_callback, accept-language, extratags, email, osm_type,`
+            :data:`osm_id, zoom, addressdetails, polygon_geojson, polygon_kml, polygon_svg`, and 
+            :data:`polygon_text`;
             see |NominatimWIKI| on *background services* for more details.
                 
         Returns
@@ -357,7 +362,10 @@ class OSMService(_Service):
         Keyword arguments
         -----------------
         kwargs : dict
-            keywords in :data:`format, json_callback, accept-language, extratags, namedetails, street, city, county, state, country, postalcode, countrycodes, viewbox, bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson, polygon_kml, polygon_svg, polygon_text`;
+            keywords in :data:`format, json_callback, accept-language, extratags, namedetails,`
+            :data:`street, city, county, state, country, postalcode, countrycodes, viewbox,`
+            :data:`bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson,`
+            :data:`polygon_kml, polygon_svg, polygon_text`;
             are accepted; see :meth:`~OSMService.url_geocode`.
         
         Returns
@@ -529,7 +537,8 @@ class OSMService(_Service):
         Keyword arguments
         -----------------
         kwargs : dict
-            keywords in :data:`format, json_callback, accept-language, extratags, email, osm_type, osm_id, zoom, addressdetails, polygon_geojson, polygon_kml, polygon_svg, polygon`
+            keywords in :data:`format, json_callback, accept-language, extratags, email, osm_type,` 
+            :data:`osm_id, zoom, addressdetails, polygon_geojson, polygon_kml, polygon_svg, polygon`
             are accepted; see :meth:`~OSMService.url_reverse`.
         
         Returns
@@ -613,7 +622,10 @@ class OSMService(_Service):
         Keyword arguments
         -----------------
         kwargs : dict
-            keywords in :data:`format, json_callback, accept-language, extratags, namedetails, street, city, county, state, country, postalcode, countrycodes, viewbox, bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson, polygon_kml, polygon_svg`, and :data:`polygon_text`
+            keywords in :data:`format, json_callback, accept-language, extratags, namedetails,` 
+            :data:`street, city, county, state, country, postalcode, countrycodes, viewbox,`
+            :data:`bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson,`
+            :data:`polygon_kml, polygon_svg`, and :data:`polygon_text`
             are accepted; see :meth:`~OSMService.url_geocode`.
         unique : bool
             when set to :data:`True`, a single geometry is filtered out, the first 
@@ -687,7 +699,10 @@ class OSMService(_Service):
         Keyword arguments
         -----------------
         kwargs : dict
-            keywords in :data:`format, json_callback, accept-language, extratags, namedetails, street, city, county, state, country, postalcode, countrycodes, viewbox, bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson, polygon_kml, polygon_svg`, and :data:`polygon_text`
+            keywords in :data:`format, json_callback, accept-language, extratags, namedetails,` 
+            :data:`street, city, county, state, country, postalcode, countrycodes, viewbox,`
+            :data:`bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson, polygon_kml,`
+            :data:`polygon_svg`, and :data:`polygon_text`
             are accepted; see :meth:`~OSMService.url_geocode`.
         unique : bool
             when set to :data:`True`, a single geometry is filtered out, the first 

@@ -221,6 +221,7 @@ class GeoCoordinateTestCase(unittest.TestCase):
     def setUp(self):
         self.tol = 0.1 # np.spacing(np.single(1e2)) 
         self.radius = 10 # km
+        self.paris = GeoCoordinate(PARIS['lat'], PARIS['Lon'])
         self.lLr = (PARIS['lat'], PARIS['Lon'], self.radius)
         self.bbox = [2.2241, 48.81554, 2.4699, 48.90214]
         self.bbox_Ll = [48.81554, 2.2241, 48.90214, 2.4699] 
@@ -268,30 +269,38 @@ class GeoCoordinateTestCase(unittest.TestCase):
         
     #/************************************************************************/
     def test_3_bbox(self):
-        lLr = GeoCoordinate.bbox2latlon(self.bbox)
+        bbox = self.paris.bounding_locations(self.radius)
+        lLr = GeoCoordinate.bbox2latlon(bbox)
         self.assertEqual(lLr[:2], 
                          self.lLr[:2])        
         self.assertAlmostEqual(lLr[2], self.lLr[2], delta=self.delta)
+        SW, NE = GeoCoordinate.bounding_locations_from(self.paris, self.radius)
+        self.assertEqual(SW, bbox[0])
+        self.assertEqual(NE, bbox[1]) 
         
     #/************************************************************************/
     def test_4_distance(self):
-        paris = GeoCoordinate(PARIS['lat'], PARIS['Lon'])
-        bbox = paris.bounding_locations(self.radius)
+        bbox = self.paris.bounding_locations(self.radius)
         SW, NE = bbox
         #SW = GeoCoordinate(bbox[0].deg_lat, bbox[0].deg_Lon)
         #NE = GeoCoordinate(bbox[1].deg_lat, bbox[1].deg_Lon)
-        self.assertAlmostEqual(paris.distance_to(SW), 
+        self.assertAlmostEqual(self.paris.distance_to(SW), 
                                math.sqrt(2 * self.radius**2), places=1)
-        self.assertAlmostEqual(paris.distance_to(NE), 
+        self.assertAlmostEqual(self.paris.distance_to(NE), 
                                math.sqrt(2 * self.radius**2), places=1)
         dist = GeoCoordinate.distance_to_from(SW, NE, unit='km')
         self.assertAlmostEqual(dist,
                                2*math.sqrt(2 * self.radius**2), places=2)
         self.assertEqual(dist,
                          GeoCoordinate(*NE).distance_to(SW))
+        cent = GeoCoordinate.centroid(NE,SW)
+        self.assertAlmostEqual(cent.coordinates[0],
+                               self.paris.coordinates[0], delta=self.tol)
+        self.assertAlmostEqual(cent.coordinates[1],
+                               self.paris.coordinates[1], delta=self.tol)
 
     #/************************************************************************/
-    def test_5_bbox(self):
+    def test_5_topology(self):
         # GeoTool.bbox2latlon returns the (lat,Lon,rad) parameters defining the 
         # CIRCUMcirle of the bounding box 
         # GeoTool.latlon2bbox returns the bounding box whose INcircle is the
@@ -300,3 +309,12 @@ class GeoCoordinateTestCase(unittest.TestCase):
         self.assertEqual(GeoCoordinate.bbox2polygon(self.bbox), self.bounding_box)
         self.assertEqual(GeoCoordinate.polygon2bbox(self.bounding_box), self.bbox)
         self.assertEqual(GeoCoordinate.bbox2polygon(self.bbox,order='Ll'), self.bounding_box_Ll)
+        paris_xxl = GeoCoordinate(self.paris.coordinates, radius=11000, dist = 'km')
+        # and check for some simple topological property (note the different
+        # possible parameterizations)
+        self.assertTrue(self.paris.bboxwithin(paris_xxl))
+        self.assertTrue(self.paris.bboxwithin(**paris_xxl.status))
+        versailles = GeoCoordinate(place='Versailles, France', radius=10)
+        self.assertTrue(self.paris.intersects(versailles))
+        versailles_meet_paris = self.paris.intersection(versailles)
+        self.assertEqual(versailles_meet_paris.bbox,    [48.76678, 2.21569, 48.89124, 2.26651])
