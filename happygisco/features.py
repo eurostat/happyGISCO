@@ -158,7 +158,7 @@ class Location(_Feature):
         
     ::
         
-        >>> loc = features.GeoLocation(*args, **kwargs)
+        >>> loc = features.Location(*args, **kwargs)
     
     Arguments
     ---------

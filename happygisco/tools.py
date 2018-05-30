@@ -384,7 +384,7 @@ class GeoDistance(object):
 #==============================================================================
 
 class GeoAngle(object):
-    """
+    """Class used for angle representation and calculation.
     """
 
     #/************************************************************************/
