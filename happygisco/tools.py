@@ -1919,14 +1919,14 @@ class GDALTool(_Tool):
     #/************************************************************************/
     def __init__(self, **kwargs):
         # initial settings
-        self.__driver, self.__drivername = None, ''
+        self.__driver, self.__driver_name = None, ''
         try:
             assert GDAL_TOOL is not False
         except:
             raise IOError('GDAL service not available')
-        self.__drivername   = kwargs.pop('driver_name', settings.DRIVER_NAME)
+        self.__driver_name   = kwargs.pop('driver_name', settings.DRIVER_NAME)
         try:
-            self.__driver = ogr.GetDriverByName(self.driver_name)
+            self.__driver = ogr.GetDriverByName(self.__driver_name)
         except:
             try:
                 self.__driver = ogr.GetDriver(0)
@@ -1953,6 +1953,32 @@ class GDALTool(_Tool):
             raise IOError('wrong type for DRIVER_NAME parameter')
         self.__driver_name = driver_name
 
+    def test(self):
+        #driver = ogr.GetDriverByName('ESRI Shapefile')
+        #return driver.Open('/Users/gjacopo/Developments/happyGISCO/data/ref-nuts-2013-01m/NUTS_RG_01M_2013_4326_LEVL_2.shp', 0)
+        return self.__file2data('/Users/gjacopo/Developments/happyGISCO/data/ref-nuts-2013-01m/NUTS_RG_01M_2013_4326_LEVL_2.shp')
+    
+    def test3(self):
+        data = self.__file2data('/Users/gjacopo/Developments/happyGISCO/data/ref-nuts-2013-01m/NUTS_RG_01M_2013_4326_LEVL_2.shp')
+        return data.GetLayer()
+        
+    #/************************************************************************/
+    # why this implementation? issue detected with GetLayer when returning it
+    # as output ... 
+    def __file2data(self, file_):
+        try:
+            assert self.driver is not None
+        except:
+            raise happyError('offline driver not available')
+        try:
+            data = self.driver.Open(file_, 0) # 0 means read-only
+            assert data is not None
+        except:
+            raise happyError('file %s not open' % file_)
+        else:
+            if settings.VERBOSE: print('file %s opened' % file_)
+        return data
+
     #/************************************************************************/
     @_Decorator.parse_file
     def file2layer(self, **kwargs):
@@ -1973,26 +1999,45 @@ class GDALTool(_Tool):
         layer : :class:`osgeo.ogr.Layer`
             output single vector layer stored in the input :data:`file`.
             
+        Example
+        -------
+        Let us consider the NUTS data at level 2 imported within the happyGISCO 
+        project, that is:
+            
+        ::
+            
+            >>> import os
+            >>> dirname = './data/ref-nuts-2013-01m/'
+            >>> filename = 'NUTS_RG_01M_2013_4326_LEVL_2.shp'
+            >>> myfile = os.path.join(dirname, filename)
+            >>> print(myfile)
+                ./data/ref-nuts-2013-01m/NUTS_RG_01M_2013_4326_LEVL_2.shp
+            
+        We can load the associated (vector) data into a structured layer using
+        the *shapefile* driver available in |GDAL| (note that's actually the 
+        default implemented in :class:`GDALTool` class):
+            
+        ::
+            
+            >>> layer = tool.file2layer(file=myfile)
+            >>> layer.GetName()
+                'NUTS_RG_01M_2013_4326_LEVL_2'
+            >>> layer.GetMetadata()
+                {'DBF_DATE_LAST_UPDATE': '2018-02-23'}
+            >>> layer.GetDescription()
+                'NUTS_RG_01M_2013_4326_LEVL_2'
+            
         See also
         --------
         :meth:`osgeo.ogr.Driver.Open`, :meth:`osgeo.ogr.DataSource.GetLayer`.
         """
         filename = kwargs.pop(_Decorator.KW_FILE,'') 
         try:
-            assert filename not in ('', None)
+            # assert filename not in ('', None) 
+            assert os.path.exists(filename)
         except:
             raise happyError('input file not found')
-        try:
-            assert self.driver is not None
-        except:
-            raise happyError('offline driver not available')
-        try:
-            data = self.driver.Open(filename, 0) # 0 means read-only
-            assert data is not None
-        except:
-            raise happyError('file %s not open' % filename)
-        else:
-            if settings.VERBOSE: print('file %s opened' % filename)
+        data = self.__file2data(filename)
         try:
             layer = data.GetLayer()
             assert layer is not None
@@ -2013,6 +2058,26 @@ class GDALTool(_Tool):
             geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographic
             coordinates.
             
+        Example
+        -------
+        Let us store the locations of several European capitals in a vectorial
+        *multi point* geometry:
+            
+        ::
+            
+            >>> madrid = [40.416775, -3.703790]
+            >>> lisbon = [38.722252, -9.139337]
+            >>> oslo = [59.913869, 10.752245]
+            >>> riga = [56.949649, 24.105186]
+            >>> points = tool.coord2vec([madrid, lisbon, oslo, riga])
+            >>> points.ExportToJson()
+                '{ "type": "MultiPoint", 
+                   "coordinates": [ [ -3.70379, 40.416775, 0.0 ], 
+                                    [ -9.139337, 38.722252, 0.0 ], 
+                                    [ 10.752245, 59.913869, 0.0 ], 
+                                    [ 24.105186, 56.949649, 0.0 ] ] 
+                   }'
+            
         See also
         --------
         :meth:`~tools.GDALTool.coord2id`, :meth:`osgeo.ogr.Geometry`,
@@ -2023,19 +2088,19 @@ class GDALTool(_Tool):
         for i in range(len(coord)):
             try:
                 pt = ogr.Geometry(ogr.wkbPoint)
-                pt.AddPoint(coord[i][::-1]) # first Lon, then lat
+                pt.AddPoint(*coord[i][::-1]) # first Lon, then lat
             except:
-                happyVerbose('\ncould not add geolocation')
+                happyVerbose('could not add geolocation')
             else:
                 vector.AddGeometry(pt)
         return vector
     
     #/************************************************************************/
-    def vec2id(self, layer, vector):
+    def vec2feat(self, layer, vector, **kwargs):
         """Identify the feature(s) of a layer that contain(s) the point(s) of a given 
         geometry.
         
-           >>> id = tool.vec2id(layer, vector)
+           >>> feat = tool.vec2feat(layer, vector)
 
         Arguments
         ---------
@@ -2052,6 +2117,21 @@ class GDALTool(_Tool):
             the feature in :data:`layer` that contain that point; :data:`id` is
             indexed by the order of the points stored in :data:`vector`.
             
+        Example
+        -------
+        Assuming we already created an instance of the :class:`GDALTool` class:
+            
+        ::
+            
+            >>> tool = tools.GDALTool(driver_name='ESRI Shapefile')
+
+        assuming also that the coordinates of different locations have been informed
+        (see :meth:`coord2vec`) and a source file has been defined (see :meth:`file2layer`):
+            
+        ::
+            
+            >>> id_ = tool.coord2id(coord=[madrid, lisbon, oslo, riga], file=myfile)
+
         Note
         ----
         The features of interest can be retrieved from the indices in :data:`id` 
@@ -2063,6 +2143,7 @@ class GDALTool(_Tool):
         :meth:`osgeo.ogr.Layer.GetFeatureCount`, :meth:`osgeo.ogr.Layer.GetGeometryCount`, 
         :meth:`osgeo.ogr.Layer.GetFeature`, :meth:`osgeo.ogr.Geometry.GetGeometryRef`.
         """
+        
         answer = [] # will be same lenght as self.vector
         featureCount = layer.GetFeatureCount()
         happyVerbose('\nnumber of features in %s: %d' % (layer,featureCount))
@@ -2087,9 +2168,9 @@ class GDALTool(_Tool):
     #/************************************************************************/
     @_Decorator.parse_coordinate
     @_Decorator.parse_file
-    def coord2id(self, coord, **kwargs):
+    def coord2feat(self, coord, **kwargs):
         """
-            >>> id = tool.coord2id(coord, **kwargs)
+            >>> feat = tool.coord2feat(coord, **kwargs)
             
         Argument
         --------
@@ -2109,6 +2190,22 @@ class GDALTool(_Tool):
             list providing, for every coordinates of a given geolocation in :data:`coord`,
             the identifier of the feature of the vector layer in :data:`file` that 
             containes this geolocation.
+
+        Example
+        -------
+        Assuming we already created an instance of the :class:`GDALTool` class:
+            
+        ::
+            
+            >>> tool = tools.GDALTool(driver_name='ESRI Shapefile')
+
+        assuming also that the coordinates of different locations have been informed
+        (see :meth:`coord2vec`) and a source file has been defined (see :meth:`file2layer`):
+            
+        ::
+            
+            >>> id_ = tool.coord2id(coord=[madrid, lisbon, oslo, riga], file=myfile)
+
         
         See also
         --------
@@ -2117,12 +2214,14 @@ class GDALTool(_Tool):
         """
         filename = kwargs.pop(_Decorator.KW_FILE,'') 
         try:
-            assert filename not in ('', None)
+            # assert filename not in ('', None) 
+            assert os.path.exists(filename)
         except:
             raise happyError('input file not found')
         try:
-            layer = self.file2layer(filename)
-            assert layer not in (None,[])
+            # layer = self.file2layer(**kwargs)
+            data = self.__file2data(filename)
+            assert data not in (None,[])
         except:
             raise happyError('could not load feature layer')
         try:
@@ -2130,7 +2229,7 @@ class GDALTool(_Tool):
             assert vector not in (None,[])
         except:
             raise IOError('could not load geolocation vector')
-        return self.vec2id(layer, vector)
+        return self.vec2id(data.GetLayer(), vector)
 
 #%%
 #==============================================================================

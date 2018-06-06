@@ -1537,9 +1537,9 @@ class _Decorator(object):
                 else:   
                     raise happyError('input file arguments not recognised')
             if not (dirname is None and basename is None) or            \
-                    (kwargs.get(_Decorator.KW_DIRNAME) is None and  \
-                     kwargs.get(_Decorator.KW_BASENAME) is None and \
-                     kwargs.get(_Decorator.KW_FILENAME) is None):
+                    (kwargs.get(_Decorator.parse_file.KW_DIRNAME) is None and  \
+                     kwargs.get(_Decorator.parse_file.KW_BASENAME) is None and \
+                     kwargs.get(_Decorator.parse_file.KW_FILENAME) is None):
                 raise happyError('don''t mess up with me - duplicated argument parsed')
             else:   
                 dirname = kwargs.pop(_Decorator.parse_file.KW_DIRNAME, '')         
@@ -1561,7 +1561,7 @@ class _Decorator(object):
             if not happyType.isstring(filename):
                 filename = [filename,]
             kwargs.update({_Decorator.KW_FILE: filename})                  
-            return self.func(**kwargs)
+            return self.func(*args, **kwargs)
 
     #/************************************************************************/
     class parse_route(__parse):
