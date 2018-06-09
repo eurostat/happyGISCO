@@ -1981,13 +1981,13 @@ class GDALTool(_Tool):
 
     #/************************************************************************/
     @_Decorator.parse_file
-    def file2layer(self, **kwargs):
+    def file2lay(self, **kwargs):
         """Load a vector file using internally defined driver and returns the 
         corresponding vector layer.
         
         ::
             
-            >>> layer = tool.file2layer(**kwargs)
+            >>> layer = tool.file2lay(**kwargs)
             
         Keyword argument
         ----------------
@@ -2047,10 +2047,10 @@ class GDALTool(_Tool):
 
     #/************************************************************************/
     @_Decorator.parse_coordinate
-    def coord2vec(self, coord):
+    def coord2geom(self, coord):
         """Transform a set of geographic coordinates into a vector geometry.
         
-            >>> vector = tool.coord2vec(coord)
+            >>> geom = tool.coord2geom(coord)
             
         Argument
         --------
@@ -2058,10 +2058,15 @@ class GDALTool(_Tool):
             geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographic
             coordinates.
             
+        Returns
+        -------
+        geom : :class:`ogr.Geometry`
+            multipoint geometry featuring all the points listed in :data:`coord`.
+            
         Example
         -------
         Let us store the locations of several European capitals in a vectorial
-        *multi point* geometry:
+        *multipoint* geometry:
             
         ::
             
@@ -2069,7 +2074,7 @@ class GDALTool(_Tool):
             >>> lisbon = [38.722252, -9.139337]
             >>> oslo = [59.913869, 10.752245]
             >>> riga = [56.949649, 24.105186]
-            >>> points = tool.coord2vec([madrid, lisbon, oslo, riga])
+            >>> points = tool.coord2geom([madrid, lisbon, oslo, riga])
             >>> points.ExportToJson()
                 '{ "type": "MultiPoint", 
                    "coordinates": [ [ -3.70379, 40.416775, 0.0 ], 
@@ -2080,11 +2085,11 @@ class GDALTool(_Tool):
             
         See also
         --------
-        :meth:`~tools.GDALTool.coord2id`, :meth:`osgeo.ogr.Geometry`,
+        :meth:`~tools.GDALTool.coord2feat`, :meth:`osgeo.ogr.Geometry`,
         :meth:`osgeo.ogr.Geometry.AddPoint`, :meth:`osgeo.ogr.Geometry.AddGeometry`, 
         :meth:`osgeo.ogr.wkbMultiPoint`, :meth:`osgeo.ogr.wkbPoint`.
         """
-        vector = ogr.Geometry(ogr.wkbMultiPoint)
+        geom = ogr.Geometry(ogr.wkbMultiPoint)
         for i in range(len(coord)):
             try:
                 pt = ogr.Geometry(ogr.wkbPoint)
@@ -2092,30 +2097,30 @@ class GDALTool(_Tool):
             except:
                 happyVerbose('could not add geolocation')
             else:
-                vector.AddGeometry(pt)
-        return vector
+                geom.AddGeometry(pt)
+        return geom
     
     #/************************************************************************/
-    def vec2feat(self, layer, vector, **kwargs):
+    def lay2fid(self, layer, geom, **kwargs):
         """Identify the feature(s) of a layer that contain(s) the point(s) of a given 
         geometry.
         
-           >>> feat = tool.vec2feat(layer, vector)
+           >>> idfeat = tool.lay2fid(layer, geom)
 
         Arguments
         ---------
         layer : :class:`osgeo.ogr.Layer`
             input vector layer.
-        vector : :class:`osgeo.ogr.Geometry`
+        geom : :class:`osgeo.ogr.Geometry`
             input vector geometry, *e.g.* storing :literal:`(lat,Lon)` geographical
             coordinates.
             
         Returns
         -------
-        id : list
-            list providing, for every point in :data:`vector`, the identifier of
-            the feature in :data:`layer` that contain that point; :data:`id` is
-            indexed by the order of the points stored in :data:`vector`.
+        idfeat : list[int]
+            list providing, for every point in :data:`vector`, the index identifier 
+            of the feature in :data:`layer` that contain that point; :data:`idfeat` 
+            is indexed by the order of the points stored in :data:`vector`.
             
         Example
         -------
@@ -2126,12 +2131,35 @@ class GDALTool(_Tool):
             >>> tool = tools.GDALTool(driver_name='ESRI Shapefile')
 
         assuming also that the coordinates of different locations have been informed
-        (see :meth:`coord2vec`) and a source file has been defined (see :meth:`file2layer`):
+        (see :meth:`coord2vec`) and a source file has been defined (see :meth:`file2lay`):
             
         ::
             
-            >>> id_ = tool.coord2id(coord=[madrid, lisbon, oslo, riga], file=myfile)
-
+            >>> layer = tool.file2lay(file=myfile)
+            >>> idfeat = tool.lay2fid(layer, [madrid, lisbon, oslo, riga])
+            >>> idfeat
+                [120, 226, 210, 190]
+                
+        It is then possible to actually retrieve the vector features from the indices:
+            
+        ::
+            
+            >>> import ogr
+            >>> feat = layer.GetFeature(idfeat[0])
+            >>> feat.ExportToJson()
+                '{"type": "Feature",
+                  "geometry": {"type": "MultiPolygon", 
+                               "coordinates": [[[[-3.06769, 40.15788], [-3.07786, 40.15708], 
+                                                 [-3.08289, 40.15938], [-3.08233, 40.16172], 
+                                                 [-3.08502, 40.16361], [-3.08912, 40.16294],
+                                                 ... 
+                                              ]]]
+                               },
+                  "properties": {"CNTR_CODE": "ES", "FID": "ES30", "LEVL_CODE": 2, 
+                                 "NUTS_ID": "ES30", "NUTS_NAME": "Comunidad de Madrid"}, 
+                  "id": 120
+                  }'
+                    
         Note
         ----
         The features of interest can be retrieved from the indices in :data:`id` 
@@ -2139,17 +2167,16 @@ class GDALTool(_Tool):
             
         See also
         --------
-        :meth:`~tools.GDALTool.coord2id`, :meth:`~tools.GDALTool.coord2vec`, 
+        :meth:`~tools.GDALTool.coord2feat`, :meth:`~tools.GDALTool.coord2geom`, 
         :meth:`osgeo.ogr.Layer.GetFeatureCount`, :meth:`osgeo.ogr.Layer.GetGeometryCount`, 
         :meth:`osgeo.ogr.Layer.GetFeature`, :meth:`osgeo.ogr.Geometry.GetGeometryRef`.
-        """
-        
+        """        
         answer = [] # will be same lenght as self.vector
         featureCount = layer.GetFeatureCount()
         happyVerbose('\nnumber of features in %s: %d' % (layer,featureCount))
         # iterate through points
-        for i in range(0, vector.GetGeometryCount()): # because it is a MULTIPOINT
-            pt = vector.GetGeometryRef(i)
+        for i in range(0, geom.GetGeometryCount()): # because it is a MULTIPOINT
+            pt = geom.GetGeometryRef(i)
             #print(pt.ExportToWkt())
             # iterate through polygons in layer
             for j in range(0, featureCount):
@@ -2160,7 +2187,7 @@ class GDALTool(_Tool):
                 #    Regions.append(feature)
                 ft = feature.GetGeometryRef()
                 if ft is not None and ft.Contains(pt):
-                    answer.append(feature)
+                    answer.append(j)  # answer.append(feature)
             if len(answer)<i+1:    
                 answer.append(None)
         return answer
@@ -2169,7 +2196,9 @@ class GDALTool(_Tool):
     @_Decorator.parse_coordinate
     @_Decorator.parse_file
     def coord2feat(self, coord, **kwargs):
-        """
+        """Identify the feature(s) of a vector file that contain(s) some given
+        geolocation(s) expressed as geographic coordinates.
+        
             >>> feat = tool.coord2feat(coord, **kwargs)
             
         Argument
@@ -2186,7 +2215,7 @@ class GDALTool(_Tool):
             
         Returns
         -------
-        id : list
+        feat : list[:class:`osgeo.ogr.Feature`]
             list providing, for every coordinates of a given geolocation in :data:`coord`,
             the identifier of the feature of the vector layer in :data:`file` that 
             containes this geolocation.
@@ -2200,17 +2229,21 @@ class GDALTool(_Tool):
             >>> tool = tools.GDALTool(driver_name='ESRI Shapefile')
 
         assuming also that the coordinates of different locations have been informed
-        (see :meth:`coord2vec`) and a source file has been defined (see :meth:`file2layer`):
+        (see :meth:`coord2vec`) and a source file has been defined (see :meth:`file2lay`):
             
         ::
             
-            >>> id_ = tool.coord2id(coord=[madrid, lisbon, oslo, riga], file=myfile)
-
+            >>> feat = tool.coord2feat(coord=[madrid, lisbon, oslo, riga], file=myfile)
+            >>> feat
+                [<osgeo.ogr.Feature; proxy of <Swig Object of type 'OGRFeatureShadow *' at 0x116f2cb10> >,
+                 <osgeo.ogr.Feature; proxy of <Swig Object of type 'OGRFeatureShadow *' at 0x116f2cbd0> >,
+                 <osgeo.ogr.Feature; proxy of <Swig Object of type 'OGRFeatureShadow *' at 0x116f2cea0> >,
+                 <osgeo.ogr.Feature; proxy of <Swig Object of type 'OGRFeatureShadow *' at 0x116f2cde0> >]
         
         See also
         --------
-        :meth:`~tools.GDALTool.coord2vec`, :meth:`~tools.GDALTool.vec2id`, 
-        :meth:`osgeo.ogr.Layer.GetFeature`.
+        :meth:`~tools.GDALTool.coord2geom`, :meth:`~tools.GDALTool.lay2fid`, 
+        :meth:`~tools.GDALTool.file2lay`, :meth:`osgeo.ogr.Layer.GetFeature`.
         """
         filename = kwargs.pop(_Decorator.KW_FILE,'') 
         try:
@@ -2219,17 +2252,24 @@ class GDALTool(_Tool):
         except:
             raise happyError('input file not found')
         try:
-            # layer = self.file2layer(**kwargs)
+            # layer = self.file2lay(**kwargs)
             data = self.__file2data(filename)
             assert data not in (None,[])
         except:
             raise happyError('could not load feature layer')
         try:
-            vector = self.coord2vec(coord)
-            assert vector not in (None,[])
+            geom = self.coord2geom(coord)
+            assert geom not in (None,[])
         except:
             raise IOError('could not load geolocation vector')
-        return self.vec2id(data.GetLayer(), vector)
+        else:
+            layer = data.GetLayer()
+        try:
+            fid = self.lay2fid(layer, geom)
+            assert fid not in (None,[])
+        except:
+            raise IOError('could not identify feature')
+        return [layer.GetFeature(i) for i in fid]
 
 #%%
 #==============================================================================
