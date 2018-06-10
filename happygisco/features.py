@@ -186,6 +186,7 @@ class Location(_Feature):
         self._place = kwargs.pop(_Decorator.KW_PLACE, None)
         self._coord = kwargs.pop(_Decorator.KW_COORD, None)
         super(Location,self).__init__(**kwargs)
+        self._geom = None
 
     #/************************************************************************/
     @property
@@ -232,8 +233,79 @@ class Location(_Feature):
         self._coord = coord
 
     #/************************************************************************/
+    @property
+    def nuts(self):
+        """NUTS property (:data:`getter`) of a :class:`Location` instance.
+        This is the identifier of the NUTS actually containing this instance.
+        """ 
+        if self._nuts in ([],None):
+            try:
+                nuts = self.findnuts()
+            except:     
+                happyWarning('NUTS not found') 
+                return
+            else:
+                if not isinstance(nuts,list): nuts = [nuts,]
+                # note that "NUTS_ID" is present as a field of both outputs returned
+                # by GDALTool.coord2feat and GISCOService.coord2nuts
+                self._nuts = [n[_Decorator.parse_nuts.KW_NUTS_ID] for n in nuts]
+        return self._nuts    
+
+    #/************************************************************************/
+    @property
+    def geom(self):
+        """Geom(etry) property (:data:`getter`) of a :class:`Location` instance.
+        This is a vector data built from the geolocations in this instance.
+        """ 
+        if self._geom in ([],None):
+            try:
+                geom = self.geometry()
+            except:     
+                happyWarning('Geometry not available') 
+                return
+            else:
+                self._geom = geom
+        return self._geom
+
+    #/************************************************************************/
     def __repr__(self):
         return [','.join(p.replace(',',' ').split()) for p in self.place]
+
+    #/************************************************************************/
+    def geometry(self, **kwargs):
+        """Build a vector geometry upon the geographical coordinates represented
+        by this instance. 
+         
+        ::
+       
+            >>> geom = loc.geometry(**kwargs)
+        
+        Keyword Arguments
+        -----------------        
+        kwargs : dict  
+            see keyword arguments of the :meth:`tools.GDALTool.coord2geom` method.
+
+        Returns
+        -------
+        geom : :class:`ogr.Geometry`
+            multipoint geometry featuring all the points listed in this instance.
+
+        Raises
+        ------
+        happyError
+            when unable to build geometry.
+
+        Example
+        -------
+        
+        See also
+        --------
+        :meth:`tools.GDALTool.coord2geom`.
+        """
+        try:
+            return self.tool.coord2geom(self.coord, **kwargs)
+        except:     
+            raise happyError('unable to build a vector geometry upon given coordinates') 
 
     #/************************************************************************/
     def geocode(self, **kwargs):   
@@ -247,7 +319,7 @@ class Location(_Feature):
         Keyword Arguments
         -----------------        
         kwargs : dict  
-            see keyword arguments of the :meth:`place2coord` methods.
+            see keyword arguments of the (various) :meth:`place2coord` methods.
 
         Returns
         -------
@@ -317,8 +389,8 @@ class Location(_Feature):
         happyError
             when unable to recognize coordinates.
 
-        Examples
-        --------
+        Example
+        -------
         
         ::
 
@@ -469,7 +541,7 @@ class Location(_Feature):
         --------
         :meth:`services.GISCOService.coord2route`, :meth:`services.GISCOService.place2route`.
         """
-        if not isinstance(self.service, services.GISCOService):
+        if not (GISCO_SERVICE and isinstance(self.service, services.GISCOService)):
             happyWarning('routing method available only with GISCO service')
             return
         try:
@@ -483,10 +555,6 @@ class Location(_Feature):
 
     #/************************************************************************/
     def transform(self,**kwargs):
-        pass
-     
-    #/************************************************************************/
-    def iscontained(self, layer, **kwargs):
         pass
     
     #/************************************************************************/
@@ -510,6 +578,11 @@ class Location(_Feature):
             a (list of) dictionary(ies) representing NUTS geometries; see
             :meth:`services.GISCOService.coord2nuts` method.
 
+        Raises
+        ------
+        happyError
+            when unable to identify NUTS region.
+
         Example
         -------
             
@@ -520,12 +593,98 @@ class Location(_Feature):
 
         See also
         --------
-        :meth:`services.GISCOService.coord2nuts`, :meth:`services.GISCOService.place2nuts`.
+        :meth:`~Location.isnuts`,
+        :meth:`services.GISCOService.coord2nuts`, :meth:`services.GISCOService.place2nuts`,
+        :meth:`tools.GDALTool.coord2feat`.
         """
-        if not isinstance(self.service, services.GISCOService):
-            happyWarning('findnuts method available only with GISCO service')
-            return
-        return self.service.coord2nuts(self.coord, **kwargs)
+        #if not (GISCO_SERVICE and GDAL_TOOL):
+        #    happyWarning('findnuts method available only with GISCO service or GDAL tool')
+        #    return
+        try:        
+            assert GDAL_TOOL and isinstance(self.tool, tools.GDALTool)
+            feat = self.tool.coord2feat(self.coord, **kwargs)
+        except:
+            try:        
+                assert GISCO_SERVICE and isinstance(self.service, services.GISCOService)
+                feat = self.service.coord2nuts(self.coord, **kwargs)
+            except:
+                happyError('error while identifying NUTS')
+        if feat in (None,[]):
+            return feat
+        try:
+            return feat.items()  # return feat.ExportToJson()
+        except:
+            return feat['attributes'] # return feat
+     
+    #/************************************************************************/
+    def isnuts(self, nuts, **kwargs):
+        """Test the identifier of the NUTS the current geolocation/instance
+        belongs to.
+        
+        ::
+            
+            >>> ans = loc.isnuts(nuts)
+            
+        Argument
+        --------
+        nuts : str, :class:`features.NUTS`
+            a string representing a NUTS identifier (*e.g.* something like 'ES30' 
+            for the Comunidad de Madrid), or an instance of :class:`features.NUTS`.
+            
+        Returns
+        -------
+        ans : bool
+            :data:`True` if the location belongs to the NUTS geometry represented
+            by :data:`nuts` (whatever NUTS level), :data:`False` otherwise.
+            
+        See also
+        --------
+        :meth:`~Location.findnuts`, :meth:`~Location.iscontained`.
+        """
+        if isinstance(nuts, NUTS):
+            nuts = nuts.id
+        elif not isinstance(nuts, str):
+            raise happyError('wrong type for input NUTS identifier')
+        return any([n == nuts for n in self.nuts])
+     
+    #/************************************************************************/
+    def iscontained(self, layer):
+        """Test whether the current geolocation/instance is contained in the geometry
+        defined by a given layer.
+        
+        ::
+            
+            >>> ans = loc.iscontained(layer)
+            
+        Argument
+        --------
+        layer : :class:`osgeo.ogr.Layer`
+            input vector layer to test.
+
+        Returns
+        -------
+        ans : bool
+            :data:`True` if the location belongs to the NUTS geometry represented
+            by :data:`nuts` (whatever NUTS level), :data:`False` otherwise.
+
+        See also
+        --------
+        :meth:`~Location.geometry`, :meth:`~Location.isnuts`, 
+        :meth:`NUTS.contains`, :meth:`tools.GDALTool.lay2fid`. 
+        """
+        #if not (GDAL_TOOL and isinstance(self.tool, tools.GDALTool)):
+        #    happyWarning('method available only with GDAL tool')
+        #    return
+        try:
+            # geom = self.tool.coord2geom(self.coord, **kwargs)
+            fid = self.tool.lay2fid(layer, self.geom)
+        except:
+            raise happyError('impossible to establish relationship')
+        if fid in ((),[],None)  \
+                or (isinstance(fid,list) and all([f is None for f in fid])):
+            return False
+        else:
+            return True
 
 #%%
 #==============================================================================

@@ -2047,18 +2047,28 @@ class GDALTool(_Tool):
 
     #/************************************************************************/
     @_Decorator.parse_coordinate
-    def coord2geom(self, coord):
+    def coord2geom(self, coord, **kwargs):
         """Transform a set of geographic coordinates into a vector geometry.
         
         ::
         
-            >>> geom = tool.coord2geom(coord)
+            >>> geom = tool.coord2geom(coord, **kwargs)
             
         Argument
         --------
         coord : float, list[float]
             geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographic
             coordinates.
+            
+        Keyword argument
+        ----------------
+        format : int,str
+            format of the geometry used to store the coordinates; it can be an
+            integer value representing a well-known binary format (for instance, 
+            :data:`ogr.wkbLinearRing` value is 101) or any string in the list
+            :literal:`['Point','LineString','LinearRing','Polygon','MultiPoint','MultiLineString','MultiPolygon']`
+            representing the shortened version of well-known binary format; default
+            is 'MultiPoint'.
             
         Returns
         -------
@@ -2068,7 +2078,7 @@ class GDALTool(_Tool):
         Example
         -------
         Let us store the locations of several European capitals in a vectorial
-        *multipoint* geometry:
+        *multipoint* geometry (default format):
             
         ::
             
@@ -2088,10 +2098,19 @@ class GDALTool(_Tool):
         See also
         --------
         :meth:`~tools.GDALTool.coord2feat`, :meth:`osgeo.ogr.Geometry`,
+        :meth:`features.Location.geometry`,
         :meth:`osgeo.ogr.Geometry.AddPoint`, :meth:`osgeo.ogr.Geometry.AddGeometry`, 
         :meth:`osgeo.ogr.wkbMultiPoint`, :meth:`osgeo.ogr.wkbPoint`.
         """
-        geom = ogr.Geometry(ogr.wkbMultiPoint)
+        fmt = kwargs.pop('fmt', 'MultiPoint')
+        if isinstance(fmt,str) and fmt in ['Point','LineString','LinearRing','Polygon','MultiPoint','MultiLineString','MultiPolygon']:
+            try:
+                fmt = getattr(ogr,'wkb' + fmt)
+            except:
+                raise happyError('format not recognised')
+        elif not isinstance(fmt,int):
+            raise happyError('wrong definition for argument FMT')
+        geom = ogr.Geometry(fmt)
         for i in range(len(coord)):
             try:
                 pt = ogr.Geometry(ogr.wkbPoint)
@@ -2103,7 +2122,7 @@ class GDALTool(_Tool):
         return geom
     
     #/************************************************************************/
-    def lay2fid(self, layer, geom, **kwargs):
+    def lay2fid(self, layer, geom):
         """Identify the feature(s) of a layer that contain(s) the point(s) of a given 
         geometry.
         
@@ -2171,7 +2190,8 @@ class GDALTool(_Tool):
             
         See also
         --------
-        :meth:`~tools.GDALTool.coord2feat`, :meth:`~tools.GDALTool.coord2geom`, 
+        :meth:`~tools.GDALTool.coord2feat`, :meth:`~tools.GDALTool.coord2geom`,
+        :meth:`features.Location.iscontained`, 
         :meth:`osgeo.ogr.Layer.GetFeatureCount`, :meth:`osgeo.ogr.Layer.GetGeometryCount`, 
         :meth:`osgeo.ogr.Layer.GetFeature`, :meth:`osgeo.ogr.Geometry.GetGeometryRef`.
         """        
@@ -2254,7 +2274,7 @@ class GDALTool(_Tool):
         :meth:`~tools.GDALTool.file2lay`, :meth:`osgeo.ogr.Layer.GetFeature`.
         """
         fname = kwargs.pop(_Decorator.KW_FILE,'') 
-        data = kwargs.pop('data', None) 
+        data = kwargs.pop(_Decorator.KW_DATA, None) 
         if not (data is None or fname==''):
             raise happyError('incompatible input parameters %s and data' % _Decorator.KW_FILE)
         elif data is None and fname=='':
@@ -2266,7 +2286,7 @@ class GDALTool(_Tool):
             except:
                 raise happyError('input vector data file not found')
             try:
-            # layer = self.file2lay(**kwargs)
+                # layer = self.file2lay(**kwargs)
                 data = self.__file2data(fname)
             except:
                 raise happyError('could not load vector data')
@@ -2277,7 +2297,7 @@ class GDALTool(_Tool):
         else:
             layer = data.GetLayer()
         try:
-            geom = self.coord2geom(coord)
+            geom = self.coord2geom(coord, **kwargs)
             assert geom not in (None,[])
         except:
             raise IOError('could not load geolocation vector')

@@ -480,6 +480,7 @@ class _Decorator(object):
     KW_NUTS         = 'nuts' 
     
     KW_FILE         = 'file'
+    KW_DATA         = 'data'
 
     #/************************************************************************/
     @staticmethod
