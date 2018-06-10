@@ -1965,33 +1965,33 @@ class GDALTool(_Tool):
     #/************************************************************************/
     # why this implementation? issue detected with GetLayer when returning it
     # as output ... 
-    def __file2data(self, file_):
+    def __file2data(self, fname):
         try:
             assert self.driver is not None
         except:
             raise happyError('offline driver not available')
         try:
-            data = self.driver.Open(file_, 0) # 0 means read-only
+            data = self.driver.Open(fname, 0) # 0 means read-only
             assert data is not None
         except:
-            raise happyError('file %s not open' % file_)
+            raise happyError('file %s not open' % fname)
         else:
-            if settings.VERBOSE: print('file %s opened' % file_)
+            if settings.VERBOSE: print('file %s opened' % fname)
         return data
 
     #/************************************************************************/
-    @_Decorator.parse_file
-    def file2lay(self, **kwargs):
+    #@_Decorator.parse_file
+    def file2lay(self, fname):
         """Load a vector file using internally defined driver and returns the 
         corresponding vector layer.
         
         ::
             
-            >>> layer = tool.file2lay(**kwargs)
+            >>> layer = tool.file2lay(fname)
             
-        Keyword argument
-        ----------------
-        file : str
+        Argument
+        --------
+        fname : str
             name of the input file; should be supported by the predefined driver.
             
         Returns
@@ -2019,7 +2019,7 @@ class GDALTool(_Tool):
             
         ::
             
-            >>> layer = tool.file2layer(file=myfile)
+            >>> layer = tool.file2lay(myfile)
             >>> layer.GetName()
                 'NUTS_RG_01M_2013_4326_LEVL_2'
             >>> layer.GetMetadata()
@@ -2031,13 +2031,13 @@ class GDALTool(_Tool):
         --------
         :meth:`osgeo.ogr.Driver.Open`, :meth:`osgeo.ogr.DataSource.GetLayer`.
         """
-        filename = kwargs.pop(_Decorator.KW_FILE,'') 
+        #fname = kwargs.pop(_Decorator.KW_FILE,'') 
         try:
-            # assert filename not in ('', None) 
-            assert os.path.exists(filename)
+            # assert fname not in ('', None) 
+            assert os.path.exists(fname)
         except:
             raise happyError('input file not found')
-        data = self.__file2data(filename)
+        data = self.__file2data(fname)
         try:
             layer = data.GetLayer()
             assert layer is not None
@@ -2049,6 +2049,8 @@ class GDALTool(_Tool):
     @_Decorator.parse_coordinate
     def coord2geom(self, coord):
         """Transform a set of geographic coordinates into a vector geometry.
+        
+        ::
         
             >>> geom = tool.coord2geom(coord)
             
@@ -2105,6 +2107,8 @@ class GDALTool(_Tool):
         """Identify the feature(s) of a layer that contain(s) the point(s) of a given 
         geometry.
         
+        ::
+        
            >>> idfeat = tool.lay2fid(layer, geom)
 
         Arguments
@@ -2135,7 +2139,7 @@ class GDALTool(_Tool):
             
         ::
             
-            >>> layer = tool.file2lay(file=myfile)
+            >>> layer = tool.file2lay(myfile)
             >>> idfeat = tool.lay2fid(layer, [madrid, lisbon, oslo, riga])
             >>> idfeat
                 [120, 226, 210, 190]
@@ -2199,6 +2203,8 @@ class GDALTool(_Tool):
         """Identify the feature(s) of a vector file that contain(s) some given
         geolocation(s) expressed as geographic coordinates.
         
+        ::
+        
             >>> feat = tool.coord2feat(coord, **kwargs)
             
         Argument
@@ -2206,12 +2212,14 @@ class GDALTool(_Tool):
         coord : float, list[float]
             geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographic
             coordinates.
-            
-        Keyword argument
-        ----------------
+        
+        Keyword arguments
+        -----------------
         file : str
-            name of the input file with vector layer; should be supported by the 
-            predefined driver.
+            name of an input file storing vector data; it should be supported by 
+            the predefined driver; incompatible with :data:`data` below.
+        data : :class:`osgeo.ogr.Layer`
+            formatted vector data; incompatible with :data:`file` above.
             
         Returns
         -------
@@ -2245,25 +2253,34 @@ class GDALTool(_Tool):
         :meth:`~tools.GDALTool.coord2geom`, :meth:`~tools.GDALTool.lay2fid`, 
         :meth:`~tools.GDALTool.file2lay`, :meth:`osgeo.ogr.Layer.GetFeature`.
         """
-        filename = kwargs.pop(_Decorator.KW_FILE,'') 
-        try:
-            # assert filename not in ('', None) 
-            assert os.path.exists(filename)
-        except:
-            raise happyError('input file not found')
-        try:
+        fname = kwargs.pop(_Decorator.KW_FILE,'') 
+        data = kwargs.pop('data', None) 
+        if not (data is None or fname==''):
+            raise happyError('incompatible input parameters %s and data' % _Decorator.KW_FILE)
+        elif data is None and fname=='':
+            raise happyError('missing input vector data')     
+        if fname!='':
+            try:
+                # assert fname not in ('', None) 
+                assert os.path.exists(fname)
+            except:
+                raise happyError('input vector data file not found')
+            try:
             # layer = self.file2lay(**kwargs)
-            data = self.__file2data(filename)
-            assert data not in (None,[])
+                data = self.__file2data(fname)
+            except:
+                raise happyError('could not load vector data')
+        try:
+            assert data not in (None,[]) and isinstance(data, ogr.DataSource)
         except:
-            raise happyError('could not load feature layer')
+            raise happyError('no input vector data provided')
+        else:
+            layer = data.GetLayer()
         try:
             geom = self.coord2geom(coord)
             assert geom not in (None,[])
         except:
             raise IOError('could not load geolocation vector')
-        else:
-            layer = data.GetLayer()
         try:
             fid = self.lay2fid(layer, geom)
             assert fid not in (None,[])
