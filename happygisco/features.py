@@ -391,18 +391,17 @@ class Location(_Feature):
             
         Examples
         --------      
-        
+        Let us compute some distances between geolocations expressed as either place 
+        names or geographical coordinates:
+            
         ::
 
             >>> loc = features.Location([26.062951, -80.238853], service='GISCO')
-            >>> print loc.distance([26.060484,-80.207268], 
-                                   dist='vincenty', unit='m')
+            >>> print(loc.distance([26.060484,-80.207268], dist='vincenty', unit='m'))
                 3172.3596179302895
-            >>> print loc.distance([26.060484,-80.207268],
-                                   dist='great_circle', unit='km')
+            >>> print(loc.distance([26.060484,-80.207268], dist='great_circle', unit='km'))
                 3.167782321855102
-            >>> print loc.distance('Paris, France', 
-                                   dist='great_circle', unit='km')
+            >>> print(loc.distance('Paris, France', dist='great_circle', unit='km'))
                 7338.5353364838438
                 
         Note
@@ -677,11 +676,20 @@ class NUTS(_Feature):
             raise happyError('unable to retrieve coordinates from NUTS name') 
         
     #/************************************************************************/
-    def identify(self, place, **kwargs):
+    @_Decorator.parse_place_or_coordinate
+    def identify(self, *args, **kwargs):
         """
         """
-        pass
-    
+        func = lambda *a, **kw: [kw.pop(_Decorator.KW_PLACE), kw.pop(_Decorator.KW_COORD)]
+        try:
+            place, coord = _Decorator.parse_place_or_coordinate(func)(*args, **kwargs)          
+        except:
+            pass
+        else:
+            if coord in ([],None):
+                coord = self.service.place2coord(place)
+        
+        
     #/************************************************************************/
     @_Decorator.parse_place_or_coordinate
     def contains(self, *args, **kwargs):
