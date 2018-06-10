@@ -556,10 +556,10 @@ class _Decorator(object):
             default is :literal:`'function'`.
         obj : 
             instance whose method is decorated when the decorated function is an
-            :literal`'instancemethod'`; default is :data:`None`.
+            :literal:`'instancemethod'`; default is :data:`None`.
         cls : 
             class whose method is decorated when the decorated function is any 
-            among :literal`['staticmethod', 'classmethod', 'property','instancemethod']; 
+            among :literal:`['staticmethod', 'classmethod', 'property','instancemethod']`; 
             default is :data:`None`.
         
         Returns
