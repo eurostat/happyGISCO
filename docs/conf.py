@@ -200,7 +200,7 @@ extensions          = ['sphinx.ext.autodoc',
                        'sphinx.ext.viewcode',
                        'sphinx.ext.githubpages',
                        'sphinx.ext.napoleon',
-                       'sphinxjp.themes.basicstrap'
+                       # 'sphinxjp.themes.basicstrap' # not supported by readthedocs
                        ]
 
 # Napoleon settings
