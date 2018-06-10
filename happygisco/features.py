@@ -162,11 +162,10 @@ class Location(_Feature):
     
     Arguments
     ---------
-    place : tuple, tuple[str]
+    place : str, tuple[str]
         a string defining a location name, _e.g._ of the form :literal:`locality, country`,
         for instance :literal:`Paris, France`; possibly left empty, so as to consider the 
-        keyword argument :data:`place` in :data:`kwargs` (see below), otherwise 
-        all keyword arguments are ignored.
+        keyword argument :data:`place` in :data:`kwargs`, otherwise ignored.
     coord : float, tuple[float]
         a pair of (tuple of) floats, defining the :literal:`(lat,Lon)` coordinates,
         for instance 48.8566 and 2.3515 to locate Paris; possibly left empty, so as 
@@ -332,8 +331,8 @@ class Location(_Feature):
         happyError
             when unable to recognize address/location.
 
-        Examples
-        --------
+        Example
+        -------
         
         ::
 
@@ -618,16 +617,16 @@ class Location(_Feature):
      
     #/************************************************************************/
     def isnuts(self, nuts, **kwargs):
-        """Test the identifier of the NUTS the current geolocation/instance
+        """Check the identifier of the NUTS the current geolocation/instance
         belongs to.
         
         ::
             
             >>> ans = loc.isnuts(nuts)
             
-        Argument
-        --------
-        nuts : str, :class:`features.NUTS`
+        Arguments
+        ---------
+        nuts : str,:class:`features.NUTS`
             a string representing a NUTS identifier (*e.g.* something like 'ES30' 
             for the Comunidad de Madrid), or an instance of :class:`features.NUTS`.
             
@@ -649,15 +648,15 @@ class Location(_Feature):
      
     #/************************************************************************/
     def iscontained(self, layer):
-        """Test whether the current geolocation/instance is contained in the geometry
+        """Check whether the current geolocation/instance is contained in the geometry
         defined by a given layer.
         
         ::
             
             >>> ans = loc.iscontained(layer)
             
-        Argument
-        --------
+        Arguments
+        ---------
         layer : :class:`osgeo.ogr.Layer`
             input vector layer to test.
 
@@ -835,7 +834,6 @@ class NUTS(_Feature):
             raise happyError('unable to retrieve coordinates from NUTS name') 
         
     #/************************************************************************/
-    @_Decorator.parse_place_or_coordinate
     def identify(self, *args, **kwargs):
         """
         """
@@ -846,15 +844,53 @@ class NUTS(_Feature):
             pass
         else:
             if coord in ([],None):
-                coord = self.service.place2coord(place)
-        
+                coord = self.service.place2coord(place)        
         
     #/************************************************************************/
-    @_Decorator.parse_place_or_coordinate
     def contains(self, *args, **kwargs):
+        """Check whether the current NUTS geometry contains a given geolocation,
+        expressed as either a place name or a set of geographical coordinates.
+        
+        ::
+            
+            >>> ans = nuts.contains(*args, **kwargs)
+            
+        Arguments
+        ---------
+        place : str
+            toponame; possibly left empty, so as to consider the keyword argument 
+            :data:`place` in :data:`kwargs` (see below), otherwise ignored.
+        coord : list
+            :literal:`(lat,Lon)` geographical coordinates; possibly left empty, 
+            so as to consider the keyword argument :literal:`place` in :data:`kwargs`.
+
+        Returns
+        -------
+        ans : bool 
+            :data:`True` if the current NUTS geometry location contains the geolocation
+            parsed as an argument, :data:`False` otherwise.
+
+        See also
+        --------
+        :meth:`Location.iscontained`, :meth:`tools.GDALTool.lay2fid`. 
         """
-        """
-        pass
+        if len(args)==1 and isinstance(args[0],Location):
+            try:
+                loc = args[0]
+            except:
+                pass
+        else:
+            func = lambda *a, **kw: kw
+            try:
+                kwargs = _Decorator.parse_place_or_coordinate(func)(*args, **kwargs) 
+                [kwargs.pop(key) for key in kwargs.keys() if key not in [_Decorator.KW_PLACE, _Decorator.KW_COORD]]
+                assert not kwargs is {}
+            except:
+                raise happyError('unable to retrieve coordinates')
+            else:
+                loc = Location(kwargs)
+        return self.id in loc.nuts()
+        
 
 #%%
 #==============================================================================
@@ -936,83 +972,3 @@ class Area(_Feature):
         """
         pass
        
- #   http://europa.eu/webtools/rest/gisco/reverse?lon=10&lat=52
- #   http://europa.eu/webtools/rest/gisco/reverse?lat=2.3514992&lon=48.8566101
- #   http://europa.eu/webtools/rest/gisco/reverse?lat=2&lon=48
-
-#def place2nuts(*args, **kwargs):
-#    place = Place(*args, **kwargs)
-#    nuts = NUTS(place.tonuts())
-#    return nuts
-#    
-#    
-#PLACES      = ['Bremen, Germany', 'Florence, Italy', 'Brussels, Belgium']
-#GOOGLE_KEY  = '' # you need to provide your own API key here
-#NUTSDIR     = 'ref-nuts-2013-01m'
-#NUTSFILE    = 'NUTS_RG_01M_2013_4326_LEVL_2.shp' # region
-#
-#gmaps = googlemaps.Client(key=GOOGLE_KEY) 
-#Locations = ogr.Geometry(ogr.wkbMultiPoint)
-#
-#try:
-#    assert Locations is not None
-#except:
-#    print('\nCould not retrieve any geolocation')
-#    raise IOError
-#else:
-#    print(Locations.ExportToWkt())
-#
-#try:
-#    driver = ogr.GetDriverByName('ESRI Shapefile')
-#    Nuts = driver.Open(os.path.join(NUTSDIR,NUTSFILE), 0) # 0 means read-only
-#    assert Nuts is not None
-#except:
-#    print('\nCould not open %s' % NUTSFILE)
-#    print('visit: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-01m.shp.zip')
-#    raise IOError
-#else:
-#    print('\nOpened %s' % NUTSFILE)
-#    print('NUTS help: http://ec.europa.eu/eurostat/documents/4311134/4366152/guidelines-geographic-data.pdf')
-#    
-#try:
-#    layer = Nuts.GetLayer()
-#    assert layer is not None
-#except:
-#    print('\nCould not get vector layer')
-#    raise IOError
-#else:
-#    featureCount = layer.GetFeatureCount()
-#    print('\nNumber of features in %s: %d' % (os.path.basename(NUTSFILE),featureCount))
-#    
-#Regions = []
-#
-## iterate through points
-#for i in range(0, Locations.GetGeometryCount()): # because it is a MULTIPOINT
-#    pt = Locations.GetGeometryRef(i)
-#    #print(pt.ExportToWkt())
-#    # iterate through polygons in layer
-#    for j in range(0, featureCount):
-#        feature = layer.GetFeature(j)
-#        if feature is None:
-#            continue    
-#        #elif feature.geometry() and feature.geometry().Contains(pt):
-#        #    Regions.append(feature)
-#        ft = feature.GetGeometryRef()
-#        if ft is not None and ft.Contains(pt):
-#            Regions.append(feature)
-#    if len(Regions)<i+1:    
-#        Regions.append(None)
-#
-#try:
-#    assert not all([region is None for region in Regions])
-#except:
-#    print('\nNUTS regions (level 2) not found')
-#else:
-#    print('\nNUTS regions (level 2) identified')
-#    for i, place in enumerate(PLACES):
-#        items = Regions[i].items()
-#        print('%s => NUTS ID: %s - NUTS name: %s' % (place, items['NUTS_ID'],items['NUTS_NAME']))
-## will display:
-## Bremen, Germany => NUTS ID: DE50 - NUTS name: Bremen
-## Florence, Italy => NUTS ID: ITI1 - NUTS name: Toscana
-## Brussels, Belgium => NUTS ID: BE10 - NUTS name: Région de Bruxelles-Capitale / Brussels Hoofdstedelijk Gewest	
