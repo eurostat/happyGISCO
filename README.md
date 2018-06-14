@@ -7,7 +7,7 @@ Simple geoservice interface (API) on top of _Eurostat_ GISCO web-services.
 
 **About**
 
-This project implements a `Python` interface of the API to [GISCO](http://ec.europa.eu/eurostat/web/gisco) web-services. 
+This project implements a `Python` interface to [GISCO](http://ec.europa.eu/eurostat/web/gisco) web-services, *e.g.* geocoding, routing and NUTS identification. 
 This material accompanies the articles referenced below and illustrates the idea of data as a service. 
 
 <table align="center">
@@ -22,14 +22,55 @@ This material accompanies the articles referenced below and illustrates the idea
 
 **Description**
 
-Two variants of the geolocation service are made available through the implementation of different classes:
-* `GISCOService`: this is an interface to _Eurostat_ GISCO web-services; it also enables the users to retrieve the NUTS region at level 2 associated to a toponame (place);
-* `APIService`: this uses external geo services (including  _Google maps_) to geolocate geographical features; it can be used together with [`gdal`](http://gdal.org) tools together and NUTS appropriate data sources. Note that it is a brute-force solution, since the program will explore sequentially all NUTS features so as to identify the correct region. This could be improved using a multithread process for instance, _e.g._ using [`multiprocessing`](https://docs.python.org/3.4/library/multiprocessing.html?highlight=process) module. Besides, the program does not check the validity of the result returned by _Google maps_ services, since this result can be ambiguous and/or inaccurate. On the simple examples tested (easily identified cities), the program provides with the outputs as expected.
+***Services***
 
-In addition, the GISCO service enables the users to retrieve the NUTS region at level 2 associated to a toponame (place), _e.g._ for the simple example considered herein:
+Some variants of the geolocation service are made available through the implementation of different classes:
 
-**Quick start**
-    
+* `OSMService`:  this is an interface to [_OpenStreetMap_](https://www.openstreetmap.org)  native geocoding web-services;
+* `GISCOService`: this is an interface to _Eurostat_ GISCO web-services; the geocoding tools are also based on _OpenStreetMap_ (the class `GISCOService` derives from `OSMService`); it also enables the users to retrieve the NUTS region at any level from any geolocation given by its toponame (place) or its geographical coordinates;
+* `APIService`: this calls other "external" geo- web-services (including  [_Google maps_](https://cloud.google.com/maps-platform/)), *e.g.* to geolocate geographical features.
+
+***Features***
+
+It is possible to create simple geographical features whose methods derive from the services defined above, *e.g.*:
+
+* a `Location`: a feature representing a geolocation, *i.e.* defined as a topo/placename or as a list of geographical coordinates,
+* an `Area`: a simple vector geometry () in the sense of _GISCO_ services expressed as a dictionary, *i.e.*, structured like the JSON file returned by the  `GISCO` geocoding or reverse geocoding services,
+* a `NUTS`: the vector geometry representing a NUTS area expressed as a dictionary, *i.e.*, structured like the JSON file returned by the  `GISCO` `findnuts` services.
+
+
+***Tools***
+
+Geospatial tools are derived from [`gdal`](http://gdal.org) methods and provided in the `GDALTool` class. 
+
+These tools can be used, for instance, with NUTS appropriate vector data sources to operate the NUTS identification. Note that it is a brute-force solution, since the program will explore sequentially all NUTS features so as to identify the correct region. This could be improved using a multithread process for instance, _e.g._ using [`multiprocessing`](https://docs.python.org/3.4/library/multiprocessing.html?highlight=process) module. Besides, the program does not check the validity of the result returned by _Google maps_ services, since this result can be ambiguous and/or inaccurate.
+
+**Quick install and start**
+
+TBC
+
+Once installed, the module can be imported simply:
+
+```python
+import happygisco
+```
+
+
+Then one can simply create a dedicated services:
+
+```python
+from happygisco import services
+service = services.GISCOService()
+```
+
+
+**Examples**
+
+Simple examples are available in the form of _Jupyter_ notebooks under the [_notebooks/_](https://github.com/eurostat/happyGISCO/tree/master/notebooks) folder, *e.g.*:
+
+* a [basic use]( https://cdn.rawgit.com/eurostat/happyGISCO/c7153073/notebooks/Example%20of%20Eurostat%20'Data%20as%20a%20Service'%20using%20happyGISCO%20module.html) of the geocoding services,
+* an example of features definition and geocoding,
+* an extended workflow for location identification and retrieval. 
 
 **<a name="Resources"></a>Resources**
 
