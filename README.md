@@ -2,13 +2,12 @@
 happygisco
 =========
 
-Simple geoservice interface (API) on top of _Eurostat_ GISCO web-services.
+Simple geoservice interface (API) on top of _Eurostat_ _GISCO_ web-services.
 ---
 
 **About**
 
-This project implements a `Python` interface to [GISCO](http://ec.europa.eu/eurostat/web/gisco) web-services, *e.g.* geocoding, routing and NUTS identification. 
-This material accompanies the articles referenced below and illustrates the idea of **_Eurostat_ data as a service**. 
+The project `happyGISCO` (pronounce as if you were French) provides with the implementation of a `Python` interface to [_GISCO_](http://ec.europa.eu/eurostat/web/gisco) web-services. The module `happygisco` will enable you to run some of the basic geographical operations supported by _GISCO_, *e.g.* geocoding, routing and NUTS identification. 
 
 <table align="center">
     <tr> <td align="left"><i>documentation</i></td> <td align="left">available at: http://happygisco.readthedocs.io</td> </tr> 
@@ -19,6 +18,8 @@ This material accompanies the articles referenced below and illustrates the idea
 </td> </tr> 
     <tr> <td align="left"><i>license</i></td> <td align="left"><a href="https://joinup.ec.europa.eu/sites/default/files/eupl1.1.-licence-en_0.pdfEUPL">EUPL</a> </td> </tr> 
 </table>
+
+This material accompanies the articles referenced below and illustrates the idea of **_Eurostat_ data as a service**. The rationale is further described in the paper _"Empowering and interacting with statistical produsers: A practical example with Eurostat data as a service"_.
 
 **Description**
 
@@ -52,28 +53,28 @@ TBC
 Once installed, the module can be imported simply:
 
 ```python
-import happygisco
+>>> import happygisco
 ```
 
 Then one can simply create a dedicated services:
 
 ```python
-from happygisco import services
-service = services.GISCOService()
+>>> from happygisco import services
+>>> service = services.GISCOService()
 ```
 
 and quite straightforward operate the methods supported by the related geo-services:
 
 ```python
-place =  ''Lampedusa, Italia"
-coord = service.place2coord(place, unique=True)
-print(coord)
+>>> place =  ''Lampedusa, Italia"
+>>> coord = service.place2coord(place, unique=True)
+>>> print(coord)
 	[35.511134150000004, 12.59629135962961]
-_place = service.coord2place(coord)
-print(_place)
+>>> _place = service.coord2place(coord)
+>>> print(_place)
 	'Strada di Ponente, Lampedusa e Linosa, (Sicily), Italy'
-nuts = service.coord2nuts(coord, level=2)
-print(nuts)
+>>> nuts = service.coord2nuts(coord, level=2)
+>>> print(nuts)
 	{'attributes': {'CNTR_CODE': 'IT',
   	'LEVL_CODE': '2',
   	'NAME_LATN': 'Sicilia',
