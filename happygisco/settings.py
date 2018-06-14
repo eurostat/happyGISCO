@@ -174,7 +174,7 @@ generate polylines (see the `package website <https://pypi.python.org/pypi/polyl
 Not really necessary to generate the routes.
 """
 
-VERBOSE             = True
+VERBOSE             = False # True
 
 REDUCE_ANSWER       = False # ! used for testing purpose: do not change !
 EXCLUSIVE_ARGUMENTS = False # ! used for settings: do not change !
@@ -246,7 +246,7 @@ class happyVerbose(object):
     >>> happyVerbose('The more we talk, we less we do...', verb=True);
         [verbose] - The more we talk, we less we do...
     """
-    def __init__(self, msg, expr=None, verb=True):    
+    def __init__(self, msg, expr=None, verb=VERBOSE):    
         self.msg = msg
         if verb is True:
             print('\n[verbose] - %s' % self.msg)

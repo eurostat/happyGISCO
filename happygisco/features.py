@@ -402,7 +402,7 @@ class Location(_Feature):
 
         Notes
         -----
-        * The output of the :meth:`reverse` method will not coincide with the :data:`plade`
+        * The output of the :meth:`reverse` method will not coincide with the :data:`place`
           attribute of the considered instance in the case the latter was parsed for its 
           initialisation.
         * The :meth:`reverse` may return no results in the case the :literal:`(lat,Lon)` 

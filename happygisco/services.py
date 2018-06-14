@@ -136,7 +136,7 @@ class OSMService(_Service):
     Keyword arguments
     -----------------
     domain : str
-        domain of |OSM| web-services hosted by |OSM|; default is :data:`settings.OSM_URL`,
+        domain of |OSM| web-services (hosted by... |OSM|); default is :data:`settings.OSM_URL`,
         *e.g.* an URL domain like :literal:`'nominatim.openstreetmap.org'`. 
  
     Attributes
@@ -544,7 +544,7 @@ class OSMService(_Service):
         Returns
         -------
         area : dict, list[dict]
-            a (list of) geometry(ies), *i.e.* a dictionary describing the geographical
+            a (list of) geometry(ies), *i.e.* dictionary(ies) describing the geographical
             information related to the input geographic coordinate(s) in :data:`coord`, 
             one for each coordinate listed.
         

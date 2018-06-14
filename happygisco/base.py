@@ -64,7 +64,7 @@ __all__         = ['_Service', '_Feature', '_Tool', '_Decorator']
 # generic import
 import os, sys#analysis:ignore
 import itertools, functools
-import collections
+import collections#analysis:ignore
 
 # local imports
 from happygisco import settings
@@ -614,7 +614,7 @@ class _Decorator(object):
           can be ignored. 
         * The decorated method/function :data:`new_func` accepts the same :data:`*args` 
           positional arguments as :data:`func` and, in addition to the arguments 
-          in `data:`**kwargs` already supported by the input method/function :data:`func`, 
+          in :data:`**kwargs` already supported by the input method/function :data:`func`, 
           an extra keyword argument:
               + :data:`order` : a flag used to define the order of the output parsed 
                 geographic coordinates; it can be either :literal:`'lL'` for 
