@@ -2,12 +2,13 @@
 happygisco
 =========
 
-Simple microservice (API) on top of _Eurostat_ GISCO web-services.
+Simple geoservice interface (API) on top of _Eurostat_ GISCO web-services.
 ---
 
 **About**
 
-This project implements a `Python` interface of the API to GISCO services. Further, it encapsulates the interface within a container so as to be distributed... 
+This project implements a `Python` interface of the API to [GISCO](http://ec.europa.eu/eurostat/web/gisco) web-services. 
+This material accompanies the articles referenced below and illustrates the idea of data as a service. 
 
 <table align="center">
     <tr> <td align="left"><i>documentation</i></td> <td align="left">available at: http://happygisco.readthedocs.io</td> </tr> 
@@ -19,8 +20,6 @@ This project implements a `Python` interface of the API to GISCO services. Furth
     <tr> <td align="left"><i>license</i></td> <td align="left"><a href="https://joinup.ec.europa.eu/sites/default/files/eupl1.1.-licence-en_0.pdfEUPL">EUPL</a> </td> </tr> 
 </table>
 
-This material is intended as a PoC for the article... 
-
 **Description**
 
 Two variants of the geolocation service are made available through the implementation of different classes:
@@ -29,16 +28,19 @@ Two variants of the geolocation service are made available through the implement
 
 In addition, the GISCO service enables the users to retrieve the NUTS region at level 2 associated to a toponame (place), _e.g._ for the simple example considered herein:
 
-    ~~~
-    Bremen, Germany => NUTS ID: DE50 - NUTS name: Bremen
-    Florence, Italy => NUTS ID: ITI1 - NUTS name: Toscana
-    Brussels, Belgium => NUTS ID: BE10 - NUTS name: R≈Ωgion de Bruxelles-Capitale / Brussels Hoofdstedelijk Gewest	
-    ~~~
+**Quick start**
+    
 
-**<a name="References"></a>References**
+**<a name="Resources"></a>Resources**
 
 * _Eurostat_ NUTS [bulk data source](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-01m.shp.zip) and [how to](http://ec.europa.eu/eurostat/documents/4311134/4366152/guidelines-geographic-data.pdf) interpret it.
 * _Eurostat_  GISCO webservices: [_find-nuts_](http://europa.eu/webtools/rest/gisco/nuts/find-nuts.py) and [_geocode_](http://europa.eu/webtools/rest/gisco/api?).
 * `gdal` [package](https://pypi.python.org/pypi/GDAL) and [cookbook](https://pcjericks.github.io/py-gdalogr-cookbook/index.html).
 * Geo packages: [`googlemaps`](https://pypi.python.org/pypi/googlemaps/) and [`geopy`](https://github.com/geopy/geopy).
+
+**<a name="References"></a>References**
+
+* Grazzini J., Museux J.-M. and Hahn M. (2018): [**Empowering and interacting with statistical produsers: A practical example with Eurostat data as a service**](), submitted to _Conference of European Statistics Stakeholders_.
+* Grazzini J., Lamarche P., Gaffuri J. and Museux J.-M. (2018): [**“Show me your code, and then I will trust your figures”: Towards software-agnostic open algorithms in statistical production**](https://www.researchgate.net/publication/325320551_Show_me_your_code_and_then_I_will_trust_your_figures_Towards_software-agnostic_open_algorithms_in_statistical_production), in Proc.  _Quality Conference_.
+
 
