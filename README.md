@@ -55,7 +55,6 @@ Once installed, the module can be imported simply:
 import happygisco
 ```
 
-
 Then one can simply create a dedicated services:
 
 ```python
@@ -63,6 +62,30 @@ from happygisco import services
 service = services.GISCOService()
 ```
 
+and quite straightforward operate the methods supported by the related geo-services:
+
+```python
+place =  ''Lampedusa, Italia"
+coord = service.place2coord(place, unique=True)
+print(coord)
+	[35.511134150000004, 12.59629135962961]
+_place = service.coord2place(coord)
+print(_place)
+	'Strada di Ponente, Lampedusa e Linosa, (Sicily), Italy'
+nuts = service.coord2nuts(coord, level=2)
+print(nuts)
+	{'attributes': {'CNTR_CODE': 'IT',
+  	'LEVL_CODE': '2',
+  	'NAME_LATN': 'Sicilia',
+  	'NUTS_ID': 'ITG1',
+  	'NUTS_NAME': 'Sicilia',
+  	'OBJECTID': '320',
+  	'SHRT_ENGL': 'Italy'},
+ 	'displayFieldName': 'NUTS_ID',
+ 	'layerId': 2,
+ 	'layerName': 'NUTS_2013',
+ 	'value': 'ITG1'}
+```
 
 **Examples**
 
