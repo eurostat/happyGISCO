@@ -80,7 +80,7 @@ One can for instance declare a specific location, and run any of the supported m
 
 ```python
 >>> from happygisco import features
->>> location =  features.Location(place="Lisbon, Portugal")
+>>> location = features.Location(place="Lisbon, Portugal")
 >>> location.coord
 [38.7077507, -9.1365919]
 >>> location.routing('Paris, France')
