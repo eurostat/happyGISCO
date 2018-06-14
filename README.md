@@ -5,21 +5,7 @@ happygisco
 Simple geoservice interface (API) on top of _Eurostat_ _GISCO_ web-services.
 ---
 
-**About**
-
 The project `happyGISCO` (pronounce as if you were French) provides with the implementation of a `Python` interface to [_GISCO_](http://ec.europa.eu/eurostat/web/gisco) web-services. The module `happygisco` will enable you to run some of the basic geographical operations supported by _GISCO_, *e.g.* geocoding, routing and NUTS identification. 
-
-<table align="center">
-    <tr> <td align="left"><i>documentation</i></td> <td align="left">available at: http://happygisco.readthedocs.io</td> </tr> 
-    <tr> <td align="left"><i>status</i></td> <td align="left">since 2018 &ndash; <b>in construction</b></td></tr> 
-    <tr> <td align="left"><i>contributors</i></td> 
-    <td align="left" valign="middle">
-<a href="https://github.com/gjacopo"><img src="https://github.com/gjacopo.png" width="40"></a>
-</td> </tr> 
-    <tr> <td align="left"><i>license</i></td> <td align="left"><a href="https://joinup.ec.europa.eu/sites/default/files/eupl1.1.-licence-en_0.pdfEUPL">EUPL</a> </td> </tr> 
-</table>
-
-This material accompanies the articles referenced below and illustrates the idea of **_Eurostat_ data as a service**. The rationale is further described in the paper _"Empowering and interacting with statistical produsers: A practical example with Eurostat data as a service"_.
 
 **Quick install and start**
 
@@ -57,8 +43,8 @@ and run the supported methods:
 >>> coord = service.place2coord(place, unique=True)
 >>> print(coord)
 [35.511134150000004, 12.59629135962961]
->>> _place = service.coord2place(coord)
->>> print(_place)
+>>> alt_place = service.coord2place(coord)
+>>> print(alt_place)
 'Strada di Ponente, Lampedusa e Linosa, (Sicily), Italy'
 >>> nuts = service.coord2nuts(coord, level=2)
 >>> print(nuts)
@@ -86,17 +72,17 @@ One can for instance declare a specific location, and run any of the supported m
 >>> location.coord
 [38.7077507, -9.1365919]
 >>> location.routing('Paris, France')
-({'distance': 3058767.9,  'duration': 377538.2,
+({'distance': 3058767.9, 'duration': 377538.2,
   'geometry': 'uv}qEaeqhEo_XlbOutDa`~@uuVocZqa|@ttDqaZneRwcjEetxBwfYags@}_nAugsAmaYcmcApxCiiuDcvi@webB`dFeix@q}VqdvAfaj@greAtqEuwi@c~QmvqCuhZ}o`AzzVkv{@egOo|Vjf@avyCrlZocsFwo_@ef`DgdKkqQ{gPbkA{pUgwq@h{[s}`B`hJsgnBaq^oMetAkab@q~j@at~@hbd@yheAhmh@gad@vyz@dit@uxz@kjt@knh@lbd@ibd@xheAp~j@`t~@dtAjab@`q^nMahJrgnBe|[x}`BvqU`wq@nkPsgAt_KlnQdo_@r}_DwkZlksFkg@joyCdhOjzVk{V|f|@vhZph`Ab~Q`vqCsnEjpi@wdj@tyeAx|Vd`vA_cF~mx@~ui@tebB_yCtguD~aYjocAn`nAhgsAtfYrgs@pdjEbrxBhaZieR~a|@{tD`vV|cZ~}F`_}@nuUaaN',
-  'legs': [{'distance': 1530444.4,    'duration': 188741.1,
-    'steps': [],    'summary': ''},
+  'legs': [{'distance': 1530444.4, 'duration': 188741.1,
+    'steps': [], 'summary': ''},
    {'distance': 1528323.5, 'duration': 188797.1, 'steps': [], 'summary': ''}]},
  [{'hint': 'DcOGgEuuRIQAAAAAAAAAAE0AAAAAAAAASgQAAOofZwBScQAAzuv3AcpmDwImok4CMZZ0_wAAAQEZfn5e',
-   'location': [33.024974, 34.563786],   'name': ''},
+   'location': [33.024974, 34.563786], 'name': ''},
   {'hint': 'mRIbgp0SG4IAAAAAAAAAAFoAAAAAAAAAogIAADJYZwFScQAAeuyjAgCdNAIifukCi-EjAAAAAQEZfn5e',
-   'location': [44.297338, 37.002496],   'name': ''},
+   'location': [44.297338, 37.002496], 'name': ''},
   {'hint': 'DcOGgEuuRIQAAAAAAAAAAE0AAAAAAAAASgQAAOofZwBScQAAzuv3AcpmDwLU3csCvrFGAAAAAQEZfn5e',
-   'location': [33.024974, 34.563786],   'name': ''}])
+   'location': [33.024974, 34.563786], 'name': ''}])
 >>> location.findnuts(level=3)
 {'CNTR_CODE': 'PT', 'LEVL_CODE': '3',
  'NAME_LATN': 'çrea Metropolitana de Lisboa', 'NUTS_ID': 'PT170',
@@ -137,5 +123,19 @@ Simple examples are available in the form of _Jupyter_ notebooks under the [_not
 
 * Grazzini J., Museux J.-M. and Hahn M. (2018): [**Empowering and interacting with statistical produsers: A practical example with Eurostat data as a service**](), submitted to _Conference of European Statistics Stakeholders_.
 * Grazzini J., Lamarche P., Gaffuri J. and Museux J.-M. (2018): [**"Show me your code, and then I will trust your figures": Towards software-agnostic open algorithms in statistical production**](https://www.researchgate.net/publication/325320551_Show_me_your_code_and_then_I_will_trust_your_figures_Towards_software-agnostic_open_algorithms_in_statistical_production), in Proc.  _Quality Conference_.
+
+**About**
+
+<table align="center">
+    <tr> <td align="left"><i>documentation</i></td> <td align="left">available at: http://happygisco.readthedocs.io</td> </tr> 
+    <tr> <td align="left"><i>status</i></td> <td align="left">since 2018 &ndash; <b>in construction</b></td></tr> 
+    <tr> <td align="left"><i>contributors</i></td> 
+    <td align="left" valign="middle">
+<a href="https://github.com/gjacopo"><img src="https://github.com/gjacopo.png" width="40"></a>
+</td> </tr> 
+    <tr> <td align="left"><i>license</i></td> <td align="left"><a href="https://joinup.ec.europa.eu/sites/default/files/eupl1.1.-licence-en_0.pdfEUPL">EUPL</a> </td> </tr> 
+</table>
+
+This material accompanies the articles referenced below and illustrates the idea of **_Eurostat_ data as a service**. The rationale is further described in the paper _"Empowering and interacting with statistical produsers: A practical example with Eurostat data as a service"_.
 
 
