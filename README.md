@@ -8,7 +8,7 @@ Simple geoservice interface (API) on top of _Eurostat_ GISCO web-services.
 **About**
 
 This project implements a `Python` interface to [GISCO](http://ec.europa.eu/eurostat/web/gisco) web-services, *e.g.* geocoding, routing and NUTS identification. 
-This material accompanies the articles referenced below and illustrates the idea of data as a service. 
+This material accompanies the articles referenced below and illustrates the idea of **_Eurostat_ data as a service**. 
 
 <table align="center">
     <tr> <td align="left"><i>documentation</i></td> <td align="left">available at: http://happygisco.readthedocs.io</td> </tr> 
@@ -22,26 +22,26 @@ This material accompanies the articles referenced below and illustrates the idea
 
 **Description**
 
-***Services***
+****Services****
 
 Some variants of the geolocation service are made available through the implementation of different classes:
 
-* `OSMService`:  this is an interface to [_OpenStreetMap_](https://www.openstreetmap.org)  native geocoding web-services;
-* `GISCOService`: this is an interface to _Eurostat_ GISCO web-services; the geocoding tools are also based on _OpenStreetMap_ (the class `GISCOService` derives from `OSMService`); it also enables the users to retrieve the NUTS region at any level from any geolocation given by its toponame (place) or its geographical coordinates;
-* `APIService`: this calls other "external" geo- web-services (including  [_Google maps_](https://cloud.google.com/maps-platform/)), *e.g.* to geolocate geographical features.
+* `OSMService`:  this is an interface to [_OpenStreetMap_](https://www.openstreetmap.org)  native **geocoding and routing web-services**;
+* `GISCOService`: this is an interface to _Eurostat_ GISCO web-services; the geocoding and routing tools are also based on _OpenStreetMap_ (the class `GISCOService` derives from `OSMService`); it also enables the users to **retrieve the NUTS region at any level from any geolocation given by its toponame (place) or its geographical coordinates**;
+* `APIService`: this calls other "external" geo- web-services (including  [_Google maps_](https://cloud.google.com/maps-platform/)), *e.g.* to **geolocate geographical features**.
 
-***Features***
+****Features****
 
-It is possible to create simple geographical features whose methods derive from the services defined above, *e.g.*:
+It is possible to create **simple geographical features whose methods implement and apply the different services defined above**, *e.g.*:
 
 * a `Location`: a feature representing a geolocation, *i.e.* defined as a topo/placename or as a list of geographical coordinates,
 * an `Area`: a simple vector geometry () in the sense of _GISCO_ services expressed as a dictionary, *i.e.*, structured like the JSON file returned by the  `GISCO` geocoding or reverse geocoding services,
 * a `NUTS`: the vector geometry representing a NUTS area expressed as a dictionary, *i.e.*, structured like the JSON file returned by the  `GISCO` `findnuts` services.
 
 
-***Tools***
+****Tools****
 
-Geospatial tools are derived from [`gdal`](http://gdal.org) methods and provided in the `GDALTool` class. 
+**Geospatial tools are derived from [`gdal`](http://gdal.org) methods** and provided in the `GDALTool` class. 
 
 These tools can be used, for instance, with NUTS appropriate vector data sources to operate the NUTS identification. Note that it is a brute-force solution, since the program will explore sequentially all NUTS features so as to identify the correct region. This could be improved using a multithread process for instance, _e.g._ using [`multiprocessing`](https://docs.python.org/3.4/library/multiprocessing.html?highlight=process) module. Besides, the program does not check the validity of the result returned by _Google maps_ services, since this result can be ambiguous and/or inaccurate.
 
@@ -82,6 +82,6 @@ Simple examples are available in the form of _Jupyter_ notebooks under the [_not
 **<a name="References"></a>References**
 
 * Grazzini J., Museux J.-M. and Hahn M. (2018): [**Empowering and interacting with statistical produsers: A practical example with Eurostat data as a service**](), submitted to _Conference of European Statistics Stakeholders_.
-* Grazzini J., Lamarche P., Gaffuri J. and Museux J.-M. (2018): [**“Show me your code, and then I will trust your figures”: Towards software-agnostic open algorithms in statistical production**](https://www.researchgate.net/publication/325320551_Show_me_your_code_and_then_I_will_trust_your_figures_Towards_software-agnostic_open_algorithms_in_statistical_production), in Proc.  _Quality Conference_.
+* Grazzini J., Lamarche P., Gaffuri J. and Museux J.-M. (2018): [**"Show me your code, and then I will trust your figures": Towards software-agnostic open algorithms in statistical production**](https://www.researchgate.net/publication/325320551_Show_me_your_code_and_then_I_will_trust_your_figures_Towards_software-agnostic_open_algorithms_in_statistical_production), in Proc.  _Quality Conference_.
 
 
