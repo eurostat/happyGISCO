@@ -21,31 +21,6 @@ The project `happyGISCO` (pronounce as if you were French) provides with the imp
 
 This material accompanies the articles referenced below and illustrates the idea of **_Eurostat_ data as a service**. The rationale is further described in the paper _"Empowering and interacting with statistical produsers: A practical example with Eurostat data as a service"_.
 
-**Description**
-
-****Services****
-
-Some variants of the geolocation service are made available through the implementation of different classes:
-
-* `OSMService`:  this is an interface to [_OpenStreetMap_](https://www.openstreetmap.org)  native **geocoding and routing web-services**;
-* `GISCOService`: this is an interface to _Eurostat_ GISCO web-services; the geocoding and routing tools are also based on _OpenStreetMap_ (the class `GISCOService` derives from `OSMService`); it also enables the users to **retrieve the NUTS region at any level from any geolocation given by its toponame (place) or its geographical coordinates**;
-* `APIService`: this calls other "external" geo- web-services (including  [_Google maps_](https://cloud.google.com/maps-platform/)), *e.g.* to **geolocate geographical features**.
-
-****Features****
-
-It is possible to create **simple geographical features whose methods implement and apply the different services defined above**, *e.g.*:
-
-* a `Location`: a feature representing a geolocation, *i.e.* defined as a topo/placename or as a list of geographical coordinates,
-* an `Area`: a simple vector geometry () in the sense of _GISCO_ services expressed as a dictionary, *i.e.*, structured like the JSON file returned by the  `GISCO` geocoding or reverse geocoding services,
-* a `NUTS`: the vector geometry representing a NUTS area expressed as a dictionary, *i.e.*, structured like the JSON file returned by the  `GISCO` `findnuts` services.
-
-
-****Tools****
-
-**Geospatial tools are derived from [`gdal`](http://gdal.org) methods** and provided in the `GDALTool` class. 
-
-These tools can be used, for instance, with NUTS appropriate vector data sources to operate the NUTS identification. Note that it is a brute-force solution, since the program will explore sequentially all NUTS features so as to identify the correct region. This could be improved using a multithread process for instance, _e.g._ using [`multiprocessing`](https://docs.python.org/3.4/library/multiprocessing.html?highlight=process) module. Besides, the program does not check the validity of the result returned by _Google maps_ services, since this result can be ambiguous and/or inaccurate.
-
 **Quick install and start**
 
 TBC
@@ -56,39 +31,106 @@ Once installed, the module can be imported simply:
 >>> import happygisco
 ```
 
-Then one can simply create a dedicated services:
+**Usage**
+
+###### Services
+
+Some variants of the geolocation service are made available through the implementation of different classes:
+
+* `OSMService`:  this is an interface to [_OpenStreetMap_](https://www.openstreetmap.org)  native **geocoding and routing web-services**;
+* `GISCOService`: this is an interface to _Eurostat_ GISCO web-services; the geocoding and routing tools are also based on _OpenStreetMap_ (the class `GISCOService` derives from `OSMService`); it also enables the users to **retrieve the NUTS region at any level from any geolocation given by its toponame (place) or its geographical coordinates**;
+* `APIService`: this calls other "external" geo- web-services (including  [_Google maps_](https://cloud.google.com/maps-platform/)), *e.g.* to **geolocate geographical features**.
+
+Note that **no caching** is performed after running the services, unless the services are run from one of the features below.
+
+It is pretty straigthforward to create such a service:
 
 ```python
 >>> from happygisco import services
 >>> service = services.GISCOService()
 ```
 
-and quite straightforward operate the methods supported by the related geo-services:
+and run the supported methods:
 
 ```python
 >>> place =  ''Lampedusa, Italia"
 >>> coord = service.place2coord(place, unique=True)
 >>> print(coord)
-	[35.511134150000004, 12.59629135962961]
+[35.511134150000004, 12.59629135962961]
 >>> _place = service.coord2place(coord)
 >>> print(_place)
-	'Strada di Ponente, Lampedusa e Linosa, (Sicily), Italy'
+'Strada di Ponente, Lampedusa e Linosa, (Sicily), Italy'
 >>> nuts = service.coord2nuts(coord, level=2)
 >>> print(nuts)
-	{'attributes': {'CNTR_CODE': 'IT',
-  	'LEVL_CODE': '2',
-  	'NAME_LATN': 'Sicilia',
-  	'NUTS_ID': 'ITG1',
-  	'NUTS_NAME': 'Sicilia',
-  	'OBJECTID': '320',
-  	'SHRT_ENGL': 'Italy'},
- 	'displayFieldName': 'NUTS_ID',
- 	'layerId': 2,
- 	'layerName': 'NUTS_2013',
- 	'value': 'ITG1'}
+{'attributes': {'CNTR_CODE': 'IT',
+  'LEVL_CODE': '2',
+  'NAME_LATN': 'Sicilia',
+  'NUTS_ID': 'ITG1',
+  'NUTS_NAME': 'Sicilia',
+  'OBJECTID': '320',
+  'SHRT_ENGL': 'Italy'},
+ 'displayFieldName': 'NUTS_ID',
+ 'layerId': 2,
+ 'layerName': 'NUTS_2013',
+ 'value': 'ITG1'}```
+
+###### Features
+
+It is possible to create **simple geographical features whose methods implement and apply the different services defined above**, *e.g.*:
+
+* a `Location`: a feature representing a geolocation, *i.e.* defined as a topo/placename or as a list of geographical coordinates,
+* an `Area`: a simple vector geometry () in the sense of _GISCO_ services expressed as a dictionary, *i.e.*, structured like the JSON file returned by the  `GISCO` geocoding or reverse geocoding services,
+* a `NUTS`: the vector geometry representing a NUTS area expressed as a dictionary, *i.e.*, structured like the JSON file returned by the  `GISCO` `findnuts` services.
+
+One can for instance declare a specific location, and run any of the supported methods (for a quick check of the distance calculations, have a look at [this](https://www.timeanddate.com/worldclock/distanceresult.html?p1=195&p2=133) for instance):
+
+```python
+>>> from happygisco import features
+>>> location =  features.Location(place="Lisbon, Portugal")
+>>> location.coord
+[38.7077507, -9.1365919]
+>>> location.routing('Paris, France')
+({'distance': 3058767.9,
+  'duration': 377538.2,
+  'geometry': 'uv}qEaeqhEo_XlbOutDa`~@uuVocZqa|@ttDqaZneRwcjEetxBwfYags@}_nAugsAmaYcmcApxCiiuDcvi@webB`dFeix@q}VqdvAfaj@greAtqEuwi@c~QmvqCuhZ}o`AzzVkv{@egOo|Vjf@avyCrlZocsFwo_@ef`DgdKkqQ{gPbkA{pUgwq@h{[s}`B`hJsgnBaq^oMetAkab@q~j@at~@hbd@yheAhmh@gad@vyz@dit@uxz@kjt@knh@lbd@ibd@xheAp~j@`t~@dtAjab@`q^nMahJrgnBe|[x}`BvqU`wq@nkPsgAt_KlnQdo_@r}_DwkZlksFkg@joyCdhOjzVk{V|f|@vhZph`Ab~Q`vqCsnEjpi@wdj@tyeAx|Vd`vA_cF~mx@~ui@tebB_yCtguD~aYjocAn`nAhgsAtfYrgs@pdjEbrxBhaZieR~a|@{tD`vV|cZ~}F`_}@nuUaaN',
+  'legs': [{'distance': 1530444.4,
+    'duration': 188741.1,
+    'steps': [],
+    'summary': ''},
+   {'distance': 1528323.5, 'duration': 188797.1, 'steps': [], 'summary': ''}]},
+ [{'hint': 'DcOGgEuuRIQAAAAAAAAAAE0AAAAAAAAASgQAAOofZwBScQAAzuv3AcpmDwImok4CMZZ0_wAAAQEZfn5e',
+   'location': [33.024974, 34.563786],
+   'name': ''},
+  {'hint': 'mRIbgp0SG4IAAAAAAAAAAFoAAAAAAAAAogIAADJYZwFScQAAeuyjAgCdNAIifukCi-EjAAAAAQEZfn5e',
+   'location': [44.297338, 37.002496],
+   'name': ''},
+  {'hint': 'DcOGgEuuRIQAAAAAAAAAAE0AAAAAAAAASgQAAOofZwBScQAAzuv3AcpmDwLU3csCvrFGAAAAAQEZfn5e',
+   'location': [33.024974, 34.563786],
+   'name': ''}])
+>>> location.findnuts(level=3)
+{'CNTR_CODE': 'PT',
+ 'LEVL_CODE': '3',
+ 'NAME_LATN': 'çrea Metropolitana de Lisboa',
+ 'NUTS_ID': 'PT170',
+ 'NUTS_NAME': 'çrea Metropolitana de Lisboa',
+ 'OBJECTID': '1233',
+ 'SHRT_ENGL': 'Portugal'}
+>>> location.distance('Paris, France')
+1455.7107037157618
+```
+What about creating a NUTS object:
+
+```python 
+>>> nuts = features.NUTS()
 ```
 
-**Examples**
+###### Tools
+
+**Geospatial tools are derived from [`gdal`](http://gdal.org) methods** and provided in the `GDALTool` class. 
+
+These tools can be used, for instance, with NUTS appropriate vector data sources to operate the NUTS identification. Note that it is a brute-force solution, since the program will explore sequentially all NUTS features so as to identify the correct region. This could be improved using a multithread process for instance, _e.g._ using [`multiprocessing`](https://docs.python.org/3.4/library/multiprocessing.html?highlight=process) module. Besides, the program does not check the validity of the result returned by _Google maps_ services, since this result can be ambiguous and/or inaccurate.
+
+**Notebook examples**
 
 Simple examples are available in the form of _Jupyter_ notebooks under the [_notebooks/_](https://github.com/eurostat/happyGISCO/tree/master/notebooks) folder, *e.g.*:
 
