@@ -72,7 +72,8 @@ and run the supported methods:
  'displayFieldName': 'NUTS_ID',
  'layerId': 2,
  'layerName': 'NUTS_2013',
- 'value': 'ITG1'}```
+ 'value': 'ITG1'}
+ ```
 
 ###### Features
 
@@ -118,6 +119,7 @@ One can for instance declare a specific location, and run any of the supported m
 >>> location.distance('Paris, France')
 1455.7107037157618
 ```
+
 What about creating a NUTS object:
 
 ```python 
