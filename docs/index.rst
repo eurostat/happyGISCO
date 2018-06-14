@@ -51,11 +51,11 @@ Submodules
    :maxdepth: 2
    :name: toc
 
-   settings
-   base
-   tools
-   services
    features
+   services
+   tools
+   base
+   settings
 
 ==================
 Indices and tables
