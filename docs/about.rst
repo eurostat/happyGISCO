@@ -13,7 +13,7 @@ The background motivation for `happyGISCO` implementation and development is dev
 	Grazzini J., Museux J.-M. and Hahn M. (2018): `**Empowering and interacting with statistical produsers: A practical example with Eurostat data as a service** <>`_, submitted to _Conference of European Statistics Stakeholders_.
 
 Ultimately, `happyGISCO` should be distributed as a lightweight containerized computing notebook where a `Python` kernel is running and where the module `happygisco` is distributed. 
-.. figure:: ../_images/GMH18.empowering_produsers.CESS.figure.png    :width: 600px    :align: center    :alt: happyGISCO interface to GISCO service
+.. figure:: _images/GMH18_empowering_produsers_CESS_figure.png    :width: 600px    :align: center    :alt: happyGISCO interface to GISCO service
 
 Metadata
 --------
