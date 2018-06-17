@@ -36,12 +36,12 @@ Once installed, the module can be imported simply:
 Some variants of the geolocation service are made available through the implementation of different classes:
 
 * `OSMService`:  this is an interface to [_OpenStreetMap_](https://www.openstreetmap.org)  native **geocoding and routing web-services**;
-* `GISCOService`: this is an interface to _Eurostat_ GISCO web-services; the geocoding and routing tools are also based on _OpenStreetMap_ (the class `GISCOService` derives from `OSMService`); it also enables the users to **retrieve the NUTS region at any level from any geolocation given by its toponame (place) or its geographical coordinates**;
+* `GISCOService`: this is an interface to _Eurostat_ _GISCO_ web-services; the geocoding and routing tools are also based on _OpenStreetMap_ (the class `GISCOService` derives from `OSMService`); it also enables the users to **retrieve the NUTS region at any level from any geolocation given by its toponame (place) or its geographical coordinates**;
 * `APIService`: this calls other "external" geo- web-services (including  [_Google maps_](https://cloud.google.com/maps-platform/)), *e.g.* to **geolocate geographical features**.
 
 Note that **no caching** is performed after running the services, unless the services are run from one of the features below.
 
-It is pretty straigthforward to create such a service:
+It is pretty straigthforward to create an instance of a service, for instance `GISCOService` to call _GISCO_ web-services:
 
 ```python
 >>> from happygisco import services
@@ -67,6 +67,26 @@ and run the supported methods:
  'layerId': 2, 'layerName': 'NUTS_2013',
  'value': 'ITG1'}
  ```
+ 
+You are also offered to use other geo web-services using `APIService`, *e.g.* any of those listed below:
+ 
+ ```python 
+>>> print(APIService.AVAILABLE)
+['GMaps', 'OpenMapQuest', 'YahooPlaceFinder', 'LiveAddress', 'Bing', 'GeoNames', 'GoogleV3', 'Nominatim', 'MapQuest'] 
+```
+Depending on the service selected, you may be requested to provide with your own credentials:
+ 
+```python 
+>>> service = services.APIService(coder='Nominatim') # no key required
+>>> service.place2coord('Paris, France')
+[48.8566101, 2.3514992]
+>>> service = services.APIService(coder='GMaps', key='???') # use your own key here
+>>> service.place2coord('Paris, France')
+[48.856614, 2.3522219]
+>>> service = services.APIService(coder='GeoNames', username='???') # use your own username here
+>>> service.place2coord('Paris, France')
+[48.85341, 2.3488]
+```
 
 ###### Features
 
@@ -120,7 +140,7 @@ These tools can be used, for instance, with NUTS appropriate vector data sources
 
 Simple examples are available in the form of _Jupyter_ notebooks under the [_notebooks/_](https://github.com/eurostat/happyGISCO/tree/master/notebooks) folder, *e.g.*:
 
-* a [basic use]( https://cdn.rawgit.com/eurostat/happyGISCO/c7153073/notebooks/Example%20of%20Eurostat%20'Data%20as%20a%20Service'%20using%20happyGISCO%20module.html) of the geocoding services,
+* a [basic use](http://nbviewer.jupyter.org/github/eurostat/happyGISCO/blob/master/notebooks/Example%20of%20Eurostat%20%27Data%20as%20a%20Service%27%20using%20happyGISCO%20module.ipynb) of the geocoding services,
 * an example of features definition and geocoding,
 * an extended workflow for location identification and retrieval. 
 
