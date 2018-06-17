@@ -58,7 +58,7 @@ from happygisco.settings import happyWarning, happyVerbose, happyError, happyTyp
 #from happygisco import base
 from happygisco.base import _Feature, _Decorator#analysis:ignore
 from happygisco import tools     
-from happygisco.tools import GDAL_TOOL
+from happygisco.tools import GDAL_TOOL, FOLIUM_TOOL
 from happygisco import services     
 from happygisco.services import GISCO_SERVICE, API_SERVICE
 
@@ -76,9 +76,15 @@ def __init(inst, *args, **kwargs):
     try:
         assert GDAL_TOOL
     except:
-        happyWarning('GDAL services not available')
+        happyWarning('GDAL transform utilities not available')
     else:
-        inst._tool = tools.GDALTool()
+        inst._transform = tools.GDALTransform()
+    try:
+        assert FOLIUM_TOOL
+    except:
+        happyWarning('folium mapping services not available')
+    else:
+        inst._mapping = None # tools.FoliumMap()
     try:
         assert API_SERVICE or GISCO_SERVICE
     except:
@@ -147,6 +153,13 @@ _Feature.coordinates.__doc__ =                                              \
     a :class:`_Feature` instance.
     """ 
 
+def __service(inst, service):
+    if not (service is None or isinstance(service,(services.GISCOService,services.APIService,services.OSMService))):
+        raise happyError('wrong type for SERVICE property')
+    inst._service = service
+_Feature.service = _Feature.service.setter(__service)
+
+
 #%%
 #==============================================================================
 # CLASS Location
@@ -180,11 +193,11 @@ class Location(_Feature):
 
     #/************************************************************************/
     @_Decorator.parse_place_or_coordinate
-    def __init__(self,**kwargs):
+    def __init__(self, *args, **kwargs):
         # kwargs.pop('order',None)
         self._place = kwargs.pop(_Decorator.KW_PLACE, None)
         self._coord = kwargs.pop(_Decorator.KW_COORD, None)
-        super(Location,self).__init__(**kwargs)
+        super(Location,self).__init__(*args, **kwargs)
         self._geom = None
 
     #/************************************************************************/
@@ -200,7 +213,7 @@ class Location(_Feature):
                 raise happyError('place not found') 
             else:
                 self._place = place
-        return self._place if len(self._place)>1 else self._place[0]    
+        return self._place if self._place is None or len(self._place)>1 else self._place[0]    
     @place.setter
     def place(self,place):
         try:
@@ -246,7 +259,7 @@ class Location(_Feature):
             else:
                 if not isinstance(nuts,list): nuts = [nuts,]
                 # note that "NUTS_ID" is present as a field of both outputs returned
-                # by GDALTool.coord2feat and GISCOService.coord2nuts
+                # by GDALTransform.coord2feat and GISCOService.coord2nuts
                 self._nuts = [n[_Decorator.parse_nuts.KW_NUTS_ID] for n in nuts]
         return self._nuts    
 
@@ -268,8 +281,11 @@ class Location(_Feature):
 
     #/************************************************************************/
     def __repr__(self):
-        return [','.join(p.replace(',',' ').split()) for p in self.place]
-
+        try:
+            return [','.join(p.replace(',',' ').split()) for p in self.place]
+        except:
+            return ''
+        
     #/************************************************************************/
     def geometry(self, **kwargs):
         """Build a vector geometry upon the geographical coordinates represented
@@ -282,7 +298,7 @@ class Location(_Feature):
         Keyword Arguments
         -----------------        
         kwargs : dict  
-            see keyword arguments of the :meth:`tools.GDALTool.coord2geom` method.
+            see keyword arguments of the :meth:`tools.GDALTransform.coord2geom` method.
 
         Returns
         -------
@@ -299,10 +315,10 @@ class Location(_Feature):
         
         See also
         --------
-        :meth:`tools.GDALTool.coord2geom`.
+        :meth:`tools.GDALTransform.coord2geom`.
         """
         try:
-            return self.tool.coord2geom(self.coord, **kwargs)
+            return self.transform.coord2geom(self.coord, **kwargs)
         except:     
             raise happyError('unable to build a vector geometry upon given coordinates') 
 
@@ -424,20 +440,19 @@ class Location(_Feature):
             raise happyError('unable to retrieve place (address/location) from coordinates') 
     
     #/************************************************************************/
-    @_Decorator.parse_place_or_coordinate
-    def distance(self, *args, **kwargs):            
+    def distance(self, loc, **kwargs):            
         """Compute pairwise distances between this instance location and other locations 
         parsed indifferently as places names or geographic coordinates.
         
         ::
         
-            >>> D = loc.distance(*args, **kwargs)
+            >>> D = loc.distance(loc, **kwargs)
     
         Arguments
         ---------
-        args : list, str
-            a pair of locations represented either as tuple of (lat,Lon) coordinates
-            or string of place name.
+        loc : list,str,:class:`~features.Location`
+            a location represented either as another instance of :class:`Location`,
+            a tuple of (lat,Lon) coordinates or a place name expressed as a string.
             
         Keyword Arguments
         -----------------        
@@ -486,14 +501,22 @@ class Location(_Feature):
         --------
         :meth:`services._googleMapsAPI.distance`, :meth:`tools.GeoCoordinate.distance`.
         """
-        func = lambda *a, **kw: [kw.pop(_Decorator.KW_PLACE), kw.pop(_Decorator.KW_COORD)]
-        try:
-            place, coord = _Decorator.parse_place_or_coordinate(func)(*args, **kwargs)          
-        except:
-            pass
+        if isinstance(loc, Location):
+            coord = loc.coord
         else:
-            if coord in ([],None):
-                coord = self.service.place2coord(place)
+            func = lambda *a, **kw: [kw.pop(_Decorator.KW_PLACE, None), kw.pop(_Decorator.KW_COORD, None)]
+            place, coord = _Decorator.parse_place_or_coordinate(func)(loc, **kwargs)
+            try:
+                place, coord = _Decorator.parse_place_or_coordinate(func)(loc, **kwargs)
+            except:
+                pass
+            else:
+                if coord in ([],None):
+                    coord = self.service.place2coord(place, unique=True)
+        try:
+            assert not coord in ([],None)
+        except:
+            raise happyError('unable to retrieve location coordinates') 
         try:
             return self.service.distance(self.coord, coord, **kwargs)
         except:
@@ -594,14 +617,14 @@ class Location(_Feature):
         --------
         :meth:`~Location.isnuts`,
         :meth:`services.GISCOService.coord2nuts`, :meth:`services.GISCOService.place2nuts`,
-        :meth:`tools.GDALTool.coord2feat`.
+        :meth:`tools.GDALTransform.coord2feat`.
         """
         #if not (GISCO_SERVICE and GDAL_TOOL):
         #    happyWarning('findnuts method available only with GISCO service or GDAL tool')
         #    return
         try:        
-            assert GDAL_TOOL and isinstance(self.tool, tools.GDALTool)
-            feat = self.tool.coord2feat(self.coord, **kwargs)
+            assert GDAL_TOOL and isinstance(self.transform, tools.GDALTransform)
+            feat = self.transform.coord2feat(self.coord, **kwargs)
         except:
             try:        
                 assert GISCO_SERVICE and isinstance(self.service, services.GISCOService)
@@ -611,12 +634,15 @@ class Location(_Feature):
         if feat in (None,[]):
             return feat
         try:
-            return feat.items()  # return feat.ExportToJson()
+            if isinstance(feat,list):
+                return [f['attributes'] for f in feat]
+            else:
+                return feat['attributes'] 
         except:
-            return feat['attributes'] # return feat
+            return feat.items()  # return feat.ExportToJson()
      
     #/************************************************************************/
-    def isnuts(self, nuts, **kwargs):
+    def isnuts(self, nuts):
         """Check the identifier of the NUTS the current geolocation/instance
         belongs to.
         
@@ -669,14 +695,14 @@ class Location(_Feature):
         See also
         --------
         :meth:`~Location.geometry`, :meth:`~Location.isnuts`, 
-        :meth:`NUTS.contains`, :meth:`tools.GDALTool.lay2fid`. 
+        :meth:`NUTS.contains`, :meth:`tools.GDALTransform.lay2fid`. 
         """
-        #if not (GDAL_TOOL and isinstance(self.tool, tools.GDALTool)):
+        #if not (GDAL_TOOL and isinstance(self.transform, tools.GDALTransform)):
         #    happyWarning('method available only with GDAL tool')
         #    return
         try:
-            # geom = self.tool.coord2geom(self.coord, **kwargs)
-            fid = self.tool.lay2fid(layer, self.geom)
+            # geom = self.transform.coord2geom(self.coord, **kwargs)
+            fid = self.transform.lay2fid(layer, self.geom)
         except:
             raise happyError('impossible to establish relationship')
         if fid in ((),[],None)  \
@@ -872,7 +898,7 @@ class NUTS(_Feature):
 
         See also
         --------
-        :meth:`Location.iscontained`, :meth:`tools.GDALTool.lay2fid`. 
+        :meth:`Location.iscontained`, :meth:`tools.GDALTransform.lay2fid`. 
         """
         if len(args)==1 and isinstance(args[0],Location):
             try:
