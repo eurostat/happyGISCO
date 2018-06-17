@@ -40,13 +40,15 @@ so as to represent equivalently and (almost...) uniquely locations.
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
 # *since*:        Sat Apr 14 20:23:34 2018
 
-__all__         = ['GeoLocation', 'GeoDistance', 'GeoAngle', 'GeoCoordinate', 'GDALTool']
+__all__         = ['GeoLocation', 'GeoDistance', 'GeoAngle', 'GeoCoordinate', 
+                   'GDALTransform', 'FoliumMap']
 
 # generic import
 import os, sys#analysis:ignore
 import math
 
-import functools#analysis:ignore
+import functools
+import inspect
 
 try:
     import numpy as np
@@ -76,6 +78,15 @@ except ImportError:
     happyWarning('GDAL package (https://pypi.python.org/pypi/GDAL) not loaded - Inline resources not available')
 else:
     print('GDAL help: https://pcjericks.github.io/py-gdalogr-cookbook/index.html')
+
+try:
+    FOLIUM_TOOL = True
+    import folium
+except ImportError:
+    FOLIUM_TOOL = False
+    happyWarning('folium package (https://github.com/python-visualization/folium) not loaded - Map resources not available')
+else:
+    print('folium help: http://python-visualization.github.io/folium')
 
 #%%
 #==============================================================================
@@ -1898,16 +1909,16 @@ class GeoCoordinate(GeoLocation):
 
 #%%
 #==============================================================================
-# CLASS GDALTool
+# CLASS GDALTransform
 #==============================================================================
     
-class GDALTool(_Tool):
+class GDALTransform(_Tool):
     """Class implementing simple |GDAL|-based operations on raster and/or vector
     data.
         
     ::
 
-        >>> tool = tools.GDALTool(**kwargs)
+        >>> tool = tools.GDALTransform(**kwargs)
 
     Arguments
     ---------
@@ -1919,11 +1930,11 @@ class GDALTool(_Tool):
     #/************************************************************************/
     def __init__(self, **kwargs):
         # initial settings
-        self.__driver, self.__driver_name = None, ''
         try:
             assert GDAL_TOOL is not False
         except:
             raise IOError('GDAL service not available')
+        self.__driver, self.__driver_name = None, ''
         self.__driver_name   = kwargs.pop('driver_name', settings.DRIVER_NAME)
         try:
             self.__driver = ogr.GetDriverByName(self.__driver_name)
@@ -1936,7 +1947,7 @@ class GDALTool(_Tool):
     #/************************************************************************/    
     @property
     def driver(self):
-        """Driver property (:data:`getter`) associated to the :class:`GDALTool` 
+        """Driver property (:data:`getter`) associated to the :class:`GDALTransform` 
         instance, *e.g.* see :meth:`ogr.GetDriver` method. 
         """
         return self.__driver
@@ -1944,7 +1955,7 @@ class GDALTool(_Tool):
     @property
     def driver_name(self):
         """Driver name property (:data:`getter`/:data:`setter`) associated to the 
-        :class:`GDALTool` instance, *e.g.* see :meth:`ogr.GetDriverByName` method. 
+        :class:`GDALTransform` instance, *e.g.* see :meth:`ogr.GetDriverByName` method. 
         """
         return self.__driver_name
     @driver_name.setter#analysis:ignore
@@ -2015,7 +2026,7 @@ class GDALTool(_Tool):
             
         We can load the associated (vector) data into a structured layer using
         the *shapefile* driver available in |GDAL| (note that's actually the 
-        default implemented in :class:`GDALTool` class):
+        default implemented in :class:`GDALTransform` class):
             
         ::
             
@@ -2097,7 +2108,7 @@ class GDALTool(_Tool):
             
         See also
         --------
-        :meth:`~tools.GDALTool.coord2feat`, :meth:`osgeo.ogr.Geometry`,
+        :meth:`~tools.GDALTransform.coord2feat`, :meth:`osgeo.ogr.Geometry`,
         :meth:`features.Location.geometry`,
         :meth:`osgeo.ogr.Geometry.AddPoint`, :meth:`osgeo.ogr.Geometry.AddGeometry`, 
         :meth:`osgeo.ogr.wkbMultiPoint`, :meth:`osgeo.ogr.wkbPoint`.
@@ -2147,11 +2158,11 @@ class GDALTool(_Tool):
             
         Example
         -------
-        Assuming we already created an instance of the :class:`GDALTool` class:
+        Assuming we already created an instance of the :class:`GDALTransform` class:
             
         ::
             
-            >>> tool = tools.GDALTool(driver_name='ESRI Shapefile')
+            >>> tool = tools.GDALTransform(driver_name='ESRI Shapefile')
 
         assuming also that the coordinates of different locations have been informed
         (see :meth:`coord2vec`) and a source file has been defined (see :meth:`file2lay`):
@@ -2190,7 +2201,7 @@ class GDALTool(_Tool):
             
         See also
         --------
-        :meth:`~tools.GDALTool.coord2feat`, :meth:`~tools.GDALTool.coord2geom`,
+        :meth:`~tools.GDALTransform.coord2feat`, :meth:`~tools.GDALTransform.coord2geom`,
         :meth:`features.Location.iscontained`, 
         :meth:`osgeo.ogr.Layer.GetFeatureCount`, :meth:`osgeo.ogr.Layer.GetGeometryCount`, 
         :meth:`osgeo.ogr.Layer.GetFeature`, :meth:`osgeo.ogr.Geometry.GetGeometryRef`.
@@ -2250,11 +2261,11 @@ class GDALTool(_Tool):
 
         Example
         -------
-        Assuming we already created an instance of the :class:`GDALTool` class:
+        Assuming we already created an instance of the :class:`GDALTransform` class:
             
         ::
             
-            >>> tool = tools.GDALTool(driver_name='ESRI Shapefile')
+            >>> tool = tools.GDALTransform(driver_name='ESRI Shapefile')
 
         assuming also that the coordinates of different locations have been informed
         (see :meth:`coord2vec`) and a source file has been defined (see :meth:`file2lay`):
@@ -2270,8 +2281,8 @@ class GDALTool(_Tool):
         
         See also
         --------
-        :meth:`~tools.GDALTool.coord2geom`, :meth:`~tools.GDALTool.lay2fid`, 
-        :meth:`~tools.GDALTool.file2lay`, :meth:`osgeo.ogr.Layer.GetFeature`.
+        :meth:`~tools.GDALTransform.coord2geom`, :meth:`~tools.GDALTransform.lay2fid`, 
+        :meth:`~tools.GDALTransform.file2lay`, :meth:`osgeo.ogr.Layer.GetFeature`.
         """
         fname = kwargs.pop(_Decorator.KW_FILE,'') 
         data = kwargs.pop(_Decorator.KW_DATA, None) 
@@ -2307,6 +2318,166 @@ class GDALTool(_Tool):
         except:
             raise IOError('could not identify feature')
         return [layer.GetFeature(i) for i in fid]
+
+#%%
+#==============================================================================
+# CLASS FolmapTool
+#==============================================================================
+
+class FoliumMap(_Tool):
+    """Class overidding the :class:`folium.Map` of :mod:`folium` so as to \support
+    |GISCO| background tiling services.
+    
+    Note
+    ----        
+    The original library Folium enables to visualize data on an interactive 
+    Leaflet map. 
+    It enables both the binding of data to a map for choropleth visualizations 
+    as well as passing Vincent/Vega visualizations as markers on the map.
+
+    Folium has a number of built-in tilesets from *OpenStreetMap*, *MapQuest Open*, 
+    *MapQuest Open Aerial*, *Mapbox*, and *Stamen*, and supports custom tilesets  
+    with *Mapbox* or *Cloudmade* API keys. Folium supports both GeoJSON and TopoJSON 
+    overlays, as well as the binding of data to those overlays to create choropleth 
+    maps with color-brewer color schemes.
+
+    See http://folium.readthedocs.org/en/.
+    """       
+
+    #/************************************************************************/
+    def __init__(self, **kwargs):
+        try:
+            assert FOLIUM_TOOL is not False
+        except:
+            raise happyError('folium-based tiling not available')
+        self.__map = None
+        pars = inspect.signature(folium.Map).parameters
+        #[setattr(self, '__' + p, kwargs.get(p, pars[p].default)) \
+        #     for p in list(pars)]
+        # note that most of the attributes, like 'location', 'width', 'height', 
+        # 'zoom_start', 'min_lon', 'max_lon', ... are properties of the instance 
+        # '__map' already. 
+        # instead, neither 'tiles' or 'attr' are available, hence they cannot be 
+        # accessed through the __getattr__ method below and need to be explicitly 
+        # set
+        self.__tiles = kwargs.get('tiles', pars['tiles'].default)
+        self.__attr = kwargs.get('attr', pars['attr'].default)
+        try:
+            self.__map = folium.Map(**kwargs)
+        except:
+            raise happyError('wrong tiling initialisation')
+            
+    #def __repr__(self):
+    #    return self.__map
+
+    #/************************************************************************/
+    @property
+    def Map(self):
+        """
+        """
+        return self.__map
+    @Map.setter
+    def Map(self, __map):
+        if not isinstance(__map,folium.Map):
+            raise happyError('wrong type for MAP attribute')
+        self.__map = __map
+
+    @property
+    def tiles(self):
+        """
+        """
+        return self.__tiles
+
+    @property
+    def attr(self):
+        """
+        """
+        return self.__attr
+            
+    #/********************************************************************/
+    def __getattr__(self, attr):
+        # 'im_class': deal with 'im_class' as an instance is NOT callable...
+        # '__objclass__': dont' ask for an explanation here: we just want to 
+        # pass Sphinx Napoleon... 
+        if attr in ('im_class','__objclass__'): 
+            return getattr(self.__map, '__class__')
+        elif attr in ['Marker',] + [cls.__name__ for cls in folium.Marker.__subclasses__()]:
+            try:        return functools.partial(self.markers, method=attr) 
+            except:     pass 
+        elif attr.startswith('__'):  # to avoid some bug of the pylint editor
+            try:        return object.__getattribute__(self, attr) 
+            except:     pass 
+        #elif attr in inspect.signature(folium.Map).parameters:
+        #    try:        return object.__getattribute__(self, '_' + attr) 
+        #    except:     pass             
+        try:        return getattr(self.__map, attr)
+        except:     raise happyError('attribute %s not implemented' % attr)
+
+    #/************************************************************************/
+    def markers(self, *args, **kwargs):
+        """Generic method used to add markers.
+        
+        ::
+            
+            >>> folmap.markers(*args, **kwargs)
+            
+        Arguments
+        ---------
+        
+        Keyword arguments
+        -----------------
+        
+        Returns
+        -------
+        """
+        method = kwargs.pop('method','Marker')
+        try:
+            marker = getattr(folium,method)
+        except:
+            raise happyError('method %s not implemented' % method)
+        if args not in ((),None):
+            location =  args[0]
+        else:
+            location = kwargs.pop('locations',None) or kwargs.pop('location')
+        try:
+            assert location not in (None,[],())
+        except:
+            raise happyError('no location parsed for marker')
+        if isinstance(location,(list,tuple)) \
+            and isinstance(location[0],(tuple,list,folium.Marker,) \
+                           + tuple(folium.Marker.__subclasses__())):
+            nloc = len(location)
+        else:
+            location = [location,]
+            nloc = 1
+        _kwargs = nloc * [{},]
+        icon, popup, tooltip = kwargs.pop('icon',None), kwargs.pop('popup',None), kwargs.pop('tooltip',None)
+        if icon is not None:
+            if not isinstance(icon,(list,tuple)): icon = [icon,]
+            [kw.update({'icon': i}) for (kw,i) in zip(_kwargs,icon)]
+        if popup is not None:
+            if nloc==1 and not isinstance(popup,(list,tuple)): popup = [popup,]
+            [kw.update({'popup': p}) for (kw,p) in zip(_kwargs,popup)]
+        if tooltip is not None:
+            if nloc==1 and not isinstance(tooltip,(list,tuple)): tooltip = [tooltip,]
+            [kw.update({'popup': p}) for (kw,p) in zip(_kwargs,tooltip)]
+        # now update all dictionaries in _kwargs by replicating with whatever is 
+        # left in kwargs
+        [kw.update(kwargs) for kw in _kwargs]
+        # depending on the method, we may have to use the keyword 'location' or
+        # 'locations'
+        try:
+            # let us try first with 'location', e.g. for method Marker
+            [kw.update({'location': l}) or marker(**kw).add_to(self.Map) \
+                 for (kw,l) in zip(_kwargs,location)]
+        except:
+            # let us first get rid of the first item with made it crashed...
+            _kwargs[0].pop('location',None) 
+            # let us retry with 'locations', e.g. for methods Circle, PolyLine, ...
+            [kw.update({'locations': l}) or marker(**kw).add_to(self.Map) \
+                 for (kw,l) in zip(_kwargs,location)]
+        # return self.Map
+    
 
 #%%
 #==============================================================================
