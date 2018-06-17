@@ -118,7 +118,32 @@ KEY_GISCO           = None
 """Dummy |GISCO| key. It is set to :data:`None` since connection to |GISCO| web-services does
 not require authentication.
 """
-
+GISCO_MAPDOMAIN     = 'webtools/maps/tiles'
+"""|GISCO| background map domain.
+"""
+GISCO_MAPURL        = '%s/%s' % (EC_DOMAIN, GISCO_MAPDOMAIN) 
+"""|GISCO| background map URL.
+"""
+GISCO_BCKGRD        = {'bmarble':       {'bckgrd':'bmarble', 'attr': 'GISCO blue marble mosaic of Earth'},
+                       'boundaries':    {'bckgrd':'countryboundaries_world', 'attr': 'GISCO boundaries of all countries'},
+                       'roadswater':    {'bckgrd':'roadswater_europe', 'attr': 'GISCO cities, roads and rivers'},
+                       'hypso':         {'bckgrd':'hypso', 'attr': 'GISCO climate shaded relief of Earth'},
+                       'coast':         {'bckgrd':'coast', 'attr': 'GISCO continental outlines'},
+                       'copernicus':    {'bckgrd':'copernicus003', 'attr': 'GISCO Copernicus'},
+                       'osm-ec':        {'bckgrd':'osm-ec', 'attr': 'GISCO custom OpenStreetMap'},
+                       'gray-bg':       {'bckgrd':'gray-bg', 'attr': 'GISCO boundaries on gray background'},
+                       'countrynames':  {'bckgrd':'countrynames_europe', 'attr': 'GISCO European country names'},
+                       'gray':          {'bckgrd':'gray', 'attr': 'GISCO gray shaded relief of Earth'},
+                       'natural':       {'bckgrd':'natural', 'attr': 'GISCO landcover shaded relief of Earth'},
+                       'citynames':     {'bckgrd':'citynames_europe', 'attr': 'GISCO names of settlement'}
+                       }
+"""Dictionary for the various |GISCO| background tiles service.
+"""
+GISCO_BCKGRD_ORD    = '{z}/{y}/{x}'
+"""
+"""
+GISCO_BCKGRD_PROJ   = '3857'
+ 
 OSM_URL             = 'nominatim.openstreetmap.org/'
 """
 |OSM| web-service complete URL.
