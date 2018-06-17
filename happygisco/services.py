@@ -311,10 +311,11 @@ class OSMService(_Service):
                 try:
                     assert key in data and data[key] != [] 
                 except AssertionError:
-                    raise happyError('geolocation for place %s with key %s not recognised' % (p,key))  
+                    happyVerbose('geolocation for place %s not recognised' % p, verb=True)  
+                    data = None
                 else:
                     data = data.get(key)
-            yield data if happyType.ismapping(data) or len(data)>1 else data[0]
+            yield data if data is None or happyType.ismapping(data) or len(data)>1 else data[0]
 
     #/************************************************************************/
     #@_Decorator.parse_place
@@ -449,8 +450,9 @@ class OSMService(_Service):
         """
         unique = kwargs.pop('unique',False)
         area = []
-        [area.append(data if len(data)>1 and unique is False else data[0]) for data in self._place2area(place, **kwargs)]
-        return area if len(area)>1 else area[0]
+        [area.append(data if data is None or (len(data)>1 and unique is False) else data[0]) \
+             for data in self._place2area(place, **kwargs)]
+        return area if area==[] or len(area)>1 else area[0]
        
     #/************************************************************************/
     def _coord2area(self, coord, **kwargs): 
@@ -487,10 +489,13 @@ class OSMService(_Service):
                 try:
                     assert key in data and data[key] != [] 
                 except AssertionError:
-                    raise happyError('place for geolocation %s and key %s not recognised' % (coord[i], key))  
+                    # for instance: {'features': [], 'type': 'FeatureCollection'} empty
+                    # raise happyError('place for geolocation %s not recognised' % coord[i])  
+                    happyVerbose('place for geolocation %s not recognised' % coord[i], verb=True) 
+                    data = None
                 else:
                     data = data.get(key)
-            yield data if not happyType.ismapping(data) or len(data)>1 else data[0]
+            yield data if data is None or not happyType.ismapping(data) or len(data)>1 else data[0]
        
     #/************************************************************************/
     #@_Decorator.parse_coordinate
@@ -602,8 +607,9 @@ class OSMService(_Service):
         :meth:`base._Service.get_status`, :meth:`base._Service.get_response`.
         """
         area = []
-        [area.append(data if len(data)>1 else data[0]) for data in self._coord2area(coord, **kwargs)]
-        return area[0] if len(area)==1 else area
+        [area.append(data if data is None or len(data)>1 else data[0]) \
+             for data in self._coord2area(coord, **kwargs)]
+        return area[0] if area==[] or len(area)==1 else area
 
     @_Decorator.parse_place
     def place2coord(self, place, **kwargs):
@@ -676,10 +682,10 @@ class OSMService(_Service):
         order = kwargs.pop('order','lL')
         coord = []
         func = lambda **kw: [kw.get('coord')]
-        [coord.append(data if len(data)>1 else data[0])                     \
+        [coord.append(data if data is None or len(data)>1 else data[0])     \
              for g in self._place2area(place, **kwargs)                     \
              for data in _Decorator.parse_area(func)(g, filter='coord', order=order, unique=unique)]
-        return coord if len(coord)>1 else coord[0]
+        return coord if coord==[] or len(coord)>1 else coord[0]
 
     @_Decorator.parse_coordinate
     def coord2place(self, coord, **kwargs):
@@ -736,12 +742,12 @@ class OSMService(_Service):
         :meth:`GISCOService.coord2place`.
         """
         unique = kwargs.pop('unique',False)
-        place =[]
-        func = lambda **kw: [kw.get('place')]
-        [place.append(data if len(data)>1 else data[0])                     \
+        place = []
+        func = lambda *a, **kw: [kw.get('place')]
+        [place.append(data if data is None or len(data)>1 else data[0])     \
              for a in self._coord2area(coord, **kwargs)                     \
              for data in _Decorator.parse_area(func)(a, filter='place', unique=unique)]
-        return place if len(place)>1 else place[0]
+        return place if place==[] or len(place)>1 else place[0]
 
 #%%
 #==============================================================================
@@ -785,6 +791,7 @@ class GISCOService(OSMService):
         super(GISCOService, self).__init__(**kwargs)
         self.domain = kwargs.pop('domain', settings.GISCO_URL) 
         self.arcgis = kwargs.pop('arcgis', settings.GISCO_ARCGIS)
+        self.mapurl = kwargs.pop('mapurl', settings.GISCO_MAPURL) 
 
     #/************************************************************************/
     @property
@@ -801,6 +808,20 @@ class GISCOService(OSMService):
 
     #/************************************************************************/
     @property
+    def mapurl(self):
+        """URL property (:data:`getter`/:data:`setter`) defining the domain
+        URL of GISCO mapping services, *e.g.* :data:`settings.GISCO_MAPURL`, of 
+        an instance of this class. 
+        """ 
+        return self.__mapurl
+    @mapurl.setter#analysis:ignore
+    def mapurl(self, mapurl):
+        if mapurl is not None and not happyType.isstring(mapurl):
+            raise TypeError('wrong type for MAPURL parameter')
+        self.__mapurl = mapurl or ''
+
+    #/************************************************************************/
+    @property
     def arcgis(self):
         """Domain property (:data:`getter`/:data:`setter`) defining the ArcGIS
         URL, *e.g.* :data:`settings.GISCO_ARCGIS`, of the an instance of this class. 
@@ -811,6 +832,35 @@ class GISCOService(OSMService):
         if arcgis is not None and not happyType.isstring(arcgis):
             raise TypeError('wrong type for ARCGIS parameter')
         self.__arcgis = arcgis or ''
+        
+    #/************************************************************************/
+    def url_tiles(self, **kwargs):
+        """Generate the URL (or name) of the |GISCO| tiling web-service.
+        
+        ::
+            
+            >>> tiles, attr = serv.url_tiles(**kwargs)
+           
+        Keyword Arguments
+        -----------------
+        tiles: str
+        proj : str,int
+        order : str
+        bckgrd : str
+            
+        Returns
+        -------
+        tiles : str
+        """
+        tiles, attr = kwargs.get('tiles',''), kwargs.get('attr',None)
+        if tiles in settings.GISCO_BCKGRD.keys():
+            attr = settings.GISCO_BCKGRD[tiles]['attr']
+            bckgrd = settings.GISCO_BCKGRD[tiles]['bckgrd']
+            proj = kwargs.pop('proj', settings.GISCO_BCKGRD_PROJ)
+            order = kwargs.pop('order',settings.GISCO_BCKGRD_ORD)
+            tiles = '%s://%s/%s/%s/%s' % (settings.PROTOCOL, self.mapurl, 
+                                          bckgrd, proj,order)
+        return tiles, attr            
 
     #/************************************************************************/
     def url_geocode(self, **kwargs):
@@ -823,13 +873,13 @@ class GISCOService(OSMService):
            
         Keyword Arguments
         -----------------
+        nominatim : bool
+            flag set to :data:`True` when |Nominatim| geocoding service shall be 
+            used; default is :data:`False`.
         kwargs : dict
             parameters used to build the query URL; allowed keyword arguments are: 
             :data:`q, lat, lon, distance_sort, limit, osm_tag`, and :data:`lang`;
             see |GISCOWIKI| on *background services* for more details.
-        nominatim : bool
-            flag set to :data:`True` when |Nominatim| geocoding service shall be 
-            used; default is :data:`False`.
                 
         Returns
         -------
@@ -1836,6 +1886,7 @@ class GISCOService(OSMService):
     #/************************************************************************/
     def geomtrans(self, *args, **kwargs):
         pass
+        
     
 #%%
 #/****************************************************************************/
@@ -1855,7 +1906,7 @@ else:
                  'Bing':             'key',  # valid Bing Maps API key
                  'GeoNames':         'username', # username required for API access
                  'YahooPlaceFinder': 'key',  # Key provided by Yahoo
-                 'OpenMapQuest':     None,       # No API Key is needed by the Nominatim based platform
+                 #'OpenMapQuest':     None,       # No API Key is needed by the Nominatim based platform
                  'MapQuest':         'key',  # API key provided by MapQuest
                  'LiveAddress':      'token',# Valid authentication token; LiveAddress geocoder provided by SmartyStreets
                  'Nominatim':        None,       # Nominatim geocoder for OpenStreetMap servers
@@ -1865,7 +1916,7 @@ else:
         def __init__(self, **kwargs):
             # call geocoder module geopy: https://github.com/geopy/geopy'
             self._gc = None
-            coder = kwargs.pop('geocoder', 'GeoNames')
+            coder = kwargs.pop('coder', 'GeoNames')
             if coder not in self.CODER.keys():
                 raise IOError('geocoder %s not recognised' % coder)
             try:        gc = getattr(geopy.geocoders, coder)   
@@ -2015,7 +2066,7 @@ else:
             # call Google Places API: https://developers.google.com/places
             key = kwargs.pop(self.CODER[settings.CODER_GOOGLE_PLACES])
             if key is None or not isinstance(key,str):
-                raise IOError('GOoogle client key not recognised')
+                raise IOError('Google client key not recognised')
             self.client_key = key
             super(_googlePlacesAPI,self).__init__(self.client_key)
 
@@ -2071,6 +2122,8 @@ class APIService(_Service):
     CODER = dict(_googlePlacesAPI.CODER.items()
                  | _googleMapsAPI.CODER.items() 
                  | _geoCoderAPI.CODER.items()) # we know there is no duplicate, so ok to use | ...
+
+    AVAILABLE = list(CODER.keys())
     
     #/************************************************************************/
     def __init__(self, **kwargs):
@@ -2079,9 +2132,11 @@ class APIService(_Service):
         try:
             assert API_SERVICE is not False
         except:
-            raise IOError('external API service not available')
+            raise happyError('external API service not available')
         # read the arguments              
         self.__coder = kwargs.pop('coder', settings.CODER_GOOGLE_MAPS)
+        if self.__coder not in self.CODER.keys():
+            raise happyError('geocoder %s not recognised/available' % self.__coder)
         self.__coder_key  = kwargs.get(self.CODER[self.__coder]) # it is a get!!! maybe None
         if self.__coder in _googleMapsAPI.CODER.keys():
             try:
@@ -2089,21 +2144,21 @@ class APIService(_Service):
                 # from googlemaps.GoogleMaps
                 self.__coder = _googleMapsAPI(**kwargs) 
             except:
-                raise IOError('Google Maps geocoder not available')
+                raise happyError('Google Maps geocoder not available')
         elif self.__coder in _googlePlacesAPI.CODER.keys():
             try:
                 # geolocator defined as an instance of _googlePlacesAPI class
                 # derived from googleplaces.GooglePlaces
                 self.__coder = _googlePlacesAPI(**kwargs) 
             except:
-                raise IOError('Google Places geocoder not available')
+                raise happyError('Google Places geocoder not available')
         elif self.__coder in _geoCoderAPI.CODER.keys():
             try:
                 # geocoder defined as an instance of _geoCoderAPI class derived from 
                 # geopy.geocoders
-                self.__coder = _geoCoderAPI(geocoder=self.__coder, **kwargs) 
+                self.__coder = _geoCoderAPI(coder=self.__coder, **kwargs) 
             except:
-                raise IOError('geopy geocoder not available')
+                raise happyError('geopy geocoder not available')
             
     #/************************************************************************/
     @property
@@ -2117,7 +2172,7 @@ class APIService(_Service):
             
     @property
     def coder_key(self):
-        """Service property (:data:`getter`/:data:`setter`) of a :class:`APIService` 
+        """Key property (:data:`getter`/:data:`setter`) of a :class:`APIService` 
         instance. 
         A `coder_key` type is a :class:`str` object.
         """
@@ -2161,7 +2216,14 @@ class APIService(_Service):
         coord = [] 
         for p in place:   
             try:
-                lat, lon = self.coder.geocode(p)
+                res = self.coder.geocode(p)
+                try:
+                    lat, lon = res.latitude, res.longitude
+                except:
+                    try:
+                        lat, lon = res.lat, res.Lon                    
+                    except:
+                        lat, lon = res
                 assert lat not in ([],None) and lon not in ([],None)
                 coord.append([lat,lon])
             except:
@@ -2171,7 +2233,7 @@ class APIService(_Service):
             else:
                 # happyVerbose('%s => %s' % (p, coord))
                 pass
-        return coord #{'lat':lat, 'lon': lon}
+        return coord if len(coord)>1 else coord[0]
 
     #/************************************************************************/
     @_Decorator.parse_coordinate
@@ -2203,18 +2265,17 @@ class APIService(_Service):
         --------
         :meth:`GISCOService.coord2place`.
         """
-        #places = self.coder.reverse(coord[0], coord[1])
-        places = [] 
+        place = [] 
         for i in range(len(coord)):   
             try:
                 p = self.coder.reverse(coord[i][0],coord[i][1])
                 assert p not in ('',None)
-                places.append(p)
+                place.append(p)
             except:
-                places.append(None)
+                place.append(None)
                 happyVerbose('\ncould not retrieve place name for geolocation %s' % coord[i])
                 # continue
             else:
                 # happyVerbose('%s => %s' % (p, coord))
                 pass
-        return places 
+        return place if len(place)>1 else place[0]

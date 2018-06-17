@@ -431,15 +431,23 @@ class _Feature(object):
         or a :class:`~happygisco.services.APIService` instance.
         """
         return self._service
-       
+        
     @property
-    def tool(self):
-        """Geospatial tool property (:data:`getter`) of a :class:`_Feature` instance.
-        A :data:`service` object will be generally a :class:`~happygisco.tools.GDALTool` 
+    def transform(self):
+        """Geospatial transform property (:data:`getter`) of a :class:`_Feature` instance.
+        A :data:`service` object will be generally a :class:`~happygisco.tools.GDALTransform` 
         instance.
         """
-        return self._tool
-    
+        return self._transform
+       
+    @property
+    def mapping(self):
+        """Geospatial mapping property (:data:`getter`) of a :class:`_Feature` instance.
+        A :data:`service` object will be generally a :class:`~happygisco.tools.FoliumMap` 
+        instance.
+        """
+        return self._mapping
+     
     @property
     def coord(self):
         # ignore: this will be overwritten              
@@ -645,7 +653,7 @@ class _Decorator(object):
             if not happyType.isstring(order) or not order in ('Ll','lL'):
                 raise happyError('wrong order parameter')
             coord, lat, lon, poly = None, None, None, None
-            if args not in (None,()):      
+            if args not in ((None,),()):      
                 if all([isinstance(a,_Feature) for a in args]):
                     try:
                         coord = [a.coord for a in args]
@@ -695,6 +703,9 @@ class _Decorator(object):
             elif all([happyType.ismapping(coord[i]) for i in range(len(coord))]):
                 coord = [[coord[i].get(_Decorator.KW_LAT), coord[i].get(_Decorator.KW_LON)]     \
                           for i in range(len(coord))]      
+            elif happyType.issequence(coord) \
+                    and not any([hasattr(coord[i],'__len__') for i in range(len(coord))]):
+                coord = [coord]
             if coord in ([],None):
                 raise happyError('wrong geographic coordinates')
             if order != 'lL':                   coord = [_[::-1] for _ in coord] # order = 'Ll'
@@ -776,7 +787,7 @@ class _Decorator(object):
         """ 
         def __call__(self, *args, **kwargs):
             place, address, city, country, zipcode = '', '', '', '', ''
-            if args not in (None,()):      
+            if args not in ((None,),()):      
                 if all([isinstance(a,_Feature) for a in args]):
                     try:
                         place = [a.place for a in args]
@@ -1099,6 +1110,7 @@ class _Decorator(object):
         KW_STREET       = 'street'
         KW_EXTENT       = 'extent'
         KW_DISPLAYNAME  = 'display_name'
+        KW_NAME         = 'name'
         def __call__(self, *args, **kwargs):
             filt = kwargs.pop('filter','coord')
             if filt not in ('',None) and not (happyType.isstring(filt) and filt in ('place','coord')):
@@ -1110,7 +1122,7 @@ class _Decorator(object):
             if not happyType.isstring(order) or not order in ('Ll','lL'):
                 raise happyError('wrong "order" parameter')
             geom = None
-            if args not in (None,()): 
+            if args not in ((None,),()): 
                 __key_area = False
                 if all([isinstance(a,_Feature) for a in args]):
                     try:
@@ -1174,7 +1186,8 @@ class _Decorator(object):
                                             if p.get(_Decorator.parse_area.KW_STATE) not in (None,'')   \
                                             and p.get(_Decorator.parse_area.KW_STATE)!=p.get(_Decorator.parse_area.KW_CITY) else '',
                                         p.get(_Decorator.parse_area.KW_POSTCODE) or '',
-                                        p.get(_Decorator.parse_area.KW_COUNTRY) or ''])) for p in place] 
+                                        p.get(_Decorator.parse_area.KW_COUNTRY) or ''])) \
+                            or p.get(_Decorator.parse_area.KW_NAME) or '' for p in place] 
                 if unique:          place = [place[0],]
                 if settings.REDUCE_ANSWER and len(place)==1:    place=place[0]
                 kwargs.update({_Decorator.KW_PLACE: place}) 
