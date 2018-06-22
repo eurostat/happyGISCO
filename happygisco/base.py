@@ -486,17 +486,10 @@ class _Decorator(object):
     KW_YEAR         = 'year'
     
     KW_NUTS         = 'nuts' 
+    KW_UNIT         = 'unit' 
     
     KW_FILE         = 'file'
     KW_DATA         = 'data'
-
-    #/************************************************************************/
-    @staticmethod
-    def _flatten(args):
-        #ignore
-        """Flatten a list of lists.
-        """
-        return list(itertools.chain.from_iterable(args))
 
     #/************************************************************************/
     class __parse(object):
@@ -1417,12 +1410,9 @@ class _Decorator(object):
         --------
         :meth:`~geoDecorators.parse_coordinate`.
         """
-        PROJECTION      = {'WGS84': 4326, 4326: 4326,
-                           4258: 4258,
-                           'EPSG3857': 3857, 3857: 3857, 
-                           'LAEA': 3035, 3035: 3035}
+        PROJECTION      = dict(happyType.seqflatten([[(k,v), (v,v)] for k,v in settings.GISCO_PROJECTIONS.items()]))
         def __call__(self, *args, **kwargs):
-            proj = kwargs.pop(_Decorator.KW_PROJECTION, 'WGS84')
+            proj = kwargs.pop(_Decorator.KW_PROJECTION, settings.GISCO_PROJ)
             if proj in ('',None):
                 return self.func(*args, **kwargs)
             if proj not in list(_Decorator.parse_projection.PROJECTION.keys() \
