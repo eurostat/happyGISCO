@@ -4,7 +4,7 @@
 `happygisco`
 ############
 
-This is the documentation of the `happygisco` package.
+This is the documentation of the `happygisco` module.
 
 ========
 Overview
