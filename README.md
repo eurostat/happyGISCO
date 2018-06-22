@@ -29,6 +29,14 @@ Once installed, the module can be imported simply:
 >>> import happygisco
 ```
 
+**Notebook examples**
+
+Simple examples are available in the form of _Jupyter_ notebooks under the [_notebooks/_](https://github.com/eurostat/happyGISCO/tree/master/notebooks) folder, *e.g.*:
+
+* a [basic use](http://nbviewer.jupyter.org/github/eurostat/happyGISCO/blob/master/notebooks/Example%20of%20Eurostat%20%27Data%20as%20a%20Service%27%20using%20happyGISCO%20module.ipynb) of the geocoding services,
+* an example of features definition and geocoding,
+* an extended workflow for location identification and retrieval. 
+
 **Usage**
 
 ###### Services
@@ -39,9 +47,9 @@ Some variants of the geolocation service are made available through the implemen
 * `GISCOService`: this is an interface to _Eurostat_ _GISCO_ web-services; the geocoding and routing tools are also based on _OpenStreetMap_ (the class `GISCOService` derives from `OSMService`); it also enables the users to **retrieve the NUTS region at any level from any geolocation given by its toponame (place) or its geographical coordinates**;
 * `APIService`: this calls other "external" geo- web-services (including  [_Google maps_](https://cloud.google.com/maps-platform/)), *e.g.* to **geolocate geographical features**.
 
-Note that **no caching** is performed after running the services, unless the services are run from one of the features below.
+Note that **no caching** is performed when running the services, unless they are run from one of the features instance below (*e.g.* `Location`).
 
-It is pretty straigthforward to create an instance of a service, for instance `GISCOService` to call _GISCO_ web-services:
+It is pretty straigthforward to create an instance of a service, for example `GISCOService` to call _GISCO_ web-services:
 
 ```python
 >>> from happygisco import services
@@ -136,18 +144,20 @@ What about creating a NUTS object:
 
 These tools can be used, for instance, with NUTS appropriate vector data sources to operate the NUTS identification. Note that it is a brute-force solution, since the program will explore sequentially all NUTS features so as to identify the correct region. This could be improved using a multithread process for instance, _e.g._ using [`multiprocessing`](https://docs.python.org/3.4/library/multiprocessing.html?highlight=process) module. Besides, the program does not check the validity of the result returned by _Google maps_ services, since this result can be ambiguous and/or inaccurate.
 
-**Notebook examples**
+**<a name="Data"></a>Data resources**
 
-Simple examples are available in the form of _Jupyter_ notebooks under the [_notebooks/_](https://github.com/eurostat/happyGISCO/tree/master/notebooks) folder, *e.g.*:
+* The Geographic Information System of the Commission: [_GISCO_ ](http://ec.europa.eu/eurostat/web/gisco/overview).
+* _GISCO_ data distribution [REST API](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2) and its [visualisation tool](http://ec.europa.eu/eurostat/cache/RCI).
+* _GISCO_ [themes](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/themes.json) with links to [countries](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/countries/) (with corresponding [list of datasets](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/countries/datasets.json)) and [NUTS](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/) (with corresponding [list of datasets](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/datasets.json)).
+* _TERCET_ [tool](http://ec.europa.eu/eurostat/tercet).
+* _TERCET_ [territorial typologies](http://ec.europa.eu/eurostat/web/nuts/tercet-territorial-typologies).
+* NUTS [bulk download page](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/). See for instance [2013 (1:1 Million) NUTS data](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-01m.shp.zip) and [how to](http://ec.europa.eu/eurostat/documents/4311134/4366152/guidelines-geographic-data.pdf) interpret it.
+* NUTS on [RAMON](http://ec.europa.eu/eurostat/ramon/index.cfm?TargetUrl=DSP_PUB_WELC).
+* _Eurostat_  _GISCO_ webservices: [_find-nuts_](http://europa.eu/webtools/rest/gisco/nuts/find-nuts.py) and [_geocode_](http://europa.eu/webtools/rest/gisco/api?).
+* Correspondence table Degree of Urbanisation (DEGURBA) - Local Administrative Units: http://ec.europa.eu/eurostat/ramon/miscellaneous/index.cfm?TargetUrl=DSP_DEGURBA
 
-* a [basic use](http://nbviewer.jupyter.org/github/eurostat/happyGISCO/blob/master/notebooks/Example%20of%20Eurostat%20%27Data%20as%20a%20Service%27%20using%20happyGISCO%20module.ipynb) of the geocoding services,
-* an example of features definition and geocoding,
-* an extended workflow for location identification and retrieval. 
+**<a name="Software"></a>Software resources**
 
-**<a name="Resources"></a>Resources**
-
-* _Eurostat_ NUTS [bulk data source](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-01m.shp.zip) and [how to](http://ec.europa.eu/eurostat/documents/4311134/4366152/guidelines-geographic-data.pdf) interpret it.
-* _Eurostat_  GISCO webservices: [_find-nuts_](http://europa.eu/webtools/rest/gisco/nuts/find-nuts.py) and [_geocode_](http://europa.eu/webtools/rest/gisco/api?).
 * `gdal` [package](https://pypi.python.org/pypi/GDAL) and [cookbook](https://pcjericks.github.io/py-gdalogr-cookbook/index.html).
 * Geo packages: [`googlemaps`](https://pypi.python.org/pypi/googlemaps/) and [`geopy`](https://github.com/geopy/geopy).
 
