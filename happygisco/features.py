@@ -728,6 +728,15 @@ class NUTS(_Feature):
     ---------
     nuts : dict, list[dict]
         a (list of) dictionary(ies) representing a single NUTS geometry.
+        
+    Notes
+    -----
+    Bulk datasets:
+    * bulk download: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/
+    * list of datasets: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/datasets.json
+    NUTS units:
+    * `units 2016 <http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2016-units.html>`_
+    listed in the `json file <http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2016-units.json>`
     """
 
     #/************************************************************************/
