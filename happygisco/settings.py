@@ -66,7 +66,7 @@ They are provided here for the sake of an exhaustive documentation.
 
 import os, sys#analysis:ignore
 import inspect#analysis:ignore
-import collections, six
+import collections, itertools, six
 
 #%%
 #==============================================================================
@@ -90,23 +90,26 @@ DEF_LANG            = 'en'
 """
 
 EC_URL              = 'ec.europa.eu'
-"""European Commission URL.
+"""URL of the European Commission website.
 """
 ESTAT_DOMAIN        = 'eurostat'
-"""|Eurostat| domain under European Commission URL.
+"""Domain of |Eurostat| website under European Commission URL.
 """
 ESTAT_URL           = '%s://%s/%s' % (PROTOCOL, EC_URL, ESTAT_DOMAIN)
-"""|Eurostat| complete URL.
+"""Complete URL of |Eurostat| website.
 """
 
 EC_DOMAIN           = 'europa.eu'
-"""European Commission web-service domain.
+"""Domain of European Commission generic web-services.
 """
-GISCO_DOMAIN        = 'webtools/rest/gisco/'
-"""|GISCO| web-service domain under European Commission URL.
+GISCO_WEBTOOLS      = 'webtools'
+"""Domain of |GISCO| web-service under the European Commission URL.
 """
-GISCO_URL           = '%s/%s' % (EC_DOMAIN, GISCO_DOMAIN)
-"""|GISCO| web-service complete URL.
+GISCO_RESTDOMAIN    = 'rest/gisco/'
+"""Domain of |GISCO| REST webservices and webtools.
+"""
+GISCO_RESTURL           = '%s/%s/%s' % (EC_DOMAIN, GISCO_WEBTOOLS, GISCO_RESTDOMAIN)
+"""Complete URL of |GISCO| REST webservices and webtools.
 """
 GISCO_ARCGIS        = 'webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/'
 """|GISCO| |ArcGIS| server.
@@ -118,32 +121,94 @@ KEY_GISCO           = None
 """Dummy |GISCO| key. It is set to :data:`None` since connection to |GISCO| web-services does
 not require authentication.
 """
-GISCO_MAPDOMAIN     = 'webtools/maps/tiles'
-"""|GISCO| background map domain.
+GISCO_PROJECTIONS   = {'WGS84': 4326,
+                       'ETRS89': 4258,
+                       'EPSG3857': 3857, 
+                       'LAEA': 3035}
+"""Projections supported by |GISCO| services. See http://spatialreference.org
+for the list of all EPSG codes and corresponding spatial references.
 """
-GISCO_MAPURL        = '%s/%s' % (EC_DOMAIN, GISCO_MAPDOMAIN) 
-"""|GISCO| background map URL.
+GISCO_PROJ          = 'WGS84'
+"""Default projection used by |GISCO| services.
 """
-GISCO_BCKGRD        = {'bmarble':       {'bckgrd':'bmarble', 'attr': 'GISCO blue marble mosaic of Earth'},
-                       'boundaries':    {'bckgrd':'countryboundaries_world', 'attr': 'GISCO boundaries of all countries'},
-                       'roadswater':    {'bckgrd':'roadswater_europe', 'attr': 'GISCO cities, roads and rivers'},
-                       'hypso':         {'bckgrd':'hypso', 'attr': 'GISCO climate shaded relief of Earth'},
-                       'coast':         {'bckgrd':'coast', 'attr': 'GISCO continental outlines'},
-                       'copernicus':    {'bckgrd':'copernicus003', 'attr': 'GISCO Copernicus'},
-                       'osm-ec':        {'bckgrd':'osm-ec', 'attr': 'GISCO custom OpenStreetMap'},
-                       'gray-bg':       {'bckgrd':'gray-bg', 'attr': 'GISCO boundaries on gray background'},
-                       'countrynames':  {'bckgrd':'countrynames_europe', 'attr': 'GISCO European country names'},
-                       'gray':          {'bckgrd':'gray', 'attr': 'GISCO gray shaded relief of Earth'},
-                       'natural':       {'bckgrd':'natural', 'attr': 'GISCO landcover shaded relief of Earth'},
-                       'citynames':     {'bckgrd':'citynames_europe', 'attr': 'GISCO names of settlement'}
+GISCO_CACHEDOMAIN    = 'eurostat/cache/GISCO/distribution/v2'
+"""Domain of cache database, *e.g.* countries and |NUTS| vector datasets themes, 
+for download/distribution.
+"""
+GISCO_CACHEURL       = '%s/ec.%s' % (EC_DOMAIN, GISCO_CACHEDOMAIN) 
+"""Complete URL of |GISCO| cache database.
+"""
+GISCO_TILEDOMAIN    = 'webtools/maps/tiles'
+"""Domain of |GISCO| background tiling service.
+"""
+GISCO_TILEURL       = '%s/%s' % (EC_DOMAIN, GISCO_TILEDOMAIN) 
+"""Complete URL of |GISCO| background tiling service.
+"""
+GISCO_TILES         = {'bmarble':       {'bckgrd':'bmarble', 'proj': True,           'attr': '© NASA’s Earth Observatory', 'label': 'Blue marble mosaic of Earth'},
+                       'boundaries':    {'bckgrd':'countryboundaries_world', 'proj': True, 'attr': '© Eurogeographics @UN-FAO @Turkstat', 'label': 'boundaries of all countries'},
+                       'roadswater':    {'bckgrd':'roadswater_europe', 'proj': True, 'attr': '© Eurogeographics', 'label': 'cities, roads and rivers'},
+                       'hypso':         {'bckgrd':'hypso', 'proj': True,             'attr': '© Natural Earth', 'label': 'climate shaded relief of Earth'},
+                       'coast':         {'bckgrd':'coast', 'proj': True,             'attr': '© EC-GISCO', 'label': 'continental outlines'},
+                       'copernicus':    {'bckgrd':'copernicus003', 'proj': False,    'attr': '© Core003 Mosaic', 'label': 'Copernicus Core003'},
+                       'osmec':         {'bckgrd':'osm-ec', 'proj': False,           'attr': '© OpenStreetMap', 'label': 'OpenStreetMap'},
+                       'graybg':        {'bckgrd':'gray-bg', 'proj': True,           'attr': '© Eurogeographics', 'label': 'boundaries on gray background'},
+                       'country':       {'bckgrd':'countrynames_europe', 'proj': True, 'attr': '© Eurogeographics', 'label': 'European country names'},
+                       'gray':          {'bckgrd':'gray', 'proj': True,              'attr': '© Natural Earth', 'label': 'gray shaded relief of Earth'},
+                       'natural':       {'bckgrd':'natural', 'proj': True,           'attr': '© Natural Earth', 'label': 'landcover shaded relief of Earth'},
+                       'city':          {'bckgrd':'citynames_europe', 'proj': True,  'attr': '© Eurogeographics', 'label': 'names of settlement'},
+                       'cloudless':     {'bckgrd':'sentinelcloudless', 'proj': False,'attr': 'Sentinel Cloudless', 'label': 'Sentinel Cloudless' } 
                        }
-"""Dictionary for the various |GISCO| background tiles service.
+"""Dictionary for the various |GISCO| background tiles service. See the list
+of `available tiles servers <https://webgate.ec.europa.eu/fpfis/wikis/pages/viewpage.action?spaceKey=webtools&title=Map+-+available+tiles+servers>`_.
 """
-GISCO_BCKGRD_ORD    = '{z}/{y}/{x}'
+GISCO_TILEORDER     = '{z}/{y}/{x}'
+"""|GISCO| background tile ordering (used for visualisation).
 """
+GISCO_TILEPROJ      = '3857'
+"""|GISCO| background tile projection.
 """
-GISCO_BCKGRD_PROJ   = '3857'
- 
+GISCO_NUTSDOMAIN    = 'nuts'
+"""Subdomain of |NUTS|.
+"""
+GISCO_NUTSURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_NUTSDOMAIN) 
+"""Complete URL of |NUTS| download/distribution services.
+"""
+GISCO_CTRYDOMAIN    = 'countries'
+"""Subdomain of countries.
+"""
+GISCO_CTRYURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_CTRYDOMAIN) 
+"""Complete URL of countries download/distribution services.
+"""
+GISCO_DISTRIBUTION  = {'download': {'domain':'download', 'basename':'ref-nuts'},
+                       'distribution': {'domain':'distribution', 'basename':''}
+                       }
+"""Type of service for theme vector datasets: :literal:`download` for the
+bulk datasets, :literal:`distribution` for single areas.
+"""
+GISCO_NUTSLEVELS    = [0, 1, 2, 3]
+"""Levels of |NUTS| areas.
+"""
+GISCO_SCALES        = {1: '01m', 3: '03m', 10: '10m', 20: '20m', 60: '60m'} 
+"""Scale (1:`scale` Million) of vector datasets.
+"""
+GISCO_YEARS         = [2003, 2006, 2010, 2013, 2016]
+"""Years of adoption/revision of |NUTS| areas.
+"""
+GISCO_FMTS          = {'shp': 'shx', # 'shapefile': 'shp', 
+                       'geojson':'geojson', 
+                       'topojson':'json',
+                       'gdb': 'gdb',
+                       'pbf': 'pbf'}
+"""Format of vector data files.
+"""
+GISCO_SPATIALTYPES  = {'region':'RN', 
+                       'label':'LB',
+                       'line':'BN',
+                       'boundary':'BN'}
+GISCO_REFNAME       = ''
+"""Generic name used to reference the bulk datasets.
+"""
+
 OSM_URL             = 'nominatim.openstreetmap.org/'
 """
 |OSM| web-service complete URL.
@@ -181,11 +246,11 @@ is run for connecting to the "external" (all but |GISCO|) web-services.
 CODER_LIST          = [CODER_GISCO, CODER_GOOGLE, CODER_GOOGLE_MAPS, CODER_GOOGLE_PLACES]
 """List of geocoders available.
 """
-CODER_PROJ          = {CODER_GISCO: 'WGS84',
+CODER_PROJ          = {CODER_GISCO: GISCO_PROJ,
                        CODER_GOOGLE: 'EPSG3857',
                        CODER_GOOGLE_MAPS: 'EPSG3857', 
                        CODER_GOOGLE_PLACES: 'EPSG3857'}
-"""Geographical projections available through the different geocoders.
+"""Default geographical projections available through the different geocoders.
 """
 
 DRIVER_NAME         = 'ESRI Shapefile'
@@ -227,8 +292,11 @@ class happyWarning(Warning):
         
     Example
     -------
-    >>> happyWarning('This is a very interesting warning');
-        happyWarning: ! This is a very interesting warning !
+    
+    ::
+        
+        >>> happyWarning('This is a very interesting warning');
+            happyWarning: ! This is a very interesting warning !
     """
     def __init__(self, warnmsg, expr=None):    
         self.warnmsg = warnmsg
@@ -250,6 +318,8 @@ class happyWarning(Warning):
 class happyVerbose(object):
     """Dummy class for verbose printing mode in this package.
     
+    ::
+    
         >>> happyVerbose(msg, verb=True, expr=None)
 
     Arguments
@@ -268,8 +338,11 @@ class happyVerbose(object):
         
     Example
     -------
-    >>> happyVerbose('The more we talk, we less we do...', verb=True);
-        [verbose] - The more we talk, we less we do...
+    
+    ::
+
+        >>> happyVerbose('The more we talk, we less we do...', verb=True);
+            [verbose] - The more we talk, we less we do...
     """
     def __init__(self, msg, expr=None, verb=VERBOSE):    
         self.msg = msg
@@ -283,6 +356,8 @@ class happyVerbose(object):
     
 class happyError(Exception):
     """Dummy class for exception raising in this package.
+    
+    ::
     
         >>> raise happyError(errmsg, errtype=None, errcode=None, expr='')
 
@@ -304,13 +379,16 @@ class happyError(Exception):
         
     Example
     -------
-    >>> try:
-            assert False
-        except:
-            raise happyError('It is False')
-        Traceback ...
-        ...
-        happyError: !!! AssertionError: It is False !!!
+    
+    ::
+        
+        >>> try:
+                assert False
+            except:
+                raise happyError('It is False')
+            Traceback ...
+            ...
+            happyError: !!! AssertionError: It is False !!!
     """
     
     def __init__(self, errmsg, errtype=None, errcode=None, expr=''):   
@@ -356,7 +434,9 @@ class happyType(object):
     @classmethod
     def typename(cls, inst): 
         """Return the class name of a given instance: nothing else than 
-        :literal:`instance.__class__.__name__`\ .  
+        :literal:`instance.__class__.__name__`.
+        
+        ::
     
             >>> name = typename(inst)  
             
@@ -380,6 +460,8 @@ class happyType(object):
     def istype(cls, inst, str_cls):
         """Determine if a given instance is of a certain type defined by a string 
         (instead of a :class:`type` like in :meth:`isintance`).
+        
+        ::
         
             >>> ans = istype(inst, str_cls)
             
@@ -406,6 +488,8 @@ class happyType(object):
     def isstring(cls, arg):
         """Check whether an argument is a string.
         
+        ::
+        
             >>> ans = _Types.isstring(arg)
       
         Arguments
@@ -427,6 +511,8 @@ class happyType(object):
         """Check whether an argument is a "pure" sequence (*e.g.*, a :data:`list` 
         or a :data:`tuple`), *i.e.* an instance of the :class:`collections.Sequence`,
         except strings excepted.
+        
+        ::
         
             >>> ans = _Types.issequence(arg)
       
@@ -450,12 +536,14 @@ class happyType(object):
     def ismapping(cls, arg):
         """Check whether an argument is a dictionary.
         
+        ::
+        
             >>> ans = _Types.ismapping(arg)
       
         Arguments
         ---------
         arg : 
-            any input to test
+            any input to test.
       
         Returns
         -------
@@ -463,4 +551,38 @@ class happyType(object):
             :data:`True` if the input argument :data:`arg` is an instance of the 
             :class:`collections.Mapping` class.
         """
-        return (isinstance(arg, collections.Mapping))   
+        return (isinstance(arg, collections.Mapping))  
+    
+    #/************************************************************************/
+    @classmethod
+    def seqflatten(cls, arg):
+        #ignore
+        """Flatten a list of lists.
+        
+        ::
+        
+            >>> flat = _Types.seqflatten(arg)
+            
+        Arguments
+        ---------
+        arg : list[list]
+            a list of nested lists.
+      
+        Returns
+        -------
+        flat : list
+            a list from which all nested elements have been flatten from 1 "level"
+            up.
+            
+        Examples
+        --------
+        
+        ::
+            
+            >>> happyType.seqflatten([[1],[[2,3],[4,5]],[6,7]])
+                [1, [2, 3], [4, 5], 6, 7]
+            >>> happyType.seqflatten([[1,1],[[2,2],[3,3],[[4,4],[5,5]]]])
+                [1, 1, [2, 2], [3, 3], [[4, 4], [5, 5]]]
+        """
+        return list(itertools.chain.from_iterable(arg))
+

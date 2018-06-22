@@ -159,6 +159,20 @@ class OSMService(_Service):
         self.domain = kwargs.pop('domain', settings.OSM_URL) 
 
     #/************************************************************************/
+    @property
+    def domain(self):
+        """Domain property (:data:`getter`/:data:`setter`) defining the complete
+        URL of |OpenStreetMap|, *e.g.* :data:`settings.OSM_URL`, of an instance 
+        of this class. 
+        """ # A domain type is :class:`str`.
+        return self.__domain
+    @domain.setter#analysis:ignore
+    def domain(self, url):
+        if url is not None and not happyType.isstring(url):
+            raise TypeError('wrong type for DOMAIN parameter')
+        self.__domain = url or ''
+
+    #/************************************************************************/
     def url_geocode(self, **kwargs):
         """Generate the query URL for |Nominatim| geocoding web-service (from toponame to
         geocoordinate).
@@ -764,8 +778,8 @@ class GISCOService(OSMService):
             
     Keyword arguments
     -----------------
-    domain : str
-        domain of |OSM| web-services hosted by |GISCO|; default is :data:`settings.GISCO_URL`,
+    rest : str
+        domain of web-services hosted by |GISCO|; default is :data:`settings.GISCO_URL`,
         *e.g.* an URL domain like :literal:`'europa.eu/webtools/rest/gisco/'`\ . 
     arcgis : str
         domain of |ArcGIS| web-services hosted by |GISCO|; default is :data:`settings.GISCO_ARCGIS`,
@@ -789,36 +803,56 @@ class GISCOService(OSMService):
         except:
             raise happyError('GISCO service not available')
         super(GISCOService, self).__init__(**kwargs)
-        self.domain = kwargs.pop('domain', settings.GISCO_URL) 
+        print(self.domain)
+        self.rest_url = kwargs.pop('rest_url', settings.GISCO_RESTURL) 
+        self.cache_url = kwargs.pop('cache_url', settings.GISCO_CACHEURL) 
+        self.map_url = kwargs.pop('map_url', settings.GISCO_TILEURL) 
         self.arcgis = kwargs.pop('arcgis', settings.GISCO_ARCGIS)
-        self.mapurl = kwargs.pop('mapurl', settings.GISCO_MAPURL) 
 
     #/************************************************************************/
     @property
-    def domain(self):
-        """Domain property (:data:`getter`/:data:`setter`) defining the domain
-        URL, *e.g.* :data:`settings.GISCO_URL`, of an instance of this class. 
-        """ # A domain type is :class:`str`.
+    def rest_url(self):
+        """REST property (:data:`getter`/:data:`setter`) defining the complete
+        URL of REST services, *e.g.* :data:`settings.GISCO_RESTURL`, of an instance 
+        of this class. 
+        """
         return self.__domain
-    @domain.setter#analysis:ignore
-    def domain(self, domain):
-        if domain is not None and not happyType.isstring(domain):
-            raise TypeError('wrong type for DOMAIN parameter')
-        self.__domain = domain or ''
+    @rest_url.setter#analysis:ignore
+    def rest_url(self, url):
+        if url is not None and not happyType.isstring(url):
+            raise TypeError('wrong type for REST_URL parameter')
+        self.__domain = url or ''
+        
+    # let us just override the super property domain
+    domain = rest_url
 
     #/************************************************************************/
     @property
-    def mapurl(self):
-        """URL property (:data:`getter`/:data:`setter`) defining the domain
+    def cache_url(self):
+        """Cache property (:data:`getter`/:data:`setter`) defining the complete
+        URL of |GISCO| cache services, *e.g.* :data:`settings.GISCO_CACHEURL`, of 
+        an instance of this class. 
+        """ 
+        return self.__cache_url
+    @cache_url.setter#analysis:ignore
+    def cache_url(self, url):
+        if url is not None and not happyType.isstring(url):
+            raise TypeError('wrong type for CACHE_URL parameter')
+        self.__cache_url = url or ''
+
+    #/************************************************************************/
+    @property
+    def map_url(self):
+        """URL property (:data:`getter`/:data:`setter`) defining the complete
         URL of GISCO mapping services, *e.g.* :data:`settings.GISCO_MAPURL`, of 
         an instance of this class. 
         """ 
-        return self.__mapurl
-    @mapurl.setter#analysis:ignore
-    def mapurl(self, mapurl):
-        if mapurl is not None and not happyType.isstring(mapurl):
-            raise TypeError('wrong type for MAPURL parameter')
-        self.__mapurl = mapurl or ''
+        return self.__map_url
+    @map_url.setter#analysis:ignore
+    def map_url(self, url):
+        if url is not None and not happyType.isstring(url):
+            raise TypeError('wrong type for MAP_URL parameter')
+        self.__map_url = url or ''
 
     #/************************************************************************/
     @property
@@ -834,32 +868,322 @@ class GISCOService(OSMService):
         self.__arcgis = arcgis or ''
         
     #/************************************************************************/
+    def url_nuts(self, **kwargs):
+        """Generate the URL of the |GISCO| domain for the download of NUTS data 
+        (in vector format).
+        
+        ::
+            
+            >>> url = serv.url_nuts(**kwargs)
+           
+        Keyword Arguments
+        -----------------
+        unit : str
+        bulk : bool
+        year: str
+        scale : str,int
+        fmt : str
+        proj : str,int
+            
+        Returns
+        -------
+        url : str
+        
+        Notes
+        -----
+        Unit naming convention: id-spatialtype-scale-projection-year.format
+        where
+        
+        id: unique unit code. Particular cases: NUTS code (2-5 chars), country code (2 chars).
+        spatialtype: region/label/line.
+        scale: 01m/03m/10m/20m/60m. The map scale the data is optimized for.
+        projection: 4-digit EPSG code
+        year: 4-digit year. Particular cases: NUTS release years: 2013/2010/2006/2003
+        format: geojson/topojson
+        
+        Examples
+        --------
+        
+        ::
+            
+            >>> serv = services.GISCOService()
+            >>> 
+                http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-10m.shp.zip
+                
+                http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_LB_2016_3857_LEVL_0.geojson
+
+                http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/shp/NUTS_BN_03M_2016_4258_LEVL_3.shx
+                
+                http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/topojson/NUTS_BN_01M_2016_3035_LEVL_3.json
+
+                http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AT-region-01m-3035-2016.geojson
+
+                http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-region-03m-3035-2016.geojson        
+        """
+        # check whether bulk datasets need to be downloaded
+        try:
+            bulk = kwargs.pop('bulk', True)
+            assert isinstance(bulk,bool)
+        except:
+            raise happyError('wrong format/value for BULK keyword argument')
+        # check whether a specific unit is looked for
+        try:
+            unit = kwargs.pop(_Decorator.KW_UNIT, None)
+            assert unit is None or isinstance(unit,str)
+        except:
+            raise happyError('wrong format/value for UNIT keyword argument')
+        else:
+            unit = 'NUTS' if unit in (None,'') else unit
+        # check compatibility
+        try:
+            assert bulk is True or unit in ('NUTS',None)
+        except:
+            raise happyError('incompatible parameters BULK and UNIT')
+        # retrieve the spatial type
+        try:
+            year = kwargs.pop('year', settings.GISCO_YEARS[-1])
+            assert year in settings.GISCO_YEARS
+        except:
+            raise happyError('wrong format/value for YEAR keyword argument')
+        # retrieve the year
+        try:
+            year = kwargs.pop('year', settings.GISCO_YEARS[-1])
+            assert year in settings.GISCO_YEARS
+        except:
+            raise happyError('wrong format/value for YEAR keyword argument')
+        # retrieve the scale
+        try:
+            scale = kwargs.pop('scale', list(settings.GISCO_SCALES.keys())[0])
+            assert scale in happyType.seqflatten(settings.GISCO_SCALES.items())
+        except:
+            raise happyError('wrong format/value for SCALE keyword argument')
+        else:
+            if scale in list(settings.GISCO_SCALES.keys()):
+                scale = settings.GISCO_SCALES[scale]
+        # retrieve the format
+        try:
+            fmt = kwargs.pop('fmt', 'geojson')
+            if fmt == 'shapefile':    fmt = 'shp' # we cheat...
+            assert fmt in happyType.seqflatten(settings.GISCO_FMTS.items()) 
+        except:
+            raise happyError('wrong format/value for FMT keyword argument')
+        else:
+            if fmt in list(settings.GISCO_FMTS.keys()):
+                fmt = settings.GISCO_FMTS[fmt]
+        # retrieve the projection
+        try:
+            proj = kwargs.pop('proj', settings.GISCO_PROJ)
+            assert proj in settings.GISCO_PROJECTIONS
+        except:
+            raise happyError('wrong format/value for PROJ keyword argument')
+        else:
+            if not proj in list(settings.GISCO_PROJECTIONS.values()):
+                proj = settings.GISCO_PROJECTIONS[proj]
+        # retrieve the spatial type
+        try:
+            spatial = kwargs.pop('type', 'region') # list(settings.GISCO_SPATIALTYPES.keys())[0]
+            assert spatial in happyType.seqflatten(settings.GISCO_SPATIALTYPES.items())
+        except:
+            raise happyError('wrong format/value for SPATIAL keyword argument')
+        # retrieve the level
+        try:
+            level = kwargs.pop('level', settings.GISCO_NUTSLEVELS[0])
+            assert level in settings.GISCO_NUTSLEVELS
+        except:
+            raise happyError('wrong format/value for LEVEL keyword argument')
+        else:
+            level = 'LEVL_' + str(level)
+        # set the compression format
+        zip_  = '.zip' if bulk is True else ''
+        theme = 'nuts'
+        if bulk:
+            # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-10m.shp.zip
+            domain = settings.GISCO_DISTRIBUTION['download']['domain']
+            basename = settings.GISCO_DISTRIBUTION['download']['basename']
+            url = '%s://%s/%s/%s/%s-%s-%s.%s%s' % (settings.PROTOCOL, 
+                                        self.cache_url, theme, domain,
+                                        basename, year, scale.lower(),
+                                        fmt, zip_ )
+        elif unit=='NUTS':
+            domain = {v:k for k,v in settings.GISCO_FMTS.items()}[fmt]
+            if not spatial in list(settings.GISCO_SPATIALTYPES.values()):
+                spatial = settings.GISCO_SPATIALTYPES[spatial]
+            # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/topojson/NUTS_BN_01M_2016_3035_LEVL_3.json
+            url = '%s://%s/%s/%s/%s%s_%s_%s_%s_%s_%s.%s' % (settings.PROTOCOL, 
+                                        self.cache_url, theme, domain,
+                                        basename, unit, spatial.upper(), scale.upper(), year, proj, level,
+                                        fmt)
+        else:
+            # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AT-region-01m-3035-2016.geojson
+            domain = settings.GISCO_DISTRIBUTION['distribution']['domain']
+            basename = settings.GISCO_DISTRIBUTION['distribution']['basename']
+            if not spatial in list(settings.GISCO_SPATIALTYPES.keys()):
+                spatial = {v:k for k,v in settings.GISCO_SPATIALTYPES.items()}[spatial]
+            url = '%s://%s/%s/%s/%s%s-%s-%s-%s-%s.%s' % (settings.PROTOCOL, 
+                                        self.cache_url, theme, domain,
+                                        basename, unit, spatial.lower(), scale.lower(), proj, year, 
+                                        fmt )
+            
+        return url            
+        
+    #/************************************************************************/
+    def url_countries(self, **kwargs):
+        """Generate the URL (or name) of the |GISCO| countries vector datasets.
+        
+        ::
+            
+            >>> url = serv.url_countries(**kwargs)
+            
+            
+        Example
+        -------
+        
+        ::
+            
+            >>> serv = services.GISCOService()
+            >>> serv.url_countries(unit='AD')
+                'http://europa.eu/ec.eurostat/cache/GISCO/distribution/v2/countries/distribution/AD-region-01m-4326-2016.geojson'
+
+        Note
+        ----
+        See for instance this `page <http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/countries/countries-2013-units.html>`_.
+        """
+        # check whether a specific unit is looked for
+        try:
+            unit = kwargs.pop(_Decorator.KW_UNIT, None)
+            assert isinstance(unit,str)
+        except:
+            raise happyError('wrong format/value for UNIT keyword argument')
+        # retrieve the spatial type
+        try:
+            year = kwargs.pop('year', settings.GISCO_YEARS[-1])
+            assert year in settings.GISCO_YEARS
+        except:
+            raise happyError('wrong format/value for YEAR keyword argument')
+        # retrieve the year
+        try:
+            year = kwargs.pop('year', settings.GISCO_YEARS[-1])
+            assert year in settings.GISCO_YEARS
+        except:
+            raise happyError('wrong format/value for YEAR keyword argument')
+        # retrieve the scale
+        try:
+            scale = kwargs.pop('scale', list(settings.GISCO_SCALES.keys())[0])
+            assert scale in happyType.seqflatten(settings.GISCO_SCALES.items())
+        except:
+            raise happyError('wrong format/value for SCALE keyword argument')
+        else:
+            if scale in list(settings.GISCO_SCALES.keys()):
+                scale = settings.GISCO_SCALES[scale]
+        # retrieve the format
+        try:
+            fmt = kwargs.pop('fmt', 'geojson')
+            if fmt == 'shapefile':    fmt = 'shp' # we cheat...
+            assert fmt in happyType.seqflatten(settings.GISCO_FMTS.items()) 
+        except:
+            raise happyError('wrong format/value for FMT keyword argument')
+        else:
+            if fmt in list(settings.GISCO_FMTS.values()):
+                fmt = {v:k for k,v in settings.GISCO_FMTS.items()}[fmt]
+        # retrieve the projection
+        try:
+            proj = kwargs.pop('proj', settings.GISCO_PROJ)
+            assert proj in settings.GISCO_PROJECTIONS
+        except:
+            raise happyError('wrong format/value for PROJ keyword argument')
+        else:
+            if not proj in list(settings.GISCO_PROJECTIONS.values()):
+                proj = settings.GISCO_PROJECTIONS[proj]
+        theme = 'countries'
+        domain = 'distribution'
+        spatial = 'region'
+        url = '%s://%s/%s/%s/%s-%s-%s-%s-%s.%s' % (settings.PROTOCOL, 
+                                    self.cache_url, theme, domain,
+                                    unit, spatial.lower(), scale.lower(), proj, year, 
+                                    fmt ) 
+            
+        return url            
+        
+    #/************************************************************************/
     def url_tiles(self, **kwargs):
         """Generate the URL (or name) of the |GISCO| tiling web-service.
         
         ::
             
-            >>> tiles, attr = serv.url_tiles(**kwargs)
+            >>> url, attr = serv.url_tiles(**kwargs)
            
         Keyword Arguments
         -----------------
         tiles: str
+            :literal:`['bmarble','borders','roadswater','hypso','coast','copernicus','osmec',
+            'graybg', 'country', 'gray', 'natural', 'city','cloudless']`
         proj : str,int
         order : str
         bckgrd : str
             
         Returns
         -------
-        tiles : str
+        url : str
+        attr : str
+        
+        Examples
+        --------
+        
+        ::
+            
+            >>> serv = services.GISCOService()
+            >>> serv.url_tiles(tiles='bmarble')
+                ('http://europa.eu/webtools/maps/tiles/bmarble/4326/{z}/{y}/{x}',
+                 '© NASA’s Earth Observatory')
+            >>> serv.url_tiles(tiles='osmec')
+                ('http://europa.eu/webtools/maps/tiles/osm-ec/{z}/{y}/{x}', 
+                 '© OpenStreetMap')
         """
-        tiles, attr = kwargs.get('tiles',''), kwargs.get('attr',None)
-        if tiles in settings.GISCO_BCKGRD.keys():
-            attr = settings.GISCO_BCKGRD[tiles]['attr']
-            bckgrd = settings.GISCO_BCKGRD[tiles]['bckgrd']
-            proj = kwargs.pop('proj', settings.GISCO_BCKGRD_PROJ)
-            order = kwargs.pop('order',settings.GISCO_BCKGRD_ORD)
-            tiles = '%s://%s/%s/%s/%s' % (settings.PROTOCOL, self.mapurl, 
-                                          bckgrd, proj,order)
+        try:
+            tiles = kwargs.get('tiles','')
+            assert isinstance(tiles,str)
+        except:
+            raise happyError('wrong format/value for TILES keyword argument')
+        else: 
+            _d = {v['bckgrd']:k for k,v in settings.GISCO_TILES.items()}
+            if tiles in list(_d.keys()):
+                tiles = _d[tiles]
+        try:
+            attr = kwargs.get('attr','')
+            assert attr is None or isinstance(attr,str)
+        except:
+            raise happyError('wrong format/value for ATTR keyword argument')
+        if not tiles in settings.GISCO_TILES.keys():
+            return tiles, attr   
+        try:
+            attr = settings.GISCO_TILES[tiles]['attr']
+        except:
+            pass
+        try:
+            bckgrd = settings.GISCO_TILES[tiles]['bckgrd']
+        except:
+            bckgrd = tiles # in case we forgot to specify a 'bckgrd' 
+        try:
+            proj = kwargs.pop('proj', settings.GISCO_PROJ)
+            assert proj in (None,'') or proj in happyType.seqflatten(settings.GISCO_PROJECTIONS.items())
+        except:
+            raise happyError('wrong format/value for PROJ keyword argument')
+        else:
+            if proj in (None,'') or settings.GISCO_TILES[tiles]['proj'] is False:
+                proj = ''
+            elif not proj in list(settings.GISCO_PROJECTIONS.values()):
+                proj = settings.GISCO_PROJECTIONS[proj]
+            proj = str(proj) + '/' if proj else ''               
+        try:
+            order = kwargs.pop('order',settings.GISCO_TILEORDER)
+            assert isinstance(order,str) and all([o in set('xyz{}/') for o in order])
+        except:
+            raise happyError('wrong format for ORDER keyword argument')
+        else:
+            if all([o in set('xyz') for o in order]):
+                order = '/'.join(['{%s}' % o for o in order])
+        tiles = '%s://%s/%s/%s%s' % (settings.PROTOCOL, self.map_url, 
+                                     bckgrd, proj, order)
         return tiles, attr            
 
     #/************************************************************************/
@@ -906,7 +1230,7 @@ class GISCOService(OSMService):
         See also
         --------
         :meth:`~GISCOService.url_reverse`, :meth:`~GISCOService.url_route`, 
-        :meth:`~GISCOService.url_transform`, :meth:`~GISCOService.url_nuts`,
+        :meth:`~GISCOService.url_transform`, :meth:`~GISCOService.url_findnuts`,
         :meth:`OSMService.url_geocode`.
         """
         nominatim = kwargs.pop('nominatim', False)
@@ -962,7 +1286,7 @@ class GISCOService(OSMService):
         See also
         --------
         :meth:`~GISCOService.url_geocode`, :meth:`~GISCOService.url_route`, 
-        :meth:`~GISCOService.url_transform`, :meth:`~GISCOService.url_nuts`,
+        :meth:`~GISCOService.url_transform`, :meth:`~GISCOService.url_findnuts`,
         :meth:`OSMService.url_reverse`.
         """
         nominatim = kwargs.pop('nominatim', False)
@@ -1012,7 +1336,7 @@ class GISCOService(OSMService):
         See also
         --------
         :meth:`~GISCOService.url_geocode`, :meth:`~GISCOService.url_reverse`, 
-        :meth:`~GISCOService.url_transform`, :meth:`~GISCOServiceurl_nuts`,
+        :meth:`~GISCOService.url_transform`, :meth:`~GISCOService.url_findnuts`,
         :meth:`base._Service.build_url`.
         """
         protocol = kwargs.pop('protocol', 'https') # actually not necessary, http works as well  
@@ -1023,7 +1347,7 @@ class GISCOService(OSMService):
         polyline = kwargs.pop(_Decorator.parse_coordinate.KW_POLYLINE,None)
         polyline = 'polyline(' + polyline + ')' if polyline else ''
         url = self.build_url(protocol=protocol,
-                             domain=self.domain, 
+                             domain=self.rest_url, 
                              query='route/v1/driving/%s' % coordinates or polyline, 
                              **{k:v for k,v in kwargs.items() if k in keys})
         happyVerbose('output url:\n            %s' % url)
@@ -1071,7 +1395,7 @@ class GISCOService(OSMService):
         See also
         --------
         :meth:`~GISCOService.url_geocode`, :meth:`~GISCOService.url_reverse`, 
-        :meth:`~GISCOService.url_route`, :meth:`~GISCOService.url_nuts`,
+        :meth:`~GISCOService.url_route`, :meth:`~GISCOService.url_findnuts`,
         :meth:`base._Service.build_url`.
         """
         protocol = kwargs.pop('protocol', 'https')  
@@ -1087,13 +1411,13 @@ class GISCOService(OSMService):
 
     #/************************************************************************/
     @_Decorator.parse_projection
-    def url_nuts(self, **kwargs):
+    def url_findnuts(self, **kwargs):
         """Create a query URL to be submitted to the |GISCO| (simple) web-service 
         for NUTS codes identification.
         
         ::
         
-            >>> url = serv.url_nuts(**kwargs)
+            >>> url = serv.url_findnuts(**kwargs)
            
         Keyword Arguments
         -----------------
@@ -1118,7 +1442,7 @@ class GISCOService(OSMService):
         ::
 
             >>> serv = services.GISCOService()
-            >>> serv.url_nuts(y=52.5170365, x=13.3888599, f='JSON', proj=4326)
+            >>> serv.url_findnuts(y=52.5170365, x=13.3888599, f='JSON', proj=4326)
                 'http://europa.eu/webtools/rest/gisco/nuts/find-nuts.py?y=52.5170365&x=13.3888599&f=JSON&proj=4326'
         
         See also
@@ -1134,7 +1458,7 @@ class GISCOService(OSMService):
         # note that the service is case sensitive as f is concerned
         kwargs.update({'f': kwargs.get('f','JSON').upper()}) # let us avoid stupid mistakes
         url = self.build_url(protocol=protocol,
-                             domain=self.domain, 
+                             domain=self.rest_url, 
                              path='nuts', 
                              query='find-nuts.py', 
                              **{k:v for k,v in kwargs.items() if k in keys})
@@ -1496,7 +1820,7 @@ class GISCOService(OSMService):
         for i in range(len(coord)):
             kwargs.update({'x': coord[i][1], 'y': coord[i][0]})
             try:
-                url = self.url_nuts(**kwargs)
+                url = self.url_findnuts(**kwargs)
                 assert self.get_status(url) is not None
             except:
                 raise happyError('error NUTS request')
@@ -1614,7 +1938,7 @@ class GISCOService(OSMService):
         --------
         :meth:`~GISCOService.place2area`, :meth:`~GISCOService.place2coord`, 
         :meth:`~GISCOService.place2nuts`, :meth:`~GISCOService.coord2route`,
-        :meth:`~GISCOService.coord2place`, :meth:`~GISCOService.url_nuts`, 
+        :meth:`~GISCOService.coord2place`, :meth:`~GISCOService.url_findnuts`, 
         :meth:`base._Service.get_response`.
         """
         level = kwargs.pop('level',None)
