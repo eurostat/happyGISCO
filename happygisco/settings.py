@@ -79,9 +79,9 @@ PROTOCOLS           = ('http', 'https', 'ftp')
 """Recognised protocols (APIs, bulk downloads,...).
 """
 DEF_PROTOCOL        = 'http'
-PROTOCOL            = DEF_PROTOCOL
 """Default protocol used by the APIs.
 """
+PROTOCOL            = DEF_PROTOCOL
 LANGS               = ('en','de','fr')
 """Languages supported by this package.
 """
@@ -128,7 +128,7 @@ GISCO_PROJECTIONS   = {'WGS84': 4326,
 """Projections supported by |GISCO| services. See http://spatialreference.org
 for the list of all EPSG codes and corresponding spatial references.
 """
-GISCO_PROJ          = 'WGS84'
+DEF_GISCO_PROJECTION = 'WGS84'
 """Default projection used by |GISCO| services.
 """
 GISCO_CACHEDOMAIN    = 'eurostat/cache/GISCO/distribution/v2'
@@ -164,7 +164,7 @@ of `available tiles servers <https://webgate.ec.europa.eu/fpfis/wikis/pages/view
 GISCO_TILEORDER     = '{z}/{y}/{x}'
 """|GISCO| background tile ordering (used for visualisation).
 """
-GISCO_TILEPROJ      = '3857'
+DEF_GISCO_TILEPROJ  = 'EPSG3857'
 """|GISCO| background tile projection.
 """
 GISCO_NUTSDOMAIN    = 'nuts'
@@ -191,20 +191,34 @@ GISCO_NUTSLEVELS    = [0, 1, 2, 3]
 GISCO_SCALES        = {1: '01m', 3: '03m', 10: '10m', 20: '20m', 60: '60m'} 
 """Scale (1:`scale` Million) of vector datasets.
 """
+DEF_GISCO_SCALE    = '01m'
+"""Default scale for |GISCO| vector datasets.
+"""
 GISCO_YEARS         = [2003, 2006, 2010, 2013, 2016]
 """Years of adoption/revision of |NUTS| areas.
 """
-GISCO_FMTS          = {'shp': 'shx', # 'shapefile': 'shp', 
+DEF_GISCO_YEAR      = 2013
+"""Default year considered for |NUTS| datasets (not the most recent, but up-to-date).
+"""
+GISCO_FORMATS       = {'shp': 'shx', # 'shapefile': 'shp', 
                        'geojson':'geojson', 
                        'topojson':'json',
                        'gdb': 'gdb',
                        'pbf': 'pbf'}
 """Format of vector data files.
 """
-GISCO_SPATIALTYPES  = {'region':'RN', 
+DEF_GISCO_FORMAT    = 'geojson'
+"""Default format for |GISCO| vector datasets.
+"""
+GISCO_FEATURES      = {'region':'RN', 
                        'label':'LB',
                        'line':'BN',
                        'boundary':'BN'}
+"""Dictionary of vector space types, *i.e.* the type of |GISCO| feature datasets. 
+"""
+DEF_GISCO_FEATURE   = 'region'
+"""Default space type.
+"""
 GISCO_REFNAME       = ''
 """Generic name used to reference the bulk datasets.
 """
@@ -246,7 +260,7 @@ is run for connecting to the "external" (all but |GISCO|) web-services.
 CODER_LIST          = [CODER_GISCO, CODER_GOOGLE, CODER_GOOGLE_MAPS, CODER_GOOGLE_PLACES]
 """List of geocoders available.
 """
-CODER_PROJ          = {CODER_GISCO: GISCO_PROJ,
+CODER_PROJ          = {CODER_GISCO: DEF_GISCO_PROJECTION,
                        CODER_GOOGLE: 'EPSG3857',
                        CODER_GOOGLE_MAPS: 'EPSG3857', 
                        CODER_GOOGLE_PLACES: 'EPSG3857'}

@@ -484,9 +484,13 @@ class _Decorator(object):
     KW_PROJECTION   = 'proj' 
     
     KW_YEAR         = 'year'
+    KW_FEATURE      = 'feat'
+    KW_FORMAT       = 'fmt'
+    KW_SCALE        = 'scale'
     
     KW_NUTS         = 'nuts' 
     KW_UNIT         = 'unit' 
+    KW_LEVEL        = 'level'
     
     KW_FILE         = 'file'
     KW_DATA         = 'data'
@@ -1387,7 +1391,11 @@ class _Decorator(object):
         -------
         new_func : callable
             the decorated function that now accepts  :data:`proj` as a keyword 
-            argument to parse the geographic projection system.
+            argument to parse the geographic projection system; the currently 
+            supported projections are :literal:`'WGS84','ETRS89','LAEA'` and 
+            :literal:`'EPSG3857'` or their equivalent EPSG codes (4326, 4258, 3857 
+            and 3035 respectively), *e.g* the ones listed in 
+            :data:`settings.GISCO_PROJECTIONS`.
         
         Examples
         --------          
@@ -1396,7 +1404,7 @@ class _Decorator(object):
             
             >>> func = lambda *args, **kwargs: kwargs.get('proj')
             >>> _Decorator.parse_projection(func)(proj='dumb')
-                happyError: !!! projection dumb not supported !!!
+                happyError: !!! wrong value for PROJ argument - projection dumb not supported !!!
             >>> _Decorator.parse_projection(func)(proj='WGS84')
                 4326
             >>> _Decorator.parse_projection(func)(proj='EPSG3857')
@@ -1408,23 +1416,40 @@ class _Decorator(object):
                 
         See also
         --------
-        :meth:`~geoDecorators.parse_coordinate`.
+        :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_year`,
+        :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_feature`,
+        :meth:`~geoDecorators.parse_format`, :meth:`~geoDecorators.parse_level`.
         """
-        PROJECTION      = dict(happyType.seqflatten([[(k,v), (v,v)] for k,v in settings.GISCO_PROJECTIONS.items()]))
+        # PROJECTION      = dict(happyType.seqflatten([[(k,v), (v,v)] for k,v in settings.GISCO_PROJECTIONS.items()]))
         def __call__(self, *args, **kwargs):
-            proj = kwargs.pop(_Decorator.KW_PROJECTION, settings.GISCO_PROJ)
-            if proj in ('',None):
-                return self.func(*args, **kwargs)
-            if proj not in list(_Decorator.parse_projection.PROJECTION.keys() \
-                | _Decorator.parse_projection.PROJECTION.values()):
-                raise happyError('projection %s not supported' % proj)
-            kwargs.update({_Decorator.KW_PROJECTION: _Decorator.parse_projection.PROJECTION[proj]})                  
+            try:
+                proj = kwargs.pop(_Decorator.KW_PROJECTION, None) # settings.DEF_GISCO_PROJECTION
+                assert proj in ('',None) or isinstance(proj, (int,str))
+            except:
+                raise happyError('wrong format for %s argument' % _Decorator.KW_PROJECTION.upper())
+            else:
+                if proj in ('',None):
+                    return self.func(*args, **kwargs)
+            print(proj)
+            try:
+                assert proj in happyType.seqflatten(settings.GISCO_PROJECTIONS.items())
+                # assert proj in list(_Decorator.parse_projection.PROJECTION.keys() \
+                #                   | _Decorator.parse_projection.PROJECTION.values())
+            except:
+                raise happyError('wrong value for %s argument - projection %s not supported' % (_Decorator.KW_PROJECTION.upper(), proj))
+            else:
+                if proj in settings.GISCO_PROJECTIONS.keys():
+                    proj = settings.GISCO_PROJECTIONS[proj]
+            print(proj)
+                # if proj in settings.GISCO_PROJECTIONS.values():
+                #    proj = {v:k for k,v in settings.GISCO_PROJECTIONS.items()}[proj]
+            kwargs.update({_Decorator.KW_PROJECTION: proj})                  
             return self.func(*args, **kwargs)
         
     #/************************************************************************/
     class parse_year(__parse):
-        """Generic class decorator of functions and methods used to parse a 
-        reference year for NUTS regulation.
+        """Generic class decorator of functions and methods used to parse a reference 
+        year for NUTS regulation.
         
         ::
         
@@ -1445,7 +1470,10 @@ class _Decorator(object):
         -------
         new_func : callable
             the decorated function that now accepts  :data:`year` as a keyword 
-            argument to parse a reference year (*e.g.*, used in NUTS definition).
+            argument to parse a reference year (*e.g.*, used in NUTS definition);
+            currently, only years :literal:`2006, 2010, 2013` and :literal:`2016` 
+            are supported (though 2016 is not yet implemented in |GISCO| NUTS 
+            service). 
         
         Examples
         --------          
@@ -1454,29 +1482,303 @@ class _Decorator(object):
 
             >>> func = lambda *args, **kwargs: kwargs.get('year')
             >>> _Decorator.parse_year(func)(year=2000)
-                happyError: !!! year 2000 not supported !!!
+                happyError: !!! wrong value for YEAR argument - year 2000 not supported !!!
             >>> _Decorator.parse_year(func)(year=2013)
                 2013
-
-        Note
-        ----
-        Currently, only years :literal:`[2006, 2010, 2013]` are supported (since
-        they are the one currently implemented in |GISCO| NUTS service). 2013 is the
-        default. 
             
         See also
         --------
-        :meth:`~geoDecorators.parse_coordinate`.
+        :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_scale`,
+        :meth:`~geoDecorators.parse_format`, :meth:`~geoDecorators.parse_feature`,
+        :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_level`.
         """
-        YEARS      = [2006, 2010, 2013 # 2016 ?
-                      ]
         def __call__(self, *args, **kwargs):
-            year = kwargs.pop(_Decorator.KW_YEAR, 2013)
-            if year in ([],None):
-                return self.func(*args, **kwargs)
-            if year not in tuple(_Decorator.parse_year.YEARS):
-                raise happyError('year %s not supported' % year)
+            try:
+                year = kwargs.pop(_Decorator.KW_YEAR, None) # settings.GISCO_YEARS[-2]
+                assert year is None or isinstance(year,int)
+            except:
+                raise happyError('wrong format for %s argument' % _Decorator.KW_YEAR.upper())
+            else:
+                if year is None:
+                    return self.func(*args, **kwargs)
+            try:
+                assert year in settings.GISCO_YEARS
+            except:
+                raise happyError('wrong value for %s argument - year %s not supported' % (_Decorator.KW_YEAR.upper(), year))
             kwargs.update({_Decorator.KW_YEAR: year})                  
+            return self.func(*args, **kwargs)
+       
+    #/************************************************************************/
+    class parse_format(__parse):
+        """Generic class decorator of functions and methods used to parse a 
+        vector format.
+        
+        ::
+        
+            >>> new_func = _Decorator.parse_format(func)
+        
+        Arguments
+        ---------
+        func : callable
+            the function to decorate that accepts, say, the input arguments 
+            :data:`*args, **kwargs`.
+        
+        Keyword arguments
+        -----------------
+        method_type,obj,cls : 
+            see :meth:`~_Decorator.parse_coordinate`.
+                
+        Returns
+        -------
+        new_func : callable
+            the decorated function that now accepts :data:`fmt` as a keyword 
+            argument to parse a vector format (*e.g.*, for downloading datasets);
+            the supported vector formats (*i.e.* parsed to :data:`fmt`) are 
+            :literal:`'shp','geojson','topojson','gdb'` and :literal:`'pbf'`, *e.g.* 
+            any of those listed in :data:`settings.GISCO_FORMATS`. 
+        
+        Examples
+        --------          
+        
+        ::
+
+            >>> func = lambda *args, **kwargs: kwargs.get('fmt')
+            >>> _Decorator.parse_format(func)(fmt='1)
+                happyError: !!! wrong format for FMT argument !!!
+            >>> _Decorator.parse_format(func)(fmt='csv')
+                happyError: !!! wrong value for FMT argument - vector format 'csv' not supported !!!
+            >>> _Decorator.parse_format(func)(fmt='geojson')
+                'geojson'
+            >>> _Decorator.parse_format(func)(fmt='topojson')
+                'json'          
+            
+        See also
+        --------
+        :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_year`,
+        :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_feature`,
+        :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_level`.
+        """
+        def __call__(self, *args, **kwargs):
+            try:
+                fmt = kwargs.pop(_Decorator.KW_FORMAT, None) #settings.DEF_GISCO_FORMAT
+                assert fmt in ('',None) or isinstance(fmt,str)
+            except:
+                raise happyError('wrong format for %s argument' % _Decorator.KW_FORMAT.upper())
+            else:
+                if fmt in ('',None):
+                    return self.func(*args, **kwargs)
+                elif fmt == 'shapefile':    
+                    fmt = 'shp' # we cheat...
+            try:
+                assert fmt in happyType.seqflatten(settings.GISCO_FORMATS.items())
+            except:
+                raise happyError('wrong value for %s argument - vector format %s not supported' % (_Decorator.KW_FORMAT.upper(), fmt))
+            else:
+                if fmt in settings.GISCO_FORMATS.keys():
+                    fmt = settings.GISCO_FORMATS[fmt]
+            kwargs.update({_Decorator.KW_FORMAT: fmt})                  
+            return self.func(*args, **kwargs)
+       
+    #/************************************************************************/
+    class parse_feature(__parse):
+        """Generic class decorator of functions and methods used to parse a space
+        typology, as defined by |GISCO|.
+        
+        ::
+        
+            >>> new_func = _Decorator.parse_feature(func)
+        
+        Arguments
+        ---------
+        func : callable
+            the function to decorate that accepts, say, the input arguments 
+            :data:`*args, **kwargs`.
+        
+        Keyword arguments
+        -----------------
+        method_type,obj,cls : 
+            see :meth:`~_Decorator.parse_coordinate`.
+                
+        Returns
+        -------
+        new_func : callable
+            the decorated function that now accepts :data:`feat` as a keyword 
+            argument to parse a feature type (*e.g.*, used when downloading |GISCO| 
+            datasets); the supported vector formats (parsed to :data:`feat`) are
+            :literal:`'region','label'` and :literal:`'line'` (or :literal:`'boundary'`, 
+            *e.g.* those listed in :data:`settings.GISCO_FEATURES`.   
+        
+        Examples
+        --------          
+        
+        ::
+
+            >>> func = lambda *args, **kwargs: kwargs.get('feat')
+            >>> _Decorator.parse_feature(func)(feat='1)
+                happyError: !!! wrong format for FEAT argument !!!
+            >>> _Decorator.parse_feature(func)(feat='polygon')
+                happyError: !!! wrong value for FEAT argument - feature 'polygon' not supported !!!
+            >>> _Decorator.parse_feature(func)(feat='region')
+                'RN'
+            >>> _Decorator.parse_feature(func)(feat='line')
+                'BN'
+            >>> _Decorator.parse_feature(func)(feat='LB')
+                'LB'
+            
+        See also
+        --------
+        :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_year`,
+        :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_format`,
+        :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_level`.
+        """
+        def __call__(self, *args, **kwargs):
+            try:
+                feat = kwargs.pop(_Decorator.KW_FEATURE, None) # settings.DEF_GISCO_FEATURE
+                assert feat in ('',None) or isinstance(feat,str)
+            except:
+                raise happyError('wrong format for %s argument' % _Decorator.KW_FEATURE.upper())
+            else:
+                if feat in ('',None):
+                    return self.func(*args, **kwargs)
+            try:
+                assert feat in happyType.seqflatten(settings.GISCO_FEATURES.items())
+            except:
+                raise happyError('wrong value for %s argument - feature %s not supported' % (_Decorator.KW_FEATURE.upper(), feat))
+            else:
+                if feat in settings.GISCO_FEATURES.keys():
+                    feat = settings.GISCO_FEATURES[feat]
+            kwargs.update({_Decorator.KW_FEATURE: feat})                  
+            return self.func(*args, **kwargs)
+       
+    #/************************************************************************/
+    class parse_scale(__parse):
+        """Generic class decorator of functions and methods used to parse a scale
+        resolution unit, as defined by |GISCO|.
+        
+        ::
+        
+            >>> new_func = _Decorator.parse_scale(func)
+        
+        Arguments
+        ---------
+        func : callable
+            the function to decorate that accepts, say, the input arguments 
+            :data:`*args, **kwargs`.
+        
+        Keyword arguments
+        -----------------
+        method_type,obj,cls : 
+            see :meth:`~_Decorator.parse_coordinate`.
+                
+        Returns
+        -------
+        new_func : callable
+            the decorated function that now accepts  :data:`scale` as a keyword 
+            argument to parse a scale/resolution unit (*e.g.*, used in NUTS definition);
+            the supported scale parameters are :literal:`'01m','03m','10m','20m','60m'`, 
+            *e.g.* those listed in :data:`settings.GISCO_SCALES`, as well as the
+            corresponding digital units (1, 3, 10, 20 and 60 respectively).
+        
+        Examples
+        --------          
+        
+        ::
+
+            >>> func = lambda *args, **kwargs: kwargs.get('scale')
+            >>> _Decorator.parse_scale(func)(scale=45)
+                happyError: !!! wrong value for SCALE argument - scale resolution 45 not supported !!!
+            >>> _Decorator.parse_scale(func)(scale=1)
+                '01m'
+            >>> _Decorator.parse_scale(func)(scale='20m')
+                '20m'
+            >>> _Decorator.parse_scale(func)(scale='6')
+                '60m'
+            
+        See also
+        --------
+        :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_year`,
+        :meth:`~geoDecorators.parse_level`, :meth:`~geoDecorators.parse_format`,
+        :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_feature`.
+        """
+        def __call__(self, *args, **kwargs):
+            try:
+                scale = kwargs.pop(_Decorator.KW_SCALE, None) # settings.DEF_GISCO_SCALE
+                assert scale in ('',None) or isinstance(scale,(int,str))
+            except:
+                raise happyError('wrong format for %s argument' % _Decorator.KW_SCALE.upper())
+            else:
+                if scale in ('',None):
+                    return self.func(*args, **kwargs)
+            try:
+                assert scale in happyType.seqflatten(settings.GISCO_SCALES.items())
+            except:
+                raise happyError('wrong value for %s argument - scale resolution %s not supported' % (_Decorator.KW_SCALE.upper(), scale))
+            else:
+                if scale in settings.GISCO_SCALES.keys():
+                    scale = settings.GISCO_SCALES[scale]
+            kwargs.update({_Decorator.KW_SCALE: scale})                  
+            return self.func(*args, **kwargs)
+
+    #/************************************************************************/
+    class parse_level(__parse):
+        """Generic class decorator of functions and methods used to parse a level
+        for |NUTS| units.
+        
+        ::
+        
+            >>> new_func = _Decorator.parse_level(func)
+        
+        Arguments
+        ---------
+        func : callable
+            the function to decorate that accepts, say, the input arguments 
+            :data:`*args, **kwargs`.
+        
+        Keyword arguments
+        -----------------
+        method_type,obj,cls : 
+            see :meth:`~_Decorator.parse_coordinate`.
+                
+        Returns
+        -------
+        new_func : callable
+            the decorated function that now accepts  :data:`level` as a keyword 
+            argument to parse a NUTS level; the supported levels are 
+            :literal:`0,1,2,3`, as listed in :data:`settings.GISCO_NUTSLEVELS`.
+        
+        Examples
+        --------          
+        
+        ::
+
+            >>> func = lambda *args, **kwargs: kwargs.get('level')
+            >>> _Decorator.parse_level(func)(level='dumb')
+                happyError: !!! wrong format for LEVEL argument !!!
+            >>> _Decorator.parse_level(func)(level=4)
+                happyError: !!! wrong value for LEVEL argument - level 4 not supported !!!
+            >>> _Decorator.parse_level(func)(level=1)
+                1
+            
+        See also
+        --------
+        :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_year`,
+        :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_format`,
+        :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_feature`.
+        """
+        def __call__(self, *args, **kwargs):
+            try:
+                level = kwargs.pop(_Decorator.KW_LEVEL, None)
+                assert level is None or isinstance(level,int)
+            except:
+                raise happyError('wrong format for %s argument' % _Decorator.KW_LEVEL.upper())
+            else:
+                if level is None:
+                    return self.func(*args, **kwargs)
+            try:
+                assert level in settings.GISCO_NUTSLEVELS
+            except:
+                raise happyError('wrong value for %s argument - level %s not supported' % (_Decorator.KW_LEVEL.upper(), level))
+            kwargs.update({_Decorator.KW_LEVEL: level})                  
             return self.func(*args, **kwargs)
 
     #/************************************************************************/

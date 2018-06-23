@@ -803,7 +803,6 @@ class GISCOService(OSMService):
         except:
             raise happyError('GISCO service not available')
         super(GISCOService, self).__init__(**kwargs)
-        print(self.domain)
         self.rest_url = kwargs.pop('rest_url', settings.GISCO_RESTURL) 
         self.cache_url = kwargs.pop('cache_url', settings.GISCO_CACHEURL) 
         self.map_url = kwargs.pop('map_url', settings.GISCO_TILEURL) 
@@ -868,6 +867,11 @@ class GISCOService(OSMService):
         self.__arcgis = arcgis or ''
         
     #/************************************************************************/
+    @_Decorator.parse_year
+    @_Decorator.parse_projection
+    @_Decorator.parse_format
+    @_Decorator.parse_scale
+    @_Decorator.parse_feature
     def url_nuts(self, **kwargs):
         """Generate the URL of the |GISCO| domain for the download of NUTS data 
         (in vector format).
@@ -880,10 +884,11 @@ class GISCOService(OSMService):
         -----------------
         unit : str
         bulk : bool
-        year: str
+        year : int
         scale : str,int
         fmt : str
         proj : str,int
+        feat : str,int
             
         Returns
         -------
@@ -907,7 +912,12 @@ class GISCOService(OSMService):
         ::
             
             >>> serv = services.GISCOService()
-            >>> 
+            >>> serv.url_nuts() # default: full bulk dataset...
+                'http://europa.eu/ec.eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-01m.geojson.zip'
+            >>> serv.url_nuts(unit='AD')
+                'http://europa.eu/ec.eurostat/cache/GISCO/distribution/v2/nuts/distribution/AD-region-01m-4326-2013.geojson'
+                
+                
                 http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-10m.shp.zip
                 
                 http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_LB_2016_3857_LEVL_0.geojson
@@ -922,77 +932,44 @@ class GISCOService(OSMService):
         """
         # check whether bulk datasets need to be downloaded
         try:
-            bulk = kwargs.pop('bulk', True)
-            assert isinstance(bulk,bool)
-        except:
-            raise happyError('wrong format/value for BULK keyword argument')
+            bulk = kwargs.pop('bulk', False)
+            assert bulk is None or isinstance(bulk,bool)
+        except AssertionError:
+            raise happyError('wrong format/value for BULK argument')
         # check whether a specific unit is looked for
         try:
             unit = kwargs.pop(_Decorator.KW_UNIT, None)
             assert unit is None or isinstance(unit,str)
+        except AssertionError:
+            raise happyError('wrong format/value for UNIT argument')
+        try:
+            assert bulk is False or unit in ('NUTS',None)
         except:
-            raise happyError('wrong format/value for UNIT keyword argument')
+            happyVerbose('incompatible parameters BULK and UNIT - UNIT ignored')
+            unit = ''
         else:
-            unit = 'NUTS' if unit in (None,'') else unit
-        # check compatibility
-        try:
-            assert bulk is True or unit in ('NUTS',None)
-        except:
-            raise happyError('incompatible parameters BULK and UNIT')
-        # retrieve the spatial type
-        try:
-            year = kwargs.pop('year', settings.GISCO_YEARS[-1])
-            assert year in settings.GISCO_YEARS
-        except:
-            raise happyError('wrong format/value for YEAR keyword argument')
+            if unit in ('NUTS',None) and bulk is False: unit = 'NUTS'
         # retrieve the year
-        try:
-            year = kwargs.pop('year', settings.GISCO_YEARS[-1])
-            assert year in settings.GISCO_YEARS
-        except:
-            raise happyError('wrong format/value for YEAR keyword argument')
+        year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
         # retrieve the scale
-        try:
-            scale = kwargs.pop('scale', list(settings.GISCO_SCALES.keys())[0])
-            assert scale in happyType.seqflatten(settings.GISCO_SCALES.items())
-        except:
-            raise happyError('wrong format/value for SCALE keyword argument')
-        else:
-            if scale in list(settings.GISCO_SCALES.keys()):
-                scale = settings.GISCO_SCALES[scale]
+        scale = kwargs.pop(_Decorator.KW_SCALE, settings.DEF_GISCO_SCALE)
+        if scale in settings.GISCO_SCALES.keys():
+            scale = settings.GISCO_SCALES[scale]
         # retrieve the format
-        try:
-            fmt = kwargs.pop('fmt', 'geojson')
-            if fmt == 'shapefile':    fmt = 'shp' # we cheat...
-            assert fmt in happyType.seqflatten(settings.GISCO_FMTS.items()) 
-        except:
-            raise happyError('wrong format/value for FMT keyword argument')
-        else:
-            if fmt in list(settings.GISCO_FMTS.keys()):
-                fmt = settings.GISCO_FMTS[fmt]
+        fmt = kwargs.pop(_Decorator.KW_FORMAT, settings.DEF_GISCO_FORMAT)
+        if fmt in settings.GISCO_FORMATS.keys():
+            fmt = settings.GISCO_FORMATS[fmt]
         # retrieve the projection
-        try:
-            proj = kwargs.pop('proj', settings.GISCO_PROJ)
-            assert proj in settings.GISCO_PROJECTIONS
-        except:
-            raise happyError('wrong format/value for PROJ keyword argument')
-        else:
-            if not proj in list(settings.GISCO_PROJECTIONS.values()):
-                proj = settings.GISCO_PROJECTIONS[proj]
+        proj = kwargs.pop(_Decorator.KW_PROJECTION, settings.DEF_GISCO_PROJECTION)
+        if proj in settings.GISCO_PROJECTIONS.keys():
+            proj = settings.GISCO_PROJECTIONS[proj]
         # retrieve the spatial type
-        try:
-            spatial = kwargs.pop('type', 'region') # list(settings.GISCO_SPATIALTYPES.keys())[0]
-            assert spatial in happyType.seqflatten(settings.GISCO_SPATIALTYPES.items())
-        except:
-            raise happyError('wrong format/value for SPATIAL keyword argument')
+        feat = kwargs.pop(_Decorator.KW_FEATURE, settings.DEF_GISCO_FEATURE) 
+        if feat in settings.GISCO_FEATURES.keys():
+            feat = settings.GISCO_FEATURES[feat]
         # retrieve the level
-        try:
-            level = kwargs.pop('level', settings.GISCO_NUTSLEVELS[0])
-            assert level in settings.GISCO_NUTSLEVELS
-        except:
-            raise happyError('wrong format/value for LEVEL keyword argument')
-        else:
-            level = 'LEVL_' + str(level)
+        level = kwargs.pop(_Decorator.KW_LEVEL, settings.GISCO_NUTSLEVELS[0])
+        level = 'LEVL_' + str(level)
         # set the compression format
         zip_  = '.zip' if bulk is True else ''
         theme = 'nuts'
@@ -1005,28 +982,32 @@ class GISCOService(OSMService):
                                         basename, year, scale.lower(),
                                         fmt, zip_ )
         elif unit=='NUTS':
-            domain = {v:k for k,v in settings.GISCO_FMTS.items()}[fmt]
-            if not spatial in list(settings.GISCO_SPATIALTYPES.values()):
-                spatial = settings.GISCO_SPATIALTYPES[spatial]
+            domain = {v:k for k,v in settings.GISCO_VECTORFMTS.items()}[fmt]
+            if not feat in list(settings.GISCO_FEATURES.values()):
+                feat = settings.GISCO_FEATURES[feat]
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/topojson/NUTS_BN_01M_2016_3035_LEVL_3.json
             url = '%s://%s/%s/%s/%s%s_%s_%s_%s_%s_%s.%s' % (settings.PROTOCOL, 
                                         self.cache_url, theme, domain,
-                                        basename, unit, spatial.upper(), scale.upper(), year, proj, level,
-                                        fmt)
+                                        basename, unit, feat.upper(), scale.upper(), year, proj, level,
+                                        fmt )
         else:
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AT-region-01m-3035-2016.geojson
             domain = settings.GISCO_DISTRIBUTION['distribution']['domain']
             basename = settings.GISCO_DISTRIBUTION['distribution']['basename']
-            if not spatial in list(settings.GISCO_SPATIALTYPES.keys()):
-                spatial = {v:k for k,v in settings.GISCO_SPATIALTYPES.items()}[spatial]
+            if not feat in list(settings.GISCO_FEATURES.keys()):
+                feat = {v:k for k,v in settings.GISCO_FEATURES.items()}[feat]
             url = '%s://%s/%s/%s/%s%s-%s-%s-%s-%s.%s' % (settings.PROTOCOL, 
                                         self.cache_url, theme, domain,
-                                        basename, unit, spatial.lower(), scale.lower(), proj, year, 
+                                        basename, unit, feat.lower(), scale.lower(), proj, year, 
                                         fmt )
             
         return url            
         
     #/************************************************************************/
+    @_Decorator.parse_year
+    @_Decorator.parse_projection
+    @_Decorator.parse_format
+    @_Decorator.parse_scale
     def url_countries(self, **kwargs):
         """Generate the URL (or name) of the |GISCO| countries vector datasets.
         
@@ -1041,8 +1022,8 @@ class GISCOService(OSMService):
         ::
             
             >>> serv = services.GISCOService()
-            >>> serv.url_countries(unit='AD')
-                'http://europa.eu/ec.eurostat/cache/GISCO/distribution/v2/countries/distribution/AD-region-01m-4326-2016.geojson'
+            >>> serv.url_countries(unit='AT')
+                'http://europa.eu/ec.eurostat/cache/GISCO/distribution/v2/countries/distribution/AT-region-01m-4326-2013.geojson'
 
         Note
         ----
@@ -1054,52 +1035,28 @@ class GISCOService(OSMService):
             assert isinstance(unit,str)
         except:
             raise happyError('wrong format/value for UNIT keyword argument')
-        # retrieve the spatial type
-        try:
-            year = kwargs.pop('year', settings.GISCO_YEARS[-1])
-            assert year in settings.GISCO_YEARS
-        except:
-            raise happyError('wrong format/value for YEAR keyword argument')
         # retrieve the year
-        try:
-            year = kwargs.pop('year', settings.GISCO_YEARS[-1])
-            assert year in settings.GISCO_YEARS
-        except:
-            raise happyError('wrong format/value for YEAR keyword argument')
+        year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
         # retrieve the scale
-        try:
-            scale = kwargs.pop('scale', list(settings.GISCO_SCALES.keys())[0])
-            assert scale in happyType.seqflatten(settings.GISCO_SCALES.items())
-        except:
-            raise happyError('wrong format/value for SCALE keyword argument')
-        else:
-            if scale in list(settings.GISCO_SCALES.keys()):
-                scale = settings.GISCO_SCALES[scale]
+        scale = kwargs.pop(_Decorator.KW_SCALE, settings.DEF_GISCO_SCALE)
+        if scale in settings.GISCO_SCALES.keys():
+            scale = settings.GISCO_SCALES[scale]
         # retrieve the format
-        try:
-            fmt = kwargs.pop('fmt', 'geojson')
-            if fmt == 'shapefile':    fmt = 'shp' # we cheat...
-            assert fmt in happyType.seqflatten(settings.GISCO_FMTS.items()) 
-        except:
-            raise happyError('wrong format/value for FMT keyword argument')
-        else:
-            if fmt in list(settings.GISCO_FMTS.values()):
-                fmt = {v:k for k,v in settings.GISCO_FMTS.items()}[fmt]
+        fmt = kwargs.pop(_Decorator.KW_FORMAT, settings.DEF_GISCO_FORMAT)
+        #if fmt in settings.GISCO_FORMATS.keys():
+        #    fmt = settings.GISCO_FORMATS[fmt]
+        if fmt in list(settings.GISCO_FORMATS.values()):
+            fmt = {v:k for k,v in settings.GISCO_FORMATS.items()}[fmt]
         # retrieve the projection
-        try:
-            proj = kwargs.pop('proj', settings.GISCO_PROJ)
-            assert proj in settings.GISCO_PROJECTIONS
-        except:
-            raise happyError('wrong format/value for PROJ keyword argument')
-        else:
-            if not proj in list(settings.GISCO_PROJECTIONS.values()):
-                proj = settings.GISCO_PROJECTIONS[proj]
+        proj = kwargs.pop(_Decorator.KW_PROJECTION, settings.DEF_GISCO_PROJECTION)
+        if proj in settings.GISCO_PROJECTIONS.keys():
+            proj = settings.GISCO_PROJECTIONS[proj]
         theme = 'countries'
         domain = 'distribution'
-        spatial = 'region'
+        space = 'region'
         url = '%s://%s/%s/%s/%s-%s-%s-%s-%s.%s' % (settings.PROTOCOL, 
                                     self.cache_url, theme, domain,
-                                    unit, spatial.lower(), scale.lower(), proj, year, 
+                                    unit, space, scale.lower(), proj, year, 
                                     fmt ) 
             
         return url            
@@ -1164,7 +1121,7 @@ class GISCOService(OSMService):
         except:
             bckgrd = tiles # in case we forgot to specify a 'bckgrd' 
         try:
-            proj = kwargs.pop('proj', settings.GISCO_PROJ)
+            proj = kwargs.pop('proj', settings.DEF_GISCO_PROJECTION)
             assert proj in (None,'') or proj in happyType.seqflatten(settings.GISCO_PROJECTIONS.items())
         except:
             raise happyError('wrong format/value for PROJ keyword argument')
