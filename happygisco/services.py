@@ -1413,11 +1413,9 @@ class GISCOService(OSMService):
         happyVerbose('output url:\n            %s' % url)
         return url
         
-    
-        
     #/************************************************************************/
-    def _file4country(self, country, **kwargs):
-        """Iterable version of :meth:`~GISCOService.file4country`.
+    def _vfile4country(self, country, **kwargs):
+        """Iterable version of :meth:`~GISCOService.vfile4country`.
         """
         for c in country:
             kwargs.update({'country': c})
@@ -1433,33 +1431,32 @@ class GISCOService(OSMService):
                 assert file not in({},None)
             except:
                 raise happyError('geolocation for place %s not loaded' % c)
-            yield file if file is None or happyType.ismapping(file) or len(file)>1 else file[0]
+            yield c, file if file is None or happyType.ismapping(file) or len(file)>1 else file[0]
     #/************************************************************************/
     @_Decorator.parse_year
     @_Decorator.parse_projection
     @_Decorator.parse_format
     @_Decorator.parse_scale
-    def file4country(self, country, **kwargs):
+    def vfile4country(self, country, **kwargs):
         """Download, and cache when requested, country vector files from |GISCO| Rest
         API.
         
         ::
             
-            >>> fileref = serv.file4country(country, **kwargs)
-            
+            >>> fref = serv.vfile4country(country, **kwargs)            
             
         Returns
         -------
-        fileref : dict
+        fref : dict
         """
-        fileref = []
-        [fileref.append(file if file is None or len(file)>1 else file[0]) \
-             for file in self._file4country(country, **kwargs)]
-        return fileref if fileref==[] or len(fileref)>1 else fileref[0]
+        fref = {}
+        [fref.update({ctry: file if file is None or len(file)>1 else file[0]}) \
+             for ctry,file in self._vfile4country(country, **kwargs)]
+        return fref
         
     #/************************************************************************/
-    def _file4nuts(self, nuts, **kwargs):
-        """Iterable version of :meth:`~GISCOService.file4nuts`.
+    def _vfile4nuts(self, nuts, **kwargs):
+        """Iterable version of :meth:`~GISCOService.vfile4nuts`.
         """
         for n in nuts:
             kwargs.update({'unit': n})
@@ -1475,25 +1472,29 @@ class GISCOService(OSMService):
                 assert data not in({},None)
             except:
                 raise happyError('geolocation for place %s not loaded' % n)
-            yield data if data is None or happyType.ismapping(data) or len(data)>1 else data[0]
+            yield n, data if data is None or happyType.ismapping(data) or len(data)>1 else data[0]
     #/************************************************************************/
     @_Decorator.parse_year
     @_Decorator.parse_projection
     @_Decorator.parse_format
     @_Decorator.parse_scale
     @_Decorator.parse_feature
-    def file4nuts(self, nuts, **kwargs):
+    def vfile4nuts(self, nuts, **kwargs):
         """Download, and cache when requested, NUTS vector files from |GISCO| Rest
         API.
         
         ::
             
-            >>> fileref = serv.file4nuts(nuts, **kwargs)
+            >>> fref  = serv.vfile4nuts(nuts, **kwargs)
+            
+        Returns
+        -------
+        fref : dict
         """
-        fileref = []
-        [fileref.append(file if file is None or len(file)>1 else file[0]) \
-             for file in self._file4nuts(nuts, **kwargs)]
-        return fileref if fileref==[] or len(fileref)>1 else fileref[0]
+        fref = {}
+        [fref.update({n:file if file is None or len(file)>1 else file[0]}) \
+             for n, file in self._vfile4nuts(nuts, **kwargs)]
+        return fref
 
     #/************************************************************************/
     def _place2area(self, place, **kwargs): 
