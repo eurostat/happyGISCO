@@ -2021,8 +2021,8 @@ class GDALTransform(_Tool):
             >>> dirname = './data/ref-nuts-2013-01m/'
             >>> filename = 'NUTS_RG_01M_2013_4326_LEVL_2.shp'
             >>> myfile = os.path.join(dirname, filename)
-            >>> print(myfile)
-                ./data/ref-nuts-2013-01m/NUTS_RG_01M_2013_4326_LEVL_2.shp
+            >>> myfile
+                './data/ref-nuts-2013-01m/NUTS_RG_01M_2013_4326_LEVL_2.shp'
             
         We can load the associated (vector) data into a structured layer using
         the *shapefile* driver available in |GDAL| (note that's actually the 
