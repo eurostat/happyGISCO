@@ -66,6 +66,10 @@ import os, sys#analysis:ignore
 import itertools, functools
 import collections#analysis:ignore
 
+import time
+import hashlib
+import zipfile
+
 # local imports
 from happygisco import settings
 from happygisco.settings import happyVerbose, happyWarning, happyError, happyType
@@ -77,6 +81,34 @@ try:
 except ImportError:                 
     SERVICE_AVAILABLE = False                
     happyWarning('REQUESTS package (https://pypi.python.org/pypi/requests/) not loaded - GISCO ONLINE service will not be accessed')
+
+try:                                
+    import requests_cache 
+except ImportError:
+    happyWarning("missing REQUESTS_CACHE module - visit https://pypi.python.org/pypi/requests-cache", ImportWarning)
+    requests_cache = None          
+    
+try:                                
+    import cachecontrol 
+except ImportError:  
+    happyWarning("missing CACHECONTROL module - visit https://pypi.python.org/pypi/requests-cache", ImportWarning)
+    cachecontrol = None
+else:
+    try:
+        import lockfile#analysis:ignore
+    except ImportError:  
+        happyWarning("missing LOCKFILE module", ImportWarning)
+    from cachecontrol import CacheControl
+    from cachecontrol.caches import FileCache
+    
+
+try:                                
+    import datetime
+except ImportError:          
+    happyWarning("DATETIME module missing in Python Standard Library", ImportWarning)
+    class datetime:
+        class timedelta: 
+            def __init__(self,arg): return arg
 
 
 #%%
@@ -98,10 +130,41 @@ class _Service(object):
     
     #/************************************************************************/
     def __init__(self, **kwargs):
+        self.__session           = None
+        self.__cache_store       = True
+        self.__expire_after      = None # datetime.deltatime(0)
+        self.__cache_backend     = None
+        # update with keyword arguments passed
+        if kwargs != {}:
+            attrs = ('cache_store','expire_after','force_download')
+            for attr in list(set(attrs).intersection(kwargs.keys())):
+                setattr(self, '{}'.format(attr), kwargs.get(attr))
+        # determine appropriate setting for a given session, taking into account
+        # the explicit setting on that request, and the setting in the session. 
+        self.__cache_backend = 'File'
+        if isinstance(self.cache_store,bool):
+            self.__cache_store = self.__default_cache() if self.cache_store else None
+        # determine appropriate setting for a given session, taking into account
+        # the explicit setting on that request, and the setting in the session. 
         try:
-            self.session = requests.Session()
+            self.__session = requests.Session()
+            # session = requests.session(**kwargs)
         except:
-            raise happyError('request session not recognised')
+            raise happyError('wrong requests setting - SESSION not initialised')
+        if self.cache_store is not None:
+            try:
+                if int(self.expire_after) <= 0:
+                    cache_store = FileCache(os.path.abspath(self.cache_store), forever=True)
+                else:
+                    cache_store = FileCache(os.path.abspath(self.cache_store))  
+            except:
+                pass
+            else:
+                self.__session = CacheControl(self.session, cache_store)
+        try:
+            assert self.session is not None
+        except:
+            raise happyError('wrong definition for SESSION parameters - SESSION not initialised')
         
     #/************************************************************************/
     @property
@@ -114,9 +177,58 @@ class _Service(object):
     @session.setter#analysis:ignore
     def session(self, session):
         if session is not None and not isinstance(session, requests.sessions.Session):
-            raise TypeError('wrong type for SESSION parameter')
+            raise happyError('wrong type for SESSION parameter')
         self.__session = session
     
+    #/************************************************************************/
+    @property
+    def cache_store(self):
+        return self.__cache_store
+    @cache_store.setter
+    def cache_store(self, cache_store):
+        if not(cache_store is None or isinstance(cache_store, (str,bool))):
+            raise happyError('wrong type for CACHE_STORE parameter')
+        else:
+            #if cache_store not in (False,'',None) and requests_cache is None and cachecontrol is None:
+            #    raise happyError('caching not supported in the absence of modules requests_cache and cachecontrol')                
+            pass
+        self.__cache_store = cache_store
+    
+    #/************************************************************************/
+    @property
+    def cache_backend(self):
+        return self.__cache_backend
+    # note: no setter ... 
+
+    #/************************************************************************/
+    @property
+    def expire_after(self):
+        return self.__expire_after
+    @expire_after.setter
+    def expire_after(self, expire_after):
+        if expire_after is None or isinstance(expire_after, (int, datetime.timedelta)) and int(expire_after)>=0:
+            self.__expire_after = expire_after
+        elif not isinstance(expire_after, (int, datetime.timedelta)):
+            raise happyError('wrong type for EXPIRE_AFTER parameter')
+        elif isinstance(expire_after, int) and expire_after<0:
+            raise happyError('wrong time setting for EXPIRE_AFTER parameter')
+
+    #/************************************************************************/
+    @staticmethod
+    def __default_cache():
+        """Create default pathname for cache directory depending on OS platform.
+        Inspired by `Python` package `mod:wbdata`: default path defined for 
+        `property:path` property of `class:Cache` class.
+        """
+        platform = sys.platform
+        if platform.startswith("win"): # windows
+            basedir = os.getenv("LOCALAPPDATA",os.getenv("APPDATA",os.path.expanduser("~")))
+        elif platform.startswith("darwin"): # Mac OS
+            basedir = os.path.expanduser("~/Library/Caches")
+        else:
+            basedir = os.getenv("XDG_CACHE_HOME",os.path.expanduser("~/.cache"))
+        return os.path.join(basedir, settings.PACKAGE)    
+        
     #/************************************************************************/   
     def get_status(self, url):
         """Retrieve the header of a URL and return the server's status code.
@@ -186,14 +298,78 @@ class _Service(object):
             status = response.status_code
             response.close()
         return status
+
+    #/************************************************************************/
+    @staticmethod
+    def __is_cached(pathname, time_out):
+        """Check whether a URL exists and is alread cached.
+        :param url:
+        :returns: True if the file can be retrieved from the disk (cache)
+        """
+        if not os.path.exists(pathname):
+            resp = False
+        elif time_out is 0:
+            resp = False
+        elif time_out is None:
+            resp = True
+        else:
+            cur = time.time()
+            mtime = os.stat(pathname).st_mtime
+            # print("last modified: %s" % time.ctime(mtime))
+            resp = cur - mtime < time_out
+        return resp
+                        
+    #/************************************************************************/
+    def __get(self, url, **kwargs):
+        """Download url from internet and store the downloaded content into 
+        <cache>/file.
+        If <cache>/file already exists, it returns content from disk.
+        
+            >>> page = S.__get(url, force_download=False, time_out=0)
+        """
+        # create cache directory only the fist time it is needed
+        # note: html must be a str type not byte type
+        cache_store = kwargs.get('cache_store') or self.cache_store or False
+        if isinstance(cache_store, bool) and cache_store is True:
+            cache_store = self.__default_cache()
+        force_download = kwargs.get('force_download') or self.force_download or False
+        expire_after = kwargs.get('expire_after') or self.expire_after or 0
+        # build unique filename from URL name and cache directory, _e.g._ using 
+        # hashlib encoding.
+        pathname = url.encode('utf-8')
+        try:
+            pathname = hashlib.md5(pathname).hexdigest()
+        except:
+            pathname = pathname.hex()
+        pathname = os.path.join(cache_store or './', pathname)
+        if force_download is True or not self.__is_cached(pathname, expire_after):
+            response = self.get_response(url)
+            content = response.content
+            if cache_store is not None:
+                if not os.path.exists(cache_store):
+                    os.makedirs(cache_store)
+                elif not os.path.isdir(cache_store):
+                    raise happyError('cache {} is not a directory'.format(cache_store))
+                # write "content" to a given pathname
+                with open(pathname, 'w') as f:
+                    f.write(content)
+                    f.close()  
+        else:
+            if not os.path.exists(cache_store) or not os.path.isdir(cache_store):
+                raise happyError('cache %s is not a directory' % cache_store)
+            # read "content" from a given pathname.
+            with open(pathname, 'r') as f:
+                content = f.read()
+                f.close()
+        return pathname, content
     
     #/************************************************************************/
-    def get_response(self, url):
+    def get_response(self, url, **kwargs):
         """Retrieve the GET response of a URL.
         
         ::
         
-            >>> response = serv.get_response(url)
+            >>> response = serv.get_response(url, **kwargs)
             
         Arguments
         ---------
@@ -262,13 +438,34 @@ class _Service(object):
         --------
         :meth:`~_Service.get_status`, :meth:`~_Service.build_url`.
         """
-        try:
-            response = self.session.get(url)                
-        except:
-            raise happyError('wrong request formulated')  
-        else:
-            # happyVerbose('response reason from web-service: %s' % response.reason)
-            pass
+        force_download = kwargs.pop('force_download',False)
+        if not isinstance(force_download, bool):
+            raise happyError('wrong type for FORCE_DOWNLOAD parameter')
+        cache_store = kwargs.pop('cache_store',None) or self.cache_store or False
+        expire_after = kwargs.pop('expire_after',None) or self.expire_after or 0
+        if isinstance(cache_store, bool) and cache_store is True:
+            cache_store = self.__default_cache()
+        if force_download is True:
+            try:
+                if self.cache in (None,False):
+                    response = self.session.get(url)                
+                else:
+                    with requests_cache.disabled():
+                        response = self.session.get(url)    
+            except:
+                raise happyError('wrong request formulation') 
+        else:   
+            try:
+                if cachecontrol is not None: # self.cache_store.directory
+                    with requests_cache.enabled(self.cache_store, **kwargs):
+                        response = self.session.get(url)                
+                else:
+                    kwargs.update({'force_download': force_download,
+                                   'cache_store': cache_store,
+                                   'expire_after': expire_after})
+                    response = self.__get(**kwargs)
+            except:
+                raise happyError('wrong request formulated')  
         try:
             response.raise_for_status()
         except:
@@ -1430,7 +1627,6 @@ class _Decorator(object):
             else:
                 if proj in ('',None):
                     return self.func(*args, **kwargs)
-            print(proj)
             try:
                 assert proj in happyType.seqflatten(settings.GISCO_PROJECTIONS.items())
                 # assert proj in list(_Decorator.parse_projection.PROJECTION.keys() \
@@ -1440,7 +1636,6 @@ class _Decorator(object):
             else:
                 if proj in settings.GISCO_PROJECTIONS.keys():
                     proj = settings.GISCO_PROJECTIONS[proj]
-            print(proj)
                 # if proj in settings.GISCO_PROJECTIONS.values():
                 #    proj = {v:k for k,v in settings.GISCO_PROJECTIONS.items()}[proj]
             kwargs.update({_Decorator.KW_PROJECTION: proj})                  
