@@ -803,55 +803,55 @@ class GISCOService(OSMService):
         except:
             raise happyError('GISCO service not available')
         super(GISCOService, self).__init__(**kwargs)
-        self.rest_url = kwargs.pop('rest_url', settings.GISCO_RESTURL) 
-        self.cache_url = kwargs.pop('cache_url', settings.GISCO_CACHEURL) 
-        self.map_url = kwargs.pop('map_url', settings.GISCO_TILEURL) 
+        self.url_rest = kwargs.pop('url_rest', settings.GISCO_RESTURL) 
+        self.url_cache = kwargs.pop('url_cache', settings.GISCO_CACHEURL) 
+        self.url_map = kwargs.pop('url_map', settings.GISCO_TILEURL) 
         self.arcgis = kwargs.pop('arcgis', settings.GISCO_ARCGIS)
 
     #/************************************************************************/
     @property
-    def rest_url(self):
+    def url_rest(self):
         """REST property (:data:`getter`/:data:`setter`) defining the complete
         URL of REST services, *e.g.* :data:`settings.GISCO_RESTURL`, of an instance 
         of this class. 
         """
         return self.__domain
-    @rest_url.setter#analysis:ignore
-    def rest_url(self, url):
+    @url_rest.setter#analysis:ignore
+    def url_rest(self, url):
         if url is not None and not happyType.isstring(url):
-            raise TypeError('wrong type for REST_URL parameter')
+            raise TypeError('wrong type for url_rest parameter')
         self.__domain = url or ''
         
     # let us just override the super property domain
-    domain = rest_url
+    domain = url_rest
 
     #/************************************************************************/
     @property
-    def cache_url(self):
+    def url_cache(self):
         """Cache property (:data:`getter`/:data:`setter`) defining the complete
         URL of |GISCO| cache services, *e.g.* :data:`settings.GISCO_CACHEURL`, of 
         an instance of this class. 
         """ 
-        return self.__cache_url
-    @cache_url.setter#analysis:ignore
-    def cache_url(self, url):
+        return self.__url_cache
+    @url_cache.setter#analysis:ignore
+    def url_cache(self, url):
         if url is not None and not happyType.isstring(url):
-            raise TypeError('wrong type for CACHE_URL parameter')
-        self.__cache_url = url or ''
+            raise TypeError('wrong type for url_cache parameter')
+        self.__url_cache = url or ''
 
     #/************************************************************************/
     @property
-    def map_url(self):
+    def url_map(self):
         """URL property (:data:`getter`/:data:`setter`) defining the complete
         URL of GISCO mapping services, *e.g.* :data:`settings.GISCO_MAPURL`, of 
         an instance of this class. 
         """ 
-        return self.__map_url
-    @map_url.setter#analysis:ignore
-    def map_url(self, url):
+        return self.__url_map
+    @url_map.setter#analysis:ignore
+    def url_map(self, url):
         if url is not None and not happyType.isstring(url):
-            raise TypeError('wrong type for MAP_URL parameter')
-        self.__map_url = url or ''
+            raise TypeError('wrong type for url_map parameter')
+        self.__url_map = url or ''
 
     #/************************************************************************/
     @property
@@ -865,13 +865,8 @@ class GISCOService(OSMService):
         if arcgis is not None and not happyType.isstring(arcgis):
             raise TypeError('wrong type for ARCGIS parameter')
         self.__arcgis = arcgis or ''
-        
+    
     #/************************************************************************/
-    @_Decorator.parse_year
-    @_Decorator.parse_projection
-    @_Decorator.parse_format
-    @_Decorator.parse_scale
-    @_Decorator.parse_feature
     def url_nuts(self, **kwargs):
         """Generate the URL of the |GISCO| domain for the download of NUTS data 
         (in vector format).
@@ -978,7 +973,7 @@ class GISCOService(OSMService):
             domain = settings.GISCO_DISTRIBUTION['download']['domain']
             basename = settings.GISCO_DISTRIBUTION['download']['basename']
             url = '%s://%s/%s/%s/%s-%s-%s.%s%s' % (settings.PROTOCOL, 
-                                        self.cache_url, theme, domain,
+                                        self.url_cache, theme, domain,
                                         basename, year, scale.lower(),
                                         fmt, zip_ )
         elif unit=='NUTS':
@@ -987,7 +982,7 @@ class GISCOService(OSMService):
                 feat = settings.GISCO_FEATURES[feat]
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/topojson/NUTS_BN_01M_2016_3035_LEVL_3.json
             url = '%s://%s/%s/%s/%s%s_%s_%s_%s_%s_%s.%s' % (settings.PROTOCOL, 
-                                        self.cache_url, theme, domain,
+                                        self.url_cache, theme, domain,
                                         basename, unit, feat.upper(), scale.upper(), year, proj, level,
                                         fmt )
         else:
@@ -997,23 +992,19 @@ class GISCOService(OSMService):
             if not feat in list(settings.GISCO_FEATURES.keys()):
                 feat = {v:k for k,v in settings.GISCO_FEATURES.items()}[feat]
             url = '%s://%s/%s/%s/%s%s-%s-%s-%s-%s.%s' % (settings.PROTOCOL, 
-                                        self.cache_url, theme, domain,
+                                        self.url_cache, theme, domain,
                                         basename, unit, feat.lower(), scale.lower(), proj, year, 
                                         fmt )
             
-        return url            
-        
+        return url   
+         
     #/************************************************************************/
-    @_Decorator.parse_year
-    @_Decorator.parse_projection
-    @_Decorator.parse_format
-    @_Decorator.parse_scale
-    def url_countries(self, **kwargs):
+    def url_country(self, **kwargs):
         """Generate the URL (or name) of the |GISCO| countries vector datasets.
         
         ::
             
-            >>> url = serv.url_countries(**kwargs)
+            >>> url = serv.url_country(**kwargs)
             
             
         Example
@@ -1022,7 +1013,7 @@ class GISCOService(OSMService):
         ::
             
             >>> serv = services.GISCOService()
-            >>> serv.url_countries(unit='AT')
+            >>> serv.url_country(unit='AT')
                 'http://europa.eu/ec.eurostat/cache/GISCO/distribution/v2/countries/distribution/AT-region-01m-4326-2013.geojson'
 
         Note
@@ -1055,19 +1046,19 @@ class GISCOService(OSMService):
         domain = 'distribution'
         space = 'region'
         url = '%s://%s/%s/%s/%s-%s-%s-%s-%s.%s' % (settings.PROTOCOL, 
-                                    self.cache_url, theme, domain,
+                                    self.url_cache, theme, domain,
                                     unit, space, scale.lower(), proj, year, 
                                     fmt ) 
             
         return url            
         
     #/************************************************************************/
-    def url_tiles(self, **kwargs):
+    def url_tile(self, **kwargs):
         """Generate the URL (or name) of the |GISCO| tiling web-service.
         
         ::
             
-            >>> url, attr = serv.url_tiles(**kwargs)
+            >>> url, attr = serv.url_tile(**kwargs)
            
         Keyword Arguments
         -----------------
@@ -1089,10 +1080,10 @@ class GISCOService(OSMService):
         ::
             
             >>> serv = services.GISCOService()
-            >>> serv.url_tiles(tiles='bmarble')
+            >>> serv.url_tile(tiles='bmarble')
                 ('http://europa.eu/webtools/maps/tiles/bmarble/4326/{z}/{y}/{x}',
                  '© NASA’s Earth Observatory')
-            >>> serv.url_tiles(tiles='osmec')
+            >>> serv.url_tile(tiles='osmec')
                 ('http://europa.eu/webtools/maps/tiles/osm-ec/{z}/{y}/{x}', 
                  '© OpenStreetMap')
         """
@@ -1139,7 +1130,7 @@ class GISCOService(OSMService):
         else:
             if all([o in set('xyz') for o in order]):
                 order = '/'.join(['{%s}' % o for o in order])
-        tiles = '%s://%s/%s/%s%s' % (settings.PROTOCOL, self.map_url, 
+        tiles = '%s://%s/%s/%s%s' % (settings.PROTOCOL, self.url_map, 
                                      bckgrd, proj, order)
         return tiles, attr            
 
@@ -1304,7 +1295,7 @@ class GISCOService(OSMService):
         polyline = kwargs.pop(_Decorator.parse_coordinate.KW_POLYLINE,None)
         polyline = 'polyline(' + polyline + ')' if polyline else ''
         url = self.build_url(protocol=protocol,
-                             domain=self.rest_url, 
+                             domain=self.url_rest, 
                              query='route/v1/driving/%s' % coordinates or polyline, 
                              **{k:v for k,v in kwargs.items() if k in keys})
         happyVerbose('output url:\n            %s' % url)
@@ -1415,13 +1406,95 @@ class GISCOService(OSMService):
         # note that the service is case sensitive as f is concerned
         kwargs.update({'f': kwargs.get('f','JSON').upper()}) # let us avoid stupid mistakes
         url = self.build_url(protocol=protocol,
-                             domain=self.rest_url, 
+                             domain=self.url_rest, 
                              path='nuts', 
                              query='find-nuts.py', 
                              **{k:v for k,v in kwargs.items() if k in keys})
         happyVerbose('output url:\n            %s' % url)
         return url
         
+    
+        
+    #/************************************************************************/
+    def _file4country(self, country, **kwargs):
+        """Iterable version of :meth:`~GISCOService.file4country`.
+        """
+        for c in country:
+            kwargs.update({'country': c})
+            try:
+                url = self.url_country(**kwargs)
+                assert self.get_status(url) is not None
+            except:
+                raise happyError('error NUTS API request')
+            else:
+                response = self.get_response(url)
+            try:
+                file = response
+                assert file not in({},None)
+            except:
+                raise happyError('geolocation for place %s not loaded' % c)
+            yield file if file is None or happyType.ismapping(file) or len(file)>1 else file[0]
+    #/************************************************************************/
+    @_Decorator.parse_year
+    @_Decorator.parse_projection
+    @_Decorator.parse_format
+    @_Decorator.parse_scale
+    def file4country(self, country, **kwargs):
+        """Download, and cache when requested, country vector files from |GISCO| Rest
+        API.
+        
+        ::
+            
+            >>> fileref = serv.file4country(country, **kwargs)
+            
+            
+        Returns
+        -------
+        fileref : dict
+        """
+        fileref = []
+        [fileref.append(file if file is None or len(file)>1 else file[0]) \
+             for file in self._file4country(country, **kwargs)]
+        return fileref if fileref==[] or len(fileref)>1 else fileref[0]
+        
+    #/************************************************************************/
+    def _file4nuts(self, nuts, **kwargs):
+        """Iterable version of :meth:`~GISCOService.file4nuts`.
+        """
+        for n in nuts:
+            kwargs.update({'unit': n})
+            try:
+                url = self.url_nuts(**kwargs)
+                assert self.get_status(url) is not None
+            except:
+                raise happyError('error NUTS API request')
+            else:
+                response = self.get_response(url)
+            try:
+                data = response
+                assert data not in({},None)
+            except:
+                raise happyError('geolocation for place %s not loaded' % n)
+            yield data if data is None or happyType.ismapping(data) or len(data)>1 else data[0]
+    #/************************************************************************/
+    @_Decorator.parse_year
+    @_Decorator.parse_projection
+    @_Decorator.parse_format
+    @_Decorator.parse_scale
+    @_Decorator.parse_feature
+    def file4nuts(self, nuts, **kwargs):
+        """Download, and cache when requested, NUTS vector files from |GISCO| Rest
+        API.
+        
+        ::
+            
+            >>> fileref = serv.file4nuts(nuts, **kwargs)
+        """
+        fileref = []
+        [fileref.append(file if file is None or len(file)>1 else file[0]) \
+             for file in self._file4nuts(nuts, **kwargs)]
+        return fileref if fileref==[] or len(fileref)>1 else fileref[0]
+
     #/************************************************************************/
     def _place2area(self, place, **kwargs): 
         """Iterable version of :meth:`~GISCOService.place2area`.
