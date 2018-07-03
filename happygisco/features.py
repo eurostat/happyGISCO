@@ -61,8 +61,18 @@ from happygisco import tools
 from happygisco.tools import GDAL_TOOL, FOLIUM_TOOL
 from happygisco import services     
 from happygisco.services import GISCO_SERVICE, API_SERVICE
-
+    
 # requirements
+try:                                
+    import simplejson as json
+except ImportError:
+    happyWarning("missing SIMPLEJSON package (https://pypi.python.org/pypi/simplejson/)", ImportWarning)
+    try:                                
+        import json
+    except ImportError: 
+        happyWarning("JSON module missing in Python Standard Library", ImportWarning)
+        class json:
+            def loads(arg):  return '%s' % arg
 
 #%%
 #==============================================================================
@@ -110,7 +120,7 @@ def __init(inst, *args, **kwargs):
                 raise IOError('service %s not available' % service)
         if not isinstance(inst._service,(services.GISCOService,services.APIService)):
             raise IOError('service %s not supported' % service)
-_Feature.__init__ = __init
+_Feature.__init__ = classmethod(__init)
 
 #/****************************************************************************/
 def __lat(inst):
@@ -195,10 +205,10 @@ class Location(_Feature):
     @_Decorator.parse_place_or_coordinate
     def __init__(self, *args, **kwargs):
         # kwargs.pop('order',None)
-        self._place = kwargs.pop(_Decorator.KW_PLACE, None)
-        self._coord = kwargs.pop(_Decorator.KW_COORD, None)
+        self.__place = kwargs.pop(_Decorator.KW_PLACE, None)
+        self.__coord = kwargs.pop(_Decorator.KW_COORD, None)
         super(Location,self).__init__(*args, **kwargs)
-        self._geom = None
+        self.__geom = None
 
     #/************************************************************************/
     @property
@@ -206,21 +216,21 @@ class Location(_Feature):
         """Place property (:data:`getter/setter`/:data:`setter`) of a :class:`Location` 
         instance. A `place` type is  (a list of) :class:`str`.
         """
-        if self._place in ('',[''],None):
+        if self.__place in ('',[''],None):
             try:
                 place = self.reverse()
             except:     
                 raise happyError('place not found') 
             else:
-                self._place = place
-        return self._place if self._place is None or len(self._place)>1 else self._place[0]    
+                self.__place = place
+        return self.__place if self.__place is None or len(self.__place)>1 else self.__place[0]    
     @place.setter
     def place(self,place):
         try:
             place = _Decorator.parse_place(lambda p: p)(place)
         except:
             raise happyError('unrecognised address/location argument') 
-        self._place = place
+        self.__place = place
 
     #/************************************************************************/
     @property
@@ -228,21 +238,21 @@ class Location(_Feature):
         """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`/:data:`setter`) 
         of a :class:`Location` instance.
         """ 
-        if self._coord in ([],[None,None],None):
+        if self.__coord in ([],[None,None],None):
             try:
                 coord = self.geocode(unique=True)
             except:     
                 raise happyError('coordinates not found') 
             else:
-                self._coord = coord
-        return self._coord # if len(self._coord)>1 else self._coord[0]    
+                self.__coord = coord
+        return self.__coord # if len(self.__coord)>1 else self.__coord[0]    
     @coord.setter
     def coord(self,coord):
         try:
             coord = _Decorator.parse_coordinates(lambda c: c)(coord)
         except:
             raise happyError('unrecognised coordinates argument') 
-        self._coord = coord
+        self.__coord = coord
 
     #/************************************************************************/
     @property
@@ -250,7 +260,7 @@ class Location(_Feature):
         """NUTS property (:data:`getter`) of a :class:`Location` instance.
         This is the identifier of the NUTS actually containing this instance.
         """ 
-        if self._nuts in ([],None):
+        if self.__nuts in ([],None):
             try:
                 nuts = self.findnuts()
             except:     
@@ -260,8 +270,8 @@ class Location(_Feature):
                 if not isinstance(nuts,list): nuts = [nuts,]
                 # note that "NUTS_ID" is present as a field of both outputs returned
                 # by GDALTransform.coord2feat and GISCOService.coord2nuts
-                self._nuts = [n[_Decorator.parse_nuts.KW_NUTS_ID] for n in nuts]
-        return self._nuts    
+                self.__nuts = [n[_Decorator.parse_nuts.KW_NUTS_ID] for n in nuts]
+        return self.__nuts    
 
     #/************************************************************************/
     @property
@@ -269,15 +279,15 @@ class Location(_Feature):
         """Geom(etry) property (:data:`getter`) of a :class:`Location` instance.
         This is a vector data built from the geolocations in this instance.
         """ 
-        if self._geom in ([],None):
+        if self.__geom in ([],None):
             try:
                 geom = self.geometry()
             except:     
                 happyWarning('Geometry not available') 
                 return
             else:
-                self._geom = geom
-        return self._geom
+                self.__geom = geom
+        return self.__geom
 
     #/************************************************************************/
     def __repr__(self):
@@ -505,7 +515,6 @@ class Location(_Feature):
             coord = loc.coord
         else:
             func = lambda *a, **kw: [kw.pop(_Decorator.KW_PLACE, None), kw.pop(_Decorator.KW_COORD, None)]
-            place, coord = _Decorator.parse_place_or_coordinate(func)(loc, **kwargs)
             try:
                 place, coord = _Decorator.parse_place_or_coordinate(func)(loc, **kwargs)
             except:
@@ -739,11 +748,44 @@ class NUTS(_Feature):
     * `units 2016 http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2016-units.html
     listed in the `json file <http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2016-units.json>`_
     """
-
+    
+    #/************************************************************************/
+    @classmethod
+    def from_layer(cls, layer, **kwargs):
+        layer = kwargs.pop(_Decorator.KW_LAYER, None)
+        self = cls(**kwargs)
+        if not layer in ([],None):
+            self.__layer = layer
+            self.__feature = self.transform.layer2feat(layer)
+        return self
+        
+    #/************************************************************************/
+    @_Decorator.parse_file
+    @classmethod
+    def from_file(cls, url, **kwargs):
+        file = kwargs.pop(_Decorator.KW_FILE, None)
+        self = cls(**kwargs)
+        if not file in ([],None):
+            self.__layer = self.transform.file2layer(file)
+            # self.__vector = self.transform.layer2vector(self.__layer) # crash!!!
+            self.__vector = self.transform.file2vector(file)
+        return self
+      
+    #/************************************************************************/
+    @classmethod
+    @_Decorator.parse_url
+    def from_url(cls, url, **kwargs):
+        url = kwargs.pop(_Decorator.KW_URL, None)
+        self = cls(**kwargs)
+        if url is not None:
+            feat = self.serv.get_response(url)
+            self.__vector = feat.content
+        return self
+    
     #/************************************************************************/
     @_Decorator.parse_nuts
     def __init__(self, **kwargs):
-        self._nuts = kwargs.pop(_Decorator.KW_NUTS, [])
+        self.__feature = kwargs.pop(_Decorator.KW_FEATURE, [])
         super(NUTS,self).__init__(**kwargs)
     
     #/************************************************************************/
@@ -751,16 +793,29 @@ class NUTS(_Feature):
         try:
             return super(NUTS,self).__getattribute__(attr_name) 
         except AttributeError:
-            attr = [n[attr_name] for n in self._nuts]
-            return attr if len(attr)>1 else attr[0]
+            try:
+                attr = [n[attr_name] for n in self.__nuts]
+                assert not attr in ([],[None])
+            except:
+                raise happyError('attribute %s not known' % attr_name)
+            else:
+                return attr if len(attr)>1 else attr[0]
 
     #/************************************************************************/    
     @property
     def feature(self):
         """Feature property (:data:`getter`) of a :class:`NUTS` instance.
         """
-        return self._nuts if len(self._nuts)>1 else self._nuts[0]
+        return self.__feature if self.__feature is None or len(self.__feature)>1 else self.__feature[0]
 
+    #/************************************************************************/    
+    @property
+    def layer(self):
+        """Layer property (:data:`getter`) of a :class:`NUTS` instance.
+        """
+        return self.__layer if self.__layer is None or len(self.__layer)>1 else self.__layer[0]
+
+    #/************************************************************************/    
     @property
     def coord(self):
         """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) 
@@ -776,30 +831,80 @@ class NUTS(_Feature):
                 self._coord = coord
         return self._coord # if len(self._coord)>1 else self._coord[0]    
 
+
+    #/************************************************************************/    
+    def __get_vector(self):
+        if not self.layer in ([],None):
+            return self.transform.layer2vector(self.layer)
+
+    #/************************************************************************/    
+    def __get_feature(self):
+        if not self.vector in ([],None):
+            try:
+                feature = {k:json.loads(v.ExportToJson()) for k,v in self.vector.items()}
+            except:
+                feature = {}
+            return self.transform.layer2vector(self.layer)
+            
+
+    #/************************************************************************/    
+    def __get_level(self):
+#        if self.feature is None:
+#            if self.vector is None:
+        try:
+            level = [int(f[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL]) \
+                    for f in self.feature]
+        except:
+            try:
+                level = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_LEVEL] \
+                         for f in self.feature]
+            except:
+                level = None
+        else:
+            return level if len(level)>1 else level[0]
+
+    #/************************************************************************/    
     @property
     def level(self):
         """Level property (:data:`getter`) of a :class:`NUTS` instance. 
-        A `level` type is (a list of) :class:`int`\ .
+        A `level` type is (a list of) :class:`int`.
         """
-        try:
-            level = [int(n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL]) \
-                    for n in self.feature]
-        except:
-            return None
-        else:
-            return level if len(level)>1 else level[0]
+        if self.__level is None:
+            try:
+                level = self.__get_level()
+            except:     
+                raise happyError('level not found') 
+            else:
+                self.__level = level
+        return self.__level if self.__level is None or len(self.__level)>1 else self.__level[0] 
     
     @property
-    def id(self):
-        """Identity property.
+    def fid(self):
+        """Feature identity property.
         """
         try:
-            _id = [n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_ID] \
-                    for n in self.feature]
+            fid = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_FID] \
+                   for f in self.feature]
         except:
-            return None
+            fid = None
         else:
-            return _id if len(_id)>1 else _id[0]
+            return fid if len(fid)>1 else fid[0]
+    
+    @property
+    def nid(self):
+        """NUTS identity property.
+        """
+        try:
+            nid = [f[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_ID] \
+                   for f in self.feature]
+        except:
+            try:
+                nid = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_NUTS_ID] \
+                       for f in self.feature]
+            except:
+                nid = None
+        else:
+            return nid if len(nid)>1 else nid[0]
     
     @property
     def name(self):
@@ -810,7 +915,11 @@ class NUTS(_Feature):
             name = [n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_NAME] \
                     for n in self.feature]
         except:
-            return None
+            try:
+                name = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_NUTS_NAME] \
+                        for f in self.feature]
+            except:
+                name = None
         else:
             return name if len(name)>1 else name[0]
     

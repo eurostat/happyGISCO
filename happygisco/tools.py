@@ -57,7 +57,7 @@ except ImportError:
 
 # local imports
 from happygisco import settings
-from happygisco.settings import happyVerbose, happyWarning, happyError
+from happygisco.settings import happyVerbose, happyWarning, happyError, happyType
 from happygisco.base import _Decorator, _Tool
  
 try:                            
@@ -1935,7 +1935,7 @@ class GDALTransform(_Tool):
         except:
             raise IOError('GDAL service not available')
         self.__driver, self.__driver_name = None, ''
-        self.__driver_name   = kwargs.pop('driver_name', settings.DRIVER_NAME)
+        self.__driver_name = kwargs.pop('driver_name', settings.DRIVER_NAME)
         try:
             self.__driver = ogr.GetDriverByName(self.__driver_name)
         except:
@@ -1967,34 +1967,45 @@ class GDALTransform(_Tool):
     #/************************************************************************/
     # why this implementation? issue detected with GetLayer when returning it
     # as output ... 
-    def _vfile2data(self, fname):
-        try:
-            # assert fname not in ('', None) 
-            assert os.path.exists(fname)
-        except:
-            raise happyError('input file %s not found' % fname)
-        try:
-            assert self.driver is not None
-        except:
-            raise happyError('offline driver not available')
-        try:
-            data = self.driver.Open(fname, 0) # 0 means read-only
-            assert data is not None
-        except:
-            raise happyError('file %s not open' % fname)
-        else:
-            if settings.VERBOSE: print('file %s opened' % fname)
-        return data
+    def _file2data(self, fname):
+        """Iterable data loader.
+        
+        Note
+        ----
+        This method is introduced since there seems to be an (unexplained) issue
+        when combining the output of :meth:`~tools.GDALTransform.file2layer` 
+        with the :meth:`osgeo.ogr.Layer.GetFeature` method.
+        """
+        if not happyType.issequence(fname): 
+            fname = [fname,]
+        for file in fname:
+            try:
+                # assert fname not in ('', None) 
+                assert os.path.exists(file)
+            except:
+                raise happyError('input file %s not found' % file)
+            try:
+                assert self.driver is not None
+            except:
+                raise happyError('offline driver not available')
+            try:
+                data = self.driver.Open(file, 0) # 0 means read-only
+                # assert data is not None
+            except:
+                raise happyError('file %s not open' % file)
+            else:
+                if settings.VERBOSE: print('file %s opened' % file)
+            yield data
 
     #/************************************************************************/
     #@_Decorator.parse_file
-    def vfile2layer(self, fname):
+    def file2layer(self, fname):
         """Load a vector file using internally defined driver and returns the 
         corresponding vector layer.
         
         ::
             
-            >>> layer = tool.vfile2layer(fname)
+            >>> layer = tool.file2layer(fname)
             
         Argument
         --------
@@ -2026,7 +2037,7 @@ class GDALTransform(_Tool):
             
         ::
             
-            >>> layer = tool.vfile2layer(myfile)
+            >>> layer = tool.file2layer(myfile)
             >>> layer.GetName()
                 'NUTS_RG_01M_2013_4326_LEVL_2'
             >>> layer.GetMetadata()
@@ -2036,36 +2047,36 @@ class GDALTransform(_Tool):
             
         See also
         --------
-        :meth:`~tools.GDALTransform.vfile2feat`, :meth:`osgeo.ogr.Driver.Open`, 
+        :meth:`~tools.GDALTransform.file2vector`, :meth:`~tools.GDALTransform.layer2vector`,
         :meth:`osgeo.ogr.DataSource.GetLayer`.
         """
-        data = self._vfile2data(fname)
+        #for d in self._file2data(fname):
+        #    yield d.GetLayer()
+        data = list(self._file2data(fname))
         try:
-            layer = data.GetLayer()
-            assert layer is not None
+            layer = [d.GetLayer() for d in data]
         except:
-            raise IOError('could not get vector layer')
-        return layer
+            raise happyError('could not get vector layer')
+        return layer # if layer in ([],None) or len(layer)>1 else layer[0]
 
     #/************************************************************************/
-    #@_Decorator.parse_file
-    def vfile2feat(self, fname):
+    def layer2vector(self, layer):
         """Load a vector file using internally defined driver and returns the 
         corresponding list of features.
         
         ::
             
-            >>> feat = tool.vfile2feat(fname)
+            >>> vector = tool.layer2vector(layer)
             
         Argument
         --------
-        fname : str
-            name of the input file; should be supported by the predefined driver.
+        layer : :class:`osgeo.ogr.Layer`
+            input vector layer.
             
         Returns
         -------
-        feat : :class:`osgeo.ogr.Feature`,list[:class:`osgeo.ogr.Feature`]
-            output (list of) feature(s) stored in the input :data:`file`.
+        vector : :class:`osgeo.ogr.Feature`,list[:class:`osgeo.ogr.Feature`]
+            output (list of) vector feature(s) represented in the input :data:`layer`.
             
         Example
         -------
@@ -2074,50 +2085,85 @@ class GDALTransform(_Tool):
             
         ::
             
-            >>> import os
-            >>> dirname = './data/ref-nuts-2013-01m/'
-            >>> filename = 'NUTS_RG_01M_2013_4326_LEVL_2.shp'
-            >>> myfile = os.path.join(dirname, filename)
-            >>> myfile
-                './data/ref-nuts-2013-01m/NUTS_RG_01M_2013_4326_LEVL_2.shp'
+            >>> myfile = './data/ref-nuts-2013-01m/NUTS_RG_01M_2013_4326_LEVL_2.shp'
+            >>> layer = tool.file2layer(myfile)
+            >>> layer.GetDescription()
+                'NUTS_RG_01M_2013_4326_LEVL_2'
             
-        We can load the associated (vector) data into a structured layer using
-        the *shapefile* driver available in |GDAL| (note that's actually the 
-        default implemented in :class:`GDALTransform` class):
+        We can then retrieve all the vector features represented in the vector 
+        layer:
             
         ::
             
-            >>> layer = tool.vfile2layer(myfile)
-            >>> layer.GetName()
-                'NUTS_RG_01M_2013_4326_LEVL_2'
-            >>> layer.GetMetadata()
-                {'DBF_DATE_LAST_UPDATE': '2018-02-23'}
-            >>> layer.GetDescription()
-                'NUTS_RG_01M_2013_4326_LEVL_2'
-                
-        Note
-        ----
-        This method is introduced since there seems to be an (unexplained) issue 
-        when combining the output of :meth:`~tools.GDALTransform.vfile2layer` with
-        the .
+            >>> vector = tool.layer2vector(layer)
+            >>> vector
+                [<osgeo.ogr.Feature; proxy of <Swig Object of type 'OGRFeatureShadow *' at 0x115155ae0> >,
+                 <osgeo.ogr.Feature; proxy of <Swig Object of type 'OGRFeatureShadow *' at 0x115155b10> >,
+                 <osgeo.ogr.Feature; proxy of <Swig Object of type 'OGRFeatureShadow *' at 0x115155a20> >,
+                 <osgeo.ogr.Feature; proxy of <Swig Object of type 'OGRFeatureShadow *' at 0x115155a80> >,
+                 ...
+                  <osgeo.ogr.Feature; proxy of <Swig Object of type 'OGRFeatureShadow *' at 0x1151876c0> >,
+                  <osgeo.ogr.Feature; proxy of <Swig Object of type 'OGRFeatureShadow *' at 0x1151876f0> >]
             
         See also
         --------
-        :meth:`~tools.GDALTransform.vfile2layer`, :meth:`osgeo.ogr.Driver.Open`, 
-        :meth:`osgeo.ogr.DataSource.GetLayer`, :meth:`osgeo.ogr.Layer.GetFeature`.
+        :meth:`~tools.GDALTransform.file2vector`, :meth:`~tools.GDALTransform.file2layer`,
+        :meth:`osgeo.ogr.Layer.GetFeature`.
         """
-        #fname = kwargs.pop(_Decorator.KW_FILE,'') 
-        data = self._vfile2data(fname)
+        if not happyType.issequence(layer): 
+            layer = [layer,]
         try:
-            layer = data.GetLayer()
-            assert layer is not None
+            vector = [l.GetFeature(i) for l in layer for i in range(0,l.GetFeatureCount())]
         except:
-            raise IOError('could not get vector layer')
+            raise happyError('could not get features')
+        return vector if vector in ([],None) or len(vector)>1 else vector[0]
+
+    #/************************************************************************/
+    #@_Decorator.parse_file
+    def file2vector(self, fname):
+        """Load a vector file using internally defined driver and returns the 
+        corresponding list of features.
+        
+        ::
+            
+            >>> vector = tool.file2vector(fname)
+            
+        Argument
+        --------
+        fname : str
+            name of the input file; should be supported by the predefined driver.
+            
+        Returns
+        -------
+        vector : :class:`osgeo.ogr.Feature`,list[:class:`osgeo.ogr.Feature`]
+            output (list of) vector feature(s) stored in the input :data:`file`.
+            
+        Example
+        -------
+        Let us consider the NUTS data at level 2 imported within the happyGISCO 
+        project, that is:
+            
+            
+        See also
+        --------
+        :meth:`~tools.GDALTransform.file2layer`, :meth:`~tools.GDALTransform.layer2vector`, 
+        :meth:`osgeo.ogr.Driver.Open`, :meth:`osgeo.ogr.DataSource.GetLayer`, 
+        :meth:`osgeo.ogr.Layer.GetFeature`.
+        """
+        # method 1
+        # return self.layer2feat(self.file2layer(fname))
+        # method 2
+        # try:
+        #      layer = [d.GetLayer() for d in self._file2data(fname)]
+        # except:
+        #     raise happyError('could not get vector layer')
+        # both crash... 
+        data = list(self._file2data(fname))
         try:
-            feat = [layer.GetFeature(i) for i in range(0,layer.GetFeatureCount())]
+            layer = [d.GetLayer() for d in data]
         except:
-            raise IOError('could not get features')
-        return feat if feat is None or len(feat)>1 else feat[0]
+            raise happyError('could not get vector layer') 
+        return self.layer2vector(layer)
 
     #/************************************************************************/
     @_Decorator.parse_coordinate
@@ -2361,7 +2407,7 @@ class GDALTransform(_Tool):
                 raise happyError('input vector data file not found')
             try:
                 # layer = self.file2layer(**kwargs)
-                data = self._vfile2data(fname)
+                data = self._file2data(fname)
             except:
                 raise happyError('could not load vector data')
         try:

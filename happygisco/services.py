@@ -156,7 +156,7 @@ class OSMService(_Service):
         except:
             raise happyError('OSM service not available')
         super(OSMService, self).__init__(**kwargs)
-        self.domain = kwargs.pop('domain', settings.OSM_URL) 
+        self.__domain = kwargs.pop('domain', settings.OSM_URL) 
 
     #/************************************************************************/
     @property
@@ -293,6 +293,7 @@ class OSMService(_Service):
     def _place2area(self, place, **kwargs): 
         """Iterable version of :meth:`~OSMService.place2area`.
         """
+        if not happyType.issequence(place):     place = [place,]
         place = ['+'.join(p.replace(',',' ').split()) for p in place]
         fmt = kwargs.pop('format','')
         key = kwargs.pop('key',None)
@@ -472,6 +473,10 @@ class OSMService(_Service):
     def _coord2area(self, coord, **kwargs): 
         """Iterable version of :meth:`~OSMService.coord2area`.
         """
+        if not happyType.issequence(coord):     
+            coord = list(coord)
+        if not all([happyType.issequence(c) for c in coord]):     
+            coord = [list(c) for c in coord]
         fmt = kwargs.pop('format','')
         key = kwargs.pop('key',None)
         if fmt is not None:
@@ -803,11 +808,17 @@ class GISCOService(OSMService):
         except:
             raise happyError('GISCO service not available')
         super(GISCOService, self).__init__(**kwargs)
-        self.url_rest = kwargs.pop('url_rest', settings.GISCO_RESTURL) 
-        self.url_cache = kwargs.pop('url_cache', settings.GISCO_CACHEURL) 
-        self.url_map = kwargs.pop('url_map', settings.GISCO_TILEURL) 
-        self.arcgis = kwargs.pop('arcgis', settings.GISCO_ARCGIS)
-
+        try:
+            assert 'domain' not in kwargs.keys()
+            # assert not('domain' in kwargs.keys() and 'url_rest' in kwargs.keys())
+        except:
+            happyVerbose('parameter DOMAIN ignored (URL_REST can be used instead)', verb=True)
+            # raise happyError('incompatible parameters DOMAIN and URL_REST')
+        self.__domain = kwargs.get('url_rest', settings.GISCO_RESTURL) # or self.url_rest
+        self.__url_cache = kwargs.get('url_cache', settings.GISCO_CACHEURL)
+        self.__url_map = kwargs.get('url_map', settings.GISCO_TILEURL)
+        self.__arcgis = kwargs.get('arcgis', settings.GISCO_ARCGIS)
+                
     #/************************************************************************/
     @property
     def url_rest(self):
@@ -1414,9 +1425,11 @@ class GISCOService(OSMService):
         return url
         
     #/************************************************************************/
-    def _vfile4country(self, country, **kwargs):
-        """Iterable version of :meth:`~GISCOService.vfile4country`.
+    def _file4country(self, country, **kwargs):
+        """Iterable version of :meth:`~GISCOService.file4country`.
         """
+        if not happyType.issequence(country):     
+            country = [country,]
         for c in country:
             kwargs.update({'country': c})
             try:
@@ -1437,13 +1450,13 @@ class GISCOService(OSMService):
     @_Decorator.parse_projection
     @_Decorator.parse_format
     @_Decorator.parse_scale
-    def vfile4country(self, country, **kwargs):
+    def file4country(self, country, **kwargs):
         """Download, and cache when requested, country vector files from |GISCO| Rest
         API.
         
         ::
             
-            >>> fref = serv.vfile4country(country, **kwargs)            
+            >>> fref = serv.file4country(country, **kwargs)            
             
         Returns
         -------
@@ -1451,13 +1464,15 @@ class GISCOService(OSMService):
         """
         fref = {}
         [fref.update({ctry: file if file is None or len(file)>1 else file[0]}) \
-             for ctry,file in self._vfile4country(country, **kwargs)]
+             for ctry,file in self._file4country(country, **kwargs)]
         return fref
         
     #/************************************************************************/
-    def _vfile4nuts(self, nuts, **kwargs):
-        """Iterable version of :meth:`~GISCOService.vfile4nuts`.
+    def _file4nuts(self, nuts, **kwargs):
+        """Iterable version of :meth:`~GISCOService.file4nuts`.
         """
+        if not happyType.issequence(nuts):     
+            nuts = [nuts,]
         for n in nuts:
             kwargs.update({'unit': n})
             try:
@@ -1479,13 +1494,13 @@ class GISCOService(OSMService):
     @_Decorator.parse_format
     @_Decorator.parse_scale
     @_Decorator.parse_feature
-    def vfile4nuts(self, nuts, **kwargs):
+    def file4nuts(self, nuts, **kwargs):
         """Download, and cache when requested, NUTS vector files from |GISCO| Rest
         API.
         
         ::
             
-            >>> fref  = serv.vfile4nuts(nuts, **kwargs)
+            >>> fref  = serv.file4nuts(nuts, **kwargs)
             
         Returns
         -------
@@ -1493,7 +1508,7 @@ class GISCOService(OSMService):
         """
         fref = {}
         [fref.update({n:file if file is None or len(file)>1 else file[0]}) \
-             for n, file in self._vfile4nuts(nuts, **kwargs)]
+             for n, file in self._file4nuts(nuts, **kwargs)]
         return fref
 
     #/************************************************************************/
@@ -1840,6 +1855,10 @@ class GISCOService(OSMService):
     def _coord2nuts(self, coord, **kwargs):
         """Iterable version of :meth:`~GISCOService.coord2nuts`.
         """
+        if not happyType.issequence(coord):     
+            coord = list(coord)
+        if not all([happyType.issequence(c) for c in coord]):     
+            coord = [list(c) for c in coord]
         fmt = kwargs.pop('format','')
         key = kwargs.pop('key',None)
         if fmt is not None:

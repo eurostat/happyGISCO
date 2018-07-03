@@ -138,7 +138,7 @@ class _Service(object):
         if kwargs != {}:
             attrs = ('cache_store','expire_after','force_download')
             for attr in list(set(attrs).intersection(kwargs.keys())):
-                setattr(self, '{}'.format(attr), kwargs.get(attr))
+                setattr(self, '%s' % attr, kwargs.pop(attr))
         # determine appropriate setting for a given session, taking into account
         # the explicit setting on that request, and the setting in the session. 
         self.__cache_backend = 'File'
@@ -685,11 +685,14 @@ class _Decorator(object):
     KW_FORMAT       = 'fmt'
     KW_SCALE        = 'scale'
     
+    KW_FEATURE      = 'feature' 
+    KW_VECTOR       = 'vector' 
     KW_NUTS         = 'nuts' 
     KW_UNIT         = 'unit' 
     KW_LEVEL        = 'level'
     
     KW_FILE         = 'file'
+    KW_URL          = 'url'
     KW_DATA         = 'data'
 
     #/************************************************************************/
@@ -1494,6 +1497,11 @@ class _Decorator(object):
         :meth:`~geoDecorators.parse_coordinate`, :meth:`services.GISCOService.coord2nuts`, 
         :meth:`services.GISCOService.place2nuts`.            
         """
+        # GDAL like dictionaries
+        KW_PROPERTIES   = 'properties'
+        KW_GEOMETRY     = 'geometry'
+        KW_TYPE         = 'type' 
+        # GISCO-like dictionaries
         KW_RESULTS      = 'results'
         KW_ATTRIBUTES   = 'attributes'
         KW_FIELDNAME    = 'displayFieldName' 
@@ -1501,6 +1509,7 @@ class _Decorator(object):
         KW_LAYERNAME    = 'layerName'
         KW_VALUE        = 'value'
         KW_LEVEL        = 'LEVL_CODE'
+        KW_FID          = 'FID'
         KW_NUTS_ID      = 'NUTS_ID' 
         KW_CNTR_CODE    = 'CNTR_CODE'
         KW_NUTS_NAME    = 'NUTS_NAME' # or 'NAME_LATN' ?
@@ -1518,7 +1527,12 @@ class _Decorator(object):
             if nuts is None:
                 __key_nuts = True
                 nuts = kwargs.pop(_Decorator.KW_NUTS, {})   
-                items = {_Decorator.parse_nuts.KW_ATTRIBUTES:   kwargs.pop(_Decorator.parse_nuts.KW_ATTRIBUTES, None),
+                items = { # GDAL like dictionaries
+                        _Decorator.parse_nuts.KW_PROPERTIES:    kwargs.pop(_Decorator.parse_nuts.KW_PROPERTIES, None),
+                         _Decorator.parse_nuts.KW_GEOMETRY:     kwargs.pop(_Decorator.parse_nuts.KW_GEOMETRY, None),
+                         _Decorator.parse_nuts.KW_TYPE:         kwargs.pop(_Decorator.parse_nuts.KW_TYPE, None),
+                         # GISCO-like dictionaries
+                         _Decorator.parse_nuts.KW_ATTRIBUTES:   kwargs.pop(_Decorator.parse_nuts.KW_ATTRIBUTES, None),
                          _Decorator.parse_nuts.KW_FIELDNAME:    kwargs.pop(_Decorator.parse_nuts.KW_FIELDNAME, None),
                          _Decorator.parse_nuts.KW_LAYERID:      kwargs.pop(_Decorator.parse_nuts.KW_LAYERID, None),
                          _Decorator.parse_nuts.KW_LAYERNAME:    kwargs.pop(_Decorator.parse_nuts.KW_LAYERNAME, None),
@@ -1555,11 +1569,23 @@ class _Decorator(object):
             elif not happyType.issequence(nuts):
                 raise happyError('wrong NUTS definition')              
             if all([happyType.ismapping(n) for n in nuts]): 
-                nuts = [n for n in nuts if _Decorator.parse_nuts.KW_ATTRIBUTES in n]
+                try:
+                    nuts = [n for n in nuts \
+                            if _Decorator.parse_nuts.KW_ATTRIBUTES in n or _Decorator.parse_nuts.KW_PROPERTIES in n]
+                except:
+                    nuts = {}
             if __key_nuts and nuts in ([],None): 
                 raise happyError('NUTS attributes not recognised')              
             if level is not None:
-                nuts = [n for n in nuts if n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL] == str(level)]
+                try:
+                    nuts = [n for n in nuts                 \
+                            if n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL] == str(level)]
+                except:
+                    try :
+                        nuts = [n for n in nuts             \
+                                if n[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_LEVEL] == str(level)]                    
+                    except:
+                        nuts = {}
             if settings.REDUCE_ANSWER and len(nuts)==1:    nuts=nuts[0]
             kwargs.update({_Decorator.KW_NUTS: nuts}) 
             return self.func(**kwargs)
@@ -2016,7 +2042,7 @@ class _Decorator(object):
             
         See also
         --------
-        :meth:`~geoDecorators.parse_coordinate`.
+        :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_url`.
         """
         KW_DIRNAME      = 'dir'
         KW_BASENAME     = 'base'
@@ -2027,24 +2053,23 @@ class _Decorator(object):
                 if len(args) == 1 and happyType.issequence(args[0]):
                     if len(args[0])==2 and all([happyType.isstring(args[0][i]) for i in (0,1)]):
                         dirname, basename = args[0]
-                    elif all([isinstance(args[0][i],str) for i in range(len(args[0]))]):
+                    elif all([happyType.isstring(args[0][i]) for i in range(len(args[0]))]):
                         filename = args[0]
-                elif len(args) == 1 and happyType.isstring(args[0]) and len(args[0])==2:
-                    dirname, basename = args[0]
+                elif len(args) == 1 and happyType.isstring(args[0]):
+                    filename = args[0]
                 elif len(args) == 2                                         \
                     and all([happyType.isstring(args[i]) or not hasattr(args[i],'__len__') for i in (0,1)]):    
                     dirname, basename = args
                 else:   
                     raise happyError('input file arguments not recognised')
-            if not (dirname is None and basename is None) or            \
-                    (kwargs.get(_Decorator.parse_file.KW_DIRNAME) is None and  \
-                     kwargs.get(_Decorator.parse_file.KW_BASENAME) is None and \
-                     kwargs.get(_Decorator.parse_file.KW_FILENAME) is None):
-                raise happyError('don''t mess up with me - duplicated argument parsed')
-            else:   
+            if dirname is None and basename is None and filename is None:   
                 dirname = kwargs.pop(_Decorator.parse_file.KW_DIRNAME, '')         
                 basename = kwargs.pop(_Decorator.parse_file.KW_BASENAME, '')
                 filename = kwargs.pop(_Decorator.parse_file.KW_FILENAME, '')
+            elif not (kwargs.get(_Decorator.parse_file.KW_DIRNAME) is None and       \
+                      kwargs.get(_Decorator.parse_file.KW_BASENAME) is None and      \
+                      kwargs.get(_Decorator.parse_file.KW_FILENAME) is None):
+                raise happyError('don''t mess up with me - duplicated argument parsed')
             try:
                 assert not(filename in ('',None) and basename in ('',None))
             except AssertionError:
@@ -2058,11 +2083,89 @@ class _Decorator(object):
                     filename = os.path.join(os.path.realpath(dirname or ''), basename)
                 except:
                     raise happyError('wrong input file argument passed')
-            if not happyType.isstring(filename):
+            if not happyType.issequence(filename):
                 filename = [filename,]
             kwargs.update({_Decorator.KW_FILE: filename})                  
             return self.func(*args, **kwargs)
 
+    #/************************************************************************/
+    class parse_url(__parse):
+        """Generic class decorator of functions and methods used to parse a url.
+        
+        ::
+        
+            >>> new_func = _Decorator.parse_url(func)
+        
+        Arguments
+        ---------
+        func : callable
+            the function to decorate that accepts, say, the input arguments 
+            :data:`*args, **kwargs`.
+        
+        Keyword arguments
+        -----------------
+        method_type,obj,cls : 
+            see :meth:`~_Decorator.parse_coordinate`.
+                
+        Returns
+        -------
+        new_func : callable
+            the decorated function that now accepts  :data:`url` as a keyword 
+            argument to parse a simple URL; the URL must support any of the
+            protocols :literal:`'http', 'https'`, or :literal:`'ftp'`, as listed 
+            in :data:`settings.PROTOCOLS`.
+        
+        Examples
+        --------          
+        
+        ::
+
+            >>> func = lambda *args, **kwargs: kwargs.get('url')
+            >>> _Decorator.parse_url(func)(url=0)
+                happyError: !!! wrong format for URL argument !!!
+            >>> _Decorator.parse_url(func)(url='dumb')
+                happyError: !!! wrong value for URL argument - level 'dumb' not supported !!!
+            >>> _Decorator.parse_url(func)(url='http://dumb.com')
+                ['http://dumb.com']
+            >>> _Decorator.parse_url(func)('http://dumb1.com', 'https://dumb2.com')
+                ['http://dumb1.com', 'https://dumb2.com']
+            
+        See also
+        --------
+        :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_file`.
+        """
+        def __call__(self, *args, **kwargs):
+            url = None
+            if args not in (None,()):  
+                if len(args) == 1:
+                    if happyType.isstring(args[0]):
+                        url = list(args)
+                    elif happyType.issequence(args[0]) \
+                            and all([happyType.isstring(args[0][i]) for i in range(len(args[0]))]):
+                        url = args[0]
+                elif all([happyType.isstring(args[i]) for i in range(len(args))]):
+                    url = list(args)
+                else:   
+                    raise happyError('input file arguments not recognised')
+            if not(url is None or kwargs.get(_Decorator.KW_URL) is None):
+                raise happyError('don''t mess up with me - duplicated argument parsed')
+            elif url is None:
+                url = kwargs.pop(_Decorator.KW_URL, '')
+            try:
+                assert url not in ('',None,[])
+            except AssertionError:
+                raise happyError('no input URL argument passed')
+                # return self.func(*args, **kwargs)
+            if not happyType.issequence(url):
+                url = [url,]
+            try:
+                assert all([any([u.startswith(s) for s in settings.PROTOCOLS]) \
+                            for u in url])
+            except:
+                raise happyError('wrong value for %s argument - url %s not supported' % (_Decorator.KW_URL.upper(), url))
+            kwargs.update({_Decorator.KW_URL: url})                  
+            return self.func(*args, **kwargs)
+  
     #/************************************************************************/
     class parse_route(__parse):
         """Generic class decorator of functions and methods used to parse a route.
