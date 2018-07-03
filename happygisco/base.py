@@ -59,7 +59,7 @@ They are provided here for the sake of an exhaustive documentation.
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
 # *since*:        Sat May  5 00:09:56 2018
 
-__all__         = ['_Service', '_Feature', '_Tool', '_Decorator']
+__all__         = ['_Service', '_Feature', '_Tool', '_Decorator', '_AttrDict']
 
 # generic import
 import os, sys#analysis:ignore
@@ -68,7 +68,6 @@ import collections#analysis:ignore
 
 import time
 import hashlib
-import zipfile
 
 # local imports
 from happygisco import settings
@@ -652,6 +651,101 @@ class _Feature(object):
         of a :class:`_Feature` instance.
         """ 
         return self._coord
+
+#%%
+#==============================================================================
+# CLASS _AttrDict
+#==============================================================================
+
+class _AttrDict(dict):
+    """
+    
+    Examples
+    --------
+    It overrides the class :class:`dict` since it can be initialised like its 
+    parent class.
+    
+    ::
+        
+        >>> _AttrDict([('a',1),('b',2)])
+            {'a': 1, 'b': 2}
+        >>> _AttrDict({'a': 1, 'b': 2})
+            {'a': 1, 'b': 2}
+        >>> _AttrDict(a=1,b=2)
+            {'a': 1, 'b': 2}
+        
+    However, in addition the keyword parameter :literal:`_attr_` allows for 
+    further manipulations.
+    
+    ::
+        
+        >>> _AttrDict({'a': 1, 'b': 2}, _attr_=True)
+            {0: {'a': 1, 'b': 2}}
+        >>> _AttrDict({'a': {'b': 10}, 'c': 1}, _attr_=['a','b'])
+            {10: {'a': {'b': 10}, 'c': 1}}
+        
+        
+    Note
+    ----
+    See also :mod:`AttrDict` module for more complex dictionary data structures.
+    (source available `here <https://github.com/bcj/AttrDict>`_).
+    """
+    
+    KW_ATTR = '_attr_'
+
+    #/************************************************************************/
+    def __init__(self, *args, **kwargs):
+        attr = None
+        if len(args) > 1:
+            raise happyError('%s expected at most 1 arguments' % _AttrDict.__name__)
+        if args != () and happyType.issequence(args):
+            if not any([happyType.ismapping(a) for a in args]): 
+                if kwargs != {}:
+                    raise happyError('wrong setting for attribute dictionary object')
+                elif all([happyType.issequence(a) for a in args]):
+                    args = args[0]
+                else:
+                    args = zip(args,[None]*len(args))
+            elif all([happyType.ismapping(a) for a in args]):
+                attr = kwargs.pop(_AttrDict.KW_ATTR, False)
+                if attr is False:
+                    args = args[0]
+                    pass
+                elif attr is True:
+                    attr = list(range(len(args)))
+                    args = zip(attr, args)
+                else:
+                    temp = args
+                    for i in range(len(attr)): # very naive way...
+                        try:
+                            temp = [t.__getitem__(attr[i]) for t in temp]
+                        except:
+                            raise happyError('key %s not found in input argument' % attr[i])
+                    args = zip(temp, args) # list([(k,v) for k,v in zip(attr, args)])
+            elif not happyType.ismapping(attr):
+                raise happyError('wrong setting for attribute dictionary object')
+        elif kwargs != {}:       
+            attr = kwargs.pop(_AttrDict.KW_ATTR,None)
+            if attr is None:
+                args = list(kwargs.items())
+            else:
+                args = zip(attr,[None]*len(attr))
+        setattr(self, _AttrDict.KW_ATTR, attr if attr is False or len(attr)>1 else attr[0])
+        super(_AttrDict, self).__init__(args)
+        
+    #/************************************************************************/
+    def __len__(self):
+        lenght = super(_AttrDict, self).__len__()
+        attr = getattr(self, _AttrDict.KW_ATTR) 
+        if not (attr is None or attr is False) and lenght==1:
+            return len(self[attr])
+        else:
+            return lenght
+
+    #/************************************************************************/
+    __getattr__ = dict.__getitem__
+    # __setattr__ = dict.__setitem__
+
 
 #%%
 #==============================================================================
