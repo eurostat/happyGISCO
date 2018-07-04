@@ -1978,6 +1978,8 @@ class GDALTransform(_Tool):
         """
         if not happyType.issequence(fname): 
             fname = [fname,]
+        if not all([happyType.isstring(f) for f in fname]):
+            raise happyError('wrong type for file name(s)')            
         for file in fname:
             try:
                 # assert fname not in ('', None) 
@@ -2050,14 +2052,12 @@ class GDALTransform(_Tool):
         :meth:`~tools.GDALTransform.file2vector`, :meth:`~tools.GDALTransform.layer2vector`,
         :meth:`osgeo.ogr.DataSource.GetLayer`.
         """
-        #for d in self._file2data(fname):
-        #    yield d.GetLayer()
         data = list(self._file2data(fname))
         try:
             layer = [d.GetLayer() for d in data]
         except:
             raise happyError('could not get vector layer')
-        return layer # if layer in ([],None) or len(layer)>1 else layer[0]
+        return layer if layer in ([],None) or len(layer)>1 else layer[0]
 
     #/************************************************************************/
     def layer2vector(self, layer):
@@ -2070,8 +2070,8 @@ class GDALTransform(_Tool):
             
         Argument
         --------
-        layer : :class:`osgeo.ogr.Layer`
-            input vector layer.
+        layer : :class:`osgeo.ogr.Layer`,list[:class:`osgeo.ogr.Layer`]
+            input ingle (or multiple) vector layer(s).
             
         Returns
         -------
@@ -2112,6 +2112,8 @@ class GDALTransform(_Tool):
         """
         if not happyType.issequence(layer): 
             layer = [layer,]
+        if not all([isinstance(l, ogr.Layer) for l in layer]):
+            raise happyError('wrong layer type')            
         try:
             vector = [l.GetFeature(i) for l in layer for i in range(0,l.GetFeatureCount())]
         except:
@@ -2253,7 +2255,7 @@ class GDALTransform(_Tool):
         Arguments
         ---------
         layer : :class:`osgeo.ogr.Layer`
-            input vector layer.
+            input single vector layer.
         geom : :class:`osgeo.ogr.Geometry`
             input vector geometry, *e.g.* storing :literal:`(lat,Lon)` geographical
             coordinates.
@@ -2315,6 +2317,8 @@ class GDALTransform(_Tool):
         :meth:`osgeo.ogr.Layer.GetFeatureCount`, :meth:`osgeo.ogr.Layer.GetGeometryCount`, 
         :meth:`osgeo.ogr.Layer.GetFeature`, :meth:`osgeo.ogr.Geometry.GetGeometryRef`.
         """        
+        if not isinstance(layer, ogr.Layer):
+            raise happyError('wrong layer type')            
         answer = [] # will be same lenght as self.vector
         featureCount = layer.GetFeatureCount()
         happyVerbose('\nnumber of features in %s: %d' % (layer,featureCount))
