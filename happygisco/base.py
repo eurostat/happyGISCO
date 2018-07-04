@@ -692,6 +692,7 @@ class _Decorator(object):
     KW_UNIT         = 'unit' 
     KW_LEVEL        = 'level'
     
+    KW_LAYER        = 'layer'
     KW_FILE         = 'file'
     KW_URL          = 'url'
     KW_DATA         = 'data'
@@ -2201,7 +2202,7 @@ class _AttrDict(dict):
             {'a': 1, 'b': 2}
         >>> _AttrDict({'a': 1, 'b': 2})
             {'a': 1, 'b': 2}
-        >>> _AttrDict(a=1,b=2)
+        >>> _AttrDict(a=1, b=2)
             {'a': 1, 'b': 2}
         
     However, in addition the keyword parameter :literal:`_attr_` allows for 
@@ -2211,8 +2212,12 @@ class _AttrDict(dict):
         
         >>> _AttrDict({'a': 1, 'b': 2}, _attr_=True)
             {0: {'a': 1, 'b': 2}}
-        >>> _AttrDict({'a': {'b': 10}, 'c': 1}, _attr_=['a','b'])
-            {10: {'a': {'b': 10}, 'c': 1}}
+        >>> _AttrDict([{'a': {'b': 1}, 'c': 2}, {'a': {'b': -1}, 'c': -2}],  \
+                    _attr_=True)
+            {0: {'a': {'b': 1}, 'c': 2}, 1: {'a': {'b': -1}, 'c': -2}}
+        >>> _AttrDict([{'a': {'b': 1}, 'c': 2}, {'a': {'b': -1}, 'c': -2}],  \
+                    _attr_=['a','b'])
+            {1: {'a': {'b': 1}, 'c': 2}, -1: {'a': {'b': -1}, 'c': -2}}
         
         
     Note
@@ -2228,15 +2233,10 @@ class _AttrDict(dict):
         attr = None
         if len(args) > 1:
             raise happyError('%s expected at most 1 arguments' % _AttrDict.__name__)
-        if args != () and happyType.issequence(args):
-            if not any([happyType.ismapping(a) for a in args]): 
-                if kwargs != {}:
-                    raise happyError('wrong setting for attribute dictionary object')
-                elif all([happyType.issequence(a) for a in args]):
-                    args = args[0]
-                else:
-                    args = zip(args,[None]*len(args))
-            elif all([happyType.ismapping(a) for a in args]):
+        if args != ():
+            if happyType.issequence(args[0]):
+                args = args[0]
+            if all([happyType.ismapping(a) for a in args]):
                 attr = kwargs.pop(_AttrDict.KW_ATTR, False)
                 if attr is False:
                     args = args[0]
@@ -2252,15 +2252,20 @@ class _AttrDict(dict):
                         except:
                             raise happyError('key %s not found in input argument' % attr[i])
                     args = zip(temp, args) # list([(k,v) for k,v in zip(attr, args)])
-            elif not happyType.ismapping(attr):
-                raise happyError('wrong setting for attribute dictionary object')
+            elif not any([happyType.ismapping(a) for a in args]): 
+                if kwargs != {}:
+                    raise happyError('wrong setting for attribute dictionary object')
+                elif all([happyType.issequence(a) for a in args]):
+                    pass # args = args[0]
+                else:
+                    args = zip(args,[None]*len(args))
         elif kwargs != {}:       
             attr = kwargs.pop(_AttrDict.KW_ATTR,None)
-            if attr is None:
+            if attr in (False,None):
                 args = list(kwargs.items())
             else:
                 args = zip(attr,[None]*len(attr))
-        setattr(self, _AttrDict.KW_ATTR, attr if attr is False or len(attr)>1 else attr[0])
+        setattr(self, _AttrDict.KW_ATTR, attr if attr in (None,False) or len(attr)>1 else attr[0])
         super(_AttrDict, self).__init__(args)
         
     #/************************************************************************/
