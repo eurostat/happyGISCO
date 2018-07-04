@@ -56,7 +56,7 @@ import functools#analysis:ignore
 from happygisco import settings
 from happygisco.settings import happyWarning, happyVerbose, happyError, happyType#analysis:ignore
 #from happygisco import base
-from happygisco.base import _Feature, _Decorator#analysis:ignore
+from happygisco.base import _Feature, _Decorator, _AttrDict#analysis:ignore
 from happygisco import tools     
 from happygisco.tools import GDAL_TOOL, FOLIUM_TOOL
 from happygisco import services     
@@ -738,6 +738,13 @@ class NUTS(_Feature):
     nuts : dict, list[dict]
         a (list of) dictionary(ies) representing a single NUTS geometry.
         
+    Properties
+    ----------
+    feature :
+        Feature property (:data:`getter`) of a :class:`NUTS` instance.
+    layer :
+        Layer property (:data:`getter`) of a :class:`NUTS` instance.
+
     Notes
     -----
     Bulk datasets:
@@ -752,40 +759,50 @@ class NUTS(_Feature):
     #/************************************************************************/
     @classmethod
     def from_layer(cls, layer, **kwargs):
-        layer = kwargs.pop(_Decorator.KW_LAYER, None)
         self = cls(**kwargs)
         if not layer in ([],None):
-            self.__layer = layer
-            self.__feature = self.transform.layer2feat(layer)
+            self.layer = layer
+            self.vector = self._get_vector(**{_Decorator.KW_LAYER: layer})
+            self.feature = self._get_feature(self.vector)
         return self
         
     #/************************************************************************/
     @_Decorator.parse_file
     @classmethod
-    def from_file(cls, url, **kwargs):
-        file = kwargs.pop(_Decorator.KW_FILE, None)
+    def from_file(cls, file, **kwargs):
         self = cls(**kwargs)
         if not file in ([],None):
-            self.__layer = self.transform.file2layer(file)
-            # self.__vector = self.transform.layer2vector(self.__layer) # crash!!!
-            self.__vector = self.transform.file2vector(file)
+            self.layer = self._get_layer(**{_Decorator.KW_FILE: file})
+            # self.__vector = self._get_vector(**{_Decorator.KW_LAYER: self.layer}) # crash!!!
+            self.vector = self._get_vector(**{_Decorator.KW_FILE: file})
+            self.feature = self._get_feature(self.vector)
         return self
       
     #/************************************************************************/
     @classmethod
     @_Decorator.parse_url
     def from_url(cls, url, **kwargs):
-        url = kwargs.pop(_Decorator.KW_URL, None)
         self = cls(**kwargs)
         if url is not None:
-            feat = self.serv.get_response(url)
-            self.__vector = feat.content
+            self.layer = self._get_layer(**{_Decorator.KW_URL: url})
+            self.vector = self._get_vector(**{_Decorator.KW_LAYER: self.layer})
+            self.feature = self._get_feature(self.vector)
+        return self
+      
+    #/************************************************************************/
+    @classmethod
+    def from_area(cls, area, **kwargs):
+        self = cls(**kwargs)
+        if area is not None:
+            self.layer = self._get_layer(**{_Decorator.KW_URL: url})
+            self.vector = self._get_vector(**{_Decorator.KW_LAYER: self.layer})
+            self.feature = self._get_feature(self.vector)
         return self
     
     #/************************************************************************/
     @_Decorator.parse_nuts
     def __init__(self, **kwargs):
-        self.__feature = kwargs.pop(_Decorator.KW_FEATURE, [])
+        self.feature = kwargs.pop(_Decorator.KW_FEATURE, {})
         super(NUTS,self).__init__(**kwargs)
     
     #/************************************************************************/
@@ -803,20 +820,6 @@ class NUTS(_Feature):
 
     #/************************************************************************/    
     @property
-    def feature(self):
-        """Feature property (:data:`getter`) of a :class:`NUTS` instance.
-        """
-        return self.__feature if self.__feature is None or len(self.__feature)>1 else self.__feature[0]
-
-    #/************************************************************************/    
-    @property
-    def layer(self):
-        """Layer property (:data:`getter`) of a :class:`NUTS` instance.
-        """
-        return self.__layer if self.__layer is None or len(self.__layer)>1 else self.__layer[0]
-
-    #/************************************************************************/    
-    @property
     def coord(self):
         """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) 
         of a :class:`NUTS` instance.
@@ -831,26 +834,80 @@ class NUTS(_Feature):
                 self._coord = coord
         return self._coord # if len(self._coord)>1 else self._coord[0]    
 
+    #/************************************************************************/    
+    @_Decorator.parse_file
+    @_Decorator.parse_url
+    def _get_layer(self, **kwargs):
+        file = kwargs.pop(_Decorator.KW_FILE, None)
+        url = kwargs.pop(_Decorator.KW_URL, None)
+        try:
+            if file is not None:
+                return self.transform.file2layer(file)
+            elif url is not None:
+                feat = self.serv.get_response(url)
+                return feat.content
+        except:
+            raise happyError('impossible to extract layer from input file') 
+
+    #/************************************************************************/  
+    @_Decorator.parse_file
+    def _get_vector(self, **kwargs):
+        layer = kwargs.pop(_Decorator.KW_LAYER, None)
+        file = kwargs.pop(_Decorator.KW_FILE, None)
+        try:
+            if layer is not None:
+                vector = self.transform.layer2vector(layer)
+            elif file is not None:
+                vector = self.transform.file2vector(file)
+            else:
+                raise happyError('no input data parsed to extract vector features')
+        except:
+            raise happyError('impossible to extract vector features from input data') 
+        try:
+            kwargs.update({_AttrDict.KW_ATTR: kwargs.pop(_AttrDict.KW_ATTR, False)})
+            return _AttrDict(vector, **kwargs)
+        except:
+            raise happyError('impossible to build vector features dictionary') 
 
     #/************************************************************************/    
-    def __get_vector(self):
-        if not self.layer in ([],None):
-            return self.transform.layer2vector(self.layer)
-
-    #/************************************************************************/    
-    def __get_feature(self):
-        if not self.vector in ([],None):
+    def _get_feature(self, **kwargs):
+        vector = kwargs.pop('vector', self.vector)
+        try:
+            if getattr(vector, _AttrDict.KW_ATTR) in (None,False):
+                feature = [json.loads(v.ExportToJson()) for v in vector]
+            else:
+                feature = [json.loads(v.ExportToJson()) for v in vector.values()]
+        except: 
+            raise happyError('impossible to extract features from vector data') 
+        if kwargs != {}:
+            return _AttrDict(feature, **kwargs)
+        if _Decorator.parse_nuts.KW_ATTRIBUTES in feature[0]:
             try:
-                feature = {k:json.loads(v.ExportToJson()) for k,v in self.vector.items()}
+                kwargs.update({_AttrDict.KW_ATTR: [_Decorator.parse_nuts.KW_ATTRIBUTES, _Decorator.parse_nuts.KW_NUTS_ID]})
+                return _AttrDict(feature, **kwargs)
             except:
-                feature = {}
-            return self.transform.layer2vector(self.layer)
-            
+                raise happyError('impossible to build feature dictionary') 
+        else: # if _Decorator.parse_nuts.KW_PROPERTIES in feature[0]:
+            try:
+                kwargs.update({_AttrDict.KW_ATTR: [_Decorator.parse_nuts.KW_PROPERTIES, _Decorator.parse_nuts.KW_NUTS_ID]})
+                return _AttrDict(feature, **kwargs)
+            except:
+                pass
+            try:
+                kwargs.update({_AttrDict.KW_ATTR: [_Decorator.parse_nuts.KW_PROPERTIES, _Decorator.parse_nuts.KW_FID]})
+                return _AttrDict(feature, **kwargs)
+            except:
+                pass
+            try:
+                kwargs.update({_AttrDict.KW_ATTR: True})
+                return _AttrDict(feature, **kwargs)
+            except:
+                raise happyError('impossible to build feature dictionary') 
 
     #/************************************************************************/    
-    def __get_level(self):
-#        if self.feature is None:
-#            if self.vector is None:
+    def _get_level(self):
+        if self.feature in ([],None):
+            self.feature = self.get_vector()
         try:
             level = [int(f[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL]) \
                     for f in self.feature]
