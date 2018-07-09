@@ -163,6 +163,6 @@ These tools can be used, for instance, with NUTS appropriate vector data sources
 
 **<a name="References"></a>References**
 
-* Grazzini J., Museux J.-M. and Hahn M. (2018): [**Empowering and interacting with statistical produsers: A practical example with Eurostat data as a service**](), submitted to _Conference of European Statistics Stakeholders_.
+* Grazzini J., Museux J.-M. and Hahn M. (2018): [**Empowering and interacting with statistical produsers: A practical example with Eurostat data as a service**](https://www.researchgate.net/publication/325973362_Empowering_and_interacting_with_statistical_produsers_a_practical_example_with_Eurostat_data_as_a_service), in_Conference of European Statistics Stakeholders_.
 * Grazzini J., Lamarche P., Gaffuri J. and Museux J.-M. (2018): [**"Show me your code, and then I will trust your figures": Towards software-agnostic open algorithms in statistical production**](https://www.researchgate.net/publication/325320551_Show_me_your_code_and_then_I_will_trust_your_figures_Towards_software-agnostic_open_algorithms_in_statistical_production), in Proc.  _Quality Conference_.
 
