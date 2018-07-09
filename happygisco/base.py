@@ -1814,18 +1814,18 @@ class _Decorator(object):
  
     #/************************************************************************/
     @classmethod
-    def _parse_class(cls, myclass, key, values=None):
+    def _parse_class(cls, parse_cls, key, values=None):
         """Generic method that enables defining a class decorator of functions 
         and methods that can parse any parameter of a given class.
         
         ::
         
-            >>> decorator = __Decorator_parse_class(myclass, key)
+            >>> decorator = __Decorator._parse_class(parse_cls, key)
             >>> new_func = decorator(func)
         
         Arguments
         ---------
-        myclass : class
+        parse_cls : class
             a custom class.
         key : str
             key used to parse the argument
@@ -1837,43 +1837,17 @@ class _Decorator(object):
             
         Returns
         -------
-        decorator : :class:`_Decorator.__parse)`
-            A parsing class that can be used to decorate any method or function.
-                
-        Note
-        ----
-        The class :data:`decorator` returned can be used to decorate function that
-        accepts :data:`key` as a keyword argument to parse an argument of class 
-        :data:`myclass`.
+        decorator : :class:`_Decorator.__base)`
+            A parsing class that can be used to decorate any method or function
+            that accepts :data:`key` as a keyword argument to parse an argument 
+            of class :data:`myclass`.
         """
-        if not happyType.issequence(myclass):
-            myclass = [myclass,]
-        if not all([isinstance(c,type) for c in myclass]):
-            raise happyError('wrong type for CLASS argument') 
-        if not isinstance(key,str):
-            raise happyError('wrong type for KEY argument')         
-        if values is not None and not happyType.ismapping(values):
-            values = {v:v for v in values}
         class parse_class(_Decorator.__base):
-            def __call__(self, *args, **kwargs):                   
-                try:
-                    value = kwargs.pop(key, None)
-                    assert value is None or any([isinstance(value,c) for c in myclass])
-                except:
-                    raise happyError('wrong format for %s argument' % key.upper())
-                else:
-                    if value is None:
-                        return self.func(*args, **kwargs)
-                if values is not None:
-                    try:
-                        assert value in happyType.seqflatten(values.items())
-                    except:
-                        raise happyError('wrong value for %s argument - %s not supported' % (key.upper(), value))
-                    else:
-                        if value in values.keys():
-                            value = values[value]
-                kwargs.update({key: value})                  
-                return self.func(*args, **kwargs)
+            def __init__(self, *args, **kwargs):
+                kwargs.update({'parse_cls': parse_cls, 
+                               'key': key, 
+                               'values': values})
+                super(_Decorator.parse_class,self).__init__(*args, **kwargs)
         return parse_class
 
     #/************************************************************************/
@@ -1922,6 +1896,11 @@ class _Decorator(object):
         :meth:`~geoDecorators.parse_format`, :meth:`~geoDecorators.parse_feature`,
         :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_level`.
         """
+        def __init__(self, *args, **kwargs):
+            kwargs.update({'parse_cls': int, 
+                           'key': _Decorator.KW_YEAR, 
+                           'values': settings.GISCO_YEARS})
+            super(_Decorator.parse_year,self).__init__(*args, **kwargs)
         #def __call__(self, *args, **kwargs):
         #    try:
         #        year = kwargs.pop(_Decorator.KW_YEAR, None) # settings.GISCO_YEARS[-2]
@@ -1937,11 +1916,6 @@ class _Decorator(object):
         #        raise happyError('wrong value for %s argument - year %s not supported' % (_Decorator.KW_YEAR.upper(), year))
         #    kwargs.update({_Decorator.KW_YEAR: year})                  
         #    return self.func(*args, **kwargs)
-        def __init__(self, *args, **kwargs):
-            kwargs.update({'parse_cls': int, 
-                           'key': _Decorator.KW_YEAR, 
-                           'values': settings.GISCO_YEARS})
-            super(_Decorator.parse_year,self).__init__(*args, **kwargs)
 
     #/************************************************************************/
     class parse_projection(__base):
@@ -1980,7 +1954,7 @@ class _Decorator(object):
             
             >>> func = lambda *args, **kwargs: kwargs.get('proj')
             >>> _Decorator.parse_projection(func)(proj='dumb')
-                happyError: !!! wrong value for PROJ argument - projection dumb not supported !!!
+                happyError: !!! AssertionError: wrong value for PROJ argument - projection dumb not supported !!!
             >>> _Decorator.parse_projection(func)(proj='WGS84')
                 4326
             >>> _Decorator.parse_projection(func)(proj='EPSG3857')
@@ -1997,6 +1971,11 @@ class _Decorator(object):
         :meth:`~geoDecorators.parse_format`, :meth:`~geoDecorators.parse_level`.
         """
         ## PROJECTION      = dict(happyType.seqflatten([[(k,v), (v,v)] for k,v in settings.GISCO_PROJECTIONS.items()]))
+        def __init__(self, *args, **kwargs):
+            kwargs.update({'parse_cls': [int,str], 
+                           'key': _Decorator.KW_PROJECTION, 
+                           'values': settings.GISCO_PROJECTIONS})
+            super(_Decorator.parse_projection,self).__init__(*args, **kwargs)
         #def __call__(self, *args, **kwargs):
         #    try:
         #        proj = kwargs.pop(_Decorator.KW_PROJECTION, None) # settings.DEF_GISCO_PROJECTION
@@ -2019,7 +1998,6 @@ class _Decorator(object):
         #        #    proj = {v:k for k,v in settings.GISCO_PROJECTIONS.items()}[proj]
         #    kwargs.update({_Decorator.KW_PROJECTION: proj})                  
         #    return self.func(*args, **kwargs)
-        pass
        
     #/************************************************************************/
     class parse_format(__base):
@@ -2143,6 +2121,11 @@ class _Decorator(object):
         :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_format`,
         :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_level`.
         """
+        def __init__(self, *args, **kwargs):
+            kwargs.update({'parse_cls': str, 
+                           'key': _Decorator.KW_FEATURE, 
+                           'values': settings.GISCO_FEATURES})
+            super(_Decorator.parse_feature,self).__init__(*args, **kwargs)
         #def __call__(self, *args, **kwargs):
         #    try:
         #        feat = kwargs.pop(_Decorator.KW_FEATURE, None) # settings.DEF_GISCO_FEATURE
@@ -2161,7 +2144,6 @@ class _Decorator(object):
         #            feat = settings.GISCO_FEATURES[feat]
         #    kwargs.update({_Decorator.KW_FEATURE: feat})                  
         #    return self.func(*args, **kwargs)
-        pass
        
     #/************************************************************************/
     class parse_scale(__base):
@@ -2213,6 +2195,11 @@ class _Decorator(object):
         :meth:`~geoDecorators.parse_level`, :meth:`~geoDecorators.parse_format`,
         :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_feature`.
         """
+        def __init__(self, *args, **kwargs):
+            kwargs.update({'parse_cls': [int,str], 
+                           'key': _Decorator.KW_SCALE, 
+                           'values': settings.GISCO_SCALES})
+            super(_Decorator.parse_scale,self).__init__(*args, **kwargs)
         #def __call__(self, *args, **kwargs):
         #    try:
         #        scale = kwargs.pop(_Decorator.KW_SCALE, None) # settings.DEF_GISCO_SCALE
@@ -2231,7 +2218,6 @@ class _Decorator(object):
         #            scale = settings.GISCO_SCALES[scale]
         #    kwargs.update({_Decorator.KW_SCALE: scale})                  
         #    return self.func(*args, **kwargs)
-        pass
 
     #/************************************************************************/
     class parse_level(__base):
@@ -2279,6 +2265,11 @@ class _Decorator(object):
         :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_format`,
         :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_feature`.
         """
+        def __init__(self, *args, **kwargs):
+            kwargs.update({'parse_cls': int, 
+                           'key': _Decorator.KW_LEVEL, 
+                           'values': settings.GISCO_NUTSLEVELS})
+            super(_Decorator.parse_scale,self).__init__(*args, **kwargs)
         #def __call__(self, *args, **kwargs):
         #    try:
         #        level = kwargs.pop(_Decorator.KW_LEVEL, None)
@@ -2294,20 +2285,19 @@ class _Decorator(object):
         #        raise happyError('wrong value for %s argument - level %s not supported' % (_Decorator.KW_LEVEL.upper(), level))
         #    kwargs.update({_Decorator.KW_LEVEL: level})                  
         #    return self.func(*args, **kwargs)
-        pass
         
 #_Decorator.parse_year =                         \
 #    _Decorator._parse_class(int, _Decorator.KW_YEAR, settings.GISCO_YEARS)
-_Decorator.parse_projection =                   \
-    _Decorator._parse_class([int,str], _Decorator.KW_PROJECTION, settings.GISCO_PROJECTIONS)
+#_Decorator.parse_projection =                   \
+#    _Decorator._parse_class([int,str], _Decorator.KW_PROJECTION, settings.GISCO_PROJECTIONS)
 #_Decorator.parse_format =                       \
 #    _Decorator._parse_class(str, _Decorator.KW_FORMAT, settings.GISCO_FORMATS)
-_Decorator.parse_feature =                      \
-    _Decorator._parse_class(str, _Decorator.KW_FEATURE, settings.GISCO_FEATURES)
-_Decorator.parse_scale =                        \
-    _Decorator._parse_class([int,str], _Decorator.KW_SCALE, settings.GISCO_SCALES)
-_Decorator.parse_level =                        \
-    _Decorator._parse_class(int, _Decorator.KW_LEVEL, settings.GISCO_NUTSLEVELS)
+#_Decorator.parse_feature =                      \
+#    _Decorator._parse_class(str, _Decorator.KW_FEATURE, settings.GISCO_FEATURES)
+#_Decorator.parse_scale =                        \
+#    _Decorator._parse_class([int,str], _Decorator.KW_SCALE, settings.GISCO_SCALES)
+#_Decorator.parse_level =                        \
+#    _Decorator._parse_class(int, _Decorator.KW_LEVEL, settings.GISCO_NUTSLEVELS)
 #_Decorator.parse_layer =                        \
 #    _Decorator._parse_class(ogr.Layer, _Decorator.KW_LAYER)
 #_Decorator.parse_vector =                        \
