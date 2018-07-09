@@ -74,6 +74,15 @@ except ImportError:
         class json:
             def loads(arg):  return '%s' % arg
 
+try:
+    GDAL_TOOL = True
+    from osgeo import ogr
+except ImportError:
+    GDAL_TOOL = False
+    happyWarning('GDAL package (https://pypi.python.org/pypi/GDAL) not loaded - Inline resources not available')
+else:
+    print('GDAL help: https://pcjericks.github.io/py-gdalogr-cookbook/index.html')
+
 #%%
 #==============================================================================
 # ENLARGE YOUR _Feature
@@ -755,19 +764,8 @@ class NUTS(_Feature):
     * `units 2016 http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2016-units.html
     listed in the `json file <http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2016-units.json>`_
     """
-    
-    #/************************************************************************/
-    @classmethod
-    def from_layer(cls, layer, **kwargs):
-        self = cls(**kwargs)
-        if not layer in ([],None):
-            self.layer = layer
-            self.vector = self._get_vector(**{_Decorator.KW_LAYER: layer})
-            self.feature = self._get_feature(self.vector)
-        return self
         
     #/************************************************************************/
-    @_Decorator.parse_file
     @classmethod
     def from_file(cls, file, **kwargs):
         self = cls(**kwargs)
@@ -780,7 +778,6 @@ class NUTS(_Feature):
       
     #/************************************************************************/
     @classmethod
-    @_Decorator.parse_url
     def from_url(cls, url, **kwargs):
         self = cls(**kwargs)
         if url is not None:
@@ -788,16 +785,30 @@ class NUTS(_Feature):
             self.vector = self._get_vector(**{_Decorator.KW_LAYER: self.layer})
             self.feature = self._get_feature(self.vector)
         return self
+    
+    #/************************************************************************/
+    @classmethod
+    def from_layer(cls, layer, **kwargs):
+        self = cls(**kwargs)
+        if not layer in ([],None):
+            self.layer = layer
+            self.vector = self._get_vector(**{_Decorator.KW_LAYER: layer})
+            self.feature = self._get_feature(self.vector)
+        return self
+      
+    #/************************************************************************/
+    @classmethod
+    def from_vector(cls, vector, **kwargs):
+        self = cls(**kwargs)
+        if vector is not None:
+            self.vector = vector
+            self.feature = self._get_feature(self.vector)
+        return self
       
     #/************************************************************************/
     @classmethod
     def from_area(cls, area, **kwargs):
-        self = cls(**kwargs)
-        if area is not None:
-            self.layer = self._get_layer(**{_Decorator.KW_URL: url})
-            self.vector = self._get_vector(**{_Decorator.KW_LAYER: self.layer})
-            self.feature = self._get_feature(self.vector)
-        return self
+        pass
     
     #/************************************************************************/
     @_Decorator.parse_nuts
@@ -819,22 +830,6 @@ class NUTS(_Feature):
                 return attr if len(attr)>1 else attr[0]
 
     #/************************************************************************/    
-    @property
-    def coord(self):
-        """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) 
-        of a :class:`NUTS` instance.
-        This is an educated guess from the actual geometry NUTS name.
-        """ 
-        if self._coord in ([],[None,None],None):
-            try:
-                coord = self.geocode(unique=True)
-            except:     
-                raise happyError('coordinates not found') 
-            else:
-                self._coord = coord
-        return self._coord # if len(self._coord)>1 else self._coord[0]    
-
-    #/************************************************************************/    
     @_Decorator.parse_file
     @_Decorator.parse_url
     def _get_layer(self, **kwargs):
@@ -851,6 +846,7 @@ class NUTS(_Feature):
 
     #/************************************************************************/  
     @_Decorator.parse_file
+    @_Decorator._parse_class(ogr.Layer, _Decorator.KW_LAYER)
     def _get_vector(self, **kwargs):
         layer = kwargs.pop(_Decorator.KW_LAYER, None)
         file = kwargs.pop(_Decorator.KW_FILE, None)
@@ -870,8 +866,9 @@ class NUTS(_Feature):
             raise happyError('impossible to build vector features dictionary') 
 
     #/************************************************************************/    
+    @_Decorator._parse_class(ogr.Feature, _Decorator.KW_VECTOR)
     def _get_feature(self, **kwargs):
-        vector = kwargs.pop('vector', self.vector)
+        vector = kwargs.pop(_Decorator.KW_VECTOR, self.vector)
         try:
             if getattr(vector, _AttrDict.KW_ATTR) in (None,False):
                 feature = [json.loads(v.ExportToJson()) for v in vector]
@@ -919,6 +916,22 @@ class NUTS(_Feature):
                 level = None
         else:
             return level if len(level)>1 else level[0]
+
+    #/************************************************************************/    
+    @property
+    def coord(self):
+        """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) 
+        of a :class:`NUTS` instance.
+        This is an educated guess from the actual geometry NUTS name.
+        """ 
+        if self._coord in ([],[None,None],None):
+            try:
+                coord = self.geocode(unique=True)
+            except:     
+                raise happyError('coordinates not found') 
+            else:
+                self._coord = coord
+        return self._coord # if len(self._coord)>1 else self._coord[0]    
 
     #/************************************************************************/    
     @property
