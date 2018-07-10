@@ -75,13 +75,11 @@ except ImportError:
             def loads(arg):  return '%s' % arg
 
 try:
-    GDAL_TOOL = True
-    from osgeo import ogr
-except ImportError:
-    GDAL_TOOL = False
-    happyWarning('GDAL package (https://pypi.python.org/pypi/GDAL) not loaded - Inline resources not available')
+    assert GDAL_TOOL
+except AssertionError:
+    pass
 else:
-    print('GDAL help: https://pcjericks.github.io/py-gdalogr-cookbook/index.html')
+    from osgeo import ogr
 
 #%%
 #==============================================================================
