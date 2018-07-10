@@ -2486,7 +2486,7 @@ class FoliumMap(_Tool):
     #/************************************************************************/
     @property
     def Map(self):
-        """
+        """Map property (:data:`getter`/:data:`setter`).
         """
         return self.__map
     @Map.setter
@@ -2497,13 +2497,13 @@ class FoliumMap(_Tool):
 
     @property
     def tiles(self):
-        """
+        """Tiles property (:data:`getter`).
         """
         return self.__tiles
 
     @property
     def attr(self):
-        """
+        """Attributes property (:data:`getter`).
         """
         return self.__attr
             
