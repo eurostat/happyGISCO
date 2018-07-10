@@ -265,7 +265,7 @@ class Location(_Feature):
 
     #/************************************************************************/
     @property
-    def nuts(self):
+    def NUTS(self):
         """NUTS property (:data:`getter`) of a :class:`Location` instance.
         This is the identifier of the NUTS actually containing this instance.
         """ 
@@ -282,6 +282,15 @@ class Location(_Feature):
                 self.__nuts = [n[_Decorator.parse_nuts.KW_NUTS_ID] for n in nuts]
         return self.__nuts    
 
+
+    #/************************************************************************/
+    @property
+    def LAU(self):
+        """LAU property (:data:`getter`) of a :class:`Location` instance.
+        This is the identifier of the LAU actually containing this instance.
+        """ 
+        pass
+    
     #/************************************************************************/
     @property
     def geom(self):
