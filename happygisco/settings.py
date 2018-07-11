@@ -89,7 +89,10 @@ DEF_LANG            = 'en'
 """Default language used when launching |Eurostat| |GISCO| API.
 """
 
-EC_URL              = 'ec.europa.eu'
+EC_DOMAIN           = 'europa.eu'
+"""Domain of European Commission generic web-services.
+"""
+EC_URL              = 'ec.%s' % EC_DOMAIN
 """URL of the European Commission website.
 """
 ESTAT_DOMAIN        = 'eurostat'
@@ -99,9 +102,6 @@ ESTAT_URL           = '%s://%s/%s' % (PROTOCOL, EC_URL, ESTAT_DOMAIN)
 """Complete URL of |Eurostat| website.
 """
 
-EC_DOMAIN           = 'europa.eu'
-"""Domain of European Commission generic web-services.
-"""
 GISCO_WEBTOOLS      = 'webtools'
 """Domain of |GISCO| web-service under the European Commission URL.
 """
@@ -131,11 +131,11 @@ for the list of all EPSG codes and corresponding spatial references.
 DEF_GISCO_PROJECTION = 'WGS84'
 """Default projection used by |GISCO| services.
 """
-GISCO_CACHEDOMAIN    = 'eurostat/cache/GISCO/distribution/v2'
+GISCO_CACHEDOMAIN    = 'ec.eurostat/cache/GISCO/distribution/v2'
 """Domain of cache database, *e.g.* countries and |NUTS| vector datasets themes, 
 for download/distribution.
 """
-GISCO_CACHEURL       = '%s/ec.%s' % (EC_DOMAIN, GISCO_CACHEDOMAIN) 
+GISCO_CACHEURL       = '%s/%s' % (EC_DOMAIN, GISCO_CACHEDOMAIN) 
 """Complete URL of |GISCO| cache database.
 """
 GISCO_TILEDOMAIN    = 'webtools/maps/tiles'
@@ -265,6 +265,26 @@ CODER_PROJ          = {CODER_GISCO: DEF_GISCO_PROJECTION,
                        CODER_GOOGLE_MAPS: 'EPSG3857', 
                        CODER_GOOGLE_PLACES: 'EPSG3857'}
 """Default geographical projections available through the different geocoders.
+"""
+
+GISCO_LAUDOMAIN     = 'documents/345175/501971'
+"""
+"""
+GISCO_LAUURL        = '%s/%s' % (ESTAT_URL, GISCO_LAUDOMAIN) 
+"""Complete URL of |GISCO| LAU resources.
+"""
+NUTS2LAU            =  {2016: {2018: 'EU-28-LAU-2018-NUTS-2016.xlsx',
+                               2017: 'EU-28_LAU_2017_NUTS_2016.xlsx'},
+                        2013: {2017: 'EU-28_LAU_2017_NUTS_2013.xlsx',
+                               2016: 'EU-28_LAU_2016',
+                               2015: 'EU-28_2015.xlsx',
+                               2014: 'EU-28_2014.xlsx',
+                               2013: 'EU-28_2013.xlsx',
+                               2012: 'EU-28_2012.xlsx',
+                               2011: 'EU-28_2011.xlsx',
+                               2010: 'EU-28_2010.xlsx'}
+                        }
+"""
 """
 
 DRIVER_NAME         = 'ESRI Shapefile'

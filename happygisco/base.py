@@ -654,7 +654,6 @@ class _Feature(object):
         return self._coord
 
 
-
 #%%
 #==============================================================================
 # CLASS _Decorator
@@ -1527,7 +1526,7 @@ class _Decorator(object):
 
         Notes
         -----
-        * When passed to the decorated method :data:`new_func` with input arguments 
+        * When parsed to the decorated method :data:`new_func` with input arguments 
           :data:`*args, **kwargs`, the parameters :data:`kwargs` are actually filtered 
           out to extract NUTS features, say :data:`g`, that are formatted like 
           the JSON NUTS output by |GISCO| |NUTS| web-service (see method 
@@ -1820,34 +1819,69 @@ class _Decorator(object):
         
         ::
         
-            >>> decorator = __Decorator._parse_class(parse_cls, key)
-            >>> new_func = decorator(func)
+            >>> decorator = _Decorator._parse_class(parse_cls, key)
         
         Arguments
         ---------
         parse_cls : class
-            a custom class.
+            a custom class that is the type of the parsed argument.
         key : str
-            key used to parse the argument
+            keyword argument used to parse the argument.
         
         Keyword arguments
         -----------------
-        values : 
-            list of accepted values; default is :literal:`None`.
+        values : dict,list
+            list of values accepted for the key; can be a list or a dictionary;
+            in the latter case, the argument parsed will be mapped to its
+            corresponding value in the dictionary; default is :literal:`None`.
             
         Returns
         -------
         decorator : :class:`_Decorator.__base)`
             A parsing class that can be used to decorate any method or function
             that accepts :data:`key` as a keyword argument to parse an argument 
-            of class :data:`myclass`.
+            of type :data:`myclass`.
+            
+        Examples
+        --------
+        Let say for instance we want to parse a :class:`str` argument that can 
+        take values in :literal:`['a','b','c']` only with a :literal:`dummy_key`
+        key:
+        
+        ::
+            
+            >>> key = 'dummy_key'
+            >>> parse_cls = str
+            >>> values = ['a', 'b', 'c']
+            >>> func = lambda *args, **kwargs: kwargs.get(key)
+            
+        we then use:
+        
+        ::
+                
+            >>> decorator = _Decorator._parse_class(parse_cls, key, values)
+            >>> decorator(func)(dummy_key=0)
+                happyError: !!! AssertionError: wrong format for DUMMY_KEY argument !!!
+            >>> decorator(func)(dummy_key='dumb')
+                happyError: !!! wrong value for DUMMY_KEY argument - 'dumb' not supported !!!
+            >>> decorator(func)(dummy_key='a')
+                'a'
+                
+        what if we use a dictionary for :data:`values` instead:
+            
+        ::
+                
+            >>> values = {'a':1, 'b':2, 'c':3}
+            >>> decorator = _Decorator._parse_class(parse_cls, key, values)
+            >>> decorator(func)(dummy_key='b')
+                2
         """
         class parse_class(_Decorator.__base):
             def __init__(self, *args, **kwargs):
                 kwargs.update({'parse_cls': parse_cls, 
                                'key': key, 
                                'values': values})
-                super(_Decorator.parse_class,self).__init__(*args, **kwargs)
+                super(parse_class,self).__init__(*args, **kwargs)
         return parse_class
 
     #/************************************************************************/

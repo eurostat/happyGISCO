@@ -1008,7 +1008,21 @@ class GISCOService(OSMService):
                                         fmt )
             
         return url   
-         
+
+    
+    #/************************************************************************/
+    def url_lau(self, **kwargs):
+        """Generate the URL of the |GISCO| LAU data files.
+        
+        ::
+            
+            >>> url = serv.url_lau(**kwargs)
+           
+        Keyword Arguments
+        -----------------
+        """
+        pass
+
     #/************************************************************************/
     def url_country(self, **kwargs):
         """Generate the URL (or name) of the |GISCO| countries vector datasets.
@@ -1077,8 +1091,11 @@ class GISCOService(OSMService):
             :literal:`['bmarble','borders','roadswater','hypso','coast','copernicus','osmec',
             'graybg', 'country', 'gray', 'natural', 'city','cloudless']`
         proj : str,int
+            projection identifier.
         order : str
-        bckgrd : str
+            order of the dimensions :literal:`x,y` and :literal:`z` of the tiling
+            system; default: :literal:`z/y/x` (note that :literal:`{z}/{y}/{x}` 
+            is also accepted).
             
         Returns
         -------
