@@ -402,9 +402,14 @@ class Location(_Feature):
         :meth:`~Location.reverse`.
         """
         try:
-            return self.service.place2coord(place=self.place, **kwargs)
-        except:     
-            raise happyError('unable to retrieve coordinates from place (address/location)') 
+            assert self.__place not in ('',[''],None)
+        except AssertionError:
+            raise happyError('place not set') 
+        else:
+            try:
+                return self.service.place2coord(place=self.__place, **kwargs)
+            except:     
+                raise happyError('unable to retrieve coordinates from place (address/location)') 
 
     #/************************************************************************/
     def reverse(self, **kwargs):
@@ -461,9 +466,14 @@ class Location(_Feature):
         # non-existent address or a lat/lng in a remote location
         # raise LocationError('unrecognised location argument') 
         try:
-            return self.service.coord2place(coord=self.coord, **kwargs)
-        except:     
-            raise happyError('unable to retrieve place (address/location) from coordinates') 
+            assert self.__coord not in ([],[None,None],None)
+        except AssertionError:
+            raise happyError('coordinates not set') 
+        else:
+            try:
+                return self.service.coord2place(coord=self.__coord, **kwargs)
+            except:     
+                raise happyError('unable to retrieve place (address/location) from coordinates') 
     
     #/************************************************************************/
     def distance(self, loc, **kwargs):            
@@ -771,58 +781,101 @@ class NUTS(_Feature):
     * `units 2016 http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2016-units.html
     listed in the `json file <http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2016-units.json>`_
     """
-        
-    #/************************************************************************/
-    @classmethod
-    def from_file(cls, file, **kwargs):
-        self = cls(**kwargs)
-        if not file in ([],None):
-            self.layer = self._get_layer(**{_Decorator.KW_FILE: file})
-            # self.__vector = self._get_vector(**{_Decorator.KW_LAYER: self.layer}) # crash!!!
-            self.vector = self._get_vector(**{_Decorator.KW_FILE: file})
-            self.feature = self._get_feature(self.vector)
-        return self
-      
-    #/************************************************************************/
-    @classmethod
-    def from_url(cls, url, **kwargs):
-        self = cls(**kwargs)
-        if url is not None:
-            self.layer = self._get_layer(**{_Decorator.KW_URL: url})
-            self.vector = self._get_vector(**{_Decorator.KW_LAYER: self.layer})
-            self.feature = self._get_feature(self.vector)
-        return self
-    
-    #/************************************************************************/
-    @classmethod
-    def from_layer(cls, layer, **kwargs):
-        self = cls(**kwargs)
-        if not layer in ([],None):
-            self.layer = layer
-            self.vector = self._get_vector(**{_Decorator.KW_LAYER: layer})
-            self.feature = self._get_feature(self.vector)
-        return self
-      
-    #/************************************************************************/
-    @classmethod
-    def from_vector(cls, vector, **kwargs):
-        self = cls(**kwargs)
-        if vector is not None:
-            self.vector = vector
-            self.feature = self._get_feature(self.vector)
-        return self
-      
-    #/************************************************************************/
-    @classmethod
-    def from_area(cls, area, **kwargs):
-        pass
-    
+            
     #/************************************************************************/
     @_Decorator.parse_nuts
-    def __init__(self, **kwargs):
-        self.feature = kwargs.pop(_Decorator.KW_FEATURE, {})
+    def __init__(self, *args, **kwargs):
+        self.__file, self.__url = '', ''
+        self.__layer = None
+        self.__vector = None
+        self.__feature = None
         super(NUTS,self).__init__(**kwargs)
-    
+        file = kwargs.pop(_Decorator.KW_FILE, '')
+        url = kwargs.pop(_Decorator.KW_URL, '')
+        layer = kwargs.pop(_Decorator.KW_LAYER, None)
+        vector = kwargs.pop(_Decorator.KW_VECTOR, None)
+        feature = kwargs.pop(_Decorator.KW_FEATURE, {})
+        kwargs.update({_Decorator.KW_UNIT: unit})
+        url = self.serv.url_nuts(**kwargs)
+        if not file in ('',None):
+            self.__layer = self._get_layer(**{_Decorator.KW_FILE: file})
+        elif url is not None:
+            self.__layer = self._get_layer(**{_Decorator.KW_URL: url})
+        elif not layer in ([],None):
+            self.__layer = layer
+        if not file in ('',None):
+            self.vector = self._get_vector(**{_Decorator.KW_FILE: file})
+        elif not self.layer in ([],None):
+            self.__vector = self._get_vector(**{_Decorator.KW_LAYER: self.layer})
+        elif not vector in ([],None):
+            self.__vector = vector
+        if not feature in ({},None):
+            self.__feature = feature
+        elif not self.vector in ([],None):
+            self.__feature = self._get_feature(self.vector)
+                
+    #/************************************************************************/
+    @property
+    def layer(self):
+        """Layer property (:data:`setter`/:data:`getter`) of a :class:`NUTS` 
+        instance.
+        """ 
+        return self.__layer    
+    @layer.setter
+    def layer(self, layer):
+        try:
+            func = lambda **kw: kw.get(_Decorator.KW_LAYER)
+            layer = _Decorator.parse_place(func)(**{_Decorator.KW_LAYER: layer})
+        except:
+            raise happyError('wrong %s argument' % _Decorator.KW_LAYER) 
+        self.__layer = layer 
+
+    #/************************************************************************/
+    @property
+    def vector(self):
+        """Vector property (:data:`setter`/:data:`getter`) of a :class:`NUTS` 
+        instance.
+        """ 
+        if self.__vector in ([],None):
+            try:
+                vector = self._get_vector(**{_Decorator.KW_LAYER: self.__layer})
+            except:     
+                raise happyError('unable to retrieve feature vector') 
+            else:
+                self.__vector = vector
+        return self.__vector    
+    @vector.setter
+    def vector(self, vector):
+        try:
+            func = lambda **kw: kw.get(_Decorator.KW_VECTOR)
+            vector = _Decorator.parse_place(func)(**{_Decorator.KW_VECTOR: vector})
+        except:
+            raise happyError('wrong %s argument' % _Decorator.KW_VECTOR) 
+        self.__vector = vector
+
+    #/************************************************************************/
+    @property
+    def feature(self):
+        """Feature property (:data:`setter`/:data:`getter`) of a :class:`NUTS` 
+        instance.
+        """ 
+        if self.__vector in ([],None):
+            try:
+                feature = self._get_feature(self.vector)
+            except:     
+                raise happyError('unable to retrieve feature') 
+            else:
+                self.__feature = feature
+        return self.__feature    
+    @feature.setter
+    def feature(self,feature):
+        try:
+            func = lambda **kw: kw.get(_Decorator.KW_FEATURE)
+            feature = _Decorator.parse_place(func)(**{_Decorator.KW_FEATURE: feature})
+        except:
+            raise happyError('wrong %s argument' % _Decorator.KW_FEATURE) 
+        self.__feature = feature
+            
     #/************************************************************************/
     def __getattr__(self, attr_name): 
         try:
@@ -848,6 +901,8 @@ class NUTS(_Feature):
             elif url is not None:
                 feat = self.serv.get_response(url)
                 return feat.content
+            else:
+                raise happyError('no input data parsed to extract layer')
         except:
             raise happyError('impossible to extract layer from input file') 
 
@@ -855,13 +910,13 @@ class NUTS(_Feature):
     @_Decorator.parse_file
     @_Decorator._parse_class(ogr.Layer, _Decorator.KW_LAYER)
     def _get_vector(self, **kwargs):
-        layer = kwargs.pop(_Decorator.KW_LAYER, None)
         file = kwargs.pop(_Decorator.KW_FILE, None)
+        layer = kwargs.pop(_Decorator.KW_LAYER, self.layer)
         try:
-            if layer is not None:
-                vector = self.transform.layer2vector(layer)
-            elif file is not None:
+            if file is not None:
                 vector = self.transform.file2vector(file)
+            elif layer is not None:
+                vector = self.transform.layer2vector(layer)
             else:
                 raise happyError('no input data parsed to extract vector features')
         except:
@@ -1021,8 +1076,8 @@ class NUTS(_Feature):
     
     #/************************************************************************/
     def geocode(self, **kwargs):
-        """Convert the NUTS name to geographic coordinates using the service used 
-        to initialise this instance.
+        """Convert the NUTS name to geographic coordinates using the service defined 
+        when initialising this instance.
         
         ::
             
