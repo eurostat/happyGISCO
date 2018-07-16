@@ -1528,6 +1528,32 @@ class GISCOService(OSMService):
              for n, file in self._file4nuts(nuts, **kwargs)]
         return fref
 
+
+    #/************************************************************************/
+    def nutsname2id(self, name, **kwargs):
+        """
+        """
+        if not happyType.isstring(name):
+            raise happyError('wrong type for NAME parameter')
+        # retrieve the largest scale, i.e. the lowest resolution so as to download
+        # the smallest file
+        scale = sorted(list(settings.GISCO_SCALES.keys()))[-1]
+        bulk = True
+        fmt = 'shp' # instead of settings.DEF_GISCO_FORMAT since 'shp' is lighter
+        kwargs.update({'bulk': bulk, 
+                       _Decorator.KW_SCALE: scale,
+                       _Decorator.KW_FORMAT: fmt})
+        try:
+            url = self.url_nuts(**kwargs)
+            print(url)
+            assert self.get_status(url) is not None
+        except:
+            raise happyError('error NUTS data request')
+        else:
+            response = self.get_response(url)
+        print(response)
+        return 
+
     #/************************************************************************/
     def _place2area(self, place, **kwargs): 
         """Iterable version of :meth:`~GISCOService.place2area`.

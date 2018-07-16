@@ -795,12 +795,14 @@ class NUTS(_Feature):
         layer = kwargs.pop(_Decorator.KW_LAYER, None)
         vector = kwargs.pop(_Decorator.KW_VECTOR, None)
         feature = kwargs.pop(_Decorator.KW_FEATURE, {})
+        
         kwargs.update({_Decorator.KW_UNIT: unit})
         url = self.serv.url_nuts(**kwargs)
         if not file in ('',None):
             self.__layer = self._get_layer(**{_Decorator.KW_FILE: file})
         elif url is not None:
-            self.__layer = self._get_layer(**{_Decorator.KW_URL: url})
+            self.__url = url
+            self.__layer = self._get_layer(**{_Decorator.KW_URL: self.url})
         elif not layer in ([],None):
             self.__layer = layer
         if not file in ('',None):

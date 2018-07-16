@@ -131,11 +131,11 @@ for the list of all EPSG codes and corresponding spatial references.
 DEF_GISCO_PROJECTION = 'WGS84'
 """Default projection used by |GISCO| services.
 """
-GISCO_CACHEDOMAIN    = 'ec.eurostat/cache/GISCO/distribution/v2'
+GISCO_CACHEDOMAIN    = 'eurostat/cache/GISCO/distribution/v2'
 """Domain of cache database, *e.g.* countries and |NUTS| vector datasets themes, 
 for download/distribution.
 """
-GISCO_CACHEURL       = '%s/%s' % (EC_DOMAIN, GISCO_CACHEDOMAIN) 
+GISCO_CACHEURL       = 'ec.%s/%s' % (EC_DOMAIN, GISCO_CACHEDOMAIN) 
 """Complete URL of |GISCO| cache database.
 """
 GISCO_TILEDOMAIN    = 'webtools/maps/tiles'
