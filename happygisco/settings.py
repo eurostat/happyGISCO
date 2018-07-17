@@ -210,7 +210,7 @@ GISCO_FORMATS       = {'shp': 'shx', # 'shapefile': 'shp',
 DEF_GISCO_FORMAT    = 'geojson'
 """Default format for |GISCO| vector datasets.
 """
-GISCO_FEATURES      = {'region':'RN', 
+GISCO_FEATURES      = {'region':'RG', 
                        'label':'LB',
                        'line':'BN',
                        'boundary':'BN'}

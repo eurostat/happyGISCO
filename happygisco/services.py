@@ -919,9 +919,11 @@ class GISCOService(OSMService):
             
             >>> serv = services.GISCOService()
             >>> serv.url_nuts() # default: full bulk dataset...
-                'http://europa.eu/ec.eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-01m.geojson.zip'
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-01m.geojson.zip'
+            >>> serv.url_nuts(unit='NUTS") 
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_RG_01M_2013_4326_LEVL_0.geojson'
             >>> serv.url_nuts(unit='AD')
-                'http://europa.eu/ec.eurostat/cache/GISCO/distribution/v2/nuts/distribution/AD-region-01m-4326-2013.geojson'
+                'http://europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AD-region-01m-4326-2013.geojson'
                 
                 
                 http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-10m.shp.zip
@@ -938,7 +940,7 @@ class GISCOService(OSMService):
         """
         # check whether bulk datasets need to be downloaded
         try:
-            bulk = kwargs.pop('bulk', False)
+            bulk = kwargs.pop('bulk', True)
             assert bulk is None or isinstance(bulk,bool)
         except AssertionError:
             raise happyError('wrong format/value for BULK argument')
@@ -954,7 +956,7 @@ class GISCOService(OSMService):
             happyVerbose('incompatible parameters BULK and UNIT - UNIT ignored')
             unit = ''
         else:
-            if unit in ('NUTS',None) and bulk is False: unit = 'NUTS'
+            if unit in ('NUTS',None) and bulk is False: unit = 'NUTS' # force to 'NUTS' instead of None
         # retrieve the year
         year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
         # retrieve the scale
@@ -979,7 +981,7 @@ class GISCOService(OSMService):
         # set the compression format
         zip_  = '.zip' if bulk is True else ''
         theme = 'nuts'
-        if bulk:
+        if bulk: # zipped files
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-10m.shp.zip
             domain = settings.GISCO_DISTRIBUTION['download']['domain']
             basename = settings.GISCO_DISTRIBUTION['download']['basename']
@@ -987,8 +989,9 @@ class GISCOService(OSMService):
                                         self.url_cache, theme, domain,
                                         basename, year, scale.lower(),
                                         fmt, zip_ )
-        elif unit=='NUTS':
-            domain = {v:k for k,v in settings.GISCO_VECTORFMTS.items()}[fmt]
+        elif unit=='NUTS': # units
+            domain = {v:k for k,v in settings.GISCO_FORMATS.items()}[fmt]
+            basename = settings.GISCO_DISTRIBUTION['distribution']['basename']
             if not feat in list(settings.GISCO_FEATURES.values()):
                 feat = settings.GISCO_FEATURES[feat]
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/topojson/NUTS_BN_01M_2016_3035_LEVL_3.json
@@ -996,7 +999,7 @@ class GISCOService(OSMService):
                                         self.url_cache, theme, domain,
                                         basename, unit, feat.upper(), scale.upper(), year, proj, level,
                                         fmt )
-        else:
+        else: # files
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AT-region-01m-3035-2016.geojson
             domain = settings.GISCO_DISTRIBUTION['distribution']['domain']
             basename = settings.GISCO_DISTRIBUTION['distribution']['basename']
