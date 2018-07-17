@@ -62,9 +62,10 @@ __all__         = ['OSMService', 'GISCOService', 'APIService',
                    '_googleMapsAPI', '_googlePlacesAPI', '_geoCoderAPI']
 
 # generic import
-import os, sys#analysis:ignore
+import os, io, sys#analysis:ignore
 
 import functools#analysis:ignore
+import zipfile
 
 # local imports
 from happygisco import settings
@@ -108,6 +109,14 @@ try:
 except:
     API_SERVICE = False
     happyWarning('external API service not available')
+   
+try:
+    import pandas as pd
+except ImportError:
+    PANDAS_INSTALLED = False
+    happyWarning('Pandas package (http://pandas.pydata.org) not loaded')   
+except:
+    PANDAS_INSTALLED = True
     
 try:                                
     import simplejson as json
@@ -983,6 +992,8 @@ class GISCOService(OSMService):
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-10m.shp.zip
             domain = settings.GISCO_DISTRIBUTION['download']['domain']
             basename = settings.GISCO_DISTRIBUTION['download']['basename']
+            if fmt == 'shx': 
+                fmt='shp' # blearghhhhhh... no logics in GISCO file naming...
             url = '%s://%s/%s/%s/%s-%s-%s.%s%s' % (settings.PROTOCOL, 
                                         self.url_cache, theme, domain,
                                         basename, year, scale.lower(),
@@ -1530,29 +1541,32 @@ class GISCOService(OSMService):
 
 
     #/************************************************************************/
-    def nutsname2id(self, name, **kwargs):
+    def _file4nutsid(self, **kwargs):
         """
         """
-        if not happyType.isstring(name):
-            raise happyError('wrong type for NAME parameter')
         # retrieve the largest scale, i.e. the lowest resolution so as to download
         # the smallest file
-        scale = sorted(list(settings.GISCO_SCALES.keys()))[-1]
         bulk = True
+        scale = sorted(list(settings.GISCO_SCALES.keys()))[-1]
+        year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
         fmt = 'shp' # instead of settings.DEF_GISCO_FORMAT since 'shp' is lighter
         kwargs.update({'bulk': bulk, 
                        _Decorator.KW_SCALE: scale,
-                       _Decorator.KW_FORMAT: fmt})
+                       _Decorator.KW_FORMAT: fmt,
+                       _Decorator.KW_YEAR: year})
         try:
             url = self.url_nuts(**kwargs)
-            print(url)
             assert self.get_status(url) is not None
         except:
             raise happyError('error NUTS data request')
         else:
             response = self.get_response(url)
-        print(response)
-        return 
+        file = settings.GISCO_NUTS2ID.format(year=year)
+        with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
+            if file not in zf.namelist():
+                raise happyError('impossible to retrieve name to ID correspondance of NUTS')
+            return io.BytesIO(zf.read(file))
+        # return pd.read_csv(io.BytesIO(zf.read(file)))
 
     #/************************************************************************/
     def _place2area(self, place, **kwargs): 

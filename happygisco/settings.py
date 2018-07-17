@@ -188,6 +188,10 @@ bulk datasets, :literal:`distribution` for single areas.
 GISCO_NUTSLEVELS    = [0, 1, 2, 3]
 """Levels of |NUTS| areas.
 """
+GISCO_NUTS2ID       = 'NUTS_AT_{year}.csv'
+"""Name of the specific file storing the correspondance table between NUTS names
+and their IDs.
+"""
 GISCO_SCALES        = {1: '01m', 3: '03m', 10: '10m', 20: '20m', 60: '60m'} 
 """Scale (1:`scale` Million) of vector datasets.
 """
@@ -200,11 +204,12 @@ GISCO_YEARS         = [2003, 2006, 2010, 2013, 2016]
 DEF_GISCO_YEAR      = 2013
 """Default year considered for |NUTS| datasets (not the most recent, but up-to-date).
 """
-GISCO_FORMATS       = {'shp': 'shx', # 'shapefile': 'shp', 
-                       'geojson':'geojson', 
-                       'topojson':'json',
-                       'gdb': 'gdb',
-                       'pbf': 'pbf'}
+GISCO_FORMATS       = {'shp': 'shx',  # 'shapefile': 'shp', 
+                       'geojson': 'geojson',  
+                       'topojson': 'json', 
+                       'gdb': 'gdb', 
+                       'pbf': 'pbf', 
+                       }
 """Format of vector data files.
 """
 DEF_GISCO_FORMAT    = 'geojson'
