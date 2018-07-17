@@ -1591,7 +1591,6 @@ class GISCOService(OSMService):
              for n, file in self._file4nuts(nuts, **kwargs)]
         return fref
 
-
     #/************************************************************************/
     def file4nutsid(self, **kwargs):
         """
@@ -1614,6 +1613,7 @@ class GISCOService(OSMService):
                        _Decorator.KW_YEAR: year})
         try:
             url = self.url_nuts(**kwargs)
+            print(url)
             assert self.get_status(url) is not None
         except:
             raise happyError('error NUTS data request')
@@ -1626,6 +1626,21 @@ class GISCOService(OSMService):
                 raise happyError('impossible to retrieve name to ID correspondance of NUTS')
             return io.BytesIO(zf.read('%s.%s' % (file,fmt)))
         # return pd.read_csv(io.BytesIO(zf.read(file)))
+        
+    #/************************************************************************/
+    def nuts2id(self, unit, **kwargs):
+        """
+        """
+        try:
+            assert unit is not None
+        except:
+            raise happyError('')
+        lut = kwargs.pop('LUT', None)
+        if lut is None:
+            lut = self.file4nutsid(**kwargs)
+        lut = pd.read_csv(lut)
+        print(lut.columns) # 'CNTR_CODE', 'NUTS_ID', 'NUTS_NAME'
+        return lut
 
     #/************************************************************************/
     def _place2area(self, place, **kwargs): 

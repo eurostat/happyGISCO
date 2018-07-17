@@ -62,7 +62,7 @@ They are provided here for the sake of an exhaustive documentation.
 __all__         = ['_Service', '_Feature', '_Tool', '_Decorator', '_AttrDict']
 
 # generic import
-import os, sys#analysis:ignore
+import io, os, sys#analysis:ignore
 import itertools, functools
 import collections#analysis:ignore
 
@@ -331,7 +331,7 @@ class _Service(object):
         cache_store = kwargs.get('cache_store') or self.cache_store or False
         if isinstance(cache_store, bool) and cache_store is True:
             cache_store = self.__default_cache()
-        force_download = kwargs.get('force_download') or self.force_download or False
+        force_download = kwargs.get('force_download') or False
         expire_after = kwargs.get('expire_after') or self.expire_after or 0
         # build unique filename from URL name and cache directory, _e.g._ using 
         # hashlib encoding.
@@ -342,7 +342,7 @@ class _Service(object):
             pathname = pathname.hex()
         pathname = os.path.join(cache_store or './', pathname)
         if force_download is True or not self.__is_cached(pathname, expire_after):
-            response = self.get_response(url)
+            response = self.session.get(url)
             content = response.content
             if cache_store is not None:
                 if not os.path.exists(cache_store):
@@ -350,14 +350,14 @@ class _Service(object):
                 elif not os.path.isdir(cache_store):
                     raise happyError('cache {} is not a directory'.format(cache_store))
                 # write "content" to a given pathname
-                with open(pathname, 'w') as f:
+                with open(pathname, 'wb') as f:
                     f.write(content)
                     f.close()  
         else:
             if not os.path.exists(cache_store) or not os.path.isdir(cache_store):
                 raise happyError('cache %s is not a directory' % cache_store)
             # read "content" from a given pathname.
-            with open(pathname, 'r') as f:
+            with open(pathname, 'rb') as f:
                 content = f.read()
                 f.close()
         return pathname, content
@@ -444,6 +444,15 @@ class _Service(object):
         expire_after = kwargs.pop('expire_after',None) or self.expire_after or 0
         if isinstance(cache_store, bool) and cache_store is True:
             cache_store = self.__default_cache()
+        class CacheResponse(object):
+            def __init__(self, pathname, content):
+                self.pathname, self.content = pathname, content
+                try:
+                    self.text = content.decode()
+                except:
+                    self.text = ''
+            def raise_for_status(self):
+                pass
         if force_download is True:
             try:
                 if self.cache in (None,False):
@@ -462,14 +471,16 @@ class _Service(object):
                     kwargs.update({'force_download': force_download,
                                    'cache_store': cache_store,
                                    'expire_after': expire_after})
-                    response = self.__get(**kwargs)
+                    pathname, content = self.__get(url, **kwargs)
+                    response = CacheResponse(pathname, content)
             except:
                 raise happyError('wrong request formulated')  
         try:
+            assert response is not None
             response.raise_for_status()
         except:
             raise happyError('wrong response retrieved')  
-        return response   
+        return response
     
     #/************************************************************************/
     @classmethod
