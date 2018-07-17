@@ -888,8 +888,8 @@ class GISCOService(OSMService):
     
     #/************************************************************************/
     def url_nuts(self, **kwargs):
-        """Generate the URL of the |GISCO| domain for the download of NUTS data 
-        (in vector format).
+        """Generate the URL in the |GISCO| domain for the (bulk or not) download 
+        of NUTS data (in vector format).
         
         ::
             
@@ -934,38 +934,51 @@ class GISCOService(OSMService):
             >>> serv.url_nuts(unit='AD')
                 'http://europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AD-region-01m-4326-2013.geojson'
                 
+            >>> serv.url_nuts(year = 2016, scale = 10, feature = 'boundary')
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_BN_10M_2016_4326_LEVL_0.geojson'
+            >>> serv.url_nuts(unit='bulk', year = 2016, scale = 60, fmt = 'shp')
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-60m.shp.zip'
+            >>> serv.url_nuts(year = 2010, feature = 'label', level = 2)  
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_LB_2010_4326_LEVL_2.geojson'
+            >>> serv.url_nuts(year = 2010, scale = 1, feature = 'line', level = 'ALL', proj = 'EPSG3857')  
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_BN_01M_2010_3857.geojson'
+            >>> serv.url_nuts(unit='info', year = 2010)  
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2010-units.json'
                 
-                http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-10m.shp.zip
+            >>> serv.url_nuts(unit='MK', year = 2006, scale = 20, feature = 'region', proj = 'LAEA')
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/MK-region-20m-3035-2006.geojson'
+            >>> serv.url_nuts(unit='BE100', year = 2016, scale = 3, feature = 'region')
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-region-03m-4326-2016.geojson'        
+        
+        Note also:
+        
+        ::
                 
-                http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_LB_2016_3857_LEVL_0.geojson
-
-                http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/shp/NUTS_BN_03M_2016_4258_LEVL_3.shx
-                
-                http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/topojson/NUTS_BN_01M_2016_3035_LEVL_3.json
-
-                http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AT-region-01m-3035-2016.geojson
-
-                http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-region-03m-3035-2016.geojson        
+            >>> serv.url_nuts(unit='BE100', year = 2016, scale = 3, feature = 'boundary', fmt ='shp')
+                    ! only LABEL and REGION features are supported with single NUTS units distribution - FEATURE argument ignored !
+                    ! only GEOJSON is supported with single NUTS units distribution - FMT argument ignored !
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-region-03m-4326-2016.geojson'       
         """
         # check whether bulk datasets need to be downloaded
         try:
-            bulk = kwargs.pop('bulk', True)
+            bulk = kwargs.pop('bulk', False)
             assert bulk is None or isinstance(bulk,bool)
         except AssertionError:
             raise happyError('wrong format/value for BULK argument')
+        try:
+            info = kwargs.pop('info', False)
+            assert info is None or isinstance(info,bool)
+        except AssertionError:
+            raise happyError('wrong format/value for INFO argument')
         # check whether a specific unit is looked for
         try:
             unit = kwargs.pop(_Decorator.KW_UNIT, None)
-            assert unit is None or isinstance(unit,str)
+            assert unit is None or happyType.isstring(unit)
         except AssertionError:
             raise happyError('wrong format/value for UNIT argument')
-        try:
-            assert bulk is False or unit in ('NUTS',None)
-        except:
-            happyVerbose('incompatible parameters BULK and UNIT - UNIT ignored')
-            unit = ''
         else:
-            if unit in ('NUTS',None) and bulk is False: unit = 'NUTS' # force to 'NUTS' instead of None
+            if unit is None : 
+                unit = 'NUTS' # force to 'NUTS' instead of None      
         # retrieve the year
         year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
         # retrieve the scale
@@ -986,11 +999,16 @@ class GISCOService(OSMService):
             feat = settings.GISCO_FEATURES[feat]
         # retrieve the level
         level = kwargs.pop(_Decorator.KW_LEVEL, settings.GISCO_NUTSLEVELS[0])
-        level = 'LEVL_' + str(level)
         # set the compression format
-        zip_  = '.zip' if bulk is True else ''
-        theme = 'nuts'
-        if bulk: # zipped files
+        zip_  = '.zip' if unit.upper() == 'BULK' else ''
+        # check...
+        if unit in happyType.seqflatten(list(settings.GISCO_FEATURES.items())):
+            feat = settings.GISCO_FEATURES[unit] if unit in list(settings.GISCO_FEATURES.keys()) else unit
+            unit = 'NUTS'
+        elif unit.upper() in ('BULK','INFO','NUTS'):
+            pass
+        theme = settings.GISCO_NUTSTHEME 
+        if unit.upper() == 'BULK': # zipped files
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-10m.shp.zip
             domain = settings.GISCO_DISTRIBUTION['download']['domain']
             basename = settings.GISCO_DISTRIBUTION['download']['basename']
@@ -1000,13 +1018,28 @@ class GISCOService(OSMService):
                                         self.url_cache, theme, domain,
                                         basename, year, scale.lower(),
                                         fmt, zip_ )
-        elif unit=='NUTS': # units
+        elif unit.upper() == 'INFO':
+            domain = ''
+            fmt = settings.GISCO_NUTSDATASET['fmt']
+            basename = settings.GISCO_NUTSDATASET['file']
+            url = '%s://%s/%s/%s.%s' % (settings.PROTOCOL, 
+                                        self.url_cache, theme,
+                                        basename.format(year=year), fmt )
+        elif unit == 'NUTS': # units
             domain = {v:k for k,v in settings.GISCO_FORMATS.items()}[fmt]
             basename = settings.GISCO_DISTRIBUTION['distribution']['basename']
             if not feat in list(settings.GISCO_FEATURES.values()):
                 feat = settings.GISCO_FEATURES[feat]
+            if feat == 'LB': # no indication of scale!!!
+                scale = ''
+            else:
+                scale = '_' + str(scale)
+            if level == 'ALL':
+                level = ''
+            else:
+                level = '_LEVL_' + str(level)
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/topojson/NUTS_BN_01M_2016_3035_LEVL_3.json
-            url = '%s://%s/%s/%s/%s%s_%s_%s_%s_%s_%s.%s' % (settings.PROTOCOL, 
+            url = '%s://%s/%s/%s/%s%s_%s%s_%s_%s%s.%s' % (settings.PROTOCOL, 
                                         self.url_cache, theme, domain,
                                         basename, unit, feat.upper(), scale.upper(), year, proj, level,
                                         fmt )
@@ -1016,11 +1049,16 @@ class GISCOService(OSMService):
             basename = settings.GISCO_DISTRIBUTION['distribution']['basename']
             if not feat in list(settings.GISCO_FEATURES.keys()):
                 feat = {v:k for k,v in settings.GISCO_FEATURES.items()}[feat]
+            if feat not in ('label','region'):
+                happyWarning('only LABEL and REGION features are supported with single NUTS units distribution - %s argument ignored' % _Decorator.KW_FEATURE.upper())
+                feat = 'region'
+            if fmt != 'geojson':
+                happyWarning('only GEOJSON is supported with single NUTS units distribution - %s argument ignored' % _Decorator.KW_FORMAT.upper())
+                fmt = 'geojson'
             url = '%s://%s/%s/%s/%s%s-%s-%s-%s-%s.%s' % (settings.PROTOCOL, 
                                         self.url_cache, theme, domain,
                                         basename, unit, feat.lower(), scale.lower(), proj, year, 
-                                        fmt )
-            
+                                        fmt )  
         return url   
 
     
@@ -1046,12 +1084,14 @@ class GISCOService(OSMService):
             >>> url = serv.url_country(**kwargs)
             
             
-        Example
-        -------
+        Examples
+        --------
         
         ::
             
             >>> serv = services.GISCOService()
+            >>> serv.url_country()
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/countries/countries-2013-units.json'
             >>> serv.url_country(unit='AT')
                 'http://europa.eu/ec.eurostat/cache/GISCO/distribution/v2/countries/distribution/AT-region-01m-4326-2013.geojson'
 
@@ -1062,8 +1102,8 @@ class GISCOService(OSMService):
         # check whether a specific unit is looked for
         try:
             unit = kwargs.pop(_Decorator.KW_UNIT, None)
-            assert isinstance(unit,str)
-        except:
+            assert unit is None or happyType.isstring(unit)
+        except AssertionError:
             raise happyError('wrong format/value for UNIT keyword argument')
         # retrieve the year
         year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
@@ -1082,13 +1122,22 @@ class GISCOService(OSMService):
         if proj in settings.GISCO_PROJECTIONS.keys():
             proj = settings.GISCO_PROJECTIONS[proj]
         theme = 'countries'
-        domain = 'distribution'
-        space = 'region'
-        url = '%s://%s/%s/%s/%s-%s-%s-%s-%s.%s' % (settings.PROTOCOL, 
-                                    self.url_cache, theme, domain,
-                                    unit, space, scale.lower(), proj, year, 
-                                    fmt ) 
-            
+        if unit is None:
+            unit = 'INFO'
+        if unit.upper() == 'INFO':
+            domain = ''
+            fmt = settings.GISCO_CTRYDATASET['fmt']
+            basename = settings.GISCO_CTRYDATASET['file']
+            url = '%s://%s/%s/%s.%s' % (settings.PROTOCOL, 
+                                        self.url_cache, theme,
+                                        basename.format(year=year), fmt )
+        else:
+            domain = 'distribution'
+            space = 'region'
+            url = '%s://%s/%s/%s/%s-%s-%s-%s-%s.%s' % (settings.PROTOCOL, 
+                                        self.url_cache, theme, domain,
+                                        unit, space, scale.lower(), proj, year, 
+                                        fmt )             
         return url            
         
     #/************************************************************************/
@@ -1544,16 +1593,22 @@ class GISCOService(OSMService):
 
 
     #/************************************************************************/
-    def _file4nutsid(self, **kwargs):
+    def file4nutsid(self, **kwargs):
         """
+        
+        ::
+            
+            >>> fref  = serv.file4nutsid(nuts, **kwargs)
+            
+        Returns
+        -------
         """
         # retrieve the largest scale, i.e. the lowest resolution so as to download
         # the smallest file
-        bulk = True
         scale = sorted(list(settings.GISCO_SCALES.keys()))[-1]
         year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
         fmt = 'shp' # instead of settings.DEF_GISCO_FORMAT since 'shp' is lighter
-        kwargs.update({'bulk': bulk, 
+        kwargs.update({_Decorator.KW_UNIT: 'BULK', 
                        _Decorator.KW_SCALE: scale,
                        _Decorator.KW_FORMAT: fmt,
                        _Decorator.KW_YEAR: year})
@@ -1564,11 +1619,12 @@ class GISCOService(OSMService):
             raise happyError('error NUTS data request')
         else:
             response = self.get_response(url)
-        file = settings.GISCO_NUTS2ID.format(year=year)
+        file = settings.GISCO_NUTS2ID['file'].format(year=year)
+        fmt = settings.GISCO_NUTS2ID['fmt']
         with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
-            if file not in zf.namelist():
+            if '%s.%s' % (file,fmt) not in zf.namelist():
                 raise happyError('impossible to retrieve name to ID correspondance of NUTS')
-            return io.BytesIO(zf.read(file))
+            return io.BytesIO(zf.read('%s.%s' % (file,fmt)))
         # return pd.read_csv(io.BytesIO(zf.read(file)))
 
     #/************************************************************************/
