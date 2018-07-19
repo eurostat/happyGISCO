@@ -709,6 +709,9 @@ class _Decorator(object):
     KW_DATA         = 'data'
     KW_VALUES       = 'values'
 
+    KW_NAME         = 'name'
+    KW_ID           = 'id'
+
     #/************************************************************************/
     class __base(object):
         """Base parsing class for geographic entities. All decorators in 

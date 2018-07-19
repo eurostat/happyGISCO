@@ -41,7 +41,7 @@ so as to represent equivalently and (almost...) uniquely locations.
 # *since*:        Sat Apr 14 20:23:34 2018
 
 __all__         = ['GeoLocation', 'GeoDistance', 'GeoAngle', 'GeoCoordinate', 
-                   'GDALTransform', 'FoliumMap']
+                   'GDALTransform', 'FoliumMap'] # '_Pools'
 
 # generic import
 import os, sys#analysis:ignore
@@ -71,21 +71,21 @@ else:
     NCPUS = multiprocessing.cpu_count()              
 
 try:
-    GDAL_TOOL = True
     from osgeo import ogr
 except ImportError:
     GDAL_TOOL = False
     happyWarning('GDAL package (https://pypi.python.org/pypi/GDAL) not loaded - Inline resources not available')
 else:
+    GDAL_TOOL = True
     print('GDAL help: https://pcjericks.github.io/py-gdalogr-cookbook/index.html')
 
 try:
-    FOLIUM_TOOL = True
     import folium
 except ImportError:
     FOLIUM_TOOL = False
     happyWarning('folium package (https://github.com/python-visualization/folium) not loaded - Map resources not available')
 else:
+    FOLIUM_TOOL = True
     print('folium help: http://python-visualization.github.io/folium')
 
 #%%

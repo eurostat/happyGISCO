@@ -80,12 +80,12 @@ except:
     pass
 
 try:
-    API_SERVICE = True
     import googlemaps
 except ImportError:
     API_SERVICE = False
     happyWarning('GOOGLEMAPS package (https://pypi.python.org/pypi/googlemaps/) not loaded')
 else:
+    API_SERVICE = True
     print('GOOGLEMAPS help: https://github.com/googlemaps/google-maps-services-python')
 
 try:
@@ -117,6 +117,16 @@ except ImportError:
     happyWarning('Pandas package (http://pandas.pydata.org) not loaded')   
 except:
     PANDAS_INSTALLED = True
+    print('pandas help: https://pandas.pydata.org/pandas-docs/stable/')
+
+try:
+    import Levenshtein
+except ImportError:
+    LEVENSHTEIN_INSTALLED = False
+    happyWarning('python-Levenshtein package (https://github.com/ztane/python-Levenshtein) not loaded - Map resources not available')
+else:
+    LEVENSHTEIN_INSTALLED = True
+    print('Levenshtein help: https://rawgit.com/ztane/python-Levenshtein/master/docs/Levenshtein.html')
     
 try:                                
     import simplejson as json
@@ -1613,7 +1623,6 @@ class GISCOService(OSMService):
                        _Decorator.KW_YEAR: year})
         try:
             url = self.url_nuts(**kwargs)
-            print(url)
             assert self.get_status(url) is not None
         except:
             raise happyError('error NUTS data request')
@@ -1628,20 +1637,93 @@ class GISCOService(OSMService):
         # return pd.read_csv(io.BytesIO(zf.read(file)))
         
     #/************************************************************************/
-    def nuts2id(self, unit, **kwargs):
+    def _nuts2id(self, **kwargs):
+        """Generic version of methods :meth:`~GISCOService.nuts2id` and
+        :meth:`~GISCOService.id2nuts` used when linking NUTS identifiers with 
+        unit names.
         """
-        """
+        name = kwargs.pop(_Decorator.KW_NAME,None)
+        _id = kwargs.pop(_Decorator.KW_ID,None)
         try:
-            assert unit is not None
+            assert (name is None or _id is None)
         except:
-            raise happyError('')
-        lut = kwargs.pop('LUT', None)
+            raise happyError('incompatible arguments %s and %s' % (_Decorator.KW_NAME.upper(),_Decorator.KW_ID.upper()))
+        try:
+            assert not(name is None and _id is None)
+        except:
+            raise happyError('missing arguments %s and %s' % (_Decorator.KW_NAME.upper(),_Decorator.KW_ID.upper()))
+        unit = name or _id
+        if not happyType.issequence(unit):
+            unit = [unit,]
+        try:
+            assert all([happyType.isstring(u) for u in unit])
+        except:
+            raise happyError('wrong type for %s argument' % _Decorator.KW_NAME.upper() if name is not None else _Decorator.KW_ID.upper())        
+        else:
+            unit = [u.upper() for u in unit]
+        group = kwargs.pop('group', False)
+        lut = kwargs.pop(_Decorator.KW_FILE, None)
         if lut is None:
             lut = self.file4nutsid(**kwargs)
-        lut = pd.read_csv(lut)
-        print(lut.columns) # 'CNTR_CODE', 'NUTS_ID', 'NUTS_NAME'
-        return lut
-
+            try:
+                assert PANDAS_INSTALLED is True
+                lut = pd.read_csv(lut)
+            except:
+                raise happyError('impossible to load correspondance table')
+        if name is not None:
+            distance = kwargs.pop('dist', False)
+            if distance is True:
+                distance = 'jaro_winkler'
+            if happyType.isstring(distance):
+                try:
+                    distance = getattr(Levenshtein,distance)
+                except AttributeError:
+                    raise happyError('Levenshtein distance %s not recognised' % distance)
+            thres = kwargs.pop('thres', 0.9)
+        else:
+            distance, thres = None, None
+        # the dim/cols of LUT are: 'CNTR_CODE', 'NUTS_ID', 'NUTS_NAME'
+        if name is not None:
+            dim1, dim2 = 'NUTS_NAME', 'NUTS_ID'
+        else:            
+            dim1, dim2 = 'NUTS_ID', 'NUTS_NAME'
+        if group is True:
+            yield lut[lut[dim1].str.upper().isin(unit)][dim2].tolist()
+        else:
+            for u in unit:       
+                if LEVENSHTEIN_INSTALLED is True and distance not in (False,None):
+                    yield lut[distance(lut[dim1].str.upper(),u)<thres][dim2].values
+                else:
+                    yield lut[lut[dim1].str.upper() == u][dim2].values
+        
+    #/************************************************************************/
+    def nuts2id(self, name, **kwargs):
+        """
+        
+        ::
+            
+            >>> id = serv.nuts2id(name, **kwargs)
+            
+        Returns
+        -------
+        """
+        kwargs.update({_Decorator.KW_NAME: name})
+        return self._nuts2id(**kwargs)
+        
+    #/************************************************************************/
+    def id2nuts(self, id, **kwargs):
+        """
+        
+        ::
+            
+            >>> name = serv.id2nuts(id, **kwargs)
+            
+        Returns
+        -------
+        """
+        kwargs.update({_Decorator.KW_ID: id})
+        return self._nuts2id(**kwargs)
+        
     #/************************************************************************/
     def _place2area(self, place, **kwargs): 
         """Iterable version of :meth:`~GISCOService.place2area`.
