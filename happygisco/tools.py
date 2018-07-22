@@ -12,6 +12,8 @@
 .. |PyGeoTools| replace:: `PyGeoTools <PyGeoTools_>`_
 .. _geopy: https://github.com/geopy/geopy
 .. |geopy| replace:: `geopy <geopy_>`_
+.. _ipyleaflet: https://github.com/jupyter-widgets/ipyleaflet
+.. |ipyleaflet| replace:: `ipyleaflet <ipyleaflet_>`_
 
 Library of simple tools for simple geographical data (geolocations and geocoordinates)
 handling and processin.
@@ -41,7 +43,7 @@ so as to represent equivalently and (almost...) uniquely locations.
 # *since*:        Sat Apr 14 20:23:34 2018
 
 __all__         = ['GeoLocation', 'GeoDistance', 'GeoAngle', 'GeoCoordinate', 
-                   'GDALTransform', 'FoliumMap'] # '_Pools'
+                   'GDALTransform', 'LeafMap'] # '_Pools'
 
 # generic import
 import os, sys#analysis:ignore
@@ -80,13 +82,22 @@ else:
     print('GDAL help: https://pcjericks.github.io/py-gdalogr-cookbook/index.html')
 
 try:
-    import folium
+    import ipyleaflet
 except ImportError:
-    FOLIUM_TOOL = False
-    happyWarning('folium package (https://github.com/python-visualization/folium) not loaded - Map resources not available')
+    LEAFLET_TOOL = False
+    happyWarning('ipyleaflet package (https://github.com/jupyter-widgets/ipyleaflet) not loaded - Map resources not available')
+    try:
+        import folium
+    except ImportError:
+        FOLIUM_TOOL = False
+        happyWarning('folium package (https://github.com/python-visualization/folium) not loaded - Map resources not available')
+    else:
+        FOLIUM_TOOL = True
+        print('folium help: http://python-visualization.github.io/folium')
 else:
-    FOLIUM_TOOL = True
-    print('folium help: http://python-visualization.github.io/folium')
+    LEAFLET_TOOL = True
+    print('ipyleaflet help: https://ipyleaflet.readthedocs.io/en/latest/index.html')
+
 
 #%%
 #==============================================================================
@@ -2434,51 +2445,78 @@ class GDALTransform(_Tool):
 
 #%%
 #==============================================================================
-# CLASS FolmapTool
+# CLASS LeafMap
 #==============================================================================
 
-class FoliumMap(_Tool):
-    """Class overidding the :class:`folium.Map` of :mod:`folium` so as to \support
-    |GISCO| background tiling services.
+class LeafMap(_Tool):
+    """Class overidding the :class:`ipyleaflet.Map` of :mod:`ipyleaflet` so as to
+    support |GISCO| background tiling services. When :mod:`ipyleaflet` is not
+    available, the class :class:`folium.Map` of :mod:`folium` is used instead.
     
-    Note
-    ----        
-    The original library Folium enables to visualize data on an interactive 
-    Leaflet map. 
-    It enables both the binding of data to a map for choropleth visualizations 
-    as well as passing Vincent/Vega visualizations as markers on the map.
+    Notes
+    -----       
+    * The original :mod:`ipyleaflet` module enables users to visualize data on an 
+      interactive `Leaflet` map. It enables both the binding of data to a map for 
+      various types of visualisations.
+    * Both :mod:`ipyleaflet` and :mod:`folium` modules have a number of built-in 
+      tilesets, *e.g.* from *OpenStreetMap*, *MapQuest Open*,  *MapQuest Open Aerial*, 
+      *Mapbox*, *Stamen* while they support customised tilesets. 
+    * While :mod:`ipyleaflet` supports `GeoJSON` vector overlays, :mod:`folium` 
+      supports both `GeoJSON` and `TopoJSON` overlays.
 
-    Folium has a number of built-in tilesets from *OpenStreetMap*, *MapQuest Open*, 
-    *MapQuest Open Aerial*, *Mapbox*, and *Stamen*, and supports custom tilesets  
-    with *Mapbox* or *Cloudmade* API keys. Folium supports both GeoJSON and TopoJSON 
-    overlays, as well as the binding of data to those overlays to create choropleth 
-    maps with color-brewer color schemes.
-
-    See http://folium.readthedocs.org/en/.
+    See also
+    --------
+    * :mod:`ipyleaflet` `resources <https://github.com/jupyter-widgets/ipyleaflet>`_ 
+      and `documentation <https://ipyleaflet.readthedocs.io/en/latest/index.html>`_.
+    * :mod:`folium` `resources <https://github.com/python-visualization/folium>`_
+      and `documentation <http://folium.readthedocs.io/en/latest/>_.
     """       
 
     #/************************************************************************/
     def __init__(self, **kwargs):
         try:
-            assert FOLIUM_TOOL is not False
+            assert not (FOLIUM_TOOL is False and LEAFLET_TOOL is False)
         except:
-            raise happyError('folium-based tiling not available')
+            raise happyError('leaflet-based mapping and tiling services not available')
         self.__map = None
-        pars = inspect.signature(folium.Map).parameters
-        #[setattr(self, '__' + p, kwargs.get(p, pars[p].default)) \
-        #     for p in list(pars)]
-        # note that most of the attributes, like 'location', 'width', 'height', 
-        # 'zoom_start', 'min_lon', 'max_lon', ... are properties of the instance 
-        # '__map' already. 
-        # instead, neither 'tiles' or 'attr' are available, hence they cannot be 
-        # accessed through the __getattr__ method below and need to be explicitly 
-        # set
-        self.__tiles = kwargs.get('tiles', pars['tiles'].default)
-        self.__attr = kwargs.get('attr', pars['attr'].default)
-        try:
-            self.__map = folium.Map(**kwargs)
-        except:
-            raise happyError('wrong tiling initialisation')
+        tile = kwargs.pop(_Decorator.KW_TILE, None)
+        attr = kwargs.pop(_Decorator.KW_ATTR, '')
+        if LEAFLET_TOOL is True:
+            try:
+                self.__map = ipyleaflet.Map(**kwargs)
+            except:
+                raise happyError('wrong tiling initialisation')
+            if tile is not None:
+                self.__tile, self.__attr = tile, attr
+                tile = ipyleaflet.TileLayer(url=self.__tile, attr=self.__attr)
+                self.__map.add_layer(tile)
+            else:
+                tile = self.__map.layers
+                self.__tile, self.__attr = zip(*[(t.url, t.attribution) for t in tile])
+                if len(tile)==1:
+                    self.__tile, self.__attr = self.__tile[0], self.__attr[0]
+        elif FOLIUM_TOOL is True:          
+            pars = inspect.signature(folium.Map).parameters
+            #[setattr(self, '__' + p, kwargs.get(p, pars[p].default)) \
+            #     for p in list(pars)]
+            # note that most of the attributes, like 'location', 'width', 'height', 
+            # 'zoom_start', 'min_lon', 'max_lon', ... are properties of the instance 
+            # '__map' already. 
+            # instead, neither 'tiles' or 'attr' are available, hence they cannot be 
+            # accessed through the __getattr__ method below and need to be explicitly 
+            # set
+            try:
+                self.__tile = tile or pars['tiles'].default  # keyword of folium, not ours
+                self.__attr = attr or pars['attr'].default
+            except:
+                pass
+            else:
+                kwargs.update({'tiles': self.__tile,
+                               'attr': self.__attr})
+            try:
+                self.__map = folium.Map(**kwargs)
+            except:
+                raise happyError('wrong tiling initialisation')
             
     #def __repr__(self):
     #    return self.__map
@@ -2496,14 +2534,14 @@ class FoliumMap(_Tool):
         self.__map = __map
 
     @property
-    def tiles(self):
-        """Tiles property (:data:`getter`).
+    def tile(self):
+        """Tile property (:data:`getter`).
         """
-        return self.__tiles
+        return self.__tile
 
     @property
     def attr(self):
-        """Attributes property (:data:`getter`).
+        """Attribution property (:data:`getter`).
         """
         return self.__attr
             
@@ -2515,7 +2553,7 @@ class FoliumMap(_Tool):
         if attr in ('im_class','__objclass__'): 
             return getattr(self.__map, '__class__')
         elif attr in ['Marker',] + [cls.__name__ for cls in folium.Marker.__subclasses__()]:
-            try:        return functools.partial(self.markers, method=attr) 
+            try:        return functools.partial(self.add_location, **{_Decorator.KW_FEATURE: attr}) 
             except:     pass 
         elif attr.startswith('__'):  # to avoid some bug of the pylint editor
             try:        return object.__getattribute__(self, attr) 
@@ -2527,12 +2565,29 @@ class FoliumMap(_Tool):
         except:     raise happyError('attribute %s not implemented' % attr)
 
     #/************************************************************************/
-    def markers(self, *args, **kwargs):
+    def __get_subclasses(self, module):
+        try:
+            return getattr(module, '__subclasses__')()
+        except AttributeError:
+            res = []
+            [res.append(obj) for name, obj in inspect.getmembers(module) \
+                if inspect.isclass(obj) and obj.__module__.startswith(module.__name__)]
+            return res
+    
+    #/************************************************************************/
+    def add_layer(self, *args, **kwargs):
+        """
+        """
+        pass
+        
+
+    #/************************************************************************/
+    def add_location(self, *args, **kwargs):
         """Generic method used to add markers.
         
         ::
             
-            >>> folmap.markers(*args, **kwargs)
+            >>> m.add_location(*args, **kwargs)
             
         Arguments
         ---------
@@ -2543,11 +2598,6 @@ class FoliumMap(_Tool):
         Returns
         -------
         """
-        method = kwargs.pop('method','Marker')
-        try:
-            marker = getattr(folium,method)
-        except:
-            raise happyError('method %s not implemented' % method)
         if args not in ((),None):
             location =  args[0]
         else:
@@ -2555,40 +2605,96 @@ class FoliumMap(_Tool):
         try:
             assert location not in (None,[],())
         except:
-            raise happyError('no location parsed for marker')
-        if isinstance(location,(list,tuple)) \
-            and isinstance(location[0],(tuple,list,folium.Marker,) \
-                           + tuple(folium.Marker.__subclasses__())):
+            raise happyError('no location argument parsed')
+        if LEAFLET_TOOL is True:
+            FeatureList = self.__get_subclasses(ipyleaflet.leaflet)
+        elif FOLIUM_TOOL is True:
+            FeatureList = self.__get_subclasses(folium.Marker)
+        _featype = {}
+        [_featype.update({key: kwargs.pop(key)})  
+            for key in [cls.__name__.lower() for cls in FeatureList]
+            if key in kwargs.keys()]
+        nfeat = len(_featype)
+        if isinstance(location,(list,tuple))                                \
+                and isinstance(location[0],(tuple,list,ipyleaflet.leaflet,) \
+                               + tuple(FeatureList)):
             nloc = len(location)
         else:
             location = [location,]
             nloc = 1
-        _kwargs = nloc * [{},]
-        icon, popup, tooltip = kwargs.pop('icon',None), kwargs.pop('popup',None), kwargs.pop('tooltip',None)
-        if icon is not None:
-            if not isinstance(icon,(list,tuple)): icon = [icon,]
-            [kw.update({'icon': i}) for (kw,i) in zip(_kwargs,icon)]
-        if popup is not None:
-            if nloc==1 and not isinstance(popup,(list,tuple)): popup = [popup,]
-            [kw.update({'popup': p}) for (kw,p) in zip(_kwargs,popup)]
-        if tooltip is not None:
-            if nloc==1 and not isinstance(tooltip,(list,tuple)): tooltip = [tooltip,]
-            [kw.update({'popup': p}) for (kw,p) in zip(_kwargs,tooltip)]
-        # now update all dictionaries in _kwargs by replicating with whatever is 
-        # left in kwargs
-        [kw.update(kwargs) for kw in _kwargs]
-        # depending on the method, we may have to use the keyword 'location' or
-        # 'locations'
-        try:
-            # let us try first with 'location', e.g. for method Marker
-            [kw.update({'location': l}) or marker(**kw).add_to(self.Map) \
-                 for (kw,l) in zip(_kwargs,location)]
-        except:
-            # let us first get rid of the first item with made it crashed...
-            _kwargs[0].pop('location',None) 
-            # let us retry with 'locations', e.g. for methods Circle, PolyLine, ...
-            [kw.update({'locations': l}) or marker(**kw).add_to(self.Map) \
-                 for (kw,l) in zip(_kwargs,location)]
+        if nfeat!=1 and nfeat!=nloc:
+            raise happyError('incompatible locations and feature description')
+        if LEAFLET_TOOL is True:
+            for i, keyval in enumerate(_featype.items()):
+                key, val = keyval
+                if not happyType.ismapping(val) and val is True: 
+                    val = {}
+                if nfeat==1:
+                    if key=='MarkerCluster'.lower():
+                        try:
+                            markers = []
+                            [markers.append(ipyleaflet.Marker(location[i])) \
+                                for i in range(nloc)]
+                            val.update({'markers': tuple(markers)})
+                            feature = ipyleaflet.MarkerCluster(**val)
+                        except:
+                            pass
+                    else:
+                        for _key in ['locations','bounds']:
+                            try:
+                                val.update({_key: location})
+                                feature = getattr(ipyleaflet, key)(**val)
+                            except:
+                                val.pop(_key,None)                            
+                                pass
+                            else:
+                                continue
+                else:
+                    try:
+                        val.update({'location': location[i]})
+                        feature = getattr(ipyleaflet, key)(**val)
+                    except:
+                        pass
+                try:
+                    self.Map.add_layer(feature)
+                except:
+                    raise happyError('location %s not added to map' % location if nfeat==1 else location[i])
+        elif FOLIUM_TOOL is True:
+            _kwargs = nloc * [{},]
+            icon, popup, tooltip = kwargs.pop('icon',None), kwargs.pop('popup',None), kwargs.pop('tooltip',None)
+            if icon is not None:
+                if not isinstance(icon,(list,tuple)): icon = [icon,]
+                [kw.update({'icon': i}) for (kw,i) in zip(_kwargs,icon)]
+            if popup is not None:
+                if nloc==1 and not isinstance(popup,(list,tuple)): popup = [popup,]
+                [kw.update({'popup': p}) for (kw,p) in zip(_kwargs,popup)]
+            if tooltip is not None:
+                if nloc==1 and not isinstance(tooltip,(list,tuple)): tooltip = [tooltip,]
+                [kw.update({'popup': p}) for (kw,p) in zip(_kwargs,tooltip)]
+            # now update all dictionaries in _kwargs by replicating with whatever is 
+            # left in kwargs
+            [kw.update(kwargs) for kw in _kwargs]
+            # depending on the method, we may have to use the keyword 'location' or
+            # 'locations'
+            for i, keyval in enumerate(_featype.items()):
+                key, val = keyval
+                if not happyType.ismapping(val) and val is True: 
+                    val = {}
+                val.update(_kwargs)
+                try:
+                    # let us try first with 'location', e.g. for method Marker
+                    val.update({'location': location[i]}) 
+                    feature = getattr(folium, key)(**val)       
+                except:
+                    # let us first get rid of the first item which made it crashed...
+                    _kwargs[0].pop('location',None) 
+                    # let us retry with 'locations', e.g. for methods Circle, PolyLine, ...
+                    try:
+                        val.update({'location': location[i]}) 
+                        feature = getattr(folium, key)(**val)  
+                    except:
+                        pass
+                feature.add_to(self.Map) 
         # return self.Map
     
 

@@ -711,6 +711,8 @@ class _Decorator(object):
 
     KW_NAME         = 'name'
     KW_ID           = 'id'
+    KW_TILE         = 'tile'
+    KW_ATTR         = 'attr'
 
     #/************************************************************************/
     class __base(object):

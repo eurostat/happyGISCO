@@ -1152,7 +1152,8 @@ class GISCOService(OSMService):
         
     #/************************************************************************/
     def url_tile(self, **kwargs):
-        """Generate the URL (or name) of the |GISCO| tiling web-service.
+        """Generate the URL (or name) of the |GISCO| tiling web-service that can
+        be used as a background layer in map displays.
         
         ::
             
@@ -1161,10 +1162,15 @@ class GISCOService(OSMService):
         Keyword Arguments
         -----------------
         tiles: str
-            :literal:`['bmarble','borders','roadswater','hypso','coast','copernicus','osmec',
-            'graybg', 'country', 'gray', 'natural', 'city','cloudless']`
+            string representing the background tile layer used for the map display; 
+            it must be one of the tiling supported by |GISCO|, *i.e.* any string in 
+            :literal:`['bmarble','borders','roadswater','hypso','coast','copernicus',
+                       'osmec','graybg','country','gray','natural','city','cloudless']`;
+            see also the list of available tiling systems (together with the respective
+            attributions) in :data:`settings.GISCO_TILES`.
         proj : str,int
-            projection identifier.
+            projection identifier; default identifier is  'EPSG3857', *i.e.* the one
+            in :data:`settings.DEF_GISCO_TILEPROJ`.
         order : str
             order of the dimensions :literal:`x,y` and :literal:`z` of the tiling
             system; default: :literal:`z/y/x` (note that :literal:`{z}/{y}/{x}` 
@@ -1182,7 +1188,7 @@ class GISCOService(OSMService):
             
             >>> serv = services.GISCOService()
             >>> serv.url_tile(tiles='bmarble')
-                ('http://europa.eu/webtools/maps/tiles/bmarble/4326/{z}/{y}/{x}',
+                ('http://europa.eu/webtools/maps/tiles/bmarble/3857/{z}/{y}/{x}',
                  '© NASA’s Earth Observatory')
             >>> serv.url_tile(tiles='osmec')
                 ('http://europa.eu/webtools/maps/tiles/osm-ec/{z}/{y}/{x}', 
@@ -1213,7 +1219,7 @@ class GISCOService(OSMService):
         except:
             bckgrd = tiles # in case we forgot to specify a 'bckgrd' 
         try:
-            proj = kwargs.pop('proj', settings.DEF_GISCO_PROJECTION)
+            proj = kwargs.pop('proj', settings.DEF_GISCO_TILEPROJ)
             assert proj in (None,'') or proj in happyType.seqflatten(settings.GISCO_PROJECTIONS.items())
         except:
             raise happyError('wrong format/value for PROJ keyword argument')

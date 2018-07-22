@@ -165,7 +165,10 @@ GISCO_TILEORDER     = '{z}/{y}/{x}'
 """|GISCO| background tile ordering (used for visualisation).
 """
 DEF_GISCO_TILEPROJ  = 'EPSG3857'
-"""|GISCO| background tile projection.
+"""Default |GISCO| background tile projection.
+"""
+DEF_GISCO_ZOOM      = 4
+"""Default zooming value in map displays.
 """
 GISCO_NUTSDOMAIN    = 'nuts'
 """Subdomain of |NUTS|.
@@ -247,6 +250,18 @@ CODER_OSM         = 'osm'
 KEY_OSM           = None
 """
 Dummy |OSM| key (connection to |OSM| web-services does not require authentication).
+"""
+
+EU_GEOCENTRE        = [50.033333, 10.35]
+"""The German municipality of `Gädheim <https://en.wikipedia.org/wiki/Gädheim>`_ 
+(in the district of Haßberge in Bavaria) serves as the geographical centre of the 
+European Union (when the United Kingdom leaves on April 2019).
+
+See the Wikipedia  page on the 
+`geographical midpoint of Europe <https://en.wikipedia.org/wiki/Geographical_midpoint_of_Europe>`_
+for discussions on the topic. For the determination of the actual geographical 
+coordinates (50°02′N 10°21′E), see also 
+`this page <https://tools.wmflabs.org/geohack/geohack.php?pagename=Gädheim&params=50_02_N_10_21_E_type:city(1272)_region:DE-BY>`_.
 """
 
 # dummy variables
