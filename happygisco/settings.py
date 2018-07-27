@@ -179,7 +179,7 @@ GISCO_NUTSURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_NUTSDOMAIN)
 GISCO_NUTSTHEME     = 'nuts'
 """NUTS theme used for URL naming.
 """
-GISCO_NUTSDATASET   = {'file':'nuts-{year}-units', 'fmt':'json'} 
+GISCO_NUTSDATASET   = {'data':'nuts-{year}-units', 'fmt':'json'} 
 """Name and type of the file storing all unit datasets.
 """
 GISCO_CTRYDOMAIN    = 'countries'
@@ -188,7 +188,7 @@ GISCO_CTRYDOMAIN    = 'countries'
 GISCO_CTRYURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_CTRYDOMAIN) 
 """Complete URL of countries download/distribution services.
 """
-GISCO_CTRYDATASET   = {'file':'countries-{year}-units', 'fmt':'json'}
+GISCO_CTRYDATASET   = {'data':'countries-{year}-units', 'fmt':'json'}
 """Name and type of the file storing all country datasets.
 """
 GISCO_DISTRIBUTION  = {'download': {'domain':'download', 'basename':'ref-nuts'},
@@ -200,7 +200,7 @@ bulk datasets, :literal:`distribution` for single areas.
 GISCO_NUTSLEVELS    = [0, 1, 2, 3]
 """Levels of |NUTS| areas.
 """
-GISCO_NUTS2ID       = {'file':'NUTS_AT_{year}', 'fmt':'csv'}
+GISCO_NUTS2ID       = {'data':'NUTS_AT_{year}', 'fmt':'csv'}
 """Name and type of the file storing the correspondance table between NUTS names
 and their IDs.
 """
