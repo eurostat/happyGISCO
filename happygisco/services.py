@@ -1031,7 +1031,7 @@ class GISCOService(OSMService):
         elif unit.upper() == 'INFO':
             domain = ''
             fmt = settings.GISCO_NUTSDATASET['fmt']
-            basename = settings.GISCO_NUTSDATASET['file']
+            basename = settings.GISCO_NUTSDATASET['data']
             url = '%s://%s/%s/%s.%s' % (settings.PROTOCOL, 
                                         self.url_cache, theme,
                                         basename.format(year=year), fmt )
@@ -1137,7 +1137,7 @@ class GISCOService(OSMService):
         if unit.upper() == 'INFO':
             domain = ''
             fmt = settings.GISCO_CTRYDATASET['fmt']
-            basename = settings.GISCO_CTRYDATASET['file']
+            basename = settings.GISCO_CTRYDATASET['data']
             url = '%s://%s/%s/%s.%s' % (settings.PROTOCOL, 
                                         self.url_cache, theme,
                                         basename.format(year=year), fmt )
@@ -1521,8 +1521,8 @@ class GISCOService(OSMService):
         return url
         
     #/************************************************************************/
-    def _file4country(self, country, **kwargs):
-        """Iterable version of :meth:`~GISCOService.file4country`.
+    def _data4country(self, country, **kwargs):
+        """Iterable version of :meth:`~GISCOService.data4country`.
         """
         if not happyType.issequence(country):     
             country = [country,]
@@ -1546,13 +1546,13 @@ class GISCOService(OSMService):
     @_Decorator.parse_projection
     @_Decorator.parse_format
     @_Decorator.parse_scale
-    def file4country(self, country, **kwargs):
+    def data4country(self, country, **kwargs):
         """Download, and cache when requested, country vector files from |GISCO| Rest
         API.
         
         ::
             
-            >>> fref = serv.file4country(country, **kwargs)            
+            >>> fref = serv.data4country(country, **kwargs)            
             
         Returns
         -------
@@ -1560,12 +1560,12 @@ class GISCOService(OSMService):
         """
         fref = {}
         [fref.update({ctry: file if file is None or len(file)>1 else file[0]}) \
-             for ctry,file in self._file4country(country, **kwargs)]
+             for ctry,file in self._data4country(country, **kwargs)]
         return fref
         
     #/************************************************************************/
-    def _file4nuts(self, nuts, **kwargs):
-        """Iterable version of :meth:`~GISCOService.file4nuts`.
+    def _data4nuts(self, nuts, **kwargs):
+        """Iterable version of :meth:`~GISCOService.data4nuts`.
         """
         if not happyType.issequence(nuts):     
             nuts = [nuts,]
@@ -1590,13 +1590,13 @@ class GISCOService(OSMService):
     @_Decorator.parse_format
     @_Decorator.parse_scale
     @_Decorator.parse_feature
-    def file4nuts(self, nuts, **kwargs):
+    def data4nuts(self, nuts, **kwargs):
         """Download, and cache when requested, NUTS vector files from |GISCO| Rest
         API.
         
         ::
             
-            >>> fref  = serv.file4nuts(nuts, **kwargs)
+            >>> fref  = serv.data4nuts(nuts, **kwargs)
             
         Returns
         -------
@@ -1604,19 +1604,37 @@ class GISCOService(OSMService):
         """
         fref = {}
         [fref.update({n:file if file is None or len(file)>1 else file[0]}) \
-             for n, file in self._file4nuts(nuts, **kwargs)]
+             for n, file in self._data4nuts(nuts, **kwargs)]
         return fref
 
     #/************************************************************************/
-    def file4nutsid(self, **kwargs):
+    def _data4idnuts(self, **kwargs):
         """
         
         ::
             
-            >>> fref  = serv.file4nutsid(nuts, **kwargs)
+            >>> fref  = serv._data4idnuts(nuts, **kwargs)
             
         Returns
         -------
+        
+        Example
+        -------
+        
+        ::
+            
+            >>> serv = services.GISCOService()
+            >>> f = serv._data4idnuts()
+            >>> t = pd.read_csv(f)
+            >>> t.head()
+                  CNTR_CODE NUTS_ID         NUTS_NAME
+                0        AT     AT1     OSTÖSTERREICH
+                1        AT    AT11   Burgenland (AT)
+                2        AT   AT111  Mittelburgenland
+                3        AT   AT112    Nordburgenland
+                4        AT   AT113     Südburgenland
+            >>> t[t['NUTS_ID']=='AT112']['NUTS_NAME']
+                3    Nordburgenland
         """
         # retrieve the largest scale, i.e. the lowest resolution so as to download
         # the smallest file
@@ -1634,13 +1652,13 @@ class GISCOService(OSMService):
             raise happyError('error NUTS data request')
         else:
             response = self.get_response(url)
-        file = settings.GISCO_NUTS2ID['file'].format(year=year)
+        data = settings.GISCO_NUTS2ID['data'].format(year=year)
         fmt = settings.GISCO_NUTS2ID['fmt']
         with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
-            if '%s.%s' % (file,fmt) not in zf.namelist():
+            if '%s.%s' % (data,fmt) not in zf.namelist():
                 raise happyError('impossible to retrieve name to ID correspondance of NUTS')
-            return io.BytesIO(zf.read('%s.%s' % (file,fmt)))
-        # return pd.read_csv(io.BytesIO(zf.read(file)))
+            return io.BytesIO(zf.read('%s.%s' % (data,fmt)))
+        # return pd.read_csv(io.BytesIO(zf.read(data)))
         
     #/************************************************************************/
     def _nuts2id(self, **kwargs):
@@ -1670,7 +1688,7 @@ class GISCOService(OSMService):
         group = kwargs.pop('group', False)
         lut = kwargs.pop(_Decorator.KW_FILE, None)
         if lut is None:
-            lut = self.file4nutsid(**kwargs)
+            lut = self._data4idnuts(**kwargs)
             try:
                 assert PANDAS_INSTALLED is True
                 lut = pd.read_csv(lut)
@@ -1713,11 +1731,13 @@ class GISCOService(OSMService):
         Returns
         -------
         """
+        _id = []        
         kwargs.update({_Decorator.KW_NAME: name})
-        return self._nuts2id(**kwargs)
+        [_id.append(data if len(data)>1 else data[0]) for data in self._nuts2id(**kwargs)]
+        return _id
         
     #/************************************************************************/
-    def id2nuts(self, id, **kwargs):
+    def id2nuts(self, _id, **kwargs):
         """
         
         ::
@@ -1727,8 +1747,10 @@ class GISCOService(OSMService):
         Returns
         -------
         """
-        kwargs.update({_Decorator.KW_ID: id})
-        return self._nuts2id(**kwargs)
+        name = []        
+        kwargs.update({_Decorator.KW_ID: _id})
+        [name.append(data if len(data)>1 else data[0]) for data in self._nuts2id(**kwargs)]
+        return name
         
     #/************************************************************************/
     def _place2area(self, place, **kwargs): 
