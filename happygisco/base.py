@@ -99,7 +99,6 @@ else:
         happyWarning("missing LOCKFILE module", ImportWarning)
     from cachecontrol import CacheControl
     from cachecontrol.caches import FileCache
-    
 
 try:                                
     import datetime
@@ -108,7 +107,6 @@ except ImportError:
     class datetime:
         class timedelta: 
             def __init__(self,arg): return arg
-
 
 #%%
 #==============================================================================
@@ -146,16 +144,17 @@ class _Service(object):
         # determine appropriate setting for a given session, taking into account
         # the explicit setting on that request, and the setting in the session. 
         try:
+            # whether requests_cache is defined or not, no matter
             self.__session = requests.Session()
             # session = requests.session(**kwargs)
         except:
             raise happyError('wrong requests setting - SESSION not initialised')
-        if self.cache_store is not None:
+        if cachecontrol is not None and self.cache_store is not None:
             try:
-                if int(self.expire_after) <= 0:
-                    cache_store = FileCache(os.path.abspath(self.cache_store), forever=True)
-                else:
+                if self.expire_after is None or int(self.expire_after) > 0:
                     cache_store = FileCache(os.path.abspath(self.cache_store))  
+                else:
+                    cache_store = FileCache(os.path.abspath(self.cache_store), forever=True)
             except:
                 pass
             else:
@@ -205,12 +204,13 @@ class _Service(object):
         return self.__expire_after
     @expire_after.setter
     def expire_after(self, expire_after):
-        if expire_after is None or isinstance(expire_after, (int, datetime.timedelta)) and int(expire_after)>=0:
+        if expire_after is None or isinstance(expire_after, (int, datetime.timedelta)) \
+                and (int(expire_after)>=0 or expire_after==-1):
             self.__expire_after = expire_after
         elif not isinstance(expire_after, (int, datetime.timedelta)):
             raise happyError('wrong type for EXPIRE_AFTER parameter')
-        elif isinstance(expire_after, int) and expire_after<0:
-            raise happyError('wrong time setting for EXPIRE_AFTER parameter')
+        #elif isinstance(expire_after, int) and expire_after<0:
+        #    raise happyError('wrong time setting for EXPIRE_AFTER parameter')
 
     #/************************************************************************/
     @staticmethod
@@ -307,10 +307,12 @@ class _Service(object):
         """
         if not os.path.exists(pathname):
             resp = False
-        elif time_out is 0:
-            resp = False
         elif time_out is None:
             resp = True
+        elif time_out < 0:
+            resp = True
+        elif time_out == 0:
+            resp = False
         else:
             cur = time.time()
             mtime = os.stat(pathname).st_mtime
@@ -332,7 +334,7 @@ class _Service(object):
         if isinstance(cache_store, bool) and cache_store is True:
             cache_store = self.__default_cache()
         force_download = kwargs.get('force_download') or False
-        expire_after = kwargs.get('expire_after') or self.expire_after or 0
+        expire_after = kwargs.get('expire_after') or self.expire_after
         # build unique filename from URL name and cache directory, _e.g._ using 
         # hashlib encoding.
         pathname = url.encode('utf-8')
@@ -455,7 +457,7 @@ class _Service(object):
                 pass
         if force_download is True:
             try:
-                if self.cache in (None,False):
+                if requests_cache is None:
                     response = self.session.get(url)                
                 else:
                     with requests_cache.disabled():
@@ -464,7 +466,9 @@ class _Service(object):
                 raise happyError('wrong request formulation') 
         else:   
             try:
-                if cachecontrol is not None: # self.cache_store.directory
+                if cachecontrol is not None:
+                    response = self.session.get(url)                
+                elif requests_cache is not None:
                     with requests_cache.enabled(self.cache_store, **kwargs):
                         response = self.session.get(url)                
                 else:
