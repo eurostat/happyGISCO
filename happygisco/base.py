@@ -321,12 +321,12 @@ class _Service(object):
         return resp
                         
     #/************************************************************************/
-    def __get(self, url, **kwargs):
-        """Download url from internet and store the downloaded content into 
+    def __get_response(self, url, **kwargs):
+        """Download URL from internet and store the downloaded content into 
         <cache>/file.
         If <cache>/file already exists, it returns content from disk.
         
-            >>> page = S.__get(url, force_download=False, time_out=0)
+            >>> page = S.__get_response(url, cache_store=False, force_download=False, expire_after=-1)
         """
         # create cache directory only the fist time it is needed
         # note: html must be a str type not byte type
@@ -475,7 +475,7 @@ class _Service(object):
                     kwargs.update({'force_download': force_download,
                                    'cache_store': cache_store,
                                    'expire_after': expire_after})
-                    pathname, content = self.__get(url, **kwargs)
+                    pathname, content = self.__get_response(url, **kwargs)
                     response = CacheResponse(pathname, content)
             except:
                 raise happyError('wrong request formulated')  

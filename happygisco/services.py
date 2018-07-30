@@ -1608,12 +1608,12 @@ class GISCOService(OSMService):
         return fref
 
     #/************************************************************************/
-    def _data4idnuts(self, **kwargs):
+    def data4idnuts(self, **kwargs):
         """
         
         ::
             
-            >>> fref  = serv._data4idnuts(nuts, **kwargs)
+            >>> fref  = serv.data4idnuts(nuts, **kwargs)
             
         Returns
         -------
@@ -1624,7 +1624,7 @@ class GISCOService(OSMService):
         ::
             
             >>> serv = services.GISCOService()
-            >>> f = serv._data4idnuts()
+            >>> f = serv.data4idnuts()
             >>> t = pd.read_csv(f)
             >>> t.head()
                   CNTR_CODE NUTS_ID         NUTS_NAME
@@ -1688,7 +1688,7 @@ class GISCOService(OSMService):
         group = kwargs.pop('group', False)
         lut = kwargs.pop(_Decorator.KW_FILE, None)
         if lut is None:
-            lut = self._data4idnuts(**kwargs)
+            lut = self.data4idnuts(**kwargs)
             try:
                 assert PANDAS_INSTALLED is True
                 lut = pd.read_csv(lut)

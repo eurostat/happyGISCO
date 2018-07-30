@@ -2488,8 +2488,14 @@ class LeafMap(_Tool):
                 raise happyError('wrong tiling initialisation')
             if tile is not None:
                 self.__tile, self.__attr = tile, attr
-                tile = ipyleaflet.TileLayer(url=self.__tile, attr=self.__attr)
-                self.__map.add_layer(tile)
+                if not happyType.issequence(tile):  tile = [tile,]
+                if not happyType.issequence(attr):  attr = [attr,]
+                ntile = len(tile)
+                for i in range(ntile):
+                    atile = ipyleaflet.TileLayer(url=tile[i], attr=attr[i])
+                    self.__map.add_layer(atile[i])
+                if ntile > 1:
+                    self.__map.add_control(ipyleaflet.LayersControl())
             else:
                 tile = self.__map.layers
                 self.__tile, self.__attr = zip(*[(t.url, t.attribution) for t in tile])
