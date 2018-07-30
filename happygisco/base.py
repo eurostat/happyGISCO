@@ -620,20 +620,20 @@ class _Feature(object):
 
     #/************************************************************************/
     def __init__(self):
-        self._coord = None
-        self._service, self._tool = None, None
+        self.__coord = None
+        self.__service, self.__tool, self.__transform = None, None, None
         try:
             assert True
         except:
             happyWarning('tool(s) not available')
         else:
-            self._tool = _Tool()
+            self.__tool = _Tool()
         try:
             assert SERVICE_AVAILABLE
         except:
             happyWarning('web service(s) not available')
         else:
-            self._service = _Service()
+            self.__service = _Service()
        
     #/************************************************************************/
     @property
@@ -642,32 +642,46 @@ class _Feature(object):
         A :data:`service` object will be generally a :class:`~happygisco.services.GISCOService` 
         or a :class:`~happygisco.services.APIService` instance.
         """
-        return self._service
+        return self.__service
+    @service.setter
+    def service(self, service):
+        self.__service = service
         
+    #/************************************************************************/
     @property
     def transform(self):
         """Geospatial transform property (:data:`getter`) of a :class:`_Feature` instance.
         A :data:`service` object will be generally a :class:`~happygisco.tools.GDALTransform` 
         instance.
         """
-        return self._transform
+        return self.__transform
+    @transform.setter
+    def transform(self, transform):
+        self.__transform = transform
        
+    #/************************************************************************/
     @property
     def mapping(self):
         """Geospatial mapping property (:data:`getter`) of a :class:`_Feature` instance.
         A :data:`service` object will be generally a :class:`~happygisco.tools.FoliumMap` 
         instance.
         """
-        return self._mapping
+        return self.__mapping
+    @mapping.setter
+    def mapping(self, mapping):
+        self.__mapping = mapping
      
+    #/************************************************************************/
     @property
     def coord(self):
         # ignore: this will be overwritten              
         """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) 
         of a :class:`_Feature` instance.
         """ 
-        return self._coord
-
+        return self.__coord
+    @coord.setter
+    def coord(self, coord):
+        self.__coord = coord
 
 #%%
 #==============================================================================

@@ -2060,7 +2060,7 @@ class GDALTransform(_Tool):
             
         See also
         --------
-        :meth:`~tools.GDALTransform.file2vector`, :meth:`~tools.GDALTransform.layer2vector`,
+        :meth:`~tools.GDALTransform.file2feat`, :meth:`~tools.GDALTransform.layer2feat`,
         :meth:`osgeo.ogr.DataSource.GetLayer`.
         """
         data = list(self._file2data(fname))
@@ -2071,13 +2071,13 @@ class GDALTransform(_Tool):
         return layer if layer in ([],None) or len(layer)>1 else layer[0]
 
     #/************************************************************************/
-    def layer2vector(self, layer):
+    def layer2feat(self, layer):
         """Load a vector file using internally defined driver and returns the 
         corresponding list of features.
         
         ::
             
-            >>> vector = tool.layer2vector(layer)
+            >>> vector = tool.layer2feat(layer)
             
         Argument
         --------
@@ -2106,7 +2106,7 @@ class GDALTransform(_Tool):
             
         ::
             
-            >>> vector = tool.layer2vector(layer)
+            >>> vector = tool.layer2feat(layer)
             >>> vector
                 [<osgeo.ogr.Feature; proxy of <Swig Object of type 'OGRFeatureShadow *' at 0x115155ae0> >,
                  <osgeo.ogr.Feature; proxy of <Swig Object of type 'OGRFeatureShadow *' at 0x115155b10> >,
@@ -2118,7 +2118,7 @@ class GDALTransform(_Tool):
             
         See also
         --------
-        :meth:`~tools.GDALTransform.file2vector`, :meth:`~tools.GDALTransform.file2layer`,
+        :meth:`~tools.GDALTransform.file2feat`, :meth:`~tools.GDALTransform.file2layer`,
         :meth:`osgeo.ogr.Layer.GetFeature`.
         """
         if not happyType.issequence(layer): 
@@ -2133,13 +2133,13 @@ class GDALTransform(_Tool):
 
     #/************************************************************************/
     #@_Decorator.parse_file
-    def file2vector(self, fname):
-        """Load a vector file using internally defined driver and returns the 
-        corresponding list of features.
+    def file2feat(self, fname):
+        """Load a vector file using the internally defined driver and returns the 
+        corresponding list of features.ß
         
         ::
             
-            >>> vector = tool.file2vector(fname)
+            >>> vector = tool.file2feat(fname)
             
         Argument
         --------
@@ -2159,7 +2159,7 @@ class GDALTransform(_Tool):
             
         See also
         --------
-        :meth:`~tools.GDALTransform.file2layer`, :meth:`~tools.GDALTransform.layer2vector`, 
+        :meth:`~tools.GDALTransform.file2layer`, :meth:`~tools.GDALTransform.layer2feat`, 
         :meth:`osgeo.ogr.Driver.Open`, :meth:`osgeo.ogr.DataSource.GetLayer`, 
         :meth:`osgeo.ogr.Layer.GetFeature`.
         """
@@ -2176,7 +2176,7 @@ class GDALTransform(_Tool):
             layer = [d.GetLayer() for d in data]
         except:
             raise happyError('could not get vector layer') 
-        return self.layer2vector(layer)
+        return self.layer2feat(layer)
 
     #/************************************************************************/
     @_Decorator.parse_coordinate
@@ -2201,7 +2201,7 @@ class GDALTransform(_Tool):
             :data:`ogr.wkbLinearRing` value is 101) or any string in the list
             :literal:`['Point','LineString','LinearRing','Polygon','MultiPoint','MultiLineString','MultiPolygon']`
             representing the shortened version of well-known binary format; default
-            is 'MultiPoint'.
+            is :literal:`'MultiPoint'`.
             
         Returns
         -------
