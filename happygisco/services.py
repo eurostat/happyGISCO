@@ -512,7 +512,7 @@ class OSMService(_Service):
             else:
                 response = self.get_response(url)
             try:
-                data = json.loads(response.text)
+                data = json.loads(response.text) # response.content
                 assert data not in ({},None)
             except:
                 raise happyError('place for geolocation %s not loaded' % coord[i])
@@ -1555,7 +1555,8 @@ class GISCOService(OSMService):
         if not happyType.issequence(country):     
             country = [country,]
         for c in country:
-            kwargs.update({'country': c})
+            if c is not None: 
+                kwargs.update({'country': c})
             try:
                 url = self.url_country(**kwargs)
                 assert self.get_status(url) is not None
@@ -1574,7 +1575,7 @@ class GISCOService(OSMService):
     @_Decorator.parse_projection
     @_Decorator.parse_format
     @_Decorator.parse_scale
-    def data4country(self, country, **kwargs):
+    def data4country(self, country=None, **kwargs):
         """Download, and cache when requested, country vector files from |GISCO| Rest
         API.
         
@@ -1587,8 +1588,8 @@ class GISCOService(OSMService):
         fref : dict
         """
         fref = {}
-        [fref.update({ctry: resp if resp is None or len(resp)>1 else resp[0]}) \
-             for ctry, resp in self._data4country(country, **kwargs)]
+        [fref.update({c or i: file if file is None or not happyType.issequence(file) or len(file)>1 else file[0]}) \
+             for i, (c, file) in enumerate(self._data4country(country, **kwargs))]
         return fref
         
     #/************************************************************************/
@@ -1598,24 +1599,17 @@ class GISCOService(OSMService):
         if not happyType.issequence(nuts):     
             nuts = [nuts,]
         for n in nuts:
-            kwargs.update({'unit': n})
+            if n is not None: 
+                kwargs.update({'unit': n})
             try:
                 url = self.url_nuts(**kwargs)
-                print(url)
                 assert self.get_status(url) is not None
             except:
                 raise happyError('error NUTS API request')
             else:
                 response = self.get_response(url)
-            print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-            # print(response.json())
-            print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-            print(response.content)
-            print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
-            print(response.text)
-            print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
             try:
-                data = response.content
+                data = response.content # json.loads(response.text)
                 assert data not in({},None)
             except:
                 raise happyError('geolocation for place %s not loaded' % n)
@@ -1626,7 +1620,7 @@ class GISCOService(OSMService):
     @_Decorator.parse_format
     @_Decorator.parse_scale
     @_Decorator.parse_feature
-    def data4nuts(self, nuts, **kwargs):
+    def data4nuts(self, nuts=None, **kwargs):
         """Download, and cache when requested, NUTS vector files from |GISCO| Rest
         API.
         
@@ -1639,8 +1633,8 @@ class GISCOService(OSMService):
         fref : dict
         """
         fref = {}
-        [fref.update({n:resp if resp is None or not happyType.issequence(resp) or len(resp)>1 else resp[0]}) \
-             for n, resp in self._data4nuts(nuts, **kwargs)]
+        [fref.update({n or i:data if data is None or not happyType.issequence(data) or len(data)>1 else data[0]}) \
+             for i, (n, data) in enumerate(self._data4nuts(nuts, **kwargs)) ]
         return fref
 
     #/************************************************************************/

@@ -795,6 +795,7 @@ class NUTS(_Feature):
         layer = kwargs.pop(_Decorator.KW_LAYER, None)
         feature = kwargs.pop(_Decorator.KW_FEATURE, {})
         vector = kwargs.pop(_Decorator.KW_VECTOR, None)
+        unit = kwargs.pop(_Decorator.KW_UNIT, '')
         
         kwargs.update({_Decorator.KW_UNIT: unit})
         
