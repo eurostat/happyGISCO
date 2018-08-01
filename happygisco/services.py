@@ -914,7 +914,8 @@ class GISCOService(OSMService):
         fmt : str
         proj : str,int
         feat : str,int
-            
+        source :
+             
         Returns
         -------
         url : str
@@ -957,8 +958,8 @@ class GISCOService(OSMService):
                 
             >>> serv.url_nuts(unit='MK', year = 2006, scale = 20, feature = 'region', proj = 'LAEA')
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/MK-region-20m-3035-2006.geojson'
-            >>> serv.url_nuts(unit='BE100', year = 2016, scale = 3, feature = 'region')
-                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-region-03m-4326-2016.geojson'        
+            >>> serv.url_nuts(unit='BE100', year = 2016, scale = 3, feature = 'label')
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-label-03m-4326-2016.geojson'        
         
         Note also:
         
@@ -969,17 +970,6 @@ class GISCOService(OSMService):
                     ! only GEOJSON is supported with single NUTS units distribution - FMT argument ignored !
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-region-03m-4326-2016.geojson'       
         """
-        # check whether bulk datasets need to be downloaded
-        try:
-            bulk = kwargs.pop('bulk', False)
-            assert bulk is None or isinstance(bulk,bool)
-        except AssertionError:
-            raise happyError('wrong format/value for BULK argument')
-        try:
-            info = kwargs.pop('info', False)
-            assert info is None or isinstance(info,bool)
-        except AssertionError:
-            raise happyError('wrong format/value for INFO argument')
         # check whether a specific unit is looked for
         try:
             unit = kwargs.pop(_Decorator.KW_UNIT, None)
@@ -988,7 +978,16 @@ class GISCOService(OSMService):
             raise happyError('wrong format/value for UNIT argument')
         else:
             if unit is None : 
-                unit = 'NUTS' # force to 'NUTS' instead of None      
+                unit = 'NUTS' # force to 'NUTS' instead of None    
+            unit = unit.upper()
+        # btw, do we want to download GISCO data?
+        try:
+            source = kwargs.pop('source', 'GISCO')
+            assert happyType.isstring(source)
+        except AssertionError:
+            raise happyError('wrong format/value for SOURCE argument')
+        else:
+            source = source.upper()      
         # retrieve the year
         year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
         # retrieve the scale
@@ -1000,25 +999,41 @@ class GISCOService(OSMService):
         if fmt in settings.GISCO_FORMATS.keys():
             fmt = settings.GISCO_FORMATS[fmt]
         # retrieve the projection
-        proj = kwargs.pop(_Decorator.KW_PROJECTION, settings.DEF_GISCO_PROJECTION)
+        proj = kwargs.pop(_Decorator.KW_PROJECTION, 
+                          settings.DEF_NUTS2JSON_PROJECTION if source == 'NUTS2JSON' else settings.DEF_GISCO_PROJECTION)
         if proj in settings.GISCO_PROJECTIONS.keys():
             proj = settings.GISCO_PROJECTIONS[proj]
+        elif proj in settings.NUTS2JSON_PROJECTIONS.keys():
+            proj = settings.NUTS2JSON_PROJECTIONS[proj]
         # retrieve the spatial type
         feat = kwargs.pop(_Decorator.KW_FEATURE, settings.DEF_GISCO_FEATURE) 
         if feat in settings.GISCO_FEATURES.keys():
             feat = settings.GISCO_FEATURES[feat]
         # retrieve the level
-        level = kwargs.pop(_Decorator.KW_LEVEL, settings.GISCO_NUTSLEVELS[0])
+        level = kwargs.pop(_Decorator.KW_LEVEL,  
+                           settings.NUTS2JSON_NUTSLEVELS[0] if source == 'NUTS2JSON' else settings.GISCO_NUTSLEVELS[0])
+        size = kwargs.pop('size',  
+                           settings.NUTS2JSON_MAPSIZE[0] if source == 'NUTS2JSON' else None)
         # set the compression format
-        zip_  = '.zip' if unit.upper() == 'BULK' else ''
+        zip_  = '.zip' if unit == 'BULK' else ''
         # check...
-        if unit in happyType.seqflatten(list(settings.GISCO_FEATURES.items())):
-            feat = settings.GISCO_FEATURES[unit] if unit in list(settings.GISCO_FEATURES.keys()) else unit
-            unit = 'NUTS'
-        elif unit.upper() in ('BULK','INFO','NUTS'):
-            pass
+        ##if unit in happyType.seqflatten(list(settings.GISCO_FEATURES.items())):
+        ##    feat = settings.GISCO_FEATURES[unit] if unit in list(settings.GISCO_FEATURES.keys()) else unit
+        ##    unit = 'NUTS'
+        ##elif unit in ('BULK','INFO','NUTS'):
+        ##    pass
         theme = settings.GISCO_NUTSTHEME 
-        if unit.upper() == 'BULK': # zipped files
+        if source == 'NUTS2JSON':
+            # the files can be retrieved on-the-fly from the base URL 
+            #       https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/ 
+            # according to the file pattern:
+            #       /<YEAR>/<PROJECTION>/<SIZE>/<NUTS_LEVEL>.<FORMAT>
+            protocol = 'https'
+            domain = settings.NUTS2JSON_DOMAIN
+            url = '%s://%s/%s/%s/%spx/%s.%s' % (protocol, domain,
+                                                   year, proj, size, level, 
+                                                   fmt)  
+        elif unit == 'BULK': # zipped files
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-10m.shp.zip
             domain = settings.GISCO_DISTRIBUTION['download']['domain']
             basename = settings.GISCO_DISTRIBUTION['download']['basename']
@@ -1028,7 +1043,7 @@ class GISCOService(OSMService):
                                         self.url_cache, theme, domain,
                                         basename, year, scale.lower(),
                                         fmt, zip_ )
-        elif unit.upper() == 'INFO':
+        elif unit == 'INFO':
             domain = ''
             fmt = settings.GISCO_NUTSDATASET['fmt']
             basename = settings.GISCO_NUTSDATASET['data']

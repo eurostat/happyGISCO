@@ -34,6 +34,8 @@
 .. |GDAL| replace:: `Geospatial Data Abstraction Library (GDAL) <GDAL_>`_
 .. _ArcGIS: http://arcgis.com
 .. |ArcGIS| replace:: `ArcGIS <ArcGIS_>`_
+.. _Nuts2json: https://github.com/eurostat/Nuts2json
+.. |Nuts2json| replace:: `Nuts2json <Nuts2json_>`_
 
 Basic definitions for the use of various geolocation web-services.
 
@@ -102,13 +104,13 @@ ESTAT_URL           = '%s://%s/%s' % (PROTOCOL, EC_URL, ESTAT_DOMAIN)
 """Complete URL of |Eurostat| website.
 """
 
-GISCO_WEBTOOLS      = 'webtools'
+GISCO_WEBDOMAIN     = 'webtools'
 """Domain of |GISCO| web-service under the European Commission URL.
 """
 GISCO_RESTDOMAIN    = 'rest/gisco/'
 """Domain of |GISCO| REST webservices and webtools.
 """
-GISCO_RESTURL           = '%s/%s/%s' % (EC_DOMAIN, GISCO_WEBTOOLS, GISCO_RESTDOMAIN)
+GISCO_RESTURL           = '%s/%s/%s' % (EC_DOMAIN, GISCO_WEBDOMAIN, GISCO_RESTDOMAIN)
 """Complete URL of |GISCO| REST webservices and webtools.
 """
 GISCO_ARCGIS        = 'webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/'
@@ -121,12 +123,14 @@ KEY_GISCO           = None
 """Dummy |GISCO| key. It is set to :data:`None` since connection to |GISCO| web-services does
 not require authentication.
 """
-GISCO_PROJECTIONS   = {'WGS84': 4326,
-                       'ETRS89': 4258,
-                       'EPSG3857': 3857, 
-                       'LAEA': 3035}
-"""Projections supported by |GISCO| services. See http://spatialreference.org
-for the list of all EPSG codes and corresponding spatial references.
+GISCO_PROJECTIONS   = {'WGS84':     4326,
+                       'ETRS89':    4258,
+                       'EPSG3857':  3857, 
+                       'LAEA':      3035
+                       }
+"""Projections and EPSG codes currently supported by |GISCO| services. 
+See http://spatialreference.org for the list of all EPSG codes and corresponding 
+spatial references.
 """
 DEF_GISCO_PROJECTION = 'WGS84'
 """Default projection used by |GISCO| services.
@@ -188,7 +192,8 @@ GISCO_CTRYDOMAIN    = 'countries'
 GISCO_CTRYURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_CTRYDOMAIN) 
 """Complete URL of countries download/distribution services.
 """
-GISCO_CTRYDATASET   = {'data':'countries-{year}-units', 'fmt':'json'}
+GISCO_CTRYDATASET   = {'data':'countries-{year}-units', 'fmt':'json'
+                       }
 """Name and type of the file storing all country datasets.
 """
 GISCO_DISTRIBUTION  = {'download': {'domain':'download', 'basename':'ref-nuts'},
@@ -197,20 +202,24 @@ GISCO_DISTRIBUTION  = {'download': {'domain':'download', 'basename':'ref-nuts'},
 """Type of service for theme vector datasets: :literal:`download` for the
 bulk datasets, :literal:`distribution` for single areas.
 """
-GISCO_NUTSLEVELS    = [0, 1, 2, 3]
+GISCO_NUTSLEVELS    = [0, 1, 2, 3
+                       ]
 """Levels of |NUTS| areas.
 """
-GISCO_NUTS2ID       = {'data':'NUTS_AT_{year}', 'fmt':'csv'}
+GISCO_NUTS2ID       = {'data':'NUTS_AT_{year}', 'fmt':'csv'
+                       }
 """Name and type of the file storing the correspondance table between NUTS names
 and their IDs.
 """
-GISCO_SCALES        = {1: '01m', 3: '03m', 10: '10m', 20: '20m', 60: '60m'} 
+GISCO_SCALES        = {1: '01m', 3: '03m', 10: '10m', 20: '20m', 60: '60m'
+                       } 
 """Scale (1:`scale` Million) of vector datasets.
 """
 DEF_GISCO_SCALE    = '01m'
 """Default scale for |GISCO| vector datasets.
 """
-GISCO_YEARS         = [2003, 2006, 2010, 2013, 2016]
+GISCO_YEARS         = [2003, 2006, 2010, 2013, 2016
+                       ]
 """Years of adoption/revision of |NUTS| areas.
 """
 DEF_GISCO_YEAR      = 2013
@@ -222,7 +231,7 @@ GISCO_FORMATS       = {'shp': 'shx',  # 'shapefile': 'shp',
                        'gdb': 'gdb', 
                        'pbf': 'pbf', 
                        }
-"""Format of vector data files.
+"""Format of |GISCO| vector data files.
 """
 DEF_GISCO_FORMAT    = 'geojson'
 """Default format for |GISCO| vector datasets.
@@ -230,7 +239,8 @@ DEF_GISCO_FORMAT    = 'geojson'
 GISCO_FEATURES      = {'region':'RG', 
                        'label':'LB',
                        'line':'BN',
-                       'boundary':'BN'}
+                       'boundary':'BN'
+                       }
 """Dictionary of vector space types, *i.e.* the type of |GISCO| feature datasets. 
 """
 DEF_GISCO_FEATURE   = 'region'
@@ -286,13 +296,15 @@ CODER_GEONAME       = 'GeoNames'
 is run for connecting to the "external" (all but |GISCO|) web-services.
 """
 
-CODER_LIST          = [CODER_GISCO, CODER_GOOGLE, CODER_GOOGLE_MAPS, CODER_GOOGLE_PLACES]
+CODER_LIST          = [CODER_GISCO, CODER_GOOGLE, CODER_GOOGLE_MAPS, CODER_GOOGLE_PLACES
+                       ]
 """List of geocoders available.
 """
-CODER_PROJ          = {CODER_GISCO: DEF_GISCO_PROJECTION,
-                       CODER_GOOGLE: 'EPSG3857',
-                       CODER_GOOGLE_MAPS: 'EPSG3857', 
-                       CODER_GOOGLE_PLACES: 'EPSG3857'}
+CODER_PROJ          = {CODER_GISCO:         DEF_GISCO_PROJECTION,
+                       CODER_GOOGLE:        'EPSG3857',
+                       CODER_GOOGLE_MAPS:   'EPSG3857', 
+                       CODER_GOOGLE_PLACES: 'EPSG3857'
+                       }
 """Default geographical projections available through the different geocoders.
 """
 
@@ -313,8 +325,39 @@ NUTS2LAU            =  {2016: {2018: 'EU-28-LAU-2018-NUTS-2016.xlsx',
                                2011: 'EU-28_2011.xlsx',
                                2010: 'EU-28_2010.xlsx'}
                         }
+"""Conversion tables between LAU and NUTS datasets.
 """
+
+NUTS2JSON_DOMAIN    = 'raw.githubusercontent.com/eurostat/Nuts2json/gh-pages'
+"""Domain of |Nuts2json| database.
 """
+NUTS2JSON_PROJECTIONS = {'ETRS89':      None,
+                         'EPSG3857':    'wm', 
+                         'LAEA':        'laea'
+                         }
+"""Projections and encoding strings currently supported by |Nuts2json| service
+(for dissemination). 
+See http://spatialreference.org for the list of all EPSG codes and corresponding 
+spatial references.
+"""
+DEF_NUTS2JSON_PROJECTION = 'EPSG3857'
+"""Default projection used by |Nuts2json| services.
+"""
+NUTS2JSON_FORMATS   = {'geojson': None,  
+                       'topojson': 'topojson'
+                       }
+"""Format of |Nuts2json| vector data files.
+"""
+DEF_NUTS2JSON_FORMAT = 'topojson'
+"""Default format for |Nuts2json| vector datasets.
+"""
+NUTS2JSON_MAPSIZE   = [400, 600, 800, 1000, 1200
+                       ]
+"""Map dimension (in pixel) adopted for the fetching of |Nuts2json|. Currently, 
+all maps are squared.
+"""
+NUTS2JSON_NUTSLEVELS = GISCO_NUTSLEVELS
+# dumb variable
 
 DRIVER_NAME         = 'ESRI Shapefile'
 """|GDAL| driver name.
