@@ -88,7 +88,7 @@ except ImportError:
     happyWarning('GOOGLEMAPS package (https://pypi.python.org/pypi/googlemaps/) not loaded')
 else:
     API_SERVICE = True
-    print('GOOGLEMAPS help: https://github.com/googlemaps/google-maps-services-python')
+    happyVerbose('GOOGLEMAPS help: https://github.com/googlemaps/google-maps-services-python')
 
 try:
     import googleplaces
@@ -96,7 +96,7 @@ except ImportError:
     happyWarning('GOOGLEPLACES package (https://github.com/slimkrazy/python-google-places) not loaded')   
 else:
     API_SERVICE = True
-    print('GOOGLEPLACES help: https://github.com/slimkrazy/python-google-places')
+    happyVerbose('GOOGLEPLACES help: https://github.com/slimkrazy/python-google-places')
 
 try:
     import geopy
@@ -104,7 +104,7 @@ except ImportError:
     happyWarning('GEOPY package (https://github.com/geopy/geopy) not loaded')   
 else:
     API_SERVICE = True
-    print('GEOPY help: http://geopy.readthedocs.io/en/latest/')
+    happyVerbose('GEOPY help: http://geopy.readthedocs.io/en/latest/')
    
 try:
     assert geopy or googlemaps or googleplaces
@@ -119,7 +119,7 @@ except ImportError:
     happyWarning('Pandas package (http://pandas.pydata.org) not loaded')   
 except:
     PANDAS_INSTALLED = True
-    print('pandas help: https://pandas.pydata.org/pandas-docs/stable/')
+    happyVerbose('pandas help: https://pandas.pydata.org/pandas-docs/stable/')
 
 try:
     import Levenshtein
@@ -128,7 +128,7 @@ except ImportError:
     happyWarning('python-Levenshtein package (https://github.com/ztane/python-Levenshtein) not loaded - Map resources not available')
 else:
     LEVENSHTEIN_INSTALLED = True
-    print('Levenshtein help: https://rawgit.com/ztane/python-Levenshtein/master/docs/Levenshtein.html')
+    happyVerbose('Levenshtein help: https://rawgit.com/ztane/python-Levenshtein/master/docs/Levenshtein.html')
     
 try:                                
     import simplejson as json
@@ -1139,10 +1139,14 @@ class GISCOService(OSMService):
         """
         # check whether a specific unit is looked for
         try:
-            unit = kwargs.pop(_Decorator.KW_UNIT, None)
-            assert unit is None or happyType.isstring(unit)
+            code = kwargs.pop(_Decorator.KW_CODE, None)
+            assert code is None or happyType.isstring(code)
         except AssertionError:
             raise happyError('wrong format/value for UNIT keyword argument')
+        else:
+            if code is None:
+                code = 'INFO'
+            code = code.upper()
         # retrieve the year
         year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
         # retrieve the scale
@@ -1160,9 +1164,7 @@ class GISCOService(OSMService):
         if proj in settings.GISCO_PROJECTIONS.keys():
             proj = settings.GISCO_PROJECTIONS[proj]
         theme = 'countries'
-        if unit is None:
-            unit = 'INFO'
-        if unit.upper() == 'INFO':
+        if code == 'INFO':
             domain = ''
             fmt = settings.GISCO_CTRYDATASET['fmt']
             basename = settings.GISCO_CTRYDATASET['data']
@@ -1174,7 +1176,7 @@ class GISCOService(OSMService):
             space = 'region'
             url = '%s://%s/%s/%s/%s-%s-%s-%s-%s.%s' % (settings.PROTOCOL, 
                                         self.url_cache, theme, domain,
-                                        unit, space, scale.lower(), proj, year, 
+                                        code, space, scale.lower(), proj, year, 
                                         fmt )             
         return url            
         
@@ -1549,14 +1551,14 @@ class GISCOService(OSMService):
         return url
         
     #/************************************************************************/
-    def _data4country(self, country, **kwargs):
+    def _data4country(self, code, **kwargs):
         """Iterable version of :meth:`~GISCOService.data4country`.
         """
-        if not happyType.issequence(country):     
-            country = [country,]
-        for c in country:
+        if not happyType.issequence(code):     
+            code = [code,]
+        for c in code:
             if c is not None: 
-                kwargs.update({'country': c})
+                kwargs.update({'code': c})
             try:
                 url = self.url_country(**kwargs)
                 assert self.get_status(url) is not None
@@ -1575,13 +1577,13 @@ class GISCOService(OSMService):
     @_Decorator.parse_projection
     @_Decorator.parse_format
     @_Decorator.parse_scale
-    def data4country(self, country=None, **kwargs):
+    def data4country(self, code=None, **kwargs):
         """Download, and cache when requested, country vector files from |GISCO| Rest
         API.
         
         ::
             
-            >>> fref = serv.data4country(country, **kwargs)            
+            >>> fref = serv.data4country(code=None, **kwargs)            
             
         Returns
         -------
@@ -1589,16 +1591,16 @@ class GISCOService(OSMService):
         """
         fref = {}
         [fref.update({c or i: file if file is None or not happyType.issequence(file) or len(file)>1 else file[0]}) \
-             for i, (c, file) in enumerate(self._data4country(country, **kwargs))]
+             for i, (c, file) in enumerate(self._data4country(code, **kwargs))]
         return fref
         
     #/************************************************************************/
-    def _data4nuts(self, nuts, **kwargs):
+    def _data4nuts(self, unit, **kwargs):
         """Iterable version of :meth:`~GISCOService.data4nuts`.
         """
-        if not happyType.issequence(nuts):     
-            nuts = [nuts,]
-        for n in nuts:
+        if not happyType.issequence(unit):     
+            unit = [unit,]
+        for n in unit:
             if n is not None: 
                 kwargs.update({'unit': n})
             try:
@@ -1620,13 +1622,13 @@ class GISCOService(OSMService):
     @_Decorator.parse_format
     @_Decorator.parse_scale
     @_Decorator.parse_feature
-    def data4nuts(self, nuts=None, **kwargs):
+    def data4nuts(self, unit=None, **kwargs):
         """Download, and cache when requested, NUTS vector files from |GISCO| Rest
         API.
         
         ::
             
-            >>> fref  = serv.data4nuts(nuts, **kwargs)
+            >>> fref  = serv.data4nuts(unit=None, **kwargs)
             
         Returns
         -------
@@ -1634,7 +1636,7 @@ class GISCOService(OSMService):
         """
         fref = {}
         [fref.update({n or i:data if data is None or not happyType.issequence(data) or len(data)>1 else data[0]}) \
-             for i, (n, data) in enumerate(self._data4nuts(nuts, **kwargs)) ]
+             for i, (n, data) in enumerate(self._data4nuts(unit, **kwargs)) ]
         return fref
 
     #/************************************************************************/

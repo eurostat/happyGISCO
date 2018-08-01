@@ -61,6 +61,11 @@ They are provided here for the sake of an exhaustive documentation.
 
 __all__         = ['_Service', '_Feature', '_Tool', '_Decorator', '_AttrDict']
 
+#%%
+#==============================================================================
+# IMPORT STATEMENTS
+#==============================================================================
+
 # generic import
 import io, os, sys#analysis:ignore
 import itertools, functools
@@ -88,7 +93,7 @@ except ImportError:
     happyWarning("REQUESTS_CACHE package (https://pypi.python.org/pypi/requests-cache) not loaded", ImportWarning)
 else:
     REQUESTS_CACHE_INSTALLED = True
-    print('REQUESTS_CACHE help: http://requests-cache.readthedocs.io/en/latest/')
+    happyVerbose('REQUESTS_CACHE help: http://requests-cache.readthedocs.io/en/latest/')
     
 try:                                
     import cachecontrol#analysis:ignore
@@ -96,20 +101,21 @@ except ImportError:
     CACHECONTROL_INSTALLED = False
     happyWarning("CACHECONTROL package (visit https://pypi.python.org/pypi/requests-cache) not loaded", ImportWarning)
     try:
-        class CacheResponse(requests.Response):
+        class ForceCacheResponse(requests.Response):
             pass
     except:
-        class CacheResponse(object):
+        class ForceCacheResponse(object):
             pass
-    def __init(inst, pathname, content):
-        super(CacheResponse,inst).__init__(inst)
-        inst._content = content
-        inst._pathname = pathname
+    def __init(inst, url, content):
+        super(ForceCacheResponse,inst).__init__(inst)
+        inst.url = url
+        inst.reason, inst.status_code = "OK", 200
+        inst._content, inst._content_consumed = content, True
         # self._encoding = ?
-    CacheResponse.__init__ = classmethod(__init)
+    ForceCacheResponse.__init__ = classmethod(__init)
 else:
     CACHECONTROL_INSTALLED = True
-    print('CACHECONTROL help: https://cachecontrol.readthedocs.io/en/latest/')
+    happyVerbose('CACHECONTROL help: https://cachecontrol.readthedocs.io/en/latest/')
     from cachecontrol import CacheControl
     from cachecontrol.caches import FileCache
     try:
@@ -485,7 +491,7 @@ class _Service(object):
                                    'cache_store': cache_store,
                                    'expire_after': expire_after})
                     pathname, content = self.__get_response(url, **kwargs)
-                    response = CacheResponse(pathname, content)
+                    response = ForceCacheResponse(pathname, content)
             except:
                 raise happyError('wrong request formulated')  
         try:

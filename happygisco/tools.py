@@ -66,10 +66,11 @@ try:
     import multiprocessing 
 except ImportError:             
     MULTIPROCESSING=False 
-    happyWarning('multiprocessing package (https://docs.python.org/3/library/multiprocessing.html) not loaded - Parallel processing not available')
+    happyWarning('MULTIPROCESSING package (https://docs.python.org/3/library/multiprocessing.html) not loaded - Parallel processing not available')
     NCPUS = 1
 else:              
-    MULTIPROCESSING=True  
+    MULTIPROCESSING=True 
+    happyVerbose('MULTIPROCESSING help: https://docs.python.org/3/library/multiprocessing.html')
     NCPUS = multiprocessing.cpu_count()              
 
 try:
@@ -79,7 +80,7 @@ except ImportError:
     happyWarning('GDAL package (https://pypi.python.org/pypi/GDAL) not loaded - Inline resources not available')
 else:
     GDAL_TOOL = True
-    print('GDAL help: https://pcjericks.github.io/py-gdalogr-cookbook/index.html')
+    happyVerbose('GDAL help: https://pcjericks.github.io/py-gdalogr-cookbook/index.html')
 
 try:
     import ipyleaflet
@@ -93,10 +94,10 @@ except ImportError:
         happyWarning('folium package (https://github.com/python-visualization/folium) not loaded - Map resources not available')
     else:
         FOLIUM_TOOL = True
-        print('folium help: http://python-visualization.github.io/folium')
+        happyVerbose('folium help: http://python-visualization.github.io/folium')
 else:
     LEAFLET_TOOL = True
-    print('ipyleaflet help: https://ipyleaflet.readthedocs.io/en/latest/index.html')
+    happyVerbose('ipyleaflet help: https://ipyleaflet.readthedocs.io/en/latest/index.html')
 
 
 #%%
