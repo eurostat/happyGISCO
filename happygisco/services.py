@@ -32,6 +32,8 @@
 .. |googlemaps| replace:: `Google Maps <googlemaps_>`_
 .. _googleplaces: https://github.com/slimkrazy/python-google-places
 .. |googleplaces| replace:: `Google Places <googleplaces_>`_
+.. _Nuts2json: https://github.com/eurostat/Nuts2json
+.. |Nuts2json| replace:: `Nuts2json <Nuts2json_>`_
 
 Module implementing simple requests to various web-based geographical services, 
 including |Eurostat| |GISCO|, |OSM| |Nominatim| and |Google_Maps|.
@@ -914,7 +916,7 @@ class GISCOService(OSMService):
         fmt : str
         proj : str,int
         feat : str,int
-        source :
+        source : str
              
         Returns
         -------
@@ -969,6 +971,16 @@ class GISCOService(OSMService):
                     ! only LABEL and REGION features are supported with single NUTS units distribution - FEATURE argument ignored !
                     ! only GEOJSON is supported with single NUTS units distribution - FMT argument ignored !
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-region-03m-4326-2016.geojson'       
+        
+        Further note that it is possible to build the URL linking to the NUTS datasets 
+        from the preformated |Nuts2json| data collection:
+        
+        ::  
+            
+            >>> serv.url_nuts(source='nuts2json', size=800, level=2)
+                'https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/2013/wm/800px/2.topojson'
+            >>> serv.url_nuts(source='nuts2json', proj='LAEA', year=2010)
+                'https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/2010/laea/400px/0.topojson'
         """
         # check whether a specific unit is looked for
         try:
@@ -995,16 +1007,17 @@ class GISCOService(OSMService):
         if scale in settings.GISCO_SCALES.keys():
             scale = settings.GISCO_SCALES[scale]
         # retrieve the format
-        fmt = kwargs.pop(_Decorator.KW_FORMAT, settings.DEF_GISCO_FORMAT)
-        if fmt in settings.GISCO_FORMATS.keys():
+        fmt = kwargs.pop(_Decorator.KW_FORMAT, 
+                         settings.DEF_NUTS2JSON_FORMAT if source == 'NUTS2JSON' else settings.DEF_GISCO_FORMAT)
+        if source != 'NUTS2JSON' and fmt in settings.GISCO_FORMATS.keys():
             fmt = settings.GISCO_FORMATS[fmt]
         # retrieve the projection
         proj = kwargs.pop(_Decorator.KW_PROJECTION, 
                           settings.DEF_NUTS2JSON_PROJECTION if source == 'NUTS2JSON' else settings.DEF_GISCO_PROJECTION)
-        if proj in settings.GISCO_PROJECTIONS.keys():
-            proj = settings.GISCO_PROJECTIONS[proj]
-        elif proj in settings.NUTS2JSON_PROJECTIONS.keys():
+        if source == 'NUTS2JSON' and proj in settings.NUTS2JSON_PROJECTIONS.keys():
             proj = settings.NUTS2JSON_PROJECTIONS[proj]
+        elif proj in settings.GISCO_PROJECTIONS.keys():
+            proj = settings.GISCO_PROJECTIONS[proj]
         # retrieve the spatial type
         feat = kwargs.pop(_Decorator.KW_FEATURE, settings.DEF_GISCO_FEATURE) 
         if feat in settings.GISCO_FEATURES.keys():
@@ -1031,8 +1044,8 @@ class GISCOService(OSMService):
             protocol = 'https'
             domain = settings.NUTS2JSON_DOMAIN
             url = '%s://%s/%s/%s/%spx/%s.%s' % (protocol, domain,
-                                                   year, proj, size, level, 
-                                                   fmt)  
+                                                year, proj, size, level,
+                                                fmt)  
         elif unit == 'BULK': # zipped files
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-10m.shp.zip
             domain = settings.GISCO_DISTRIBUTION['download']['domain']
@@ -1574,8 +1587,8 @@ class GISCOService(OSMService):
         fref : dict
         """
         fref = {}
-        [fref.update({ctry: file if file is None or len(file)>1 else file[0]}) \
-             for ctry,file in self._data4country(country, **kwargs)]
+        [fref.update({ctry: resp if resp is None or len(resp)>1 else resp[0]}) \
+             for ctry, resp in self._data4country(country, **kwargs)]
         return fref
         
     #/************************************************************************/
@@ -1588,17 +1601,25 @@ class GISCOService(OSMService):
             kwargs.update({'unit': n})
             try:
                 url = self.url_nuts(**kwargs)
+                print(url)
                 assert self.get_status(url) is not None
             except:
                 raise happyError('error NUTS API request')
             else:
                 response = self.get_response(url)
+            print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+            # print(response.json())
+            print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+            print(response.content)
+            print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+            print(response.text)
+            print('++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
             try:
-                data = response
+                data = response.content
                 assert data not in({},None)
             except:
                 raise happyError('geolocation for place %s not loaded' % n)
-            yield n, data if data is None or happyType.ismapping(data) or len(data)>1 else data[0]
+            yield n, data
     #/************************************************************************/
     @_Decorator.parse_year
     @_Decorator.parse_projection
@@ -1618,8 +1639,8 @@ class GISCOService(OSMService):
         fref : dict
         """
         fref = {}
-        [fref.update({n:file if file is None or len(file)>1 else file[0]}) \
-             for n, file in self._data4nuts(nuts, **kwargs)]
+        [fref.update({n:resp if resp is None or not happyType.issequence(resp) or len(resp)>1 else resp[0]}) \
+             for n, resp in self._data4nuts(nuts, **kwargs)]
         return fref
 
     #/************************************************************************/

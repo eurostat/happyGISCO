@@ -84,21 +84,39 @@ except ImportError:
 try:                                
     import requests_cache 
 except ImportError:
-    happyWarning("missing REQUESTS_CACHE module - visit https://pypi.python.org/pypi/requests-cache", ImportWarning)
-    requests_cache = None          
+    REQUESTS_CACHE_INSTALLED = False
+    happyWarning("REQUESTS_CACHE package (https://pypi.python.org/pypi/requests-cache) not loaded", ImportWarning)
+else:
+    REQUESTS_CACHE_INSTALLED = True
+    print('REQUESTS_CACHE help: http://requests-cache.readthedocs.io/en/latest/')
     
 try:                                
-    import cachecontrol 
+    import cachecontrol#analysis:ignore
 except ImportError:  
-    happyWarning("missing CACHECONTROL module - visit https://pypi.python.org/pypi/requests-cache", ImportWarning)
-    cachecontrol = None
-else:
+    CACHECONTROL_INSTALLED = False
+    happyWarning("CACHECONTROL package (visit https://pypi.python.org/pypi/requests-cache) not loaded", ImportWarning)
     try:
-        import lockfile#analysis:ignore
-    except ImportError:  
-        happyWarning("missing LOCKFILE module", ImportWarning)
+        class CacheResponse(requests.Response):
+            pass
+    except:
+        class CacheResponse(object):
+            pass
+    def __init(inst, pathname, content):
+        super(CacheResponse,inst).__init__(inst)
+        inst._content = content
+        inst._pathname = pathname
+        # self._encoding = ?
+    CacheResponse.__init__ = classmethod(__init)
+else:
+    CACHECONTROL_INSTALLED = True
+    print('CACHECONTROL help: https://cachecontrol.readthedocs.io/en/latest/')
     from cachecontrol import CacheControl
     from cachecontrol.caches import FileCache
+    try:
+        import fasteners#analysis:ignore
+        #import lockfile#deprecated
+    except ImportError:  
+        happyWarning("FASTENERS package (https://pypi.org/project/fasteners/) not loaded", ImportWarning)
 
 try:                                
     import datetime
@@ -149,7 +167,7 @@ class _Service(object):
             # session = requests.session(**kwargs)
         except:
             raise happyError('wrong requests setting - SESSION not initialised')
-        if cachecontrol is not None and self.cache_store is not None:
+        if CACHECONTROL_INSTALLED is True and self.cache_store is not None:
             try:
                 if self.expire_after is None or int(self.expire_after) > 0:
                     cache_store = FileCache(os.path.abspath(self.cache_store))  
@@ -187,7 +205,7 @@ class _Service(object):
         if not(cache_store is None or isinstance(cache_store, (str,bool))):
             raise happyError('wrong type for CACHE_STORE parameter')
         else:
-            #if cache_store not in (False,'',None) and requests_cache is None and cachecontrol is None:
+            #if cache_store not in (False,'',None) and requests_cache is None and CACHECONTROL_INSTALLED is False:
             #    raise happyError('caching not supported in the absence of modules requests_cache and cachecontrol')                
             pass
         self.__cache_store = cache_store
@@ -446,15 +464,6 @@ class _Service(object):
         expire_after = kwargs.pop('expire_after',None) or self.expire_after or 0
         if isinstance(cache_store, bool) and cache_store is True:
             cache_store = self.__default_cache()
-        class CacheResponse(object):
-            def __init__(self, pathname, content):
-                self.pathname, self.content = pathname, content
-                try:
-                    self.text = content.decode()
-                except:
-                    self.text = ''
-            def raise_for_status(self):
-                pass
         if force_download is True:
             try:
                 if requests_cache is None:
@@ -466,9 +475,9 @@ class _Service(object):
                 raise happyError('wrong request formulation') 
         else:   
             try:
-                if cachecontrol is not None:
+                if CACHECONTROL_INSTALLED is True:
                     response = self.session.get(url)                
-                elif requests_cache is not None:
+                elif REQUESTS_CACHE_INSTALLED is True:
                     with requests_cache.enabled(self.cache_store, **kwargs):
                         response = self.session.get(url)                
                 else:
