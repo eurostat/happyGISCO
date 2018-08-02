@@ -1004,57 +1004,38 @@ class GISCOService(OSMService):
         # btw, do we want to download GISCO data?
         try:
             source = kwargs.pop('source', 'GISCO')
-            assert happyType.isstring(source)
+            assert happyType.isstring(source) and source in ('GISCO', 'NUTS2JSON')
         except AssertionError:
             raise happyError('wrong format/value for SOURCE argument')
         else:
             source = source.upper()      
-        # retrieve the year
-        year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
-        # retrieve the scale
-        scale = kwargs.pop(_Decorator.KW_SCALE, settings.DEF_GISCO_SCALE)
-        if scale in settings.GISCO_SCALES.keys():
-            scale = settings.GISCO_SCALES[scale]
-        # retrieve the format
-        fmt = kwargs.pop(_Decorator.KW_FORMAT, 
-                         settings.DEF_NUTS2JSON_FORMAT if source == 'NUTS2JSON' else settings.DEF_GISCO_FORMAT)
-        if source != 'NUTS2JSON' and fmt in settings.GISCO_FORMATS.keys():
-            fmt = settings.GISCO_FORMATS[fmt]
-        # retrieve the projection
-        proj = kwargs.pop(_Decorator.KW_PROJECTION, 
-                          settings.DEF_NUTS2JSON_PROJECTION if source == 'NUTS2JSON' else settings.DEF_GISCO_PROJECTION)
-        if source == 'NUTS2JSON' and proj in settings.NUTS2JSON_PROJECTIONS.keys():
-            proj = settings.NUTS2JSON_PROJECTIONS[proj]
-        elif proj in settings.GISCO_PROJECTIONS.keys():
-            proj = settings.GISCO_PROJECTIONS[proj]
-        # retrieve the spatial type
-        geom = kwargs.pop(_Decorator.KW_GEOMETRY, settings.DEF_GISCO_GEOMETRY) 
-        if geom in settings.GISCO_GEOMETRIES.keys():
-            geom = settings.GISCO_GEOMETRIES[geom]
-        # retrieve the level
-        level = kwargs.pop(_Decorator.KW_LEVEL,  
-                           settings.NUTS2JSON_NUTSLEVELS[0] if source == 'NUTS2JSON' else settings.GISCO_NUTSLEVELS[0])
-        size = kwargs.pop('size',  
-                           settings.NUTS2JSON_MAPSIZE[0] if source == 'NUTS2JSON' else None)
+        # retrieve year, scale, format, projection, spatial type, and level
+        year, scale, fmt, proj, geom, level, size =                     \
+            [kwargs.get(getattr(_Decorator,attr))                       \
+                        for attr in ['KW_YEAR', 'KW_SCALE', 'KW_FORMAT', 'KW_PROJECTION', 'KW_GEOMETRY', 'KW_LEVEL', 'KW_SIZE']]
         # set the compression format
         zip_  = '.zip' if unit == 'BULK' else ''
-        # check...
-        ##if unit in happyType.seqflatten(list(settings.GISCO_FEATURES.items())):
-        ##    feat = settings.GISCO_FEATURES[unit] if unit in list(settings.GISCO_FEATURES.keys()) else unit
-        ##    unit = 'NUTS'
-        ##elif unit in ('BULK','INFO','NUTS'):
-        ##    pass
         theme = settings.GISCO_NUTSTHEME 
         if source == 'NUTS2JSON':
             # the files can be retrieved on-the-fly from the base URL 
             #       https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/ 
             # according to the file pattern:
-            #       /<YEAR>/<PROJECTION>/<SIZE>/<NUTS_LEVEL>.<FORMAT>
+            #   * for topojson: /<YEAR>/<PROJECTION>/<SIZE>/<NUTS_LEVEL>.json
+            #   * for geojson:  /<YEAR>/<PROJECTION>/<SIZE>/<TYPE>_<NUTS_LEVEL>.json
+            # where <TYPE> depends on geom variable
             protocol = 'https'
             domain = settings.NUTS2JSON_DOMAIN
-            url = '%s://%s/%s/%s/%spx/%s.%s' % (protocol, domain,
-                                                year, proj, size, level,
-                                                fmt)  
+            if fmt == 'geojson':
+                if geom == 'RG': # no indication of scale!!!
+                    geom = 'nutsrg_'
+                elif geom == 'BN':
+                    geom = 'nutsbn_'
+            else: # elif fmt == 'topojson':
+                geom = ''
+            fmt = 'json'
+            url = '%s://%s/%s/%s/%spx/%s%s.%s' % (protocol, domain,
+                                                  year, proj, size, geom, level,
+                                                  fmt)  
         elif unit == 'BULK': # zipped files
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-10m.shp.zip
             domain = settings.GISCO_DISTRIBUTION['download']['domain']
@@ -1107,7 +1088,6 @@ class GISCOService(OSMService):
                                         basename, unit, geom.lower(), scale.lower(), proj, year, 
                                         fmt )  
         return url   
-
     
     #/************************************************************************/
     def url4lau(self, **kwargs):
@@ -1647,6 +1627,14 @@ class GISCOService(OSMService):
         -------
         fref : dict
         """
+        print('in nuts')
+        # we have to cheat here to support NUTS2JSON package 
+        source = kwargs.get('source') or 'GISCO'
+        if source.upper() == 'NUTS2JSON':
+            fmt = kwargs.pop(_Decorator.KW_FORMAT, settings.DEF_GISCO_FORMAT)
+            if fmt == 'json': fmt = 'topojson'
+            kwargs.update({_Decorator.KW_FORMAT: fmt}) 
+        print(kwargs)
         fref = {}
         [fref.update({n or i:data if data is None or not happyType.issequence(data) or len(data)>1 else data[0]}) \
              for i, (n, data) in enumerate(self._resp4nuts(unit, **kwargs)) ]

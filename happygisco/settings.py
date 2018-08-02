@@ -124,15 +124,19 @@ KEY_GISCO           = None
 not require authentication.
 """
 GISCO_PROJECTIONS   = {'WGS84':     4326,
+                       'EPSG4326':  4326, 
                        'ETRS89':    4258,
+                       'EPSG4258':  4258, 
+                       'Mercator':  3857,
                        'EPSG3857':  3857, 
-                       'LAEA':      3035
+                       'LAEA':      3035,
+                       'EPSG3035':  3035
                        }
 """Projections and EPSG codes currently supported by |GISCO| services. 
 See http://spatialreference.org for the list of all EPSG codes and corresponding 
 spatial references.
 """
-DEF_GISCO_PROJECTION = 'WGS84'
+DEF_GISCO_PROJECTION = 4326
 """Default projection used by |GISCO| services.
 """
 GISCO_CACHEDOMAIN    = 'eurostat/cache/GISCO/distribution/v2'
@@ -168,7 +172,7 @@ of `available tiles servers <https://webgate.ec.europa.eu/fpfis/wikis/pages/view
 GISCO_TILEORDER     = '{z}/{y}/{x}'
 """|GISCO| background tile ordering (used for visualisation).
 """
-DEF_GISCO_TILEPROJ  = 'EPSG3857'
+DEF_GISCO_TILEPROJ  = 3857
 """Default |GISCO| background tile projection.
 """
 DEF_GISCO_ZOOM      = 4
@@ -243,7 +247,7 @@ GISCO_GEOMETRIES    = {'region':'RG',
                        }
 """Dictionary of spatial typologies, *i.e.* the geometry of |GISCO| feature datasets. 
 """
-DEF_GISCO_GEOMETRY  = 'region'
+DEF_GISCO_GEOMETRY  = 'RG'
 """Default spatial typology.
 """
 GISCO_REFNAME       = ''
@@ -328,20 +332,17 @@ NUTS2LAU            =  {2016: {2018: 'EU-28-LAU-2018-NUTS-2016.xlsx',
 NUTS2JSON_DOMAIN    = 'raw.githubusercontent.com/eurostat/Nuts2json/gh-pages'
 """Domain of |Nuts2json| database.
 """
-NUTS2JSON_PROJECTIONS = {'ETRS89':      None,
-                         'EPSG3857':    'wm', 
-                         'LAEA':        'laea'
-                         }
+NUTS2JSON_PROJECTIONS = GISCO_PROJECTIONS.copy()
 """Projections and encoding strings currently supported by |Nuts2json| service
 (for dissemination). 
 See http://spatialreference.org for the list of all EPSG codes and corresponding 
 spatial references.
 """
-DEF_NUTS2JSON_PROJECTION = 'EPSG3857'
+DEF_NUTS2JSON_PROJECTION = 3857
 """Default projection used by |Nuts2json| services.
 """
-NUTS2JSON_FORMATS   = {'geojson': None,  
-                       'topojson': 'topojson'
+NUTS2JSON_FORMATS   = {'geojson':           'json',  
+                       'topojson':          'json'
                        }
 """Format of |Nuts2json| vector data files.
 """
