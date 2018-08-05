@@ -1635,7 +1635,7 @@ class GISCOService(OSMService):
     @_Decorator.parse_format
     @_Decorator.parse_scale
     @_Decorator.parse_geometry
-    def resp4nuts(self, unit=None, **kwargs):
+    def nuts(self, unit=None, **kwargs):
         """Download, and cache when requested, NUTS vector files from |GISCO| Rest
         API.
         
@@ -1653,7 +1653,7 @@ class GISCOService(OSMService):
         return fref
 
     #/************************************************************************/
-    def idnuts(self, **kwargs):
+    def lut_idnuts(self, **kwargs):
         """
         
         ::
@@ -1669,7 +1669,7 @@ class GISCOService(OSMService):
         ::
             
             >>> serv = services.GISCOService()
-            >>> f = serv.idnuts()
+            >>> f = serv.lut_idnuts()
             >>> t = pd.read_csv(f)
             >>> t.head()
                   CNTR_CODE NUTS_ID         NUTS_NAME
@@ -1733,7 +1733,7 @@ class GISCOService(OSMService):
         group = kwargs.pop('group', False)
         lut = kwargs.pop(_Decorator.KW_FILE, None)
         if lut is None:
-            lut = self.idnuts(**kwargs)
+            lut = self.lut_idnuts(**kwargs)
             try:
                 assert PANDAS_INSTALLED is True
                 lut = pd.read_csv(lut)
