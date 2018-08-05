@@ -141,7 +141,7 @@ except (AssertionError,KeyError):
     else:
         copyright   += ', '
     try:
-        assert True
+        assert False #True
         copyright   += author 
     except AssertionError:
         pass
