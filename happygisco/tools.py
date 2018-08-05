@@ -88,15 +88,16 @@ except ImportError:
     LEAFLET_TOOL = False
     happyWarning('ipyleaflet package (https://github.com/jupyter-widgets/ipyleaflet) not loaded - Map resources not available')
     try:
+        FOLIUM_TOOL = False
         import folium
     except ImportError:
-        FOLIUM_TOOL = False
         happyWarning('folium package (https://github.com/python-visualization/folium) not loaded - Map resources not available')
     else:
         FOLIUM_TOOL = True
         happyVerbose('folium help: http://python-visualization.github.io/folium')
 else:
     LEAFLET_TOOL = True
+    FOLIUM_TOOL = False
     happyVerbose('ipyleaflet help: https://ipyleaflet.readthedocs.io/en/latest/index.html')
 
 

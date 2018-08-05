@@ -58,7 +58,7 @@ from happygisco.settings import happyWarning, happyVerbose, happyError, happyTyp
 #from happygisco import base
 from happygisco.base import _Feature, _Decorator, _AttrDict#analysis:ignore
 from happygisco import tools     
-from happygisco.tools import GDAL_TOOL, FOLIUM_TOOL
+from happygisco.tools import GDAL_TOOL, FOLIUM_TOOL, LEAFLET_TOOL
 from happygisco import services     
 from happygisco.services import GISCO_SERVICE, API_SERVICE
     
@@ -97,11 +97,11 @@ def __init(inst, *args, **kwargs):
     else:
         inst.transform = tools.GDALTransform()
     try:
-        assert FOLIUM_TOOL
+        assert LEAFLET_TOOL
     except:
         happyWarning('folium mapping services not available')
     else:
-        inst.mapping = None # tools.FoliumMap()
+        inst.mapping = tools.LeafMap()
     try:
         assert API_SERVICE or GISCO_SERVICE
     except:
@@ -125,7 +125,7 @@ def __init(inst, *args, **kwargs):
                 inst.service = services.APIService(coder=service)
             else:
                 raise IOError('service %s not available' % service)
-        if not isinstance(inst._service,(services.GISCOService,services.APIService)):
+        if not isinstance(inst.service,(services.GISCOService,services.APIService)):
             raise IOError('service %s not supported' % service)
 _Feature.__init__ = classmethod(__init)
 
@@ -785,39 +785,46 @@ class NUTS(_Feature):
     #/************************************************************************/
     @_Decorator.parse_nuts
     def __init__(self, *args, **kwargs):
+        self.__unit = ''
         self.__file, self.__url = '', ''
         self.__layer = None
         self.__feature = None
         self.__vector = None
         super(NUTS,self).__init__(**kwargs)
-        file = kwargs.pop(_Decorator.KW_FILE, '')
-        url = kwargs.pop(_Decorator.KW_URL, '')
-        layer = kwargs.pop(_Decorator.KW_LAYER, None)
-        feature = kwargs.pop(_Decorator.KW_FEATURE, {})
-        vector = kwargs.pop(_Decorator.KW_VECTOR, None)
-        unit = kwargs.pop(_Decorator.KW_UNIT, '')
-        
-        kwargs.update({_Decorator.KW_UNIT: unit})
-        
-        url = self.serv.url_nuts(**kwargs)
-        if not file in ('',None):
-            self.__layer = self.__get_layer(**{_Decorator.KW_FILE: file})
-        elif url is not None:
-            self.__url = url
-            self.__layer = self.__get_layer(**{_Decorator.KW_URL: self.url})
-        elif not layer in ([],None):
-            self.__layer = layer
-        if not file in ('',None):
-            self.feature = self.__get_feature(**{_Decorator.KW_FILE: file})
-        elif not self.layer in ([],None):
-            self.__feature = self.__get_feature(**{_Decorator.KW_LAYER: self.layer})
-        elif not feature in ([],None):
-            self.__feature = feature
-        if not vector in ({},None):
-            self.vector = vector # note the assignment using the property here
-        elif not self.vector in ([],None):
-            self.__vector = self.__get_vector(self.feature)
-            
+        #file = kwargs.pop(_Decorator.KW_FILE, None)
+        #url = kwargs.pop(_Decorator.KW_URL, None)
+        #layer = kwargs.pop(_Decorator.KW_LAYER, None)
+        #feature = kwargs.pop(_Decorator.KW_FEATURE, None)
+        #vector = kwargs.pop(_Decorator.KW_VECTOR, None)
+        #unit = kwargs.pop(_Decorator.KW_UNIT, None)
+        items = []
+        for kw in ['KW_FILE', 'KW_URL', 'KW_LAYER', 'KW_FEATURE', 'KW_VECTOR', 'KW_UNIT']:
+            attr = kwargs.pop(getattr(_Decorator, kw), None)
+            try:
+                assert attr not in (None,[],{},'')
+            except: pass
+            else:
+                setattr(self, getattr(_Decorator, kw), attr) # may raise an Error
+                items.append(attr)
+        try:
+            assert len(items) == 1
+        except AssertionError:
+            if len(items)>1:
+                raise happyError('incompatible keyword arguments parsed')
+            else:
+                raise happyError('missing keyword arguments')
+        if self.__unit in ('',[],None):
+            return
+        for kw in ['KW_YEAR' ,'KW_SCALE' ,'KW_FORMAT' ,'KW_PROJECTION' ,'KW_GEOMETRY' ,'KW_LEVEL']:
+            attr = kwargs.get(getattr(_Decorator, kw))
+            try:
+                assert attr not in (None,[],{},'')
+            except: pass
+            else:
+                setattr(self, getattr(_Decorator, kw), attr)
+        self.url = [kwargs.update({_Decorator.KW_UNIT: u}) or self.service.url_nuts(**kwargs) \
+                    for u in self.__unit]
+                    
     #/************************************************************************/
     def __getattr__(self, attr_name): 
         try:
@@ -829,7 +836,7 @@ class NUTS(_Feature):
             except:
                 raise happyError('attribute %s not known' % attr_name)
             else:
-                return attr if len(attr)>1 else attr[0]
+                return attr if attr is None or len(attr)>1 else attr[0]
 
     #/************************************************************************/    
     @_Decorator.parse_file
@@ -852,13 +859,17 @@ class NUTS(_Feature):
     @_Decorator.parse_file
     @_Decorator._parse_class(ogr.Layer, _Decorator.KW_LAYER)
     def __get_feature(self, **kwargs):
-        file = kwargs.pop(_Decorator.KW_FILE, None)
-        layer = kwargs.pop(_Decorator.KW_LAYER, self.layer)
+        file = kwargs.pop(_Decorator.KW_FILE, self.__file)
+        if not happyType.issequence(file): 
+            file = [file,]
+        layer = kwargs.pop(_Decorator.KW_LAYER, self.__layer)
+        if not happyType.issequence(layer): 
+            layer = [layer,]
         try:
-            if file is not None:
-                feature = self.transform.file2feat(file)
-            elif layer is not None:
-                feature = self.transform.layer2feat(layer)
+            if layer is not None:
+                feature = [self.transform.layer2feat(l) for l in layer]
+            elif file is not None:
+                feature = [self.transform.file2feat(f) for f in file]
             else:
                 raise happyError('no input data parsed to extract vector features')
         except:
@@ -872,12 +883,20 @@ class NUTS(_Feature):
     #/************************************************************************/    
     @_Decorator._parse_class(ogr.Feature, _Decorator.KW_FEATURE)
     def __get_vector(self, **kwargs):
-        feature = kwargs.pop(_Decorator.KW_FEATURE, self.feature)
+        feature = kwargs.pop(_Decorator.KW_FEATURE, self.__feature)
+        if not happyType.issequence(feature): 
+            feature = [feature,]
+        url = kwargs.pop(_Decorator.KW_URL, self.__url)
+        if not happyType.issequence(url): 
+            url = [url,]
         try:
-            if getattr(feature, _AttrDict.KW_ATTR) in (None,False):
-                vector = [json.loads(v.ExportToJson()) for v in feature]
-            else:
-                vector = [json.loads(v.ExportToJson()) for v in feature.values()]
+            if feature is not None:
+                if getattr(feature, _AttrDict.KW_ATTR) in (None,False):
+                    vector = [json.loads(v.ExportToJson()) for v in feature]
+                else:
+                    vector = [json.loads(v.ExportToJson()) for v in feature.values()]
+            elif url is not None:
+                vector = [self.data2nuts(u) for u in url]
         except: 
             raise happyError('impossible to extract vector features from data') 
         if kwargs != {}:
@@ -919,7 +938,93 @@ class NUTS(_Feature):
             except:
                 level = None
         else:
-            return level if len(level)>1 else level[0]
+            return level if level is None or len(level)>1 else level[0]
+
+    #/************************************************************************/    
+    def __get_unit(self):
+        if self.feature in ([],None):
+            self.feature = self.get_vector()
+        try:
+            unit = 0
+        except:
+            try:
+                unit = 0
+            except:
+                unit = None
+        else:
+            return unit if unit is None or len(unit)>1 else unit[0]
+                
+    #/************************************************************************/
+    @property
+    def unit(self):
+        """Unit property (:data:`setter`/:data:`getter`) of a :class:`NUTS` 
+        instance, if any.
+        """ 
+        if self.__unit in ('',[],None):
+            try:
+                unit = self.id or self.fid
+            except:
+                unit = None
+            else:
+                self.__unit = unit
+        return self.__unit if self.__unit is None or len(self.__unit)>1     \
+            else self.__unit[0]
+    @unit.setter
+    def unit(self, unit):
+        try:
+            assert unit is None or happyType.isstring(unit) or \
+                (happyType.issequence(unit) and all([happyType.isstring(u) for u in unit]))
+        except:
+            raise happyError('wrong format for UNIT parameter')
+        else:
+            if not happyType.issequence(unit):
+                unit = [unit,]
+            self.__unit = unit
+                
+    #/************************************************************************/
+    @property
+    def url(self):
+        """URL property (:data:`setter`/:data:`getter`) of a :class:`NUTS` 
+        instance, if any.
+        """ 
+        return self.__url if self.__url is None or len(self.__url)>1     \
+            else self.__url[0]    
+    @url.setter
+    def url(self, url):
+        try:
+            assert url is None or happyType.isstring(url) or \
+                (happyType.issequence(url) and all([happyType.isstring(u) for u in url]))
+        except:
+            raise happyError('wrong format for URL parameter')
+        else:
+            if not happyType.issequence(url):
+                url = [url,]
+        try:
+            assert all([self.service.get_status(u) == requests.codes.ok for u in url])
+        except NameError:
+            pass
+        except:
+            raise happyError('wrong URL argument')
+        self.__url = url
+    
+    #/************************************************************************/
+    @property
+    def file(self):
+        """File property (:data:`setter`/:data:`getter`) of a :class:`NUTS` 
+        instance, if any.
+        """ 
+        return self.__file   
+    @file.setter
+    def file(self, file):
+        try:
+            assert file is None or happyType.isstring(file) or \
+                (happyType.issequence(file) and all([happyType.isstring(f) for f in file]))
+        except:
+            raise happyError('wrong format for FILE parameter')
+        else:
+            if not happyType.issequence(file):
+                file = [file,]
+            self.__file = file
                 
     #/************************************************************************/
     @property
@@ -927,15 +1032,28 @@ class NUTS(_Feature):
         """Layer property (:data:`setter`/:data:`getter`) of a :class:`NUTS` 
         instance.
         """ 
+        if self.__layer in ([],None):
+            try:
+                layer = self.__get_layer()
+            except:
+                # raise happyError('unable to retrieve vector layer') 
+                pass
+            else:
+                self.__layer = layer
         return self.__layer    
     @layer.setter
     def layer(self, layer):
         try:
+            assert GDAL_TOOL is True
+            decorator = _Decorator._parse_class(ogr.Layer, _Decorator.KW_LAYER)
             func = lambda **kw: kw.get(_Decorator.KW_LAYER)
-            layer = _Decorator.parse_place(func)(**{_Decorator.KW_LAYER: layer})
+            layer = decorator(func)(**{_Decorator.KW_LAYER: layer})
+        except AssertionError:
+            pass
         except:
             raise happyError('wrong %s argument' % _Decorator.KW_LAYER) 
-        self.__layer = layer 
+        else:
+            self.__layer = layer 
 
     #/************************************************************************/
     @property
@@ -945,20 +1063,26 @@ class NUTS(_Feature):
         """ 
         if self.__feature in ([],None):
             try:
-                feature = self.__get_feature(**{_Decorator.KW_LAYER: self.__layer})
+                feature = self.__get_feature()
             except:     
-                raise happyError('unable to retrieve feature vector') 
+                #raise happyError('unable to retrieve feature vector') 
+                pass
             else:
                 self.__feature = feature
         return self.__feature    
     @feature.setter
     def  feature(self, feature):
         try:
+            assert GDAL_TOOL is True
+            decorator = _Decorator._parse_class([ogr.Feature,list], _Decorator.KW_FEATURE)
             func = lambda **kw: kw.get(_Decorator.KW_FEATURE)
-            feature = _Decorator.parse_place(func)(**{_Decorator.KW_FEATURE: feature})
+            feature = decorator(func)(**{_Decorator.KW_FEATURE: feature})
+        except AssertionError:
+            pass
         except:
             raise happyError('wrong %s argument' % _Decorator.KW_FEATURE) 
-        self.__feature = feature
+        else:
+            self.__feature = feature
 
     #/************************************************************************/
     @property
@@ -968,23 +1092,27 @@ class NUTS(_Feature):
         """ 
         if self.__vector in ([],None):
             try:
-                vector = self.__get_vector(**{_Decorator.KW_FEATURE: self.feature})
+                vector = self.__get_vector() 
             except:     
-                raise happyError('unable to retrieve feature') 
+                #raise happyError('unable to retrieve feature') 
+                pass
             else:
                 self.__vector = vector
         return self.__vector    
     @vector.setter
     def vector(self,vector):
         try:
+            decorator = _Decorator._parse_class([str,dict,list], _Decorator.KW_VECTOR)
+            # decorator = _Decorator._parse_class(None, _Decorator.KW_VECTOR)
             func = lambda **kw: kw.get(_Decorator.KW_VECTOR)
-            vector = _Decorator.parse_place(func)(**{_Decorator.KW_VECTOR: vector})
+            vector = decorator(func)(**{_Decorator.KW_VECTOR: vector})
         except:
             raise happyError('wrong %s argument' % _Decorator.KW_FEATURE) 
-        if happyType.isstring(vector):
-            self.__vector = json.loads(vector)
-        elif happyType.ismapping(vector) or happyType.issequence(vector):
-            self.__vector = vector
+        else:
+            if happyType.isstring(vector):
+                self.__vector = json.loads(vector)
+            elif happyType.ismapping(vector) or happyType.issequence(vector):
+                self.__vector = vector
 
     #/************************************************************************/    
     @property
@@ -1060,7 +1188,7 @@ class NUTS(_Feature):
             except:
                 name = None
         else:
-            return name if len(name)>1 else name[0]
+            return name if name is None or len(name)>1 else name[0]
     
     @property
     def value(self):
@@ -1072,7 +1200,7 @@ class NUTS(_Feature):
         except:
             return None
         else:
-            return value if len(value)>1 else value[0]
+            return value if value is None or len(value)>1 else value[0]
     
     @property
     def place(self):
@@ -1087,6 +1215,14 @@ class NUTS(_Feature):
     
     #/************************************************************************/
     def loads(self, **kwargs):
+        try:
+            data = response.json()
+        except:
+            try:
+                data = response.content 
+                data = json.loads(data.decode(chardet.detect(data)["encoding"]))
+            except:
+                data = None
         pass
         
     #/************************************************************************/

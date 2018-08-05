@@ -73,6 +73,7 @@ import collections#analysis:ignore
 
 import time
 import hashlib
+#import abc
 
 # local imports
 from happygisco import settings
@@ -101,18 +102,18 @@ except ImportError:
     CACHECONTROL_INSTALLED = False
     happyWarning("CACHECONTROL package (visit https://pypi.python.org/pypi/requests-cache) not loaded", ImportWarning)
     try:
-        class ForceCacheResponse(requests.Response):
+        class _CachedResponse(requests.Response):
             pass
     except:
-        class ForceCacheResponse(object):
+        class _CachedResponse(object):
             pass
     def __init(inst, url, content):
-        super(ForceCacheResponse,inst).__init__(inst)
+        super(_CachedResponse,inst).__init__(inst)
         inst.url = url
         inst.reason, inst.status_code = "OK", 200
         inst._content, inst._content_consumed = content, True
         # self._encoding = ?
-    ForceCacheResponse.__init__ = classmethod(__init)
+    _CachedResponse.__init__ = classmethod(__init)
 else:
     CACHECONTROL_INSTALLED = True
     happyVerbose('CACHECONTROL help: https://cachecontrol.readthedocs.io/en/latest/')
@@ -131,6 +132,38 @@ except ImportError:
     class datetime:
         class timedelta: 
             def __init__(self,arg): return arg
+
+#%%
+#==============================================================================
+# CLASS _CachedResponse
+#==============================================================================
+
+try:
+    assert SERVICE_AVAILABLE is True
+except:
+    class _CachedResponse(object):
+        pass
+else:
+    class _CachedResponse(requests.Response):
+        pass
+def __init(inst, *args):
+    r, path = args
+    try:
+        assert happyType.isstring(path) and isinstance(r,(bytes,requests.Response))
+    except:
+        raise happyError('parsed initialising parameters not recognised')
+    super(_CachedResponse,inst).__init__(inst)
+    inst._cache_path = path
+    if isinstance(r,bytes):
+        inst.url = inst._path
+        inst.reason, inst.status_code = "OK", 200
+        inst._content, inst._content_consumed = r, True           
+    elif isinstance(r,requests.Response):
+        for attr in r.__dict__:
+            setattr(inst, attr, getattr(r, attr))
+    # self._encoding = ?
+_CachedResponse.__init__ = classmethod(__init)
+
 
 #%%
 #==============================================================================
@@ -490,10 +523,11 @@ class _Service(object):
                     kwargs.update({'force_download': force_download,
                                    'cache_store': cache_store,
                                    'expire_after': expire_after})
-                    pathname, content = self.__get_response(url, **kwargs)
-                    response = ForceCacheResponse(pathname, content)
+                    pathname, response = self.__get_response(url, **kwargs)
             except:
                 raise happyError('wrong request formulated')  
+            else:
+                response = _CachedResponse(response, pathname)
         try:
             assert response is not None
             response.raise_for_status()
@@ -619,6 +653,7 @@ class _Service(object):
 class _Tool(object):   
     """Dummy base class for geospatial "tools". 
     """
+    #__metaclass__  = abc.ABCMeta
     pass
 
 
@@ -632,6 +667,7 @@ class _Feature(object):
     
         >>> feat = base._Feature()
     """
+    #__metaclass__  = abc.ABCMeta
 
     #/************************************************************************/
     def __init__(self):
@@ -652,6 +688,7 @@ class _Feature(object):
        
     #/************************************************************************/
     @property
+    #@abc.abstractmethod
     def service(self):
         """Service property (:data:`getter`) of a :class:`_Feature` instance. 
         A :data:`service` object will be generally a :class:`~happygisco.services.GISCOService` 
@@ -664,6 +701,7 @@ class _Feature(object):
         
     #/************************************************************************/
     @property
+    #@abc.abstractmethod
     def transform(self):
         """Geospatial transform property (:data:`getter`) of a :class:`_Feature` instance.
         A :data:`service` object will be generally a :class:`~happygisco.tools.GDALTransform` 
@@ -676,6 +714,7 @@ class _Feature(object):
        
     #/************************************************************************/
     @property
+    #@abc.abstractmethod
     def mapping(self):
         """Geospatial mapping property (:data:`getter`) of a :class:`_Feature` instance.
         A :data:`service` object will be generally a :class:`~happygisco.tools.FoliumMap` 
@@ -688,6 +727,7 @@ class _Feature(object):
      
     #/************************************************************************/
     @property
+    #@abc.abstractmethod
     def coord(self):
         # ignore: this will be overwritten              
         """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) 
@@ -721,6 +761,8 @@ class _Decorator(object):
     KW_LON          = 'Lon' 
     KW_COORD        = 'coord'
     
+    KW_LOCATION     = 'location' 
+    KW_NUTS         = 'nuts' 
     KW_AREA         = 'area'
     
     KW_PROJECTION   = 'proj' 
@@ -729,16 +771,17 @@ class _Decorator(object):
     KW_FEATURE      = 'feat'
     KW_FORMAT       = 'fmt'
     KW_SCALE        = 'scale'
-    
-    KW_FEATURE      = 'feature' 
-    KW_VECTOR       = 'vector' 
-    KW_NUTS         = 'nuts' 
-    KW_UNIT         = 'unit' 
-    KW_LEVEL        = 'level'
+    KW_GEOMETRY     = 'geometry' 
     
     KW_LAYER        = 'layer'
     KW_FILE         = 'file'
     KW_URL          = 'url'
+    
+    KW_FEATURE      = 'feature' 
+    KW_VECTOR       = 'vector' 
+    KW_UNIT         = 'unit' 
+    KW_LEVEL        = 'level'
+
     KW_DATA         = 'data'
     KW_VALUES       = 'values'
 
@@ -813,7 +856,8 @@ class _Decorator(object):
             if self.key is not None:                
                 try:
                     value = kwargs.pop(self.key, None)
-                    assert value is None or any([isinstance(value,c) for c in self.parse_cls])
+                    assert value is None or self.parse_cls is None or \
+                        any([isinstance(value,c) for c in self.parse_cls])
                 except:
                     raise happyError('wrong format for %s argument' % self.key.upper())
                 else:
@@ -1868,7 +1912,7 @@ class _Decorator(object):
         
         ::
         
-            >>> decorator = _Decorator._parse_class(parse_cls, key)
+            >>> decorator = _Decorator._parse_class(parse_cls, key, values=None)
         
         Arguments
         ---------
@@ -1976,7 +2020,7 @@ class _Decorator(object):
         See also
         --------
         :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_scale`,
-        :meth:`~geoDecorators.parse_format`, :meth:`~geoDecorators.parse_feature`,
+        :meth:`~geoDecorators.parse_format`, :meth:`~geoDecorators.parse_geometry`,
         :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_level`.
         """
         def __init__(self, *args, **kwargs):
@@ -2050,7 +2094,7 @@ class _Decorator(object):
         See also
         --------
         :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_year`,
-        :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_feature`,
+        :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_geometry`,
         :meth:`~geoDecorators.parse_format`, :meth:`~geoDecorators.parse_level`.
         """
         ## PROJECTION      = dict(happyType.seqflatten([[(k,v), (v,v)] for k,v in settings.GISCO_PROJECTIONS.items()]))
@@ -2128,7 +2172,7 @@ class _Decorator(object):
         See also
         --------
         :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_year`,
-        :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_feature`,
+        :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_geometry`,
         :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_level`.
         """
         def __call__(self, *args, **kwargs):
@@ -2153,13 +2197,13 @@ class _Decorator(object):
             return self.func(*args, **kwargs)
        
     #/************************************************************************/
-    class parse_feature(__base):
-        """Class decorator of functions and methods used to parse a space typology, 
+    class parse_geometry(__base):
+        """Class decorator of functions and methods used to parse a spatial typology, 
         as defined by |GISCO|.
         
         ::
         
-            >>> new_func = _Decorator.parse_feature(func)
+            >>> new_func = _Decorator.parse_geometry(func)
         
         Arguments
         ---------
@@ -2175,27 +2219,27 @@ class _Decorator(object):
         Returns
         -------
         new_func : callable
-            the decorated function that now accepts :data:`feat` as a keyword 
+            the decorated function that now accepts :data:`geometry` as a keyword 
             argument to parse a feature type (*e.g.*, used when downloading |GISCO| 
-            datasets); the supported vector formats (parsed to :data:`feat`) are
-            :literal:`'region','label'` and :literal:`'line'` (or :literal:`'boundary'`, 
-            *e.g.* those listed in :data:`settings.GISCO_FEATURES`.   
+            datasets); the supported vector formats (*i.e.*, parsed to :data:`geometry`) 
+            are :literal:`'region','label'` and :literal:`'line'` (or :literal:`'boundary'`, 
+            *e.g.* those listed in :data:`settings.GISCO_GEOMETRIES`.   
         
         Examples
         --------          
         
         ::
 
-            >>> func = lambda *args, **kwargs: kwargs.get('feat')
-            >>> _Decorator.parse_feature(func)(feat='1)
-                happyError: !!! wrong format for FEAT argument !!!
-            >>> _Decorator.parse_feature(func)(feat='polygon')
-                happyError: !!! wrong value for FEAT argument - feature 'polygon' not supported !!!
-            >>> _Decorator.parse_feature(func)(feat='region')
+            >>> func = lambda *args, **kwargs: kwargs.get('geometry')
+            >>> _Decorator.parse_geometry(func)(geometry='1)
+                happyError: !!! wrong format for GEOMETRY argument !!!
+            >>> _Decorator.parse_geometry(func)(geometry='polygon')
+                happyError: !!! wrong value for GEOMETRY argument - geometry 'polygon' not supported !!!
+            >>> _Decorator.parse_geometry(func)(geometry='region')
                 'RN'
-            >>> _Decorator.parse_feature(func)(feat='line')
+            >>> _Decorator.parse_geometry(func)(geometry='line')
                 'BN'
-            >>> _Decorator.parse_feature(func)(feat='LB')
+            >>> _Decorator.parse_geometry(func)(geometry='LB')
                 'LB'
             
         See also
@@ -2206,26 +2250,26 @@ class _Decorator(object):
         """
         def __init__(self, *args, **kwargs):
             kwargs.update({'parse_cls': str, 
-                           'key': _Decorator.KW_FEATURE, 
-                           'values': settings.GISCO_FEATURES})
-            super(_Decorator.parse_feature,self).__init__(*args, **kwargs)
+                           'key': _Decorator.KW_GEOMETRY, 
+                           'values': settings.GISCO_GEOMETRIES})
+            super(_Decorator.parse_geometry,self).__init__(*args, **kwargs)
         #def __call__(self, *args, **kwargs):
         #    try:
-        #        feat = kwargs.pop(_Decorator.KW_FEATURE, None) # settings.DEF_GISCO_FEATURE
-        #        assert feat in ('',None) or isinstance(feat,str)
+        #        geom = kwargs.pop(_Decorator.KW_GEOMETRY, None) # settings.DEF_GISCO_GEOMETRY
+        #        assert geom in ('',None) or isinstance(geom,str)
         #    except:
-        #        raise happyError('wrong format for %s argument' % _Decorator.KW_FEATURE.upper())
+        #        raise happyError('wrong format for %s argument' % _Decorator.KW_GEOMETRY.upper())
         #    else:
-        #        if feat in ('',None):
+        #        if geom in ('',None):
         #            return self.func(*args, **kwargs)
         #    try:
-        #        assert feat in happyType.seqflatten(settings.GISCO_FEATURES.items())
+        #        assert geom in happyType.seqflatten(settings.GISCO_GEOMETRIES.items())
         #    except:
-        #        raise happyError('wrong value for %s argument - feature %s not supported' % (_Decorator.KW_FEATURE.upper(), feat))
+        #        raise happyError('wrong value for %s argument - geometry %s not supported' % (_Decorator.KW_GEOMETRY.upper(), geom))
         #    else:
-        #        if feat in settings.GISCO_FEATURES.keys():
-        #            feat = settings.GISCO_FEATURES[feat]
-        #    kwargs.update({_Decorator.KW_FEATURE: feat})                  
+        #        if geom in settings.GISCO_GEOMETRIES.keys():
+        #            geom = settings.GISCO_GEOMETRIES[geom]
+        #    kwargs.update({_Decorator.KW_GEOMETRY: geom})                  
         #    return self.func(*args, **kwargs)
        
     #/************************************************************************/
@@ -2276,7 +2320,7 @@ class _Decorator(object):
         --------
         :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_year`,
         :meth:`~geoDecorators.parse_level`, :meth:`~geoDecorators.parse_format`,
-        :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_feature`.
+        :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_geometry`.
         """
         def __init__(self, *args, **kwargs):
             kwargs.update({'parse_cls': [int,str], 
@@ -2346,7 +2390,7 @@ class _Decorator(object):
         --------
         :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_year`,
         :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_format`,
-        :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_feature`.
+        :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_geometry`.
         """
         def __init__(self, *args, **kwargs):
             kwargs.update({'parse_cls': int, 
@@ -2375,8 +2419,8 @@ class _Decorator(object):
 #    _Decorator._parse_class([int,str], _Decorator.KW_PROJECTION, settings.GISCO_PROJECTIONS)
 #_Decorator.parse_format =                       \
 #    _Decorator._parse_class(str, _Decorator.KW_FORMAT, settings.GISCO_FORMATS)
-#_Decorator.parse_feature =                      \
-#    _Decorator._parse_class(str, _Decorator.KW_FEATURE, settings.GISCO_FEATURES)
+#_Decorator.parse_geometry =                      \
+#    _Decorator._parse_class(str, _Decorator.KW_GEOMETRY, settings.GISCO_GEOMETRIES)
 #_Decorator.parse_scale =                        \
 #    _Decorator._parse_class([int,str], _Decorator.KW_SCALE, settings.GISCO_SCALES)
 #_Decorator.parse_level =                        \

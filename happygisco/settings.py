@@ -236,30 +236,28 @@ GISCO_FORMATS       = {'shp': 'shx',  # 'shapefile': 'shp',
 DEF_GISCO_FORMAT    = 'geojson'
 """Default format for |GISCO| vector datasets.
 """
-GISCO_FEATURES      = {'region':'RG', 
+GISCO_GEOMETRIES    = {'region':'RG', 
                        'label':'LB',
                        'line':'BN',
                        'boundary':'BN'
                        }
-"""Dictionary of vector space types, *i.e.* the type of |GISCO| feature datasets. 
+"""Dictionary of spatial typologies, *i.e.* the geometry of |GISCO| feature datasets. 
 """
-DEF_GISCO_FEATURE   = 'region'
-"""Default space type.
+DEF_GISCO_GEOMETRY  = 'region'
+"""Default spatial typology.
 """
 GISCO_REFNAME       = ''
 """Generic name used to reference the bulk datasets.
 """
 
 OSM_URL             = 'nominatim.openstreetmap.org/'
-"""
-|OSM| web-service complete URL.
+"""|OSM| web-service complete URL.
 """
 CODER_OSM         = 'osm'
 """Identifier of |OSM| geocoder.
 """
 KEY_OSM           = None
-"""
-Dummy |OSM| key (connection to |OSM| web-services does not require authentication).
+"""Dummy |OSM| key (connection to |OSM| web-services does not require authentication).
 """
 
 EU_GEOCENTRE        = [50.033333, 10.35]
@@ -295,7 +293,6 @@ CODER_GEONAME       = 'GeoNames'
 """Default geocoder used when the generic :mod:`geopy` package (see website |geopy|) 
 is run for connecting to the "external" (all but |GISCO|) web-services.
 """
-
 CODER_LIST          = [CODER_GISCO, CODER_GOOGLE, CODER_GOOGLE_MAPS, CODER_GOOGLE_PLACES
                        ]
 """List of geocoders available.
