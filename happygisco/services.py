@@ -73,7 +73,7 @@ import chardet
 # local imports
 from happygisco import settings
 from happygisco.settings import happyVerbose, happyWarning, happyError, happyType
-from happygisco.base import _Decorator, _Service
+from happygisco.base import _Decorator, _Service, _AttrDict
 
 # requirements
 try: # dummy me...
@@ -941,34 +941,34 @@ class GISCOService(OSMService):
         ::
             
             >>> serv = services.GISCOService()
-            >>> serv.url4nuts() # default: full bulk dataset...
-                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-01m.geojson.zip'
-            >>> serv.url4nuts(file='NUTS") 
+            >>> serv.url4nuts()  # default: a given NUTS dataset...
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_RG_01M_2013_4326_LEVL_0.geojson'
-            >>> serv.url4nuts(unit='AD')
+            >>> serv.url4nuts(file = 'BULK')
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-01m.geojson.zip'
+            >>> serv.url4nuts(unit = 'AD')
                 'http://europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AD-region-01m-4326-2013.geojson'
                 
-            >>> serv.url4nuts(year = 2016, scale = 10, feature = 'boundary')
+            >>> serv.url4nuts(year = 2016, scale = 10, geometry = 'boundary')
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_BN_10M_2016_4326_LEVL_0.geojson'
-            >>> serv.url4nuts(file='bulk', year = 2016, scale = 60, fmt = 'shp')
+            >>> serv.url4nuts(file = 'bulk', year = 2016, scale = 60, fmt = 'shp')
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-60m.shp.zip'
-            >>> serv.url4nuts(year = 2010, feature = 'label', level = 2)  
+            >>> serv.url4nuts(year = 2010, geometry = 'label', level = 2)  
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_LB_2010_4326_LEVL_2.geojson'
-            >>> serv.url4nuts(year = 2010, scale = 1, feature = 'line', level = 'ALL', proj = 'EPSG3857')  
+            >>> serv.url4nuts(year = 2010, scale = 1, geometry = 'boundary', level = 'ALL', proj = 'Mercator')  
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_BN_01M_2010_3857.geojson'
-            >>> serv.url4nuts(file='info', year = 2010)  
+            >>> serv.url4nuts(file = 'info', year = 2010)  
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2010-units.json'
                 
-            >>> serv.url4nuts(unit='MK', year = 2006, scale = 20, feature = 'region', proj = 'LAEA')
+            >>> serv.url4nuts(unit = 'MK', year = 2006, scale = 20, geometry = 'region', proj = 'LAEA')
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/MK-region-20m-3035-2006.geojson'
-            >>> serv.url4nuts(unit='BE100', year = 2016, scale = 3, feature = 'label')
+            >>> serv.url4nuts(unit='BE100', year = 2016, scale = 3, geometry = 'LB')
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-label-03m-4326-2016.geojson'        
         
         Note also:
         
         ::
                 
-            >>> serv.url4nuts(unit='BE100', year = 2016, scale = 3, feature = 'boundary', fmt ='shp')
+            >>> serv.url4nuts(unit='BE100', year = 2016, scale = 3, geometry = 'boundary', fmt ='shp')
                     ! only LABEL and REGION features are supported with single NUTS units distribution - FEATURE argument ignored !
                     ! only GEOJSON is supported with single NUTS units distribution - FMT argument ignored !
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-region-03m-4326-2016.geojson'       
@@ -978,12 +978,17 @@ class GISCOService(OSMService):
         
         ::  
             
-            >>> serv.url4nuts(source='nuts2json', size=800, level=2)
-                'https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/2013/wm/800px/2.topojson'
-            >>> serv.url4nuts(source='nuts2json', proj='LAEA', year=2010)
-                'https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/2010/laea/400px/0.topojson'
+            >>> serv.url4nuts(unit = 'nuts2json', scale = 400, level = 2)
+                'https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/2013/4326/400px/nutsrg_2.json'
+            >>> serv.url4nuts(unit = 'nuts2json', proj = 'EPSG3035', year = 2010, fmt = 'topojson')
+                'https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/2010/3035/800px/0.json'
+                
+        See also
+        --------
+        
         """
         # check whether a specific unit is looked for
+        # btw, do we want to download GISCO data?
         try:
             unit = kwargs.pop(_Decorator.KW_UNIT, None)
             assert unit is None or happyType.isstring(unit)
@@ -1001,22 +1006,42 @@ class GISCOService(OSMService):
         else:
             unit = unit or file or 'NUTS' # force to 'NUTS' in case both and file are None
             unit = unit.upper()
-        # btw, do we want to download GISCO data?
-        try:
-            source = kwargs.pop('source', 'GISCO')
-            assert happyType.isstring(source) and source in ('GISCO', 'NUTS2JSON')
-        except AssertionError:
-            raise happyError('wrong format/value for SOURCE argument')
-        else:
-            source = source.upper()      
-        # retrieve year, scale, format, projection, spatial type, and level
-        year, scale, fmt, proj, geom, level, size =                     \
-            [kwargs.get(getattr(_Decorator,attr))                       \
-                        for attr in ['KW_YEAR', 'KW_SCALE', 'KW_FORMAT', 'KW_PROJECTION', 'KW_GEOMETRY', 'KW_LEVEL', 'KW_SIZE']]
+        # retrieve the keyword parameters... note that all this parsing/checking/cleaning
+        # may have been done thanks to the parse_* methods
+        year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
+        scale = kwargs.pop(_Decorator.KW_SCALE, 
+                           settings.DEF_GISCO_SCALE if unit != 'NUTS2JSON' else settings.DEF_NUTS2JSON_MAPSIZE)
+        if unit != 'NUTS2JSON' and scale in settings.GISCO_SCALES.keys():
+            scale = settings.GISCO_SCALES[scale]
+        fmt = kwargs.pop(_Decorator.KW_FORMAT, 
+                         settings.DEF_GISCO_FORMAT if unit != 'NUTS2JSON' else settings.DEF_NUTS2JSON_FORMAT)
+        if unit != 'NUTS2JSON' and fmt in settings.GISCO_FORMATS.keys():
+            fmt = settings.GISCO_FORMATS[fmt]
+        #elif fmt in settings.DEF_NUTS2JSON_FORMAT.keys():
+        #    fmt = settings.DEF_NUTS2JSON_FORMAT[fmt]
+        proj = kwargs.pop(_Decorator.KW_PROJECTION, 
+                          settings.DEF_GISCO_PROJECTION if unit != 'NUTS2JSON' else settings.DEF_NUTS2JSON_PROJECTION)
+        if unit != 'NUTS2JSON' and proj in settings.GISCO_PROJECTIONS.keys():
+            proj = settings.GISCO_PROJECTIONS[proj]
+        elif proj in settings.NUTS2JSON_PROJECTIONS.keys():
+            proj = settings.NUTS2JSON_PROJECTIONS[proj]
+        geom = kwargs.pop(_Decorator.KW_GEOMETRY, settings.DEF_GISCO_GEOMETRY) 
+        if geom in settings.GISCO_GEOMETRIES.keys():
+            geom = settings.GISCO_GEOMETRIES[geom]
+        level = kwargs.pop(_Decorator.KW_LEVEL, settings.GISCO_NUTSLEVELS[0])        
+        #if not happyType.issequence(proj):      proj = [proj,]
+        #if not happyType.issequence(year):      year = [year,]
+        #if not happyType.issequence(geom):      geom = [geom,]
+        #if not happyType.issequence(level):     level = [level,]
+        #if not happyType.issequence(scale):     scale = [scale,]
+        #if not happyType.issequence(fmt):       fmt = [fmt,]        
+        #if not happyType.issequence(size):       size = [size,]
         # set the compression format
         zip_  = '.zip' if unit == 'BULK' else ''
         theme = settings.GISCO_NUTSTHEME 
-        if source == 'NUTS2JSON':
+        # start...
+        url = {}
+        if unit == 'NUTS2JSON':
             # the files can be retrieved on-the-fly from the base URL 
             #       https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/ 
             # according to the file pattern:
@@ -1025,54 +1050,75 @@ class GISCOService(OSMService):
             # where <TYPE> depends on geom variable
             protocol = 'https'
             domain = settings.NUTS2JSON_DOMAIN
-            if fmt == 'geojson':
-                if geom == 'RG': # no indication of scale!!!
-                    geom = 'nutsrg_'
-                elif geom == 'BN':
-                    geom = 'nutsbn_'
-            else: # elif fmt == 'topojson':
-                geom = ''
-            fmt = 'json'
-            url = '%s://%s/%s/%s/%spx/%s%s.%s' % (protocol, domain,
-                                                  year, proj, size, geom, level,
-                                                  fmt)  
+            #url = {p: {y: {g: {l: {s: {f: None for f in fmt} 
+            #                        for s in scale}
+            #                    for l in level} 
+            #                for g in geom} 
+            #            for y in year} 
+            #        for p in proj}
+            #for s in scale: 
+            #    for l in level:
+            #        for g in geom:
+            #            for y in year:
+            #                for p in proj:
+            #                    for f in fmt:
+            #                        url[p][y][g][l][s][f] = 
+            url = '%s://%s/%s/%s/%spx/%s%s.%s' %                            \
+                (protocol, domain, year, proj, scale, 
+                 '' if fmt!= 'geojson' else ('nutsrg_' if geom == 'RG' else 'nutsbn_'), 
+                 level, 'json')
         elif unit == 'BULK': # zipped files
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-10m.shp.zip
             domain = settings.GISCO_DISTRIBUTION['download']['domain']
             basename = settings.GISCO_DISTRIBUTION['download']['basename']
-            if fmt == 'shx': 
-                fmt='shp' # blearghhhhhh... no logics in GISCO file naming...
-            url = '%s://%s/%s/%s/%s-%s-%s.%s%s' % (settings.PROTOCOL, 
-                                        self.url_cache, theme, domain,
-                                        basename, year, scale.lower(),
-                                        fmt, zip_ )
+            #url = {y: {s: {f: None for f in fmt} 
+            #            for s in scale}
+            #        for y in year} 
+            #for s in scale: 
+            #    for y in year:
+            #        for f in fmt:
+            #            url[y][s][f] = 
+            url = '%s://%s/%s/%s/%s-%s-%s.%s%s' %                           \
+                (settings.PROTOCOL, self.url_cache, theme, domain,
+                 basename, year, scale.lower(), 'shp' if fmt=='shx' else fmt, zip_ )
         elif unit == 'INFO':
             domain = ''
             fmt = settings.GISCO_NUTSDATASET['fmt']
             basename = settings.GISCO_NUTSDATASET['data']
-            url = '%s://%s/%s/%s.%s' % (settings.PROTOCOL, 
-                                        self.url_cache, theme,
-                                        basename.format(year=year), fmt )
+            #url = {y: {f: None for f in fmt} 
+            #        for y in year} 
+            #for y in year:
+            #    for f in fmt:
+            #        url[y][f] = 
+            url = '%s://%s/%s/%s.%s' %                                      \
+                (settings.PROTOCOL, self.url_cache, theme, basename.format(year=year), fmt)
         elif unit == 'NUTS': # units
             domain = {v:k for k,v in settings.GISCO_FORMATS.items()}[fmt]
             basename = settings.GISCO_DISTRIBUTION['distribution']['basename']
             if not geom in list(settings.GISCO_GEOMETRIES.values()):
                 geom = settings.GISCO_GEOMETRIES[geom]
-            if geom == 'LB': # no indication of scale!!!
-                scale = ''
-            else:
-                scale = '_' + str(scale)
-            if level == 'ALL':
-                level = ''
-            else:
-                level = '_LEVL_' + str(level)
+            # no indication of scale!!!
+            scale = '' if geom == 'LB' else '_' + str(scale)
+            level = '' if level == 'ALL' else '_LEVL_' + str(level)
+            #url = {p: {y: {g: {l: {s: {f: None for f in fmt} 
+            #                        for s in scale}
+            #                    for l in level} 
+            #                for g in geom} 
+            #            for y in year} 
+            #        for p in proj}
+            #for s in scale: 
+            #    for l in level:
+            #        for g in geom:
+            #            for y in year:
+            #                for p in proj:
+            #                    for f in fmt:
+            #                        url[p][y][g][l][s][f] = 
+            url = '%s://%s/%s/%s/%s%s_%s%s_%s_%s%s.%s' %                    \
+                (settings.PROTOCOL, self.url_cache, theme, domain,
+                 basename, unit, geom.upper(), scale.upper(), year, proj, level,
+                 fmt)
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/topojson/NUTS_BN_01M_2016_3035_LEVL_3.json
-            url = '%s://%s/%s/%s/%s%s_%s%s_%s_%s%s.%s' % (settings.PROTOCOL, 
-                                        self.url_cache, theme, domain,
-                                        basename, unit, geom.upper(), scale.upper(), year, proj, level,
-                                        fmt )
         else: # files
-            # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AT-region-01m-3035-2016.geojson
             domain = settings.GISCO_DISTRIBUTION['distribution']['domain']
             basename = settings.GISCO_DISTRIBUTION['distribution']['basename']
             if not geom in list(settings.GISCO_GEOMETRIES.keys()):
@@ -1083,11 +1129,23 @@ class GISCOService(OSMService):
             if fmt != 'geojson':
                 happyWarning('only GEOJSON is supported with single NUTS units distribution - %s argument ignored' % _Decorator.KW_FORMAT.upper())
                 fmt = 'geojson'
-            url = '%s://%s/%s/%s/%s%s-%s-%s-%s-%s.%s' % (settings.PROTOCOL, 
-                                        self.url_cache, theme, domain,
-                                        basename, unit, geom.lower(), scale.lower(), proj, year, 
-                                        fmt )  
-        return url   
+            #url = {p: {y: {g: {s: {f: None for f in fmt} 
+            #                     for s in scale}
+            #                for g in geom} 
+            #            for y in year} 
+            #        for p in proj}
+            #for s in scale: 
+            #    for g in geom:
+            #        for y in year:
+            #            for p in proj:
+            #                for f in fmt:
+            #                    url[p][y][g][s][f] = 
+            url = '%s://%s/%s/%s/%s%s-%s-%s-%s-%s.%s' %                     \
+                (settings.PROTOCOL, self.url_cache, theme, domain,
+                 basename, unit, geom.lower(), scale.lower(), proj, year, 
+                 fmt)
+            # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AT-region-01m-3035-2016.geojson
+        return url if url is None or len(url)>1 else url[0]          
     
     #/************************************************************************/
     def url4lau(self, **kwargs):
@@ -1584,7 +1642,7 @@ class GISCOService(OSMService):
         [fref.update({c or i: file if file is None or not happyType.issequence(file) or len(file)>1 else file[0]}) \
              for i, (c, file) in enumerate(self._resp4country(code, **kwargs))]
         return fref
-        
+            
     #/************************************************************************/
     def _resp4nuts(self, unit, **kwargs):
         """Iterable version of :meth:`~GISCOService.resp4nuts`.
@@ -1596,7 +1654,6 @@ class GISCOService(OSMService):
                 kwargs.update({'unit': n})
             try:
                 url = self.url4nuts(**kwargs)
-                print('in _resp4nuts: url=%s' % url)
                 assert self.get_status(url) is not None
             except:
                 raise happyError('error NUTS API request')
@@ -1614,32 +1671,100 @@ class GISCOService(OSMService):
     @_Decorator.parse_year
     @_Decorator.parse_projection
     @_Decorator.parse_format
+    @_Decorator.parse_level
     @_Decorator.parse_scale
     @_Decorator.parse_geometry
-    def nuts(self, unit=None, **kwargs):
-        """Download, and cache when requested, NUTS vector files from |GISCO| Rest
-        API.
+    def resp4nuts(self, **kwargs):
+        """Download, and cache when requested, responses associated to NUTS vector 
+        files available through |GISCO| Rest API.
         
         ::
             
-            >>> fref  = serv.resp4nuts(unit=None, **kwargs)
+            >>> ref  = serv.resp4nuts(**kwargs)
             
         Returns
         -------
-        fref : dict
+        ref : dict
         """
-        print('in nuts')
+        try:
+            unit = kwargs.pop(_Decorator.KW_UNIT, None)
+            assert unit is None or happyType.isstring(unit)
+        except AssertionError:
+            raise happyError('wrong format/value for %s argument' % _Decorator.KW_UNIT.upper())
+        try:
+            file = kwargs.pop(_Decorator.KW_FILE, None)
+            assert file is None or happyType.isstring(file)
+        except AssertionError:
+            raise happyError('wrong format/value for %s argument' % _Decorator.KW_FILE.upper())
+        try:
+            assert file is None or unit is None
+        except:
+            raise happyError('incompatible parameters %s and %s' % (_Decorator.KW_UNIT.upper(),_Decorator.KW_FILE.upper()))
+        else:
+            unit = unit or file or 'NUTS' # force to 'NUTS' in case both and file are None
+            unit = unit.upper()
+
+        if unit in ('BULK','INFO','NUTS2JSON'):
+            dimensions =  {'INFO':      ['KW_YEAR', 'KW_FORMAT'], 
+                           'BULK':      ['KW_YEAR', 'KW_SCALE', 'KW_FORMAT'],
+                           'NUTS2JSON': ['KW_PROJECTION', 'KW_YEAR', 'KW_LEVEL', 'KW_SCALE', 'KW_FORMAT']
+                           }[unit]
+        else:
+            dimensions = ['KW_PROJECTION', 'KW_YEAR','KW_GEOMETRY', 'KW_LEVEL', 'KW_SCALE', 'KW_FORMAT']
+        dimensions = dict(zip(dimensions,[None]*len(dimensions)))        
+        for attr in dimensions.keys():
+            val = kwargs.pop(getattr(_Decorator,attr), None)
+            if not happyType.issequence(val):      val = [val,]
+            dimensions.update({attr: val})
+        #year, scale, fmt, proj, geom, level =                     \
+        #    [kwargs.pop(getattr(_Decorator,attr))                       \
+        #                for attr in ['KW_YEAR', 'KW_SCALE', 'KW_FORMAT', 'KW_PROJECTION', 'KW_GEOMETRY', 'KW_LEVEL']]
+        #if not happyType.issequence(year):      year = [year,]
+        #if not happyType.issequence(geom):      geom = [geom,]
+        #if not happyType.issequence(level):     level = [level,]
+        #if not happyType.issequence(fmt):       fmt = [fmt,]        
+        #if not happyType.issequence(scale):     scale = [scale,]
+        #if not happyType.issequence(proj):      proj = [proj,]
         # we have to cheat here to support NUTS2JSON package 
-        source = kwargs.get('source') or 'GISCO'
-        if source.upper() == 'NUTS2JSON':
-            fmt = kwargs.pop(_Decorator.KW_FORMAT, settings.DEF_GISCO_FORMAT)
-            if fmt == 'json': fmt = 'topojson'
-            kwargs.update({_Decorator.KW_FORMAT: fmt}) 
-        print(kwargs)
-        fref = {}
-        [fref.update({n or i:data if data is None or not happyType.issequence(data) or len(data)>1 else data[0]}) \
-             for i, (n, data) in enumerate(self._resp4nuts(unit, **kwargs)) ]
-        return fref
+        if kwargs.pop('source','GISCO').upper() == 'NUTS2JSON':
+            if dimensions.get(_Decorator.KW_FORMAT) is not None:
+                dimensions.update({_Decorator.KW_FORMAT: ['topojson' if f=='json' else f        \
+                                                          for f in dimensions.get(_Decorator.KW_FORMAT)]})
+            if dimensions.get(_Decorator.KW_SCALE) is not None:
+                dimensions.update({_Decorator.KW_SCALE: [settings.DEF_NUTS2JSON_MAPSIZE if s not in settings.NUTS2JSON_MAPSIZE else s       \
+                                                          for s in dimensions.get(_Decorator.KW_SCALE)]})
+            if dimensions.get(_Decorator.KW_PROJECTION) is not None:
+                dimensions.update({_Decorator.KW_PROJECTION: [settings.DEF_NUTS2JSON_PROJECTION if p not in settings.NUTS2JSON_PROJECTIONS else p        \
+                                                          for p in dimensions.get(_Decorator.KW_PROJECTION)]})
+            unit = 'NUTS2JSON'
+        ref = {}
+        _ref = [ref]
+        for key in dimensions.keys():
+            [r.update({k: {} for k in dimensions[key]}) for r in _ref]
+            _ref = [r[k] for r in _ref for k in dimensions[key]]
+            
+#        ref = _AttrDict({p: {y: {g: {l: {s: {f: None for f in fmt} 
+#                                for s in scale}
+#                            for l in level} 
+#                        for g in geom} 
+#                    for y in year} 
+#                for p in proj})
+#        _kwargs = {} # {_Decorator.KW_UNIT: unit}
+#        for s in scale if unit != 'INFO' else [None,]: 
+#            for l in level if unit not in ('BULK','INFO') else [None,]:
+#                for g in geom if unit not in ('BULK','INFO','NUTS2JSON') else [None,]:
+#                    for y in year:
+#                        for p in proj if unit not in ('BULK','INFO') else [None,]:
+#                            for f in fmt:
+#                                _kwargs.update({_Decorator.KW_YEAR:         y, 
+#                                                _Decorator.KW_SCALE:        s, 
+#                                                _Decorator.KW_FORMAT:       f, 
+#                                                _Decorator.KW_PROJECTION:   p, 
+#                                                _Decorator.KW_GEOMETRY:     g, 
+#                                                _Decorator.KW_LEVEL:        l})
+#                                for n, data in self._resp4nuts(unit, **_kwargs):
+#                                    ref[p][y][g][l][s][f] = data # if data is None or not happyType.issequence(data) or len(data)>1 else data[0]
+#        return ref
 
     #/************************************************************************/
     def lut_idnuts(self, **kwargs):

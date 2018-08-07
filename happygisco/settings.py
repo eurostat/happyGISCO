@@ -210,6 +210,9 @@ GISCO_NUTSLEVELS    = [0, 1, 2, 3
                        ]
 """Levels of |NUTS| areas.
 """
+DEF_GISCO_NUTSLEVEL = GISCO_NUTSLEVELS[0]
+"""Default |NUTS| level.
+"""
 GISCO_NUTS2ID       = {'data':'NUTS_AT_{year}', 'fmt':'csv'
                        }
 """Name and type of the file storing the correspondance table between NUTS names
@@ -353,6 +356,9 @@ NUTS2JSON_MAPSIZE   = [400, 600, 800, 1000, 1200
                        ]
 """Map dimension (in pixel) adopted for the fetching of |Nuts2json|. Currently, 
 all maps are squared.
+"""
+DEF_NUTS2JSON_MAPSIZE   = 800
+"""Default map dimension (in pixel).
 """
 NUTS2JSON_NUTSLEVELS = GISCO_NUTSLEVELS
 # dumb variable
