@@ -7,3 +7,4 @@ __pycache__
 *.bak
 docs/html
 notebooks/.ipynb_checkpoints
+notebooks/Untitled.ipynb
