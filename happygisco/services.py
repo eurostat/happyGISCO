@@ -1596,6 +1596,7 @@ class GISCOService(OSMService):
                 kwargs.update({'unit': n})
             try:
                 url = self.url4nuts(**kwargs)
+                print('in _resp4nuts: url=%s' % url)
                 assert self.get_status(url) is not None
             except:
                 raise happyError('error NUTS API request')

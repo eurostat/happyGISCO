@@ -906,7 +906,7 @@ class _Decorator(object):
         """
         def __init__(self, func, obj=None, cls=None, method_type='function',
                      **kwargs):
-            print('in __init__, kwargs=%s' % kwargs)
+            print('in __init__ of %s, kwargs=%s' % (func,kwargs))
             self.func, self.obj, self.cls, self.method_type = func, obj, cls, method_type
             setattr(self, '__doc__', object.__getattribute__(func, '__doc__'))
             # ...
@@ -966,11 +966,34 @@ class _Decorator(object):
         #def __call__(self, *args, **kwargs):
         #    return self.func(*args, **kwargs)
         def __call__(self, *args, **kwargs):  
-            print('calling...')
+            print('calling %s...' % self.func)
             print('kwargs = %s' % kwargs)
-            print('func = %s' % self.func)
-            print('_key = %s' % self._key)
-            print('_values = %s' % self._values)
+            _key = kwargs.pop('_key_',None)
+            try:    
+                assert _key is None or isinstance(_key,str)  
+            except: 
+                raise happyError('wrong type for KEY argument')         
+            _parse_cls = kwargs.pop('_parse_cls_',None)
+            if _parse_cls is not None and not happyType.issequence(_parse_cls):
+                _parse_cls = [_parse_cls,]
+            try:
+                assert _parse_cls is None or (happyType.issequence(_parse_cls)    \
+                    and all([isinstance(c,type) for c in _parse_cls]))
+            except:
+                raise happyError('wrong type for PARSE_CLS argument')   
+            if '_values_' in kwargs:
+                _values = kwargs.pop('_values_')
+                if _values is not None and not happyType.ismapping(_values):
+                    _values = {v:v for v in _values}
+                try:
+                    assert _values is None or happyType.ismapping(_values)
+                except:
+                    raise happyError('wrong type for VALUES argument')  
+                else:
+                    self._values = _values
+            if '_key_default_' in kwargs:
+                self._key_default = kwargs.pop('_key_default_')
+            self._key, self._parse_cls = _key, _parse_cls
             if self._key is not None:     
                 try:
                     assert self._key_default
@@ -2102,7 +2125,7 @@ class _Decorator(object):
             >>> decorator(func)(dummy_key='b')
                 2
         """
-        class parse_class(_Decorator.__base):
+        class parse_class(_Decorator.base):
             def __init__(self, *args, **kwargs):
                 kwargs.update({'_parse_cls_': parse_cls, '_key_': key})
                 if '_values_' in _kwargs:
@@ -2113,7 +2136,7 @@ class _Decorator(object):
         return parse_class
 
     #/************************************************************************/
-    class parse_year(_Decorator_base):
+    class parse_year(__base):
         """Class decorator of functions and methods used to parse a reference 
         year for NUTS regulation.
         
@@ -2158,16 +2181,16 @@ class _Decorator(object):
         :meth:`~geoDecorators.parse_format`, :meth:`~geoDecorators.parse_geometry`,
         :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_level`.
         """
-        #def __call__(self, *args, **kwargs):
-        #    kwargs.update({'_parse_cls_':   int, 
-        #                   '_key_':         _Decorator.KW_YEAR, 
-        #                   '_values_':      settings.GISCO_YEARS,
-        #                   '_key_default_': settings.DEF_GISCO_YEAR})
-        #    super(_Decorator.parse_year, self).__call_(*args, **kwargs)
-        pass
+        def __init__(self, *args, **kwargs):
+            kwargs.update({'_parse_cls_':   int, 
+                           '_key_':         _Decorator.KW_YEAR, 
+                           '_values_':      settings.GISCO_YEARS,
+                           '_key_default_': settings.DEF_GISCO_YEAR})
+            super(_Decorator.parse_year, self).__init__(*args, **kwargs)
+        #pass
 
     #/************************************************************************/
-    class parse_projection(_Decorator_base):
+    class parse_projection(__base):
         """Class decorator of functions and methods used to parse a projection
         reference system.
         
@@ -2229,16 +2252,16 @@ class _Decorator(object):
         :meth:`~geoDecorators.parse_format`, :meth:`~geoDecorators.parse_level`.
         """
         ## PROJECTION      = dict(happyType.seqflatten([[(k,v), (v,v)] for k,v in settings.GISCO_PROJECTIONS.items()]))
-        #def __init__(self, *args, **kwargs):
-        #    kwargs.update({'_parse_cls_':   [int,str], 
-        #                   '_key_':         _Decorator.KW_PROJECTION, 
-        #                   '_values_':      settings.GISCO_PROJECTIONS,
-        #                   '_key_default_': settings.DEF_GISCO_PROJECTION})
-        #    super(_Decorator.parse_projection,self).__init__(*args, **kwargs)
-        pass
+        def __init__(self, *args, **kwargs):
+            kwargs.update({'_parse_cls_':   [int,str], 
+                           '_key_':         _Decorator.KW_PROJECTION, 
+                           '_values_':      settings.GISCO_PROJECTIONS,
+                           '_key_default_': settings.DEF_GISCO_PROJECTION})
+            super(_Decorator.parse_projection,self).__init__(*args, **kwargs)
+        #pass
        
     #/************************************************************************/
-    class parse_format(_Decorator_base):
+    class parse_format(__base):
         """Class decorator of functions and methods used to parse a vector format.
         
         ::
@@ -2308,7 +2331,7 @@ class _Decorator(object):
             return self.func(*args, **kwargs)
        
     #/************************************************************************/
-    class parse_geometry(_Decorator_base):
+    class parse_geometry(__base):
         """Class decorator of functions and methods used to parse a spatial typology, 
         as defined by |GISCO|.
         
@@ -2359,16 +2382,16 @@ class _Decorator(object):
         :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_format`,
         :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_level`.
         """
-        #def __init__(self, *args, **kwargs):
-        #    kwargs.update({'_parse_cls_':   str, 
-        #                   '_key_':         _Decorator.KW_GEOMETRY, 
-        #                   '_values_':      settings.GISCO_GEOMETRIES,
-        #                   '_key_default_': settings.DEF_GISCO_GEOMETRY})
-        #    super(_Decorator.parse_geometry,self).__init__(*args, **kwargs)
-        pass
+        def __init__(self, *args, **kwargs):
+            kwargs.update({'_parse_cls_':   str, 
+                           '_key_':         _Decorator.KW_GEOMETRY, 
+                           '_values_':      settings.GISCO_GEOMETRIES,
+                           '_key_default_': settings.DEF_GISCO_GEOMETRY})
+            super(_Decorator.parse_geometry,self).__init__(*args, **kwargs)
+        #pass
    
     #/************************************************************************/
-    class parse_scale(_Decorator_base):
+    class parse_scale(__base):
         """Class decorator of functions and methods used to parse a scale resolution 
         unit, as defined by |GISCO|.
         
@@ -2417,16 +2440,16 @@ class _Decorator(object):
         :meth:`~geoDecorators.parse_level`, :meth:`~geoDecorators.parse_format`,
         :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_geometry`.
         """
-        #def __init__(self, *args, **kwargs):
-        #    kwargs.update({'_parse_cls_':   [int,str], 
-        #                   '_key_':         _Decorator.KW_SCALE, 
-        #                   '_values_':      settings.GISCO_SCALES,
-        #                   '_key_default_': settings.DEF_GISCO_SCALE})
-        #    super(_Decorator.parse_scale,self).__init__(*args, **kwargs)
-        pass
+        def __init__(self, *args, **kwargs):
+            kwargs.update({'_parse_cls_':   [int,str], 
+                           '_key_':         _Decorator.KW_SCALE, 
+                           '_values_':      settings.GISCO_SCALES,
+                           '_key_default_': settings.DEF_GISCO_SCALE})
+            super(_Decorator.parse_scale,self).__init__(*args, **kwargs)
+        #pass
     
     #/************************************************************************/
-    class parse_level(_Decorator_base):
+    class parse_level(__base):
         """Class decorator of functions and methods used to parse a level for |NUTS| 
         units.
         
@@ -2477,31 +2500,31 @@ class _Decorator(object):
         :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_format`,
         :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_geometry`.
         """
-        #def __init__(self, *args, **kwargs):
-        #    kwargs.update({'_parse_cls_':   [int, list], # list of levels 
-        #                   '_key_':         _Decorator.KW_LEVEL, 
-        #                   '_values_':      settings.GISCO_NUTSLEVELS,
-        #                   '_key_default_': settings.GISCO_NUTSLEVELS[0]})
-        #    super(_Decorator.parse_level,self).__init__(*args, **kwargs)
-        pass
+        def __init__(self, *args, **kwargs):
+            kwargs.update({'_parse_cls_':   [int, list], # list of levels 
+                           '_key_':         _Decorator.KW_LEVEL, 
+                           '_values_':      settings.GISCO_NUTSLEVELS,
+                           '_key_default_': settings.GISCO_NUTSLEVELS[0]})
+            super(_Decorator.parse_level,self).__init__(*args, **kwargs)
+        #pass
         
-_Decorator.parse_year =                         \
-    _Decorator._parse_class(int, _Decorator.KW_YEAR, 
-                            _values_=settings.GISCO_YEARS, _key_default_= settings.DEF_GISCO_YEAR)
-_Decorator.parse_projection =                   \
-    _Decorator._parse_class([int,str], _Decorator.KW_PROJECTION, 
-                            _values_=settings.GISCO_PROJECTIONS, _key_default_=settings.DEF_GISCO_PROJECTION)
+#_Decorator.parse_year =                         \
+#    _Decorator._parse_class(int, _Decorator.KW_YEAR, 
+#                            _values_=settings.GISCO_YEARS, _key_default_= settings.DEF_GISCO_YEAR)
+#_Decorator.parse_projection =                   \
+#    _Decorator._parse_class([int,str], _Decorator.KW_PROJECTION, 
+#                            _values_=settings.GISCO_PROJECTIONS, _key_default_=settings.DEF_GISCO_PROJECTION)
 #_Decorator.parse_format =                       \
 #    _Decorator._parse_class(str, _Decorator.KW_FORMAT, _values_=settings.GISCO_FORMATS)
-_Decorator.parse_geometry =                      \
-    _Decorator._parse_class(str, _Decorator.KW_GEOMETRY, 
-                            _values_=settings.GISCO_GEOMETRIES, _key_default_=settings.DEF_GISCO_GEOMETRY)
-_Decorator.parse_scale =                        \
-    _Decorator._parse_class([int,str], _Decorator.KW_SCALE, 
-                            _values_=settings.GISCO_SCALES, _key_default_=settings.DEF_GISCO_SCALE)
-_Decorator.parse_level =                        \
-    _Decorator._parse_class([int, list], _Decorator.KW_LEVEL, 
-                            _values_=settings.GISCO_NUTSLEVELS, _key_default_=settings.GISCO_NUTSLEVELS[0])
+#_Decorator.parse_geometry =                      \
+#    _Decorator._parse_class(str, _Decorator.KW_GEOMETRY, 
+#                            _values_=settings.GISCO_GEOMETRIES, _key_default_=settings.DEF_GISCO_GEOMETRY)
+#_Decorator.parse_scale =                        \
+#    _Decorator._parse_class([int,str], _Decorator.KW_SCALE, 
+#                            _values_=settings.GISCO_SCALES, _key_default_=settings.DEF_GISCO_SCALE)
+#_Decorator.parse_level =                        \
+#    _Decorator._parse_class([int, list], _Decorator.KW_LEVEL, 
+#                            _values_=settings.GISCO_NUTSLEVELS, _key_default_=settings.GISCO_NUTSLEVELS[0])
 #_Decorator.parse_layer =                        \
 #    _Decorator._parse_class(ogr.Layer, _Decorator.KW_LAYER)
 #_Decorator.parse_vector =                        \
