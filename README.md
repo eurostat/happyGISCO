@@ -62,7 +62,7 @@ It is pretty straigthforward to create an instance of a service, for example `GI
 and run the supported methods:
 
 ```python
->>> place =  "Lampedusa, Italia"
+>>> place = "Lampedusa, Italia"
 >>> coord = service.place2coord(place, unique=True)
 >>> print(coord)
 [35.511134150000004, 12.59629135962961]
