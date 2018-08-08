@@ -512,7 +512,8 @@ class _Service(object):
                         response = self.session.get(url)    
             except:
                 raise happyError('wrong request formulation') 
-        else:   
+        else: 
+            pathname = ''
             try:
                 if CACHECONTROL_INSTALLED is True:
                     response = self.session.get(url)                
@@ -527,7 +528,7 @@ class _Service(object):
             except:
                 raise happyError('wrong request formulated')  
             else:
-                response = _CachedResponse(response, pathname)
+                response = _CachedResponse(response, pathname or url)
         try:
             assert response is not None
             response.raise_for_status()
@@ -742,114 +743,6 @@ class _Feature(object):
 #==============================================================================
 # CLASS _Decorator
 #==============================================================================
-
-#/************************************************************************/
-class _Decorator_base(object):
-    """Base parsing class for geographic entities. All decorators in 
-    :class:`_Decorator` will inherit from this class.
-    """
-    def __init__(self, func, obj=None, cls=None, method_type='function',
-                 **kwargs):
-        print('in __init__, kwargs=%s' % kwargs)
-        self.func, self.obj, self.cls, self.method_type = func, obj, cls, method_type
-        setattr(self, '__doc__', object.__getattribute__(func, '__doc__'))
-        # ...
-        self._key = kwargs.pop('_key_',None)
-        try:    
-            assert self._key is None or isinstance(self._key,str)  
-        except: 
-            raise happyError('wrong type for KEY argument')         
-        self._parse_cls = kwargs.pop('_parse_cls_',None)
-        if self._parse_cls is not None and not happyType.issequence(self._parse_cls):
-            self._parse_cls = [self._parse_cls,]
-        try:
-            assert self._parse_cls is None or (happyType.issequence(self._parse_cls)    \
-                and all([isinstance(c,type) for c in self._parse_cls]))
-        except:
-            raise happyError('wrong type for PARSE_CLS argument')   
-        if '_values_' in kwargs:
-            self._values = kwargs.pop('_values_')
-            if self._values is not None and not happyType.ismapping(self._values):
-                self._values = {v:v for v in self._values}
-            try:
-                assert self._values is None or happyType.ismapping(self._values)
-            except:
-                raise happyError('wrong type for VALUES argument')         
-        if '_key_default_' in kwargs:
-            self._key_default = kwargs.pop('_key_default_')
-    #def __get__(self, obj, objtype):
-    #    # support instance methods
-    #    return functools.partial(self.__call__, obj)
-    def __get__(self, obj=None, cls=None):
-        if self.obj == obj and self.cls == cls:
-            return self 
-        if self.method_type=='property':
-            return self.func.__get__(obj, cls)
-        method_type = ( # note that we added 'property'
-            'staticmethod' if isinstance(self.func, staticmethod) else
-            'classmethod' if isinstance(self.func, classmethod) else
-            'property' if isinstance(self.func, property) else 
-            'instancemethod'
-            )
-        return object.__getattribute__(self, '__class__')( 
-            self.func.__get__(obj, cls), obj, cls, method_type) 
-    def __getattribute__(self, attr_name): 
-        # this is the only way found so far to have both the generation of the 
-        # documentation for methods and the retrieval of classes' attributes 
-        # working together
-        if attr_name in ('__init__', '__get__', '__getattribute__', '__call__', '__doc__', 
-                         'func', 'obj', 'cls', 'method_type'): 
-            return object.__getattribute__(self, attr_name)
-        try:
-            return getattr(self.func, attr_name)
-        except:
-            try:
-                return object.__getattribute__(self, attr_name)
-            except:
-                pass
-    #def __call__(self, *args, **kwargs):
-    #    return self.func(*args, **kwargs)
-    def __call__(self, *args, **kwargs):  
-        print('calling...')
-        print('kwargs = %s' % kwargs)
-        print('func = %s' % self.func)
-        print('_key = %s' % self._key)
-        print('_values = %s' % self._values)
-        if self._key is not None:     
-            try:
-                assert self._key_default
-            except:
-                value = kwargs.pop(self._key, None)
-            else:
-                value = kwargs.pop(self._key, self._key_default)
-            try:
-                assert value is None or self._parse_cls is None or \
-                    any([isinstance(value,c) for c in self._parse_cls])
-            except:
-                raise happyError('wrong format for %s argument' % self._key.upper())
-            else:
-                if value is None:
-                    return self.func(*args, **kwargs)
-            print('value = %s' % value)
-            if self._values is not None:
-                try:
-                    # could check: list,tuple in self._parse_cls
-                    _all_values = happyType.seqflatten(self._values.items())
-                    print('_all_values = %s' % _all_values)
-                    assert (happyType.issequence(value) and set(value).difference(set(_all_values))==set())   \
-                        or value in _all_values
-                except:
-                    raise happyError('wrong value for %s argument - %s not supported' % (self._key.upper(), value))
-                else:
-                    if happyType.issequence(value):
-                        value = [self._values[v] if v in self._values.keys() else v for v in value]
-                    elif value in self._values.keys():
-                        value = self._values[value]
-            kwargs.update({self._key: value}) 
-        return self.func(*args, **kwargs)
-def __repr__(self):
-        return self.func.__repr__()
-
     
 class _Decorator(object):
     """Class implementing dummy decorators of methods and functions used to parse 
@@ -893,7 +786,8 @@ class _Decorator(object):
 
     KW_DATA         = 'data'
     KW_VALUES       = 'values'
-
+    KW_SOURCE       = 'source'
+    
     KW_NAME         = 'name'
     KW_ID           = 'id'
     KW_TILE         = 'tile'
