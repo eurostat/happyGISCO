@@ -787,6 +787,7 @@ class _Decorator(object):
     KW_DATA         = 'data'
     KW_VALUES       = 'values'
     KW_SOURCE       = 'source'
+    KW_CODE         = 'code'
     
     KW_NAME         = 'name'
     KW_ID           = 'id'
