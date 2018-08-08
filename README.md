@@ -5,7 +5,10 @@ happygisco
 Simple geoservice interface (API) on top of _Eurostat_ _GISCO_ web-services.
 ---
 
-The project `happyGISCO` (pronounce as if you were French) provides with the implementation of a `Python` interface to [_GISCO_](http://ec.europa.eu/eurostat/web/gisco) web-services. The module `happygisco` will enable you to run some of the basic geographical operations supported by _GISCO_, *e.g.* geocoding, routing and NUTS identification. 
+ The project `happyGISCO` (pronounce as if you were French) provides with the implementation of a `Python` interface to [_GISCO_](http://ec.europa.eu/eurostat/web/gisco) web-services. The module `happygisco` will enable you to:
+ 
+ * run some of the basic geographical operations supported by _GISCO_, *e.g.* geocoding, routing and NUTS identification,
+ * retrieve most of the datasets (*e.g.*, vector layers of countries, NUTS, ...) made available through _GISCO_ Rest API.
 
 <table align="center">
     <tr> <td align="left"><i>documentation</i></td> <td align="left">available at: http://happygisco.readthedocs.io</td> </tr> 
@@ -59,7 +62,7 @@ It is pretty straigthforward to create an instance of a service, for example `GI
 and run the supported methods:
 
 ```python
->>> place =  ''Lampedusa, Italia"
+>>> place =  "Lampedusa, Italia"
 >>> coord = service.place2coord(place, unique=True)
 >>> print(coord)
 [35.511134150000004, 12.59629135962961]
