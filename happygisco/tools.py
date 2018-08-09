@@ -2022,8 +2022,8 @@ class GDALTransform(_Tool):
             
             >>> layer = tool.file2layer(fname)
             
-        Argument
-        --------
+        Arguments
+        ---------
         fname : str
             name of the input file; should be supported by the predefined driver.
             
@@ -2081,8 +2081,8 @@ class GDALTransform(_Tool):
             
             >>> vector = tool.layer2feat(layer)
             
-        Argument
-        --------
+        Arguments
+        ---------
         layer : :class:`osgeo.ogr.Layer`,list[:class:`osgeo.ogr.Layer`]
             input ingle (or multiple) vector layer(s).
             
@@ -2143,8 +2143,8 @@ class GDALTransform(_Tool):
             
             >>> vector = tool.file2feat(fname)
             
-        Argument
-        --------
+        Arguments
+        ---------
         fname : str
             name of the input file; should be supported by the predefined driver.
             
@@ -2189,8 +2189,8 @@ class GDALTransform(_Tool):
         
             >>> geom = tool.coord2geom(coord, **kwargs)
             
-        Argument
-        --------
+        Arguments
+        ---------
         coord : float, list[float]
             geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographic
             coordinates.
@@ -2364,8 +2364,8 @@ class GDALTransform(_Tool):
         
             >>> feat = tool.coord2feat(coord, **kwargs)
             
-        Argument
-        --------
+        Arguments
+        ---------
         coord : float, list[float]
             geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographic
             coordinates.

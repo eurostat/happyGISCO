@@ -583,6 +583,7 @@ class _Service(object):
         the output URL in your browser to check the output):
         
         ::
+            
             >>> from happygisco.base import _Service
             >>> _Service.build_url(settings.ESTAT_URL,
                                    path='wdds/rest/data/v2.1/json/en',
@@ -1393,7 +1394,7 @@ class _Decorator(object):
             >>> new_func(area=area, filter='coord', unique=True, order='Ll')
                 [[13.3888599, 52.5170365]]
             
-        One can also simlarly retrieve the name of the places:
+        One can also similarly retrieve the name of the places:
         
         ::
 
