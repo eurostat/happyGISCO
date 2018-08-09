@@ -396,9 +396,8 @@ class Location(_Feature):
         
         See also
         --------
-        :meth:`base._Service.place2coord`, :meth:`services.OSMService.place2coord`, 
-        :meth:`services.GISCOService.place2coord`, :meth:`services.APIService.place2coord`, 
-        :meth:`~Location.reverse`.
+        :meth:`services.OSMService.place2coord`, :meth:`services.GISCOService.place2coord`, 
+        :meth:`services.APIService.place2coord`, :meth:`~Location.reverse`.
         """
         try:
             assert self.__place not in ('',[''],None)
@@ -457,9 +456,8 @@ class Location(_Feature):
         
         See also
         --------
-        :meth:`base._Service.coord2place`, :meth:`services.OSMService.coord2place`, 
-        :meth:`services.GISCOService.coord2place`, :meth:`services.APIService.coord2place`, 
-        :meth:`~Location.geocode`.
+        :meth:`services.OSMService.coord2place`, :meth:`services.GISCOService.coord2place`, 
+        :meth:`services.APIService.coord2place`, :meth:`~Location.geocode`.
         """
         # geocode may return no results if it is passed a  
         # non-existent address or a lat/lng in a remote location
