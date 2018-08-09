@@ -4,9 +4,9 @@
 .. automodule:: tools
     :members:
     :inherited-members:
-    :exclude-members: GeoLocation, GeoDistance, GeoAngle, GeoCoordinate, GDALTool
+    :exclude-members: GeoLocation, GeoDistance, GeoAngle, GeoCoordinate, GDALTransform
 
-.. autoclass:: tools.GDALTool
+.. autoclass:: tools.GDALTransform
     :members:
     :show-inheritance:
 
