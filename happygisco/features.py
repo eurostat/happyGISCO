@@ -141,10 +141,7 @@ try:
                 raise happyError('coordinates parameter not set')
         return lat if lat is None or len(lat)>1 else lat[0]
     _Feature.lat = property(__lat) 
-    _Feature.lat.__doc__ =                                                      \
-        """Latitude property (:data:`getter`) of a :class:`_Feature` instance. 
-        A `lat` type is (a list of) :class:`float`\ .
-        """
+
     def __Lon(inst):
         try:
             Lon = inst.coord[1]
@@ -155,10 +152,6 @@ try:
                 raise happyError('coordinates parameter not set')
         return Lon if Lon is None or len(Lon)>1 else Lon[0]
     _Feature.Lon = property(__Lon) 
-    _Feature.Lon.__doc__ =                                                      \
-        """Longitude property (:data:`getter`) of a :class:`_Feature` instance. 
-        A `Lon` type is (a list of) :class:`float`\ .
-        """
         
     def __coordinates(inst):  
         try:            
@@ -166,10 +159,6 @@ try:
         except:
             return [inst.lat, inst.Lon]
     _Feature.coordinates = property(__coordinates) 
-    _Feature.coordinates.__doc__ =                                              \
-        """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) of 
-        a :class:`_Feature` instance.
-        """ 
     
     def __service(inst, service):
         if not (service is None or isinstance(service,(services.GISCOService,services.APIService,services.OSMService))):

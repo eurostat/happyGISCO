@@ -739,7 +739,32 @@ class _Feature(object):
     @coord.setter
     def coord(self, coord):
         self.__coord = coord
+        
+        
+    #/************************************************************************/
+    @property
+    def coordinates(self):                                              
+        """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) of 
+        a :class:`_Feature` instance.
+        """ 
+        pass
+        
+    #/************************************************************************/
+    @property
+    def Lon(self):                                                       
+        """Longitude property (:data:`getter`) of a :class:`_Feature` instance. 
+        A `Lon` type is (a list of) :class:`float`.
+        """
+        pass
 
+    #/************************************************************************/
+    @property
+    def lat(self): 
+        """Latitude property (:data:`getter`) of a :class:`_Feature` instance. 
+        A `lat` type is (a list of) :class:`float`\ .
+        """
+        pass
+    
 #%%
 #==============================================================================
 # CLASS _Decorator
