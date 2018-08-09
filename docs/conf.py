@@ -92,7 +92,7 @@ sys.path.insert(0, os.path.join(DIRHAPPYGISCO,package))
 # further integration with ReadTheDocs
 # https://media.readthedocs.org/pdf/docs-python2readthedocs/master/docs-python2readthedocs.pdf
 try:
-    assert False and IS_READTHEDOCS # bug in ReadTheDocs?
+    assert True and IS_READTHEDOCS # bug in ReadTheDocs?
     import mock
 except AssertionError:
     pass
@@ -101,6 +101,11 @@ except ImportError:
     pass
 else:
     MOCK_MODULES = [package, ] + [package + '.' + m for m in HAPPYMODULES]
+    MOCK_MODULES += ['requests', 'requests_cache', 'cachecontrol', 'datetime', 'fasteners', # base
+                     'multiprocessing', 'osgeo', 'ipyleaflet', 'folium', # tools
+                     'googlemaps', 'googleplaces', 'geopy', 'pandas', 'Levenshtein', 'simplejson', # services
+                     # features
+                     ]
     for m in MOCK_MODULES:  sys.modules[m] = mock.Mock()
 
 # spoiler: we cheat here!!! we load the package so that automodule actually works

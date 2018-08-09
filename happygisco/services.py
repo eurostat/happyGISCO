@@ -69,7 +69,7 @@ import os, io, sys#analysis:ignore
 import collections
 import functools, itertools#analysis:ignore
 import zipfile
-import chardet
+import chardet#analysis:ignore
 
 # local imports
 from happygisco import settings
@@ -185,8 +185,7 @@ class OSMService(_Service):
     @property
     def domain(self):
         """Domain property (:data:`getter`/:data:`setter`) defining the complete
-        URL of |OpenStreetMap|, *e.g.* :data:`settings.OSM_URL`, of an instance 
-        of this class. 
+        URL of |OSM|, *e.g.* :data:`settings.OSM_URL`, of an instance of this class. 
         """ # A domain type is :class:`str`.
         return self.__domain
     @domain.setter#analysis:ignore

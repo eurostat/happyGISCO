@@ -84,89 +84,85 @@ else:
 #==============================================================================
 # ENLARGE YOUR _Feature
 #==============================================================================
-        
-try:
-    
-    #/****************************************************************************/
-    # let us complement the definition of _Feature
-    def __init(inst, *args, **kwargs):
-        # kwargs.pop(_Decorator.KW_PLACE); kwargs.pop(_Decorator.KW_COORD)
-        try:
-            assert GDAL_TOOL
-        except:
-            happyWarning('GDAL transform utilities not available')
-        else:
-            inst.transform = tools.GDALTransform()
-        try:
-            assert LEAFLET_TOOL
-        except:
-            happyWarning('folium mapping services not available')
-        else:
-            inst.mapping = tools.LeafMap()
-        try:
-            assert API_SERVICE or GISCO_SERVICE
-        except:
-            happyWarning('external API and GISCO services not available')
-        else:
-            service = kwargs.pop('serv', settings.CODER_GISCO)
-            if service is None: # whatever works
+            
+#/****************************************************************************/
+# let us complement the definition of _Feature
+def __init(inst, *args, **kwargs):
+    # kwargs.pop(_Decorator.KW_PLACE); kwargs.pop(_Decorator.KW_COORD)
+    try:
+        assert GDAL_TOOL
+    except:
+        happyWarning('GDAL transform utilities not available')
+    else:
+        inst.transform = tools.GDALTransform()
+    try:
+        assert LEAFLET_TOOL
+    except:
+        happyWarning('folium mapping services not available')
+    else:
+        inst.mapping = tools.LeafMap()
+    try:
+        assert API_SERVICE or GISCO_SERVICE
+    except:
+        happyWarning('external API and GISCO services not available')
+    else:
+        service = kwargs.pop('serv', settings.CODER_GISCO)
+        if service is None: # whatever works
+            try:
+                assert GISCO_SERVICE is True
+                inst.service = services.GISCOService(coder=service)
+            except:
                 try:
-                    assert GISCO_SERVICE is True
-                    inst.service = services.GISCOService(coder=service)
-                except:
-                    try:
-                        assert API_SERVICE is True
-                        inst.service = services.APIService(coder=service)
-                    except:
-                        raise IOError('no service available')
-            elif isinstance(service,str):
-                if service in services.GISCOService.CODER:
-                    inst.service = services.GISCOService(coder=service)
-                elif service in services.APIService.CODER:
+                    assert API_SERVICE is True
                     inst.service = services.APIService(coder=service)
-                else:
-                    raise IOError('service %s not available' % service)
-            if not isinstance(inst.service,(services.GISCOService,services.APIService)):
-                raise IOError('service %s not supported' % service)
-    _Feature.__init__ = classmethod(__init)
-    
-    #/****************************************************************************/
-    def __lat(inst):
-        try:
-            lat = inst.coord[0]
-        except:
-            try:
-                lat = inst.coord.get(_Decorator.KW_LAT)
-            except:  # AttributeError
-                raise happyError('coordinates parameter not set')
-        return lat if lat is None or len(lat)>1 else lat[0]
-    _Feature.lat = property(__lat) 
+                except:
+                    raise IOError('no service available')
+        elif isinstance(service,str):
+            if service in services.GISCOService.CODER:
+                inst.service = services.GISCOService(coder=service)
+            elif service in services.APIService.CODER:
+                inst.service = services.APIService(coder=service)
+            else:
+                raise IOError('service %s not available' % service)
+        if not isinstance(inst.service,(services.GISCOService,services.APIService)):
+            raise IOError('service %s not supported' % service)
+_Feature.__init__ = classmethod(__init)
 
-    def __Lon(inst):
+#/****************************************************************************/
+def __lat(inst):
+    try:
+        lat = inst.coord[0]
+    except:
         try:
-            Lon = inst.coord[1]
-        except:
-            try:
-                Lon = inst.coord.get(_Decorator.KW_LON)
-            except:  # AttributeError
-                raise happyError('coordinates parameter not set')
-        return Lon if Lon is None or len(Lon)>1 else Lon[0]
-    _Feature.Lon = property(__Lon) 
-        
-    def __coordinates(inst):  
-        try:            
-            return [_ for _ in zip(inst.lat, inst.Lon)]
-        except:
-            return [inst.lat, inst.Lon]
-    _Feature.coordinates = property(__coordinates) 
+            lat = inst.coord.get(_Decorator.KW_LAT)
+        except:  # AttributeError
+            raise happyError('coordinates parameter not set')
+    return lat if lat is None or len(lat)>1 else lat[0]
+_Feature.lat = property(__lat) 
+
+def __Lon(inst):
+    try:
+        Lon = inst.coord[1]
+    except:
+        try:
+            Lon = inst.coord.get(_Decorator.KW_LON)
+        except:  # AttributeError
+            raise happyError('coordinates parameter not set')
+    return Lon if Lon is None or len(Lon)>1 else Lon[0]
+_Feature.Lon = property(__Lon) 
     
-    def __service(inst, service):
-        if not (service is None or isinstance(service,(services.GISCOService,services.APIService,services.OSMService))):
-            raise happyError('wrong type for SERVICE property')
-        inst._service = service
-    _Feature.service = _Feature.service.setter(__service)
-except:
-    pass
+def __coordinates(inst):  
+    try:            
+        return [_ for _ in zip(inst.lat, inst.Lon)]
+    except:
+        return [inst.lat, inst.Lon]
+_Feature.coordinates = property(__coordinates) 
+
+def __service(inst, service):
+    if not (service is None or isinstance(service,(services.GISCOService,services.APIService,services.OSMService))):
+        raise happyError('wrong type for SERVICE property')
+    inst._service = service
+_Feature.service = _Feature.service.setter(__service)
         
 #%%
 #==============================================================================
