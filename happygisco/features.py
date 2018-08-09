@@ -4,7 +4,6 @@
 """
 .. _mod_features
 
-
 .. Links
 
 .. _Eurostat: http://ec.europa.eu/eurostat/web/main
@@ -193,7 +192,7 @@ class Location(_Feature):
     Arguments
     ---------
     place : str, tuple[str]
-        a string defining a location name, _e.g._ of the form :literal:`locality, country`,
+        a string defining a location name, *e.g.* of the form :literal:`locality, country`,
         for instance :literal:`Paris, France`; possibly left empty, so as to consider the 
         keyword argument :data:`place` in :data:`kwargs`, otherwise ignored.
     coord : float, tuple[float]
@@ -205,7 +204,7 @@ class Location(_Feature):
     -----------------
     radius : float
         accuracy radius around the geolocation :data:`coord` (or :data:`place`); 
-        default: :data:`radius` is set to 0.001km, _i.e._ 1m.
+        default: :data:`radius` is set to 0.001km, *i.e.* 1m.
     """
 
     #/************************************************************************/
@@ -777,9 +776,9 @@ class NUTS(_Feature):
         
     * bulk download: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/
     * list of datasets: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/datasets.json
-    NUTS units:
-    * `units 2016 http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2016-units.html
+    * `units 2016 <http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2016-units.html>`_
     listed in the `json file <http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2016-units.json>`_
+    
     """
             
     #/************************************************************************/

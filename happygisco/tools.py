@@ -2452,7 +2452,7 @@ class GDALTransform(_Tool):
 
 class LeafMap(_Tool):
     """Class overidding the :class:`ipyleaflet.Map` of :mod:`ipyleaflet` so as to
-    support |GISCO| background tiling services. When :mod:`ipyleaflet` is not
+    support various background tiling services. When :mod:`ipyleaflet` is not
     available, the class :class:`folium.Map` of :mod:`folium` is used instead.
     
     Notes
@@ -2471,7 +2471,7 @@ class LeafMap(_Tool):
     * :mod:`ipyleaflet` `resources <https://github.com/jupyter-widgets/ipyleaflet>`_ 
       and `documentation <https://ipyleaflet.readthedocs.io/en/latest/index.html>`_.
     * :mod:`folium` `resources <https://github.com/python-visualization/folium>`_
-      and `documentation <http://folium.readthedocs.io/en/latest/>_.
+      and `documentation <http://folium.readthedocs.io/en/latest/>`_.
     """       
 
     #/************************************************************************/
