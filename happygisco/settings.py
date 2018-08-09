@@ -187,24 +187,46 @@ GISCO_NUTSURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_NUTSDOMAIN)
 GISCO_NUTSTHEME     = 'nuts'
 """NUTS theme used for URL naming.
 """
-GISCO_NUTSDATASET   = {'data':'nuts-{year}-units', 'fmt':'json'} 
-"""Name and type of the file storing all unit datasets.
-"""
 GISCO_CTRYDOMAIN    = 'countries'
 """Subdomain of countries.
 """
 GISCO_CTRYURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_CTRYDOMAIN) 
 """Complete URL of countries download/distribution services.
 """
-GISCO_CTRYDATASET   = {'data':'countries-{year}-units', 'fmt':'json'
+GISCO_PATTERNS      = {'bulk': 
+                            {'domain':      'download', 
+                             'base':        'ref-nuts-',
+                             'compress':    'zip'
+                             },
+                       'distribution': 
+                            {'domain':      'distribution', 
+                             'base':        ''
+                             },                             
+                       'country':
+                            {'domain':      'distribution', 
+                             'base':        'CNTR_',
+                             'info':        'countries-{year}-units', 
+                             'fmt':         'json'
+                             },
+                       'nuts':
+                            {'domain':      'distribution', 
+                             'base':        'NUTS_',
+                             'info':        'nuts-{year}-units', 
+                             'fmt':         'json'
+                             },
+                        'nutsid':
+                            {'base':        'NUTS_AT_{year}',
+                             'fmt':         'csv'
+                             }
                        }
-"""Name and type of the file storing all country datasets.
-"""
-GISCO_DISTRIBUTION  = {'download': {'domain':'download', 'basename':'ref-nuts'},
-                       'distribution': {'domain':'distribution', 'basename':''}
-                       }
-"""Type of service for theme vector datasets: :literal:`download` for the
-bulk datasets, :literal:`distribution` for single areas.
+"""String patterns used to define:
+    
+* domains of the services used for theme vector datasets: :literal:`download` for 
+  bulk datasets or :literal:`distribution` for single areas,
+* name and type of the file storing all :literal:`nuts` unit datasets,
+* name and type of the file storing all :literal:`country` unit datasets,
+* Name and type of the file storing the correspondance table between NUTS names
+and their IDs.
 """
 GISCO_NUTSLEVELS    = [0, 1, 2, 3
                        ]
@@ -213,16 +235,11 @@ GISCO_NUTSLEVELS    = [0, 1, 2, 3
 DEF_GISCO_NUTSLEVEL = GISCO_NUTSLEVELS[0]
 """Default |NUTS| level.
 """
-GISCO_NUTS2ID       = {'data':'NUTS_AT_{year}', 'fmt':'csv'
-                       }
-"""Name and type of the file storing the correspondance table between NUTS names
-and their IDs.
-"""
 GISCO_SCALES        = {1: '01m', 3: '03m', 10: '10m', 20: '20m', 60: '60m'
                        } 
 """Scale (1:`scale` Million) of vector datasets.
 """
-DEF_GISCO_SCALE    = '01m'
+DEF_GISCO_SCALE    = GISCO_SCALES[max(GISCO_SCALES.keys())] # largest scale: '60m'
 """Default scale for |GISCO| vector datasets.
 """
 GISCO_YEARS         = [2003, 2006, 2010, 2013, 2016
@@ -232,21 +249,23 @@ GISCO_YEARS         = [2003, 2006, 2010, 2013, 2016
 DEF_GISCO_YEAR      = 2013
 """Default year considered for |NUTS| datasets (not the most recent, but up-to-date).
 """
-GISCO_FORMATS       = {'shp': 'shx',  # 'shapefile': 'shp', 
-                       'geojson': 'geojson',  
-                       'topojson': 'json', 
-                       'gdb': 'gdb', 
-                       'pbf': 'pbf', 
+GISCO_FORMATS       = {'shp':               'shx',   # 'shapefile': 'shp', 
+                       'geojson':           'geojson',  
+                       'topojson':          'json',  # useless topojson, see NUTS2JSON instead
+                       # 'gdb':               'gdb', # bah...
+                       'pbf':               'pbf',
+                       'csv':               'csv'
+                       # 'eps':             'eps'    # seriously? who gives a shit about EPS?
                        }
 """Format of |GISCO| vector data files.
 """
 DEF_GISCO_FORMAT    = 'geojson'
 """Default format for |GISCO| vector datasets.
 """
-GISCO_GEOMETRIES    = {'region':'RG', 
-                       'label':'LB',
-                       'line':'BN',
-                       'boundary':'BN'
+GISCO_GEOMETRIES    = {'region':            'RG', 
+                       'label':             'LB',
+                       'line':              'BN',
+                       'boundary':          'BN'
                        }
 """Dictionary of spatial typologies, *i.e.* the geometry of |GISCO| feature datasets. 
 """
@@ -352,12 +371,11 @@ NUTS2JSON_FORMATS   = {'geojson':           'json',
 DEF_NUTS2JSON_FORMAT = 'topojson'
 """Default format for |Nuts2json| vector datasets.
 """
-NUTS2JSON_MAPSIZE   = [400, 600, 800, 1000, 1200
-                       ]
+NUTS2JSON_SCALES    = GISCO_SCALES.copy()
 """Map dimension (in pixel) adopted for the fetching of |Nuts2json|. Currently, 
 all maps are squared.
 """
-DEF_NUTS2JSON_MAPSIZE   = 800
+DEF_NUTS2JSON_SCALE = DEF_GISCO_SCALE
 """Default map dimension (in pixel).
 """
 NUTS2JSON_NUTSLEVELS = GISCO_NUTSLEVELS
