@@ -76,7 +76,12 @@ except ImportError:
 try:
     assert GDAL_TOOL
 except AssertionError:
-    pass
+    # we want the decorators used in NUTS to run...
+    class ogr():
+        class Feature():
+            pass
+        class Layer():
+            pass
 else:
     from osgeo import ogr
 

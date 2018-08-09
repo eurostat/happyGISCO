@@ -91,8 +91,9 @@ sys.path.insert(0, os.path.join(DIRHAPPYGISCO,package))
 
 # further integration with ReadTheDocs
 # https://media.readthedocs.org/pdf/docs-python2readthedocs/master/docs-python2readthedocs.pdf
+# http://blog.rtwilson.com/how-to-make-your-sphinx-documentation-compile-with-readthedocs-when-youre-using-numpy-and-scipy/
 try:
-    assert True and IS_READTHEDOCS # bug in ReadTheDocs?
+    assert False and IS_READTHEDOCS # bug in ReadTheDocs?
     import mock
 except AssertionError:
     pass

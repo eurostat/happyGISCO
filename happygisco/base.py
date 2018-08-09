@@ -732,7 +732,7 @@ class _Feature(object):
     #@abc.abstractmethod
     def coord(self):
         # ignore: this will be overwritten              
-        """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) 
+        """Pair of :literal:`(lat,Lon)` geographic coordinates (:data:`getter`) 
         of a :class:`_Feature` instance.
         """ 
         return self.__coord
