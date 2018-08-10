@@ -74,7 +74,7 @@ import chardet#analysis:ignore
 # local imports
 from happygisco import settings
 from happygisco.settings import happyVerbose, happyWarning, happyError, happyType
-from happygisco.base import _Decorator, _Service, _AttrDict
+from happygisco.base import _Decorator, _Service, _AttrDict#analysis:ignore
 
 # requirements
 try: # dummy me...
@@ -709,20 +709,39 @@ class OSMService(_Service):
             >>> serv.place2coord('Roma, Italy', order='Ll', unique=True)
                 [12.4829321, 41.8933203]
             
-        Note
-        ----
-        This method simply "decorates" the method :meth:`~OSMService._place2area`
-        with :meth:`_Decorator.parse_area`.
+        Notes
+        -----
+        * Note that the geocoding may apparently result in some erroneous answer
+          owing to the naming ambiguity, *e.g.*:
+        
+        ::
             
+            >>> serv.place2coord('Rome, Italy') # most surely the right location
+                [41.8933203, 12.4829321]
+            >>> serv.place2coord('Roma, Italy') # nothing like the one above
+                [[44.5996045, 10.4584101],
+                 [44.705595, 9.717744893877548],
+                 [44.4369452, 11.2235352]]
+            >>> serv.place2coord('Roma, Italia')
+                [[41.8933203, 12.4829321],
+                 [41.706989, 12.6911183],
+                 [42.141078, 12.3836686],
+                 [41.988224, 13.067989],
+                 [41.5393232, 13.2796473]]
+            
+        * This method simply "decorates" the method :meth:`~OSMService._place2area`
+          with :meth:`_Decorator.parse_area`.
+
         See also
         --------
         :meth:`~OSMService.place2area`, :meth:`~OSMService.coord2place`,
         :meth:`GISCOService.place2coord`.
         """
-        unique = kwargs.pop('unique',False)
-        order = kwargs.pop('order','lL')
+        unique, order = kwargs.pop('unique',False), kwargs.pop('order','lL')
         coord = []
-        func = lambda **kw: [kw.get('coord')]
+        # note the presence below of *a so as to ensure that None responses are 
+        # also parsed
+        func = lambda *a, **kw: [kw.get('coord')]
         [coord.append(data if data is None or len(data)>1 else data[0])     \
              for g in self._place2area(place, **kwargs)                     \
              for data in _Decorator.parse_area(func)(g, filter='coord', order=order, unique=unique)]
@@ -2242,10 +2261,12 @@ class GISCOService(OSMService):
                 try:
                     assert key in data and data[key] != [] 
                 except AssertionError:
-                    raise happyError('NUTS for geolocation %s and key %s not recognised' % (coord[i], key))  
+                    # raise happyError
+                    happyVerbose('NUTS for geolocation %s and key %s not recognised' % (coord[i], key))
+                    data = None
                 else:
                     data = data.get(key)
-            yield data if not happyType.ismapping(data) or len(data)>1 else data[0]
+            yield data if data is None or not happyType.ismapping(data) or len(data)>1 else data[0]
 
     #/************************************************************************/
     @_Decorator.parse_year
@@ -2275,7 +2296,8 @@ class GISCOService(OSMService):
         Returns
         -------
         nuts : dict, list[dict]
-            a (list of) dictionary(ies) representing NUTS geometries.
+            a (list of) dictionary(ies) representing NUTS geometries; :data:`None`
+            is returned when the coordinates refer to a location outside the EU.
         
         Raises
         ------
@@ -2343,8 +2365,8 @@ class GISCOService(OSMService):
         kwargs.update({'key': _Decorator.parse_nuts.KW_RESULTS})
         nuts = []        
         #[nuts.append(data if len(data)>1 else data[0]) for data in self._coord2nuts(coord, **kwargs)]
-        func = lambda **kw: [kw.get('nuts')]
-        [nuts.append(data if len(data)>1 else data[0])                     \
+        func = lambda *a, **kw: [kw.get('nuts')]
+        [nuts.append(data if data is None or len(data)>1 else data[0])      \
              for g in self._coord2nuts(coord, **kwargs)                     \
              for data in _Decorator.parse_nuts(func)(g, level=level)]
         return nuts[0] if len(nuts)==1 else nuts
@@ -2445,8 +2467,6 @@ class GISCOService(OSMService):
         coord = self.place2coord(place, **kwargs)
         nuts = self.coord2nuts(coord, **kwargs)
         return nuts[0] if len(nuts)==1 else nuts
-        #res = _Decorator.parse_nuts(lambda **kw: kw.get('nuts'))(nuts, **kwargs)
-        #return res[0] if len(res)==1 else res
 
     #/************************************************************************/
     @_Decorator.parse_coordinate

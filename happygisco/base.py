@@ -1698,7 +1698,7 @@ class _Decorator(object):
         def __call__(self, *args, **kwargs):
             level = kwargs.pop('level',None)
             nuts, items = None, {}
-            if args not in (None,()):      
+            if args not in (None,()): 
                 __key_nuts = False
                 if all([happyType.ismapping(a) for a in args]):
                     nuts = list(args)

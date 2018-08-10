@@ -14,6 +14,8 @@
 .. |geopy| replace:: `geopy <geopy_>`_
 .. _ipyleaflet: https://github.com/jupyter-widgets/ipyleaflet
 .. |ipyleaflet| replace:: `ipyleaflet <ipyleaflet_>`_
+.. _folium: https://github.com/python-visualization/folium
+.. |folium| replace:: `folium <folium_>`_
 
 Library of simple tools for simple geographical data (geolocations and geocoordinates)
 handling and processin.
@@ -2468,10 +2470,10 @@ class LeafMap(_Tool):
 
     See also
     --------
-    * :mod:`ipyleaflet` `resources <https://github.com/jupyter-widgets/ipyleaflet>`_ 
-      and `documentation <https://ipyleaflet.readthedocs.io/en/latest/index.html>`_.
-    * :mod:`folium` `resources <https://github.com/python-visualization/folium>`_
-      and `documentation <http://folium.readthedocs.io/en/latest/>`_.
+    * :mod:`ipyleaflet`: resources |ipyleaflet| and its 
+      `documentation <https://ipyleaflet.readthedocs.io/en/latest/index.html>`_.
+    * :mod:`folium`: resources |folium| and 
+      `documentation <http://folium.readthedocs.io/en/latest/>`_.
     """       
 
     #/************************************************************************/
