@@ -31,6 +31,7 @@ Once installed, the module can be imported simply:
 ```python
 >>> import happygisco
 ```
+.. `
 
 **Notebook examples**
 
@@ -79,6 +80,8 @@ and run the supported methods:
  'value': 'ITG1'}
  ```
  
+.. ` 
+ 
 You are also offered to use other geo web-services using `APIService`, *e.g.* any of those listed below:
  
  ```python 
@@ -107,7 +110,7 @@ It is possible to create **simple geographical features whose methods implement 
 * an `Area`: a simple vector geometry () in the sense of _GISCO_ services expressed as a dictionary, *i.e.*, structured like the JSON file returned by the  `GISCO` geocoding or reverse geocoding services,
 * a `NUTS`: the vector geometry representing a NUTS area expressed as a dictionary, *i.e.*, structured like the JSON file returned by the  `GISCO` `findnuts` services.
 
-One can for instance declare a specific location, and run any of the supported methods (for a quick check of the geodesic distance calculation, have a look at [this](https://www.timeanddate.com/worldclock/distanceresult.html?p1=195&p2=133) for instance):
+One can for instance declare a specific location, and run any of the methods supported by the `Location` class:
 
 ```python
 >>> from happygisco import features
@@ -143,9 +146,11 @@ What about creating a NUTS object:
 
 ###### Tools
 
-**Geospatial tools are derived from [`gdal`](http://gdal.org) methods** and provided in the `GDALTool` class. 
+**Geospatial tools are derived from [`gdal`](http://gdal.org) methods** and provided in the `GDALTransform` class. 
 
 These tools can be used, for instance, with NUTS appropriate vector data sources to operate the NUTS identification. Note that it is a brute-force solution, since the program will explore sequentially all NUTS features so as to identify the correct region. This could be improved using a multithread process for instance, _e.g._ using [`multiprocessing`](https://docs.python.org/3.4/library/multiprocessing.html?highlight=process) module. Besides, the program does not check the validity of the result returned by _Google maps_ services, since this result can be ambiguous and/or inaccurate.
+ 
+In the associated classes `GeoAngle` and `GeoCoordinate`, you will find also some basic implementations of simple geoprocessing tools, *e.g.* units conversion, (geodesic) distance calculation, ... For a quick review on the latter, have for instance a look at [this](https://www.timeanddate.com/worldclock/distanceresult.html?p1=195&p2=133).
 
 **<a name="Data"></a>Data resources**
 
