@@ -78,29 +78,28 @@ and run the supported methods:
      'NUTS_ID': 'ITG1',  'NUTS_NAME': 'Sicilia',  'OBJECTID': '320',
      'SHRT_ENGL': 'Italy'},
      'displayFieldName': 'NUTS_ID',
-     'layerId': 2, 'layerName': 'NUTS_2013',
-     'value': 'ITG1'}
+     'layerId': 2, 'layerName': 'NUTS_2013', 'value': 'ITG1'}
 ```
- 
+
  <!-- .. ` -->
 Note that, in order to make things easier, it is possible to parse lists of places instead of single places: 
  
 ```python
->>>  axis = ['Roma, Italy', 'Berlin, Germany', 'Tokyo, Japan']
+>>> axis = ['Rome, Italy', 'Berlin, Germany', 'Tokyo, Japan']
 >>> for p in axis:  # either iterating over the places
 ...     print(serv.place2coord(p, unique=True))
-    [44.5996045, 10.4584101]
+    [41.8933203, 12.4829321]
     [52.5170365, 13.3888599]
     [34.6968642, 139.4049033]
 >>> coord = serv.place2coord(axis, unique=True) # or running the method for the whole list
 >>> print(coord)
-    [[44.5996045, 10.4584101], [52.5170365, 13.3888599], [34.6968642, 139.4049033]]
+    [[41.8933203, 12.4829321], [52.5170365, 13.3888599], [34.6968642, 139.4049033]]
 >>> serv.coord2nuts(coord, level=2)
-    [{'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '2', 'NAME_LATN': 'Emilia-Romagna',
-      'NUTS_ID': 'ITH5', 'NUTS_NAME': 'Emilia-Romagna', 'OBJECTID': '326',
+    [{'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '2', 'NAME_LATN': 'Lazio',
+      'NUTS_ID': 'ITI4', 'NUTS_NAME': 'Lazio', 'OBJECTID': '330',
       'SHRT_ENGL': 'Italy'},
       'displayFieldName': 'NUTS_ID',
-      'layerId': 2, 'layerName': 'NUTS_2013', 'value': 'ITH5'},
+      'layerId': 2, 'layerName': 'NUTS_2013', 'value': 'ITI4'},
      {'attributes': {'CNTR_CODE': 'DE', 'LEVL_CODE': '2', 'NAME_LATN': 'Berlin',
       'NUTS_ID': 'DE30', 'NUTS_NAME': 'Berlin', 'OBJECTID': '202',
       'SHRT_ENGL': 'Germany'},
@@ -114,7 +113,7 @@ You are also offered to use other geo web-services using `APIService`, *e.g.* an
 
  ```python 
 >>> print(APIService.AVAILABLE)
-['GMaps', 'OpenMapQuest', 'YahooPlaceFinder', 'LiveAddress', 'Bing', 'GeoNames', 'GoogleV3', 'Nominatim', 'MapQuest'] 
+    ['GMaps', 'OpenMapQuest', 'YahooPlaceFinder', 'LiveAddress', 'Bing', 'GeoNames', 'GoogleV3', 'Nominatim', 'MapQuest'] 
 ```
 
 <!-- .. ` -->
@@ -123,13 +122,13 @@ Depending on the service selected, you may be requested to provide with your own
 ```python 
 >>> service = services.APIService(coder='Nominatim') # no key required
 >>> service.place2coord('Paris, France')
-[48.8566101, 2.3514992]
+    [48.8566101, 2.3514992]
 >>> service = services.APIService(coder='GMaps', key='???') # use your own key here
 >>> service.place2coord('Paris, France')
-[48.856614, 2.3522219]
+    [48.856614, 2.3522219]
 >>> service = services.APIService(coder='GeoNames', username='???') # use your own username here
 >>> service.place2coord('Paris, France')
-[48.85341, 2.3488]
+    [48.85341, 2.3488]
 ```
 
 <!-- .. ` -->
@@ -147,26 +146,25 @@ One can for instance declare a specific location, and run any of the methods sup
 >>> from happygisco import features
 >>> location = features.Location(place="Lisbon, Portugal")
 >>> location.coord
-[38.7077507, -9.1365919]
+    [38.7077507, -9.1365919]
 >>> location.routing('Paris, France')
-({'distance': 3058767.9, 'duration': 377538.2,
-  'geometry': 'uv}qEaeqhEo_XlbOutDa`~@uuVocZqa|@ttDqaZneRwcjEetxBwfYags@}_nAugsAmaYcmcApxCiiuDcvi@webB`dFeix@q}VqdvAfaj@greAtqEuwi@c~QmvqCuhZ}o`AzzVkv{@egOo|Vjf@avyCrlZocsFwo_@ef`DgdKkqQ{gPbkA{pUgwq@h{[s}`B`hJsgnBaq^oMetAkab@q~j@at~@hbd@yheAhmh@gad@vyz@dit@uxz@kjt@knh@lbd@ibd@xheAp~j@`t~@dtAjab@`q^nMahJrgnBe|[x}`BvqU`wq@nkPsgAt_KlnQdo_@r}_DwkZlksFkg@joyCdhOjzVk{V|f|@vhZph`Ab~Q`vqCsnEjpi@wdj@tyeAx|Vd`vA_cF~mx@~ui@tebB_yCtguD~aYjocAn`nAhgsAtfYrgs@pdjEbrxBhaZieR~a|@{tD`vV|cZ~}F`_}@nuUaaN',
-  'legs': [{'distance': 1530444.4, 'duration': 188741.1,
-    'steps': [], 'summary': ''},
-   {'distance': 1528323.5, 'duration': 188797.1, 'steps': [], 'summary': ''}]},
- [{'hint': 'DcOGgEuuRIQAAAAAAAAAAE0AAAAAAAAASgQAAOofZwBScQAAzuv3AcpmDwImok4CMZZ0_wAAAQEZfn5e',
-   'location': [33.024974, 34.563786], 'name': ''},
-  {'hint': 'mRIbgp0SG4IAAAAAAAAAAFoAAAAAAAAAogIAADJYZwFScQAAeuyjAgCdNAIifukCi-EjAAAAAQEZfn5e',
-   'location': [44.297338, 37.002496], 'name': ''},
-  {'hint': 'DcOGgEuuRIQAAAAAAAAAAE0AAAAAAAAASgQAAOofZwBScQAAzuv3AcpmDwLU3csCvrFGAAAAAQEZfn5e',
-   'location': [33.024974, 34.563786], 'name': ''}])
+    ({'distance': 3058767.9, 'duration': 377538.2,
+      'geometry': 'uv}qEaeqhEo_XlbOutDa`~@uuVocZqa|@ttDqaZneRwcjEetxBwfYags@}_nAugsAmaYcmcApxCiiuDcvi@webB`dFeix@q}VqdvAfaj@greAtqEuwi@c~QmvqCuhZ}o`AzzVkv{@egOo|Vjf@avyCrlZocsFwo_@ef`DgdKkqQ{gPbkA{pUgwq@h{[s}`B`hJsgnBaq^oMetAkab@q~j@at~@hbd@yheAhmh@gad@vyz@dit@uxz@kjt@knh@lbd@ibd@xheAp~j@`t~@dtAjab@`q^nMahJrgnBe|[x}`BvqU`wq@nkPsgAt_KlnQdo_@r}_DwkZlksFkg@joyCdhOjzVk{V|f|@vhZph`Ab~Q`vqCsnEjpi@wdj@tyeAx|Vd`vA_cF~mx@~ui@tebB_yCtguD~aYjocAn`nAhgsAtfYrgs@pdjEbrxBhaZieR~a|@{tD`vV|cZ~}F`_}@nuUaaN',
+      'legs': [{'distance': 1530444.4, 'duration': 188741.1, 'steps': [], 'summary': ''},
+               {'distance': 1528323.5, 'duration': 188797.1, 'steps': [], 'summary': ''}]},
+     [{'hint': 'DcOGgEuuRIQAAAAAAAAAAE0AAAAAAAAASgQAAOofZwBScQAAzuv3AcpmDwImok4CMZZ0_wAAAQEZfn5e',
+       'location': [33.024974, 34.563786], 'name': ''},
+      {'hint': 'mRIbgp0SG4IAAAAAAAAAAFoAAAAAAAAAogIAADJYZwFScQAAeuyjAgCdNAIifukCi-EjAAAAAQEZfn5e',
+       'location': [44.297338, 37.002496], 'name': ''},
+      {'hint': 'DcOGgEuuRIQAAAAAAAAAAE0AAAAAAAAASgQAAOofZwBScQAAzuv3AcpmDwLU3csCvrFGAAAAAQEZfn5e',
+       'location': [33.024974, 34.563786], 'name': ''}])
 >>> location.findnuts(level=3)
-{'CNTR_CODE': 'PT', 'LEVL_CODE': '3',
- 'NAME_LATN': 'çrea Metropolitana de Lisboa', 'NUTS_ID': 'PT170',
- 'NUTS_NAME': 'çrea Metropolitana de Lisboa', 'OBJECTID': '1233',
- 'SHRT_ENGL': 'Portugal'}
+    {'CNTR_CODE': 'PT', 'LEVL_CODE': '3',
+     'NAME_LATN': 'çrea Metropolitana de Lisboa', 'NUTS_ID': 'PT170',
+     'NUTS_NAME': 'çrea Metropolitana de Lisboa', 'OBJECTID': '1233',
+     'SHRT_ENGL': 'Portugal'}
 >>> location.distance('Paris, France')
-1455.7107037157618
+    1455.7107037157618
 ```
 
 <!-- .. ` -->
@@ -193,17 +191,16 @@ In the associated classes `GeoAngle` and `GeoCoordinate`, you will find also som
 * _GISCO_ [themes](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/themes.json) with links to [countries](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/countries/) (corresponding [list of datasets](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/countries/datasets.json)) and [NUTS](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/) (corresponding [list of datasets](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/datasets.json)).
 * NUTS [bulk download page](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/). See for instance [2013 (1:1 Million) NUTS data](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-01m.shp.zip) and [how to](http://ec.europa.eu/eurostat/documents/4311134/4366152/guidelines-geographic-data.pdf) interpret it.
 * NUTS [online](http://ec.europa.eu/eurostat/web/regions-and-cities/overview) and NUTS on [RAMON](http://ec.europa.eu/eurostat/ramon/index.cfm?TargetUrl=DSP_PUB_WELC).
-* _GISCO_ [`administrative and statistical units`](http://ec.europa.eu/eurostat/web/gisco/geodata/reference-data/administrative-units-statistical-units). 
+* _GISCO_ [`administrative and statistical units`](http://ec.europa.eu/eurostat/web/gisco/geodata/reference-data/administrative-units-statistical-units) and [`correspondence table`](http://ec.europa.eu/eurostat/ramon/miscellaneous/index.cfm?TargetUrl=DSP_DEGURBA) between degree of urbanisation (DEGURBA) or local administrative units. 
 * _TERCET_ [tool](http://ec.europa.eu/eurostat/tercet) and [territorial typologies](http://ec.europa.eu/eurostat/web/nuts/tercet-territorial-typologies).
-* Correspondence table Degree of Urbanisation (DEGURBA) - Local Administrative Units: http://ec.europa.eu/eurostat/ramon/miscellaneous/index.cfm?TargetUrl=DSP_DEGURBA
 * Service [Nuts2json](https://github.com/eurostat/Nuts2json) of NUTS `topojson`/`geojson` datasets reformatted for web-mapping (datasets and scripts).
  
 **<a name="Software"></a>Software resources**
 
 * `gdal` [package](https://pypi.python.org/pypi/GDAL) and [cookbook](https://pcjericks.github.io/py-gdalogr-cookbook/index.html).
-* (_suggested_) Geocoding/processing packages: [`googlemaps`](https://pypi.python.org/pypi/googlemaps/), [`googleplaces`](https://github.com/slimkrazy/python-google-places) or [`geopy`](https://github.com/geopy/geopy).
-* (_recommended_) Packages for map visualisations: [`ipyleaflet`](https://github.com/jupyter-widgets/ipyleaflet) or [`folium`](https://github.com/python-visualization/folium).
-* (_recommended_) Packages for caching: [`requests_cache`](https://pypi.python.org/pypi/requests-cache) or [`cachecontrol`](https://pypi.python.org/pypi/requests-cache). 
+* Geocoding/processing packages: [`googlemaps`](https://pypi.python.org/pypi/googlemaps/), [`googleplaces`](https://github.com/slimkrazy/python-google-places) or [`geopy`](https://github.com/geopy/geopy) (_suggested_).
+* Packages for map visualisations: [`ipyleaflet`](https://github.com/jupyter-widgets/ipyleaflet) or [`folium`](https://github.com/python-visualization/folium) (_recommended_).
+* Packages for caching: [`requests_cache`](https://pypi.python.org/pypi/requests-cache) or [`cachecontrol`](https://pypi.python.org/pypi/requests-cache) (_recommended_). 
 
 **<a name="References"></a>References**
 
