@@ -31,7 +31,8 @@ Once installed, the module can be imported simply:
 ```python
 >>> import happygisco
 ```
-.. `
+
+<!-- .. ` -->
 
 **Notebook examples**
 
@@ -60,8 +61,10 @@ It is pretty straigthforward to create an instance of a service, for example `GI
 >>> service = services.GISCOService()
 ```
 
+<!-- .. ` -->
 and run the supported methods:
-
+<!-- .. ` -->
+ 
 ```python
 >>> place = "Lampedusa, Italia"
 >>> coord = service.place2coord(place, unique=True)
@@ -80,10 +83,9 @@ and run the supported methods:
  'value': 'ITG1'}
  ```
  
-.. ` 
- 
+<!-- .. ` -->
 You are also offered to use other geo web-services using `APIService`, *e.g.* any of those listed below:
- 
+
  ```python 
 >>> print(APIService.AVAILABLE)
 ['GMaps', 'OpenMapQuest', 'YahooPlaceFinder', 'LiveAddress', 'Bing', 'GeoNames', 'GoogleV3', 'Nominatim', 'MapQuest'] 
@@ -102,6 +104,7 @@ Depending on the service selected, you may be requested to provide with your own
 [48.85341, 2.3488]
 ```
 
+<!-- .. ` -->
 ###### Features
 
 It is possible to create **simple geographical features whose methods implement and apply the different services defined above**, *e.g.*:
