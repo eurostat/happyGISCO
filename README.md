@@ -32,7 +32,7 @@ Once installed, the module can be imported simply:
 >>> import happygisco
 ```
 
-<!-- .. ` -->
+<!-- .. ` ok, I just added that here for a clean editing of code blocks in Xcode... sorry this is useless! -->
 
 **Notebook examples**
 
@@ -63,25 +63,51 @@ It is pretty straigthforward to create an instance of a service, for example `GI
 
 <!-- .. ` -->
 and run the supported methods:
-<!-- .. ` -->
  
 ```python
 >>> place = "Lampedusa, Italia"
 >>> coord = service.place2coord(place, unique=True)
 >>> print(coord)
-[35.511134150000004, 12.59629135962961]
+    [35.511134150000004, 12.59629135962961]
 >>> alt_place = service.coord2place(coord)
 >>> print(alt_place)
-'Strada di Ponente, Lampedusa e Linosa, (Sicily), Italy'
+    'Strada di Ponente, Lampedusa e Linosa, (Sicily), Italy'
 >>> nuts = service.coord2nuts(coord, level=2)
 >>> print(nuts)
-{'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '2', 'NAME_LATN': 'Sicilia',
-  'NUTS_ID': 'ITG1',  'NUTS_NAME': 'Sicilia',  'OBJECTID': '320',
-  'SHRT_ENGL': 'Italy'},
- 'displayFieldName': 'NUTS_ID',
- 'layerId': 2, 'layerName': 'NUTS_2013',
- 'value': 'ITG1'}
- ```
+    {'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '2', 'NAME_LATN': 'Sicilia',
+     'NUTS_ID': 'ITG1',  'NUTS_NAME': 'Sicilia',  'OBJECTID': '320',
+     'SHRT_ENGL': 'Italy'},
+     'displayFieldName': 'NUTS_ID',
+     'layerId': 2, 'layerName': 'NUTS_2013',
+     'value': 'ITG1'}
+```
+ 
+ <!-- .. ` -->
+Note that, in order to make things easier, it is possible to parse lists of places instead of single places: 
+ 
+```python
+>>>  axis = ['Roma, Italy', 'Berlin, Germany', 'Tokyo, Japan']
+>>> for p in axis:  # either iterating over the places
+...     print(serv.place2coord(p, unique=True))
+    [44.5996045, 10.4584101]
+    [52.5170365, 13.3888599]
+    [34.6968642, 139.4049033]
+>>> coord = serv.place2coord(axis, unique=True) # or running the method for the whole list
+>>> print(coord)
+    [[44.5996045, 10.4584101], [52.5170365, 13.3888599], [34.6968642, 139.4049033]]
+>>> serv.coord2nuts(coord, level=2)
+    [{'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '2', 'NAME_LATN': 'Emilia-Romagna',
+      'NUTS_ID': 'ITH5', 'NUTS_NAME': 'Emilia-Romagna', 'OBJECTID': '326',
+      'SHRT_ENGL': 'Italy'},
+      'displayFieldName': 'NUTS_ID',
+      'layerId': 2, 'layerName': 'NUTS_2013', 'value': 'ITH5'},
+     {'attributes': {'CNTR_CODE': 'DE', 'LEVL_CODE': '2', 'NAME_LATN': 'Berlin',
+      'NUTS_ID': 'DE30', 'NUTS_NAME': 'Berlin', 'OBJECTID': '202',
+      'SHRT_ENGL': 'Germany'},
+      'displayFieldName': 'NUTS_ID',
+      'layerId': 2, 'layerName': 'NUTS_2013', 'value': 'DE30'},
+     None]
+```
  
 <!-- .. ` -->
 You are also offered to use other geo web-services using `APIService`, *e.g.* any of those listed below:
@@ -90,6 +116,8 @@ You are also offered to use other geo web-services using `APIService`, *e.g.* an
 >>> print(APIService.AVAILABLE)
 ['GMaps', 'OpenMapQuest', 'YahooPlaceFinder', 'LiveAddress', 'Bing', 'GeoNames', 'GoogleV3', 'Nominatim', 'MapQuest'] 
 ```
+
+<!-- .. ` -->
 Depending on the service selected, you may be requested to provide with your own credentials:
  
 ```python 
@@ -141,12 +169,14 @@ One can for instance declare a specific location, and run any of the methods sup
 1455.7107037157618
 ```
 
+<!-- .. ` -->
 What about creating a NUTS object:
 
 ```python 
 >>> nuts = features.NUTS()
 ```
 
+<!-- .. ` -->
 ###### Tools
 
 **Geospatial tools are derived from [`gdal`](http://gdal.org) methods** and provided in the `GDALTransform` class. 
@@ -156,21 +186,24 @@ These tools can be used, for instance, with NUTS appropriate vector data sources
 In the associated classes `GeoAngle` and `GeoCoordinate`, you will find also some basic implementations of simple geoprocessing tools, *e.g.* units conversion, (geodesic) distance calculation, ... For a quick review on the latter, have for instance a look at [this](https://www.timeanddate.com/worldclock/distanceresult.html?p1=195&p2=133).
 
 **<a name="Data"></a>Data resources**
-
-* The Geographic Information System of the Commission: [_GISCO_ ](http://ec.europa.eu/eurostat/web/gisco/overview).
+ 
+* The Geographic Information System of the Commission at _Eurostat_: [_GISCO_ ](http://ec.europa.eu/eurostat/web/gisco/overview).
+* _GISCO_ webservices: [_find-nuts_](http://europa.eu/webtools/rest/gisco/nuts/find-nuts.py) and [_geocode_](http://europa.eu/webtools/rest/gisco/api?).
 * _GISCO_ data distribution [REST API](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2) and its [visualisation tool](http://ec.europa.eu/eurostat/cache/RCI).
-* _GISCO_ [themes](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/themes.json) with links to [countries](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/countries/) (with corresponding [list of datasets](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/countries/datasets.json)) and [NUTS](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/) (with corresponding [list of datasets](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/datasets.json)).
-* _TERCET_ [tool](http://ec.europa.eu/eurostat/tercet).
-* _TERCET_ [territorial typologies](http://ec.europa.eu/eurostat/web/nuts/tercet-territorial-typologies).
+* _GISCO_ [themes](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/themes.json) with links to [countries](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/countries/) (corresponding [list of datasets](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/countries/datasets.json)) and [NUTS](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/) (corresponding [list of datasets](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/datasets.json)).
 * NUTS [bulk download page](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/). See for instance [2013 (1:1 Million) NUTS data](http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-01m.shp.zip) and [how to](http://ec.europa.eu/eurostat/documents/4311134/4366152/guidelines-geographic-data.pdf) interpret it.
-* NUTS on [RAMON](http://ec.europa.eu/eurostat/ramon/index.cfm?TargetUrl=DSP_PUB_WELC).
-* _Eurostat_  _GISCO_ webservices: [_find-nuts_](http://europa.eu/webtools/rest/gisco/nuts/find-nuts.py) and [_geocode_](http://europa.eu/webtools/rest/gisco/api?).
+* NUTS [online](http://ec.europa.eu/eurostat/web/regions-and-cities/overview) and NUTS on [RAMON](http://ec.europa.eu/eurostat/ramon/index.cfm?TargetUrl=DSP_PUB_WELC).
+* _GISCO_ [`administrative and statistical units`](http://ec.europa.eu/eurostat/web/gisco/geodata/reference-data/administrative-units-statistical-units). 
+* _TERCET_ [tool](http://ec.europa.eu/eurostat/tercet) and [territorial typologies](http://ec.europa.eu/eurostat/web/nuts/tercet-territorial-typologies).
 * Correspondence table Degree of Urbanisation (DEGURBA) - Local Administrative Units: http://ec.europa.eu/eurostat/ramon/miscellaneous/index.cfm?TargetUrl=DSP_DEGURBA
-
+* Service [Nuts2json](https://github.com/eurostat/Nuts2json) of NUTS `topojson`/`geojson` datasets reformatted for web-mapping (datasets and scripts).
+ 
 **<a name="Software"></a>Software resources**
 
 * `gdal` [package](https://pypi.python.org/pypi/GDAL) and [cookbook](https://pcjericks.github.io/py-gdalogr-cookbook/index.html).
-* Geo packages: [`googlemaps`](https://pypi.python.org/pypi/googlemaps/) and [`geopy`](https://github.com/geopy/geopy).
+* (_suggested_) Geocoding/processing packages: [`googlemaps`](https://pypi.python.org/pypi/googlemaps/), [`googleplaces`](https://github.com/slimkrazy/python-google-places) or [`geopy`](https://github.com/geopy/geopy).
+* (_recommended_) Packages for map visualisations: [`ipyleaflet`](https://github.com/jupyter-widgets/ipyleaflet) or [`folium`](https://github.com/python-visualization/folium).
+* (_recommended_) Packages for caching: [`requests_cache`](https://pypi.python.org/pypi/requests-cache) or [`cachecontrol`](https://pypi.python.org/pypi/requests-cache). 
 
 **<a name="References"></a>References**
 
