@@ -781,12 +781,6 @@ class NUTS(_Feature):
         self.__feature = None
         self.__vector = None
         super(NUTS,self).__init__(**kwargs)
-        #file = kwargs.pop(_Decorator.KW_FILE, None)
-        #url = kwargs.pop(_Decorator.KW_URL, None)
-        #layer = kwargs.pop(_Decorator.KW_LAYER, None)
-        #feature = kwargs.pop(_Decorator.KW_FEATURE, None)
-        #vector = kwargs.pop(_Decorator.KW_VECTOR, None)
-        #unit = kwargs.pop(_Decorator.KW_UNIT, None)
         items = []
         for kw in ['KW_FILE', 'KW_URL', 'KW_LAYER', 'KW_FEATURE', 'KW_VECTOR', 'KW_UNIT']:
             attr = kwargs.pop(getattr(_Decorator, kw), None)
@@ -1201,18 +1195,18 @@ class NUTS(_Feature):
     
     #/************************************************************************/
     def dump(self, **kwargs):
-        pass
-    
-    #/************************************************************************/
-    def loads(self, **kwargs):
         try:
-            data = response.json()
+            data = resp.json()
         except:
             try:
-                data = response.content 
+                data = resp.content 
                 data = json.loads(data.decode(chardet.detect(data)["encoding"]))
             except:
                 data = None
+        json.dumps(resp.json()).replace('\'','"')
+    
+    #/************************************************************************/
+    def loads(self, **kwargs):
         pass
         
     #/************************************************************************/

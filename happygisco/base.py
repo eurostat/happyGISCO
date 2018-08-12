@@ -101,19 +101,6 @@ try:
 except ImportError:  
     CACHECONTROL_INSTALLED = False
     happyWarning("CACHECONTROL package (visit https://pypi.python.org/pypi/requests-cache) not loaded", ImportWarning)
-    try:
-        class _CachedResponse(requests.Response):
-            pass
-    except:
-        class _CachedResponse(object):
-            pass
-    def __init(inst, url, content):
-        super(_CachedResponse,inst).__init__(inst)
-        inst.url = url
-        inst.reason, inst.status_code = "OK", 200
-        inst._content, inst._content_consumed = content, True
-        # self._encoding = ?
-    _CachedResponse.__init__ = classmethod(__init)
 else:
     CACHECONTROL_INSTALLED = True
     happyVerbose('CACHECONTROL help: https://cachecontrol.readthedocs.io/en/latest/')
@@ -163,7 +150,13 @@ def __init(inst, *args):
             setattr(inst, attr, getattr(r, attr))
     # self._encoding = ?
 _CachedResponse.__init__ = classmethod(__init)
-
+_CachedResponse.__doc__ =                                               \
+    """Generic class used for representing a cached response.
+        
+    ::
+        
+        >>> resp = base._CachedResponse(*args, resp, path)
+    """
 
 #%%
 #==============================================================================
@@ -806,19 +799,19 @@ class _Decorator(object):
     
     KW_FEATURE      = 'feature' 
     KW_VECTOR       = 'vector' 
-    KW_UNIT         = 'unit' 
     KW_LEVEL        = 'level'
     KW_SIZE         = 'size'
 
     KW_DATA         = 'data'
-    KW_VALUES       = 'values'
     KW_SOURCE       = 'source'
     KW_CODE         = 'code'
+    KW_UNIT         = 'unit' 
     
     KW_NAME         = 'name'
     KW_ID           = 'id'
     KW_TILE         = 'tile'
     KW_ATTR         = 'attr'
+    KW_VALUES       = 'values'
 
     #/************************************************************************/
     class __base(object):
@@ -2415,9 +2408,9 @@ class _Decorator(object):
         :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_geometry`.
         """
         def __init__(self, *args, **kwargs):
-            kwargs.update({'_parse_cls_':   [int, list], # list of levels 
+            kwargs.update({'_parse_cls_':   [int, str, list], # list of levels 
                            '_key_':         _Decorator.KW_LEVEL, 
-                           '_values_':      settings.GISCO_NUTSLEVELS,
+                           '_values_':      settings.GISCO_NUTSLEVELS + ['ALL',],
                            '_key_default_': settings.DEF_GISCO_NUTSLEVEL})
             super(_Decorator.parse_level,self).__init__(*args, **kwargs)
         

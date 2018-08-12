@@ -919,24 +919,22 @@ class GISCOService(OSMService):
         self.__arcgis = arcgis or ''
     
     #/************************************************************************/
-    def url4nuts(self, **kwargs):
+    def url4nuts(self, source=None, **kwargs):
         """Generate the URL in the |GISCO| domain for the (bulk or not) download 
         of NUTS data (in vector format).
         
         ::
             
-            >>> url = serv.url4nuts(**kwargs)
+            >>> url = serv.url4nuts(source, **kwargs)
            
         Keyword Arguments
         -----------------
-        unit : str
         file : str
         year : int
         scale : str,int
         fmt : str
         proj : str,int
         feat : str,int
-        source : str
              
         Returns
         -------
@@ -962,32 +960,32 @@ class GISCOService(OSMService):
             >>> serv = services.GISCOService()
             >>> serv.url4nuts()  # default: a given NUTS dataset...
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_RG_01M_2013_4326_LEVL_0.geojson'
-            >>> serv.url4nuts(source = 'BULK')
+            >>> serv.url4nuts('BULK')
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-01m.geojson.zip'
-            >>> serv.url4nuts(source = 'AD')
+            >>> serv.url4nuts('AD')
                 'http://europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AD-region-01m-4326-2013.geojson'
                 
             >>> serv.url4nuts(year = 2016, scale = 10, geometry = 'boundary')
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_BN_10M_2016_4326_LEVL_0.geojson'
-            >>> serv.url4nuts(source = 'bulk', year = 2016, scale = 60, fmt = 'shp')
+            >>> serv.url4nuts('bulk', year = 2016, scale = 60, fmt = 'shp')
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-60m.shp.zip'
             >>> serv.url4nuts(year = 2010, geometry = 'label', level = 2)  
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_LB_2010_4326_LEVL_2.geojson'
             >>> serv.url4nuts(year = 2010, scale = 1, geometry = 'boundary', level = 'ALL', proj = 'Mercator')  
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_BN_01M_2010_3857.geojson'
-            >>> serv.url4nuts(source = 'info', year = 2010)  
+            >>> serv.url4nuts('info', year = 2010)  
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2010-units.json'
                 
-            >>> serv.url4nuts(unit = 'MK', year = 2006, scale = 20, geometry = 'region', proj = 'LAEA')
+            >>> serv.url4nuts('MK', year = 2006, scale = 20, geometry = 'region', proj = 'LAEA')
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/MK-region-20m-3035-2006.geojson'
-            >>> serv.url4nuts(unit = 'BE100', year = 2016, scale = 3, geometry = 'LB')
+            >>> serv.url4nuts('BE100', year = 2016, scale = 3, geometry = 'LB')
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-label-03m-4326-2016.geojson'        
         
         Note also:
         
         ::
                 
-            >>> serv.url4nuts(unit = 'BE100', year = 2016, scale = 3, geometry = 'boundary', fmt ='shp')
+            >>> serv.url4nuts('BE100', year = 2016, scale = 3, geometry = 'boundary', fmt ='shp')
                     ! only LABEL and REGION features are supported with single NUTS units distribution - FEATURE argument ignored !
                     ! only GEOJSON is supported with single NUTS units distribution - FMT argument ignored !
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-region-03m-4326-2016.geojson'       
@@ -997,10 +995,10 @@ class GISCOService(OSMService):
         
         ::  
             
-            >>> serv.url4nuts(source = 'nuts2json', scale = 400, level = 2)
-                'https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/2013/4326/400px/nutsrg_2.json'
-            >>> serv.url4nuts(source = 'nuts2json', proj = 'EPSG3035', year = 2010, fmt = 'topojson')
-                'https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/2010/3035/800px/0.json'
+            >>> serv.url4nuts('nuts2json', scale = '20m', level = 2)
+                'https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/2013/4326/20M/nutsrg_2.json'
+            >>> serv.url4nuts('nuts2json', proj = 'EPSG3035', year = 2010, fmt = 'topojson')
+                'https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/2010/3035/60M/0.json'
                 
         See also
         --------
@@ -1008,28 +1006,9 @@ class GISCOService(OSMService):
         """
         # check whether a specific unit is looked for
         # btw, do we want to download GISCO data?
-        try:
-            unit = kwargs.pop(_Decorator.KW_UNIT, None)
-            assert unit is None or happyType.isstring(unit)
-        except AssertionError:
-            raise happyError('wrong format/value for %s argument' % _Decorator.KW_UNIT.upper())
-        else:
-            if unit is not None and unit=='ALL':
-                unit = 'NUTS'
-        try:
-            source = kwargs.pop(_Decorator.KW_SOURCE, None)
-            assert source is None or happyType.isstring(source)
-        except AssertionError:
-            raise happyError('wrong format/value for %s argument' % _Decorator.KW_SOURCE.upper())
-        else:
-            pass
-        try:
-            assert source is None or unit is None
-        except:
-            raise happyError('incompatible parameters %s and %s' % (_Decorator.KW_UNIT.upper(),_Decorator.KW_SOURCE.upper()))
-        else:
-            source = source or unit or 'NUTS' # force to 'NUTS' in case both are None
-            source = source.upper()
+        if source in (None, ''): 
+            source = 'NUTS' # force to 'NUTS' in case both are None
+        source = source.upper()
         # retrieve the keyword parameters... note that all this parsing/checking/cleaning
         # may have been done thanks to the parse_* methods
         year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
@@ -1106,12 +1085,20 @@ class GISCOService(OSMService):
             if geom not in ('label','region'):
                 happyWarning('only LABEL and REGION features are supported with single NUTS units distribution - %s argument ignored' % _Decorator.KW_GEOMETRY.upper())
                 geom = 'region'
+                kwargs.update({_Decorator.KW_GEOMETRY: geom})
+            elif geom == 'label':
+                scale =''
+                if proj not in (3035,4258):
+                    happyWarning('only 3035 and 4258 projections are supported with single LABEL unit distribution - %s argument ignored' % _Decorator.KW_PROJECTION.upper())
+                    proj = 3035
+            if geom == 'region': # not elif
+                scale = scale.lower() + '-'
             if fmt != 'geojson':
                 happyWarning('only GEOJSON is supported with single NUTS units distribution - %s argument ignored' % _Decorator.KW_FORMAT.upper())
                 fmt = 'geojson'
-            url = '{a}://{b}/{c}/{d}/{e}-{f}-{g}-{h}-{i}.{j}'.format        \
+            url = '{a}://{b}/{c}/{d}/{e}-{f}-{g}{h}-{i}.{j}'.format        \
                 (a=settings.PROTOCOL, b=self.url_cache, c=theme, d=domain,
-                 e=source, f=geom.lower(), g=scale.lower(), h=proj, i=year, 
+                 e=source, f=geom.lower(), g=scale, h=proj, i=year, 
                  j=fmt)
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AT-region-01m-3035-2016.geojson
         return url if url is None or len(url)>1 else url[0]          
@@ -1159,23 +1146,9 @@ class GISCOService(OSMService):
         :meth:`~GISCOService.resp4country`, :meth:`~GISCOService.url4nuts`.        
         """
         # check whether a specific unit is looked for
-        try:
-            code = kwargs.pop(_Decorator.KW_CODE, None)
-            assert code is None or happyType.isstring(code)
-        except AssertionError:
-            raise happyError('wrong format/value for %s argument' % _Decorator.KW_CODE.upper())
-        try:
-            source = kwargs.pop(_Decorator.KW_SOURCE, None)
-            assert source is None or happyType.isstring(source)
-        except AssertionError:
-            raise happyError('wrong format/value for %s argument' % _Decorator.KW_SOURCE.upper())
-        try:
-            assert source is None or code is None
-        except:
-            raise happyError('incompatible parameters %s and %s' % (_Decorator.KW_CODE.upper(),_Decorator.KW_FILE.upper()))
-        else:
-            source = source or code or 'INFO' # force to 'INFO' in case both are None
-            source = source.upper()
+        if source in (None, ''): 
+            source = 'INFO' # force to 'NUTS' in case both are None
+        source = source.upper()
         # retrieve the year
         year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
         # retrieve the scale
@@ -1200,7 +1173,6 @@ class GISCOService(OSMService):
         geom = kwargs.pop(_Decorator.KW_GEOMETRY, settings.DEF_GISCO_GEOMETRY) 
         if geom in settings.GISCO_GEOMETRIES.keys():
             geom = settings.GISCO_GEOMETRIES[geom]
-        level = kwargs.pop(_Decorator.KW_LEVEL, settings.GISCO_NUTSLEVELS[0])        
         theme = 'countries'
         if source == 'NUTS2JSON':
             # the files can be retrieved on-the-fly from the base URL 
@@ -1211,10 +1183,10 @@ class GISCOService(OSMService):
             # where <TYPE> depends on geom variable
             protocol = 'https'
             domain = settings.NUTS2JSON_DOMAIN
-            url = '{a}://{b}/{c}/{d}/{e}/{f}{g}.{h}'.format                 \
+            url = '{a}://{b}/{c}/{d}/{e}/{f}.{g}'.format                 \
                 (a=protocol, b=domain, c=year, d=proj, e=scale.upper(), 
-                 f='' if fmt!= 'geojson' else ('cntrg_' if geom == 'RG' else 'cntbn_'), 
-                 g=level, h='json')
+                 f='' if fmt!= 'geojson' else ('cntrg' if geom == 'RG' else 'cntbn'), 
+                 g='json')
         elif source == 'INFO':
             domain = ''
             fmt = settings.GISCO_PATTERNS['country']['fmt']
@@ -1601,7 +1573,7 @@ class GISCOService(OSMService):
         return url
         
     #/************************************************************************/
-    def _resp4data(self, data, dimensions, **kwargs):
+    def _resp4data(self, data, source, dimensions, **kwargs):
         """Generic version of methods :meth:`~GISCOService.resp4country` and
         :meth:`~GISCOService.resp4nuts`.
         """
@@ -1620,7 +1592,7 @@ class GISCOService(OSMService):
             except AttributeError:
                 raise happyError('argument DATA not recognised - must be ''nuts'' or ''country''')
             else:
-                url = build_url(**kwargs)
+                url = build_url(source, **kwargs)
             try:
                 assert self.get_status(url) is not None
             except:
@@ -1658,13 +1630,25 @@ class GISCOService(OSMService):
         :meth:`~GISCOService.resp4country`, :meth:`~GISCOService._resp4data`.
         """
         try:
-            source = kwargs.get(_Decorator.KW_SOURCE)
+            code = kwargs.pop(_Decorator.KW_CODE, None)
+            assert code is None or happyType.isstring(code)
+        except AssertionError:
+            raise happyError('wrong format/value for %s argument' % _Decorator.KW_CODE.upper())
+        try:
+            source = kwargs.pop(_Decorator.KW_SOURCE, None)
             assert source is None or happyType.isstring(source)
         except AssertionError:
             raise happyError('wrong format/value for %s argument' % _Decorator.KW_SOURCE.upper())
+        try:
+            assert source is None or code is None
+        except:
+            raise happyError('incompatible parameters %s and %s' % (_Decorator.KW_CODE.upper(),_Decorator.KW_FILE.upper()))
+        else:
+            source = source or code or 'INFO' # force to 'INFO' in case both are None
+            source = source.upper()
         if source in ('INFO','NUTS2JSON'):
             dimensions = {'INFO':      ['KW_YEAR', 'KW_FORMAT'],
-                          'NUTS2JSON': ['KW_YEAR', 'KW_PROJECTION', 'KW_SCALE', 'KW_LEVEL', 'KW_FORMAT']
+                          'NUTS2JSON': ['KW_YEAR', 'KW_PROJECTION', 'KW_SCALE', 'KW_FORMAT']
                           }[source]
         else:
             dimensions = ['KW_YEAR', 'KW_PROJECTION', 'KW_SCALE', 'KW_FORMAT']
@@ -1673,7 +1657,7 @@ class GISCOService(OSMService):
             val = kwargs.pop(getattr(_Decorator,attr), None)
             if not happyType.issequence(val):      val = [val,]
             dimensions.update({attr: val})
-        return dimensions, self._resp4data('country', dimensions, **kwargs)
+        return dimensions, self._resp4data('country', source, dimensions, **kwargs)
 
 #/************************************************************************/
     @_Decorator.parse_year
@@ -1700,10 +1684,27 @@ class GISCOService(OSMService):
         :meth:`~GISCOService.resp4country`, :meth:`~GISCOService._resp4data`.
         """
         try:
-            source = kwargs.get(_Decorator.KW_SOURCE)
+            unit = kwargs.pop(_Decorator.KW_UNIT, None)
+            assert unit is None or happyType.isstring(unit)
+        except AssertionError:
+            raise happyError('wrong format/value for %s argument' % _Decorator.KW_UNIT.upper())
+        else:
+            if unit is not None and unit=='ALL':
+                unit = 'NUTS'
+        try:
+            source = kwargs.pop(_Decorator.KW_SOURCE, None)
             assert source is None or happyType.isstring(source)
         except AssertionError:
             raise happyError('wrong format/value for %s argument' % _Decorator.KW_SOURCE.upper())
+        else:
+            pass
+        try:
+            assert source is None or unit is None
+        except:
+            raise happyError('incompatible parameters %s and %s' % (_Decorator.KW_UNIT.upper(),_Decorator.KW_SOURCE.upper()))
+        else:
+            source = source or unit or 'NUTS' # force to 'NUTS' in case both are None
+            source = source.upper()
         if source in ('BULK','INFO','NUTS2JSON'):
             dimensions = {'INFO':      ['KW_YEAR', 'KW_FORMAT'],
                           'BULK':      ['KW_YEAR', 'KW_SCALE', 'KW_FORMAT'],
@@ -1720,24 +1721,39 @@ class GISCOService(OSMService):
             dimensions.update({attr: val})
         # we have to cheat here to support NUTS2JSON package 
         if source == 'NUTS2JSON':
-            if dimensions.get('KW_FORMAT') is not None:
+            if 'KW_FORMAT' in dimensions:
                 dimensions.update({'KW_FORMAT': ['topojson' if f=='json' else f        \
                                                           for f in dimensions.get('KW_FORMAT')]})
-            if dimensions.get('KW_SCALE') is not None:
-                dimensions.update({'KW_SCALE': [settings.DEF_NUTS2JSON_MAPSIZE if s not in settings.NUTS2JSON_MAPSIZE else s       \
+            if 'KW_SCALE' in dimensions:
+                dimensions.update({'KW_SCALE': [settings.DEF_NUTS2JSON_SCALE if s not in settings.NUTS2JSON_SCALES else s       \
                                                           for s in dimensions.get('KW_SCALE')]})
-            if dimensions.get('KW_PROJECTION') is not None:
+            if 'KW_PROJECTION' in dimensions:
                 dimensions.update({'KW_PROJECTION': [settings.DEF_NUTS2JSON_PROJECTION if p not in settings.NUTS2JSON_PROJECTIONS else p        \
                                                           for p in dimensions.get('KW_PROJECTION')]})
-        return dimensions, self._resp4data('NUTS', dimensions, **kwargs)
+        elif source not in ('NUTS','BULK','INFO'):
+            if 'KW_GEOMETRY' in dimensions:
+                dimensions.update({'KW_GEOMETRY': ['RG' if g not in ('LB','label','RG','region') else g      \
+                                                          for g in dimensions.get('KW_GEOMETRY')]})
+                _anylabel = any([g in ('LB','label') for g in dimensions.get('KW_GEOMETRY')])
+                _alllabels = all([g in ('LB','label') for g in dimensions.get('KW_GEOMETRY')])
+            else:
+                _anylabel, _alllabels = False, False
+            if 'KW_FORMAT' in dimensions:
+                dimensions.update({'KW_FORMAT': ['geojson' for g in dimensions.get('KW_FORMAT')]})
+            if 'KW_PROJECTION' in dimensions:
+                dimensions.update({'KW_PROJECTION': [3035 if _anylabel and p not in (3035,'LAEA','EPSG3035',4258,'ETRS89','EPSG4258') else p      \
+                                                          for p in dimensions.get('KW_PROJECTION')]})
+            if 'KW_SCALE' in dimensions and _alllabels:
+                dimensions.pop('KW_SCALE')
+        return dimensions, self._resp4data('NUTS', source, dimensions, **kwargs)
 
     #/************************************************************************/
-    def lut_idnuts(self, **kwargs):
+    def resp4idname(self, **kwargs):
         """
         
         ::
             
-            >>> fref  = serv.idnuts(nuts, **kwargs)
+            >>> fref  = serv.resp4idname(nuts, **kwargs)
             
         Returns
         -------
@@ -1787,9 +1803,9 @@ class GISCOService(OSMService):
         # return pd.read_csv(io.BytesIO(zf.read(data)))
         
     #/************************************************************************/
-    def _nuts2id(self, **kwargs):
-        """Generic version of methods :meth:`~GISCOService.nuts2id` and
-        :meth:`~GISCOService.id2nuts` used when linking NUTS identifiers with 
+    def _nutsid2name(self, **kwargs):
+        """Generic version of methods :meth:`~GISCOService.nutsname2id` and
+        :meth:`~GISCOService.nutsid2name` used when linking NUTS identifiers with 
         unit names.
         """
         name = kwargs.pop(_Decorator.KW_NAME,None)
@@ -1814,7 +1830,7 @@ class GISCOService(OSMService):
         group = kwargs.pop('group', False)
         lut = kwargs.pop(_Decorator.KW_FILE, None)
         if lut is None:
-            lut = self.lut_idnuts(**kwargs)
+            lut = self.resp4idname(**kwargs)
             try:
                 assert PANDAS_INSTALLED is True
                 lut = pd.read_csv(lut)
@@ -1847,35 +1863,43 @@ class GISCOService(OSMService):
                     yield lut[lut[dim1].str.upper() == u][dim2].values
         
     #/************************************************************************/
-    def nuts2id(self, name, **kwargs):
+    def nutsname2id(self, name, **kwargs):
         """
         
         ::
             
-            >>> id = serv.nuts2id(name, **kwargs)
+            >>> id = serv.nutsname2id(name, **kwargs)
             
         Returns
         -------
+        
+        See also
+        --------
+        :meth:`~GISCOService.lut4idname`, :meth:`~GISCOService.nutsid2name`.
         """
         _id = []        
         kwargs.update({_Decorator.KW_NAME: name})
-        [_id.append(data if len(data)>1 else data[0]) for data in self._nuts2id(**kwargs)]
+        [_id.append(data if len(data)>1 else data[0]) for data in self._nutsid2name(**kwargs)]
         return _id
         
     #/************************************************************************/
-    def id2nuts(self, _id, **kwargs):
+    def nutsid2name(self, _id, **kwargs):
         """
         
         ::
             
-            >>> name = serv.id2nuts(id, **kwargs)
+            >>> name = serv.nutsid2name(id, **kwargs)
             
         Returns
         -------
+        
+        See also
+        --------
+        :meth:`~GISCOService.lut4idname`, :meth:`~GISCOService.nutsname2id`.
         """
         name = []        
         kwargs.update({_Decorator.KW_ID: _id})
-        [name.append(data if len(data)>1 else data[0]) for data in self._nuts2id(**kwargs)]
+        [name.append(data if len(data)>1 else data[0]) for data in self._nutsid2name(**kwargs)]
         return name
         
     #/************************************************************************/
@@ -2266,7 +2290,7 @@ class GISCOService(OSMService):
                     data = None
                 else:
                     data = data.get(key)
-            yield data if data is None or not happyType.ismapping(data) or len(data)>1 else data[0]
+            yield data if data is None or not happyType.issequence(data) or len(data)>1 else data[0]
 
     #/************************************************************************/
     @_Decorator.parse_year
@@ -2362,6 +2386,7 @@ class GISCOService(OSMService):
         :meth:`base._Service.get_response`.
         """
         level = kwargs.pop('level',None)
+        #if 'key' not in kwargs:
         kwargs.update({'key': _Decorator.parse_nuts.KW_RESULTS})
         nuts = []        
         #[nuts.append(data if len(data)>1 else data[0]) for data in self._coord2nuts(coord, **kwargs)]

@@ -76,7 +76,7 @@ else:
     NCPUS = multiprocessing.cpu_count()              
 
 try:
-    from osgeo import ogr
+    from osgeo import ogr, gdal
 except ImportError:
     GDAL_TOOL = False
     happyWarning('GDAL package (https://pypi.python.org/pypi/GDAL) not loaded - Inline resources not available')
@@ -2065,13 +2065,63 @@ class GDALTransform(_Tool):
         See also
         --------
         :meth:`~tools.GDALTransform.file2feat`, :meth:`~tools.GDALTransform.layer2feat`,
-        :meth:`osgeo.ogr.DataSource.GetLayer`.
+        :meth:`~tools.GDALTransform.url2layer`, :meth:`osgeo.ogr.DataSource.GetLayer`.
         """
         data = list(self._file2data(fname))
         try:
             layer = [d.GetLayer() for d in data]
         except:
             raise happyError('could not get vector layer')
+        return layer if layer in ([],None) or len(layer)>1 else layer[0]
+    
+    #/************************************************************************/
+    #@_Decorator.parse_url
+    def url2layer(self, url, **kwargs):
+        """Load an online URL and returns the corresponding vector layer.
+        
+        ::
+            
+            >>> layer = tool.url2layer(url)
+            
+        Arguments
+        ---------
+        url : str
+            URL of online dataset.
+            
+        Returns
+        -------
+        layer : :class:`osgeo.ogr.Layer`
+            output single vector layer loaded from the online :data:`URL`.
+            
+        See also
+        --------
+        :meth:`~tools.GDALTransform.file2layer`, :meth:`osgeo.ogr.Open`,
+        :meth:`osgeo.ogr.DataSource.GetLayer`.
+        """
+        server = kwargs.pop('server', '')
+        port = kwargs.pop('port', '')
+        #fmt = kwargs.pop(_Decorator.KW_FORMAT, settings.DEF_GISCO_FORMAT)
+        # specify proxy server
+        gdal.SetConfigOption('GDAL_HTTP_PROXY', server + ':' + port)       
+        # setup proxy authentication option for NTLM with no username or password so single sign-on works
+        gdal.SetConfigOption('GDAL_PROXY_AUTH', 'NTLM')
+        gdal.SetConfigOption('GDAL_HTTP_PROXYUSERPWD', ' : ')
+        # now fetch a HTTP datasource and do something...
+        if not happyType.issequence(url):
+            url = [url,]
+        try:            
+            ds = [ogr.Open(u) for u in url]
+            assert ds is not None
+        except:
+            raise happyError('URL not open')
+        try:
+            layer = [d.GetLayer('OGRGeoJSON') for d in ds]
+            assert layer is not None
+        except:
+            try:
+                layer = [d.GetLayer() for d in ds]
+            except: 
+                raise happyError('could not get vector layer')
         return layer if layer in ([],None) or len(layer)>1 else layer[0]
 
     #/************************************************************************/
@@ -2081,11 +2131,11 @@ class GDALTransform(_Tool):
         
         ::
             
-            >>> vector = tool.layer2feat(layer)
+            >>> feat = tool.layer2feat(layer)
             
         Arguments
         ---------
-        layer : :class:`osgeo.ogr.Layer`,list[:class:`osgeo.ogr.Layer`]
+        feat : :class:`osgeo.ogr.Layer`,list[:class:`osgeo.ogr.Layer`]
             input ingle (or multiple) vector layer(s).
             
         Returns
@@ -2130,20 +2180,20 @@ class GDALTransform(_Tool):
         if not all([isinstance(l, ogr.Layer) for l in layer]):
             raise happyError('wrong layer type')            
         try:
-            vector = [l.GetFeature(i) for l in layer for i in range(0,l.GetFeatureCount())]
+            feat = [l.GetFeature(i) for l in layer for i in range(0,l.GetFeatureCount())]
         except:
             raise happyError('could not get features')
-        return vector if vector in ([],None) or len(vector)>1 else vector[0]
+        return feat if feat in ([],None) or len(feat)>1 else feat[0]
 
     #/************************************************************************/
     #@_Decorator.parse_file
     def file2feat(self, fname):
         """Load a vector file using the internally defined driver and returns the 
-        corresponding list of features.ß
+        corresponding list of features.
         
         ::
             
-            >>> vector = tool.file2feat(fname)
+            >>> feat = tool.file2feat(fname)
             
         Arguments
         ---------
@@ -2152,20 +2202,13 @@ class GDALTransform(_Tool):
             
         Returns
         -------
-        vector : :class:`osgeo.ogr.Feature`,list[:class:`osgeo.ogr.Feature`]
+        feat : :class:`osgeo.ogr.Feature`,list[:class:`osgeo.ogr.Feature`]
             output (list of) vector feature(s) stored in the input :data:`file`.
-            
-        Example
-        -------
-        Let us consider the NUTS data at level 2 imported within the happyGISCO 
-        project, that is:
-            
             
         See also
         --------
         :meth:`~tools.GDALTransform.file2layer`, :meth:`~tools.GDALTransform.layer2feat`, 
-        :meth:`osgeo.ogr.Driver.Open`, :meth:`osgeo.ogr.DataSource.GetLayer`, 
-        :meth:`osgeo.ogr.Layer.GetFeature`.
+        :meth:`~tools.GDALTransform.url2feat`, :meth:`osgeo.ogr.DataSource.GetLayer`.
         """
         # method 1
         # return self.layer2feat(self.file2layer(fname))
@@ -2181,6 +2224,32 @@ class GDALTransform(_Tool):
         except:
             raise happyError('could not get vector layer') 
         return self.layer2feat(layer)
+
+    #/************************************************************************/
+    #@_Decorator.parse_url
+    def url2feat(self, url, **kwargs):
+        """Load an online URL and and returns the corresponding list of features.
+        
+        ::
+            
+            >>> feat = tool.url2feat(url, **kwargs)
+            
+        Arguments
+        ---------
+        url : str
+            URL of online dataset.
+            
+        Returns
+        -------
+        feat : :class:`osgeo.ogr.Feature`,list[:class:`osgeo.ogr.Feature`]
+            output (list of) vector feature(s) loaded from the online :data:`URL`.            
+            
+        See also
+        --------
+        :meth:`~tools.GDALTransform.url2layer`, :meth:`~tools.GDALTransform.layer2feat`, 
+        :meth:`~tools.GDALTransform.file2feat`.
+        """
+        return self.layer2feat(self.url2layer(url, **kwargs))
 
     #/************************************************************************/
     @_Decorator.parse_coordinate
@@ -2257,6 +2326,13 @@ class GDALTransform(_Tool):
             else:
                 geom.AddGeometry(pt)
         return geom
+    
+    #/************************************************************************/
+    def vector2layer(self, vector):
+        """
+        """
+        pass
+        
     
     #/************************************************************************/
     def layer2fid(self, layer, geom):

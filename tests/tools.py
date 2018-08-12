@@ -48,7 +48,7 @@ except ImportError:
     pass
 
 from happygisco import settings
-from happygisco.tools import GeoLocation, GeoDistance, GeoAngle, GeoCoordinate, GDALTool
+from happygisco.tools import GeoLocation, GeoDistance, GeoAngle, GeoCoordinate, GDALTransform
 
 #==============================================================================
 # TESTING UNITS
