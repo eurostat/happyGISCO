@@ -1940,6 +1940,12 @@ class GDALTransform(_Tool):
     driver_name : str
         name of the driver used for vector files; default is :data:`settings.DRIVER_NAME`,
         *e.g.* :literal:`'ESRI Shapefile'` to load common shapefiles.
+        
+    Note
+    ----
+    Considering the variety of vector formats available for |GISCO| datasets, it 
+    is actually preferable to let the driver 'unnamed' and let :data:`ogr` guess
+    the type of the datasets.
     """
     
     #/************************************************************************/
@@ -2100,17 +2106,18 @@ class GDALTransform(_Tool):
         """
         server = kwargs.pop('server', '')
         port = kwargs.pop('port', '')
+        vsi = kwargs.pop('vsi', False)
         #fmt = kwargs.pop(_Decorator.KW_FORMAT, settings.DEF_GISCO_FORMAT)
         # specify proxy server
-        gdal.SetConfigOption('GDAL_HTTP_PROXY', server + ':' + port)       
+        gdal.SetConfigOption('GDAL_HTTP_PROXY', server + ':' + port if server or port else '')       
         # setup proxy authentication option for NTLM with no username or password so single sign-on works
         gdal.SetConfigOption('GDAL_PROXY_AUTH', 'NTLM')
         gdal.SetConfigOption('GDAL_HTTP_PROXYUSERPWD', ' : ')
         # now fetch a HTTP datasource and do something...
         if not happyType.issequence(url):
             url = [url,]
-        try:            
-            ds = [ogr.Open(u) for u in url]
+        try:         
+            ds = [ogr.Open('/vsicurl/' + u if vsi else u) for u in url]
             assert ds is not None
         except:
             raise happyError('URL not open')
@@ -2123,6 +2130,33 @@ class GDALTransform(_Tool):
             except: 
                 raise happyError('could not get vector layer')
         return layer if layer in ([],None) or len(layer)>1 else layer[0]
+    
+    
+#gdal.FileFromMemBuffer(vsipath, data) 
+#ds = gdal.Open(vsipath) 
+#geoT = src_ds.GetGeoTransform()
+#proj = src_ds.GetProjection()
+#
+#def read_file(filename):
+#    # https://www.gdal.org/gdal_virtual_file_systems.html#gdal_virtual_file_systems_intro
+#    vsifile = gdal.VSIFOpenL(filename,'r')
+#    gdal.VSIFSeekL(vsifile, 0, 2) # seek to end
+#    vsileng = gdal.VSIFTellL(vsifile)
+#    gdal.VSIFSeekL(vsifile, 0, 0) # seek to beginning
+#    data = gdal.VSIFReadL(1, vsileng, vsifile)
+#    # gdal.VSIFCloseL(vsifile)
+#    return data
+#
+#ds = gdal.VectorTranslate('/vsimem/out.json', gjs, format = 'GeoJSON', layerCreationOptions = ['RFC7946=YES', 'WRITE_BBOX=YES'])
+#print(ds)
+#got = read_file('/vsimem/out.json')
+#print(got)
+
+#'/vsizip//vsicurl/'
+#
+#ds = None
+#gdal.Unlink(path)
+#gdal.Unlink('/vsimem/inMem.tif')
 
     #/************************************************************************/
     def layer2feat(self, layer):

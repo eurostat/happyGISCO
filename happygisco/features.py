@@ -777,12 +777,13 @@ class NUTS(_Feature):
     def __init__(self, *args, **kwargs):
         self.__unit = ''
         self.__file, self.__url = '', ''
+        self.__resp = None
         self.__layer = None
         self.__feature = None
         self.__vector = None
         super(NUTS,self).__init__(**kwargs)
         items = []
-        for kw in ['KW_FILE', 'KW_URL', 'KW_LAYER', 'KW_FEATURE', 'KW_VECTOR', 'KW_UNIT']:
+        for kw in ['KW_FILE', 'KW_URL', 'KW_RESPONSE', 'KW_LAYER', 'KW_FEATURE', 'KW_VECTOR', 'KW_UNIT']:
             attr = kwargs.pop(getattr(_Decorator, kw), None)
             try:
                 assert attr not in (None,[],{},'')
@@ -1203,7 +1204,7 @@ class NUTS(_Feature):
                 data = json.loads(data.decode(chardet.detect(data)["encoding"]))
             except:
                 data = None
-        json.dumps(resp.json()).replace('\'','"')
+        json.dumps(resp.json())
     
     #/************************************************************************/
     def loads(self, **kwargs):

@@ -796,6 +796,7 @@ class _Decorator(object):
     KW_LAYER        = 'layer'
     KW_FILE         = 'file'
     KW_URL          = 'url'
+    KW_RESPONSE     = 'resp'
     
     KW_FEATURE      = 'feature' 
     KW_VECTOR       = 'vector' 
