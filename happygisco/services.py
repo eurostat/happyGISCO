@@ -238,12 +238,11 @@ class OSMService(_Service):
         """
         protocol = kwargs.pop('protocol', 'https')
         query = kwargs.pop('query', 'search')
-        keys = kwargs.pop('keys',
-                          ['format', 'json_callback', 'accept-language', 'extratags', 'namedetails', 
-                           'q', 'street', 'city', 'county', 'state', 'country', 'postalcode', 'countrycodes', 
-                           'viewbox', 'bounded', 'addressdetails', 'email', 'limit', 'dedupe', 'debug', 
-                           'polygon_geojson', 'polygon_kml', 'polygon_svg', 'polygon_text']
-                          )
+        keys = kwargs.pop('keys', None) or                                  \
+            ['format', 'json_callback', 'accept-language', 'extratags', 'namedetails', 
+             'q', 'street', 'city', 'county', 'state', 'country', 'postalcode', 'countrycodes', 
+             'viewbox', 'bounded', 'addressdetails', 'email', 'limit', 'dedupe', 'debug', 
+             'polygon_geojson', 'polygon_kml', 'polygon_svg', 'polygon_text']
         happyVerbose('\n            * '.join(['input filters used for geocoding service :',]+[attr + '='+ str(kwargs[attr]) \
                                             for attr in kwargs.keys() if attr in keys]))
         url = self.build_url(protocol=protocol,
@@ -297,23 +296,24 @@ class OSMService(_Service):
         """
         protocol = kwargs.pop('protocol', 'https')
         query = kwargs.pop('query', 'reverse')
-        keys = kwargs.pop('keys',
-                          ['format', 'json_callback', 'accept-language', 'extratags', 'email', 
-                           'osm_type', 'osm_id', 'lat', 'lon', 'zoom', 'addressdetails', 
-                           'polygon_geojson', 'polygon_kml', 'polygon_svg', 'polygon_text']
-                          )
+        path = kwargs.pop('path','')
+        keys = kwargs.pop('keys', None) or                                  \
+            ['format', 'json_callback', 'accept-language', 'extratags', 'email', 
+             'osm_type', 'osm_id', 'lat', 'lon', 'zoom', 'addressdetails', 
+             'polygon_geojson', 'polygon_kml', 'polygon_svg', 'polygon_text']
         happyVerbose('\n            * '.join(['input filters used for reverse geocoding service:',]+[attr + '='+ str(kwargs[attr]) \
                                             for attr in kwargs.keys() if attr in keys]))
         url = self.build_url(protocol=protocol,
                              domain=self.domain, 
                              query=query, 
+                             path=path,
                              **{k:v for k,v in kwargs.items() if k in keys})
         happyVerbose('output url:\n            %s' % url)
         return url
 
     #/************************************************************************/
-    def _place2area(self, place, **kwargs): 
-        """Iterable version of :meth:`~OSMService.place2area`.
+    def _place2geom(self, place, **kwargs): 
+        """Iterable version of :meth:`~OSMService.place2geom`.
         """
         if not happyType.issequence(place):     place = [place,]
         place = ['+'.join(p.replace(',',' ').split()) for p in place]
@@ -356,7 +356,7 @@ class OSMService(_Service):
 
     #/************************************************************************/
     #@_Decorator.parse_place
-    #def place2area(self, place, **kwargs): 
+    #def place2geom(self, place, **kwargs): 
     #    place = ['+'.join(p.replace(',',' ').split()) for p in place]
     #    area = []
     #    fmt = kwargs.pop('format','')
@@ -384,13 +384,13 @@ class OSMService(_Service):
     #            area.append(data if len(data)>1 else data[0])
     #    return area if len(area)>1 else area[0]
     @_Decorator.parse_place
-    def place2area(self, place, **kwargs):
+    def place2geom(self, place, **kwargs):
         """Retrieve the geographical information associated to a given place as a
         geometry object using |OSM| service.
         
         ::
         
-            >>> area = serv.place2area(place, **kwargs)
+            >>> area = serv.place2geom(place, **kwargs)
 
         Arguments
         ---------
@@ -438,12 +438,12 @@ class OSMService(_Service):
             >>> serv.url_geocode(place=berlin) 
                 'https://nominatim.openstreetmap.org/search?format=json&q=Berlin+Germany'
         
-        though the method :meth:`place2area` enables us to run the operation all
+        though the method :meth:`place2geom` enables us to run the operation all
         in once: 
         
         ::
 
-            >>> serv.place2area(berlin, format='json')
+            >>> serv.place2geom(berlin, format='json')
                 [{'boundingbox': ['52.3570365', '52.6770365', '13.2288599', '13.5488599'],
                    'class': 'place',
                   'display_name': 'Berlin, 10117, Deutschland',
@@ -482,18 +482,18 @@ class OSMService(_Service):
         See also
         --------
         :meth:`~OSMService.coord2place`, :meth:`~OSMService.place2coord`, 
-        :meth:`~OSMService.url_geocode`, :meth:`~GISCOService.place2area`, 
+        :meth:`~OSMService.url_geocode`, :meth:`~GISCOService.place2geom`, 
         :meth:`base._Service.get_status`, :meth:`base._Service.get_response`.
         """
         unique = kwargs.pop('unique',False)
         area = []
         [area.append(data if data is None or (len(data)>1 and unique is False) else data[0]) \
-             for data in self._place2area(place, **kwargs)]
+             for data in self._place2geom(place, **kwargs)]
         return area if area==[] or len(area)>1 else area[0]
        
     #/************************************************************************/
-    def _coord2area(self, coord, **kwargs): 
-        """Iterable version of :meth:`~OSMService.coord2area`.
+    def _coord2geom(self, coord, **kwargs): 
+        """Iterable version of :meth:`~OSMService.coord2geom`.
         """
         if not happyType.issequence(coord):     
             coord = list(coord)
@@ -501,8 +501,8 @@ class OSMService(_Service):
             coord = [list(c) for c in coord]
         fmt = kwargs.pop('format','')
         key = kwargs.pop('key',None)
-        if fmt is not None:
-            kwargs.update({'format':fmt or 'json'})
+        if fmt not in ('', None):
+            kwargs.update({'format':'json'})
         for i in range(len(coord)):
             kwargs.update({'lat': coord[i][0], 'lon': coord[i][1]})
             try:
@@ -540,7 +540,7 @@ class OSMService(_Service):
        
     #/************************************************************************/
     #@_Decorator.parse_coordinate
-    #def coord2area(self, lat, lon, **kwargs): # specific use
+    #def coord2geom(self, lat, lon, **kwargs): # specific use
     #    area = []
     #    for i in range(len(lat)):
     #        kwargs.update({'lat': lat[i], 'lon': lon[i]})
@@ -557,22 +557,22 @@ class OSMService(_Service):
     #        except:
     #            raise happyError('place for geolocation (%s,%s) not loaded' % (lat[i], lon[i]))
     #        try:
-    #            assert _Decorator.parse_area.KW_FEATURES in data     \
-    #                and data[_Decorator.parse_area.KW_FEATURES] != []
+    #            assert _Decorator.parse_geometry.KW_FEATURES in data     \
+    #                and data[_Decorator.parse_geometry.KW_FEATURES] != []
     #        except:
     #            raise happyError('place for geolocation (%s,%s) not recognised' % (lat[i], lon[i]))      
     #        else:
-    #            p = data.get(_Decorator.parse_area.KW_FEATURES)
+    #            p = data.get(_Decorator.parse_geometry.KW_FEATURES)
     #            area.append(p if len(p)>1 else p[0])
     #    return area[0] if len(area)==1 else area
     @_Decorator.parse_coordinate
-    def coord2area(self, coord, **kwargs): # specific use
+    def coord2geom(self, coord, **kwargs): # specific use
         """Retrieve the place (topo)name of a given location provided by its 
         geographic coordinates using |OSM| service.
                 
         ::
 
-            >>>  area = serv.coord2area(coord, **kwargs)
+            >>>  area = serv.coord2geom(coord, **kwargs)
 
         Arguments
         ---------
@@ -620,11 +620,11 @@ class OSMService(_Service):
             >>> serv.url_reverse(coord=berlin) 
                 'https://nominatim.openstreetmap.org/reverse?format=json&lat=52.5170365&lon=13.3888599'
         
-        however, the method :meth:`coord2area` does everything at once:
+        however, the method :meth:`coord2geom` does everything at once:
          
         ::
        
-            >>> serv.coord2area(berlin, format='json')
+            >>> serv.coord2geom(berlin, format='json')
                 {'address': {'address29': 'Douglas',
                   'city': 'Berlin',
                   'city_district': 'Mitte',
@@ -647,10 +647,10 @@ class OSMService(_Service):
         :meth:`~OSMService.place2coord`, :meth:`~OSMService.url_reverse`, 
         :meth:`base._Service.get_status`, :meth:`base._Service.get_response`.
         """
-        area = []
-        [area.append(data if data is None or len(data)>1 else data[0]) \
-             for data in self._coord2area(coord, **kwargs)]
-        return area[0] if area==[] or len(area)==1 else area
+        geom = []
+        [geom.append(data if data is None or len(data)>1 else data[0]) \
+             for data in self._coord2geom(coord, **kwargs)]
+        return geom[0] if geom==[] or len(geom)==1 else geom
 
     @_Decorator.parse_place
     def place2coord(self, place, **kwargs):
@@ -729,12 +729,12 @@ class OSMService(_Service):
                  [41.988224, 13.067989],
                  [41.5393232, 13.2796473]]
             
-        * This method simply "decorates" the method :meth:`~OSMService._place2area`
-          with :meth:`_Decorator.parse_area`.
+        * This method simply "decorates" the method :meth:`~OSMService._place2geom`
+          with :meth:`_Decorator.parse_geometry`.
 
         See also
         --------
-        :meth:`~OSMService.place2area`, :meth:`~OSMService.coord2place`,
+        :meth:`~OSMService.place2geom`, :meth:`~OSMService.coord2place`,
         :meth:`GISCOService.place2coord`.
         """
         unique, order = kwargs.pop('unique',False), kwargs.pop('order','lL')
@@ -743,8 +743,8 @@ class OSMService(_Service):
         # also parsed
         func = lambda *a, **kw: [kw.get('coord')]
         [coord.append(data if data is None or len(data)>1 else data[0])     \
-             for g in self._place2area(place, **kwargs)                     \
-             for data in _Decorator.parse_area(func)(g, filter='coord', order=order, unique=unique)]
+             for g in self._place2geom(place, **kwargs)                     \
+             for data in _Decorator.parse_geometry(func)(g, filter='coord', order=order, unique=unique)]
         return coord if coord==[] or len(coord)>1 else coord[0]
 
     @_Decorator.parse_coordinate
@@ -793,20 +793,20 @@ class OSMService(_Service):
             
         Note
         ----
-        This method simply "decorates" the method :meth:`~OSMService._coord2area`
-        with :meth:`_Decorator.parse_area`.
+        This method simply "decorates" the method :meth:`~OSMService._coord2geom`
+        with :meth:`_Decorator.parse_geometry`.
             
         See also
         --------
-        :meth:`~OSMService.coord2area`, :meth:`~OSMService.place2coord`,
+        :meth:`~OSMService.coord2geom`, :meth:`~OSMService.place2coord`,
         :meth:`GISCOService.coord2place`.
         """
         unique = kwargs.pop('unique',False)
         place = []
         func = lambda *a, **kw: [kw.get('place')]
         [place.append(data if data is None or len(data)>1 else data[0])     \
-             for a in self._coord2area(coord, **kwargs)                     \
-             for data in _Decorator.parse_area(func)(a, filter='place', unique=unique)]
+             for a in self._coord2geom(coord, **kwargs)                     \
+             for data in _Decorator.parse_geometry(func)(a, filter='place', unique=unique)]
         return place if place==[] or len(place)>1 else place[0]
 
 #%%
@@ -1117,7 +1117,7 @@ class GISCOService(OSMService):
         pass
 
     #/************************************************************************/
-    def url4country(self, **kwargs):
+    def url4country(self, source=None, **kwargs):
         """Generate the URL (or name) of the |GISCO| countries vector datasets.
         
         ::
@@ -1346,6 +1346,7 @@ class GISCOService(OSMService):
                        'query': 'search.php' if nominatim else 'api',
                        'protocol': 'http'}
             )
+        if nominatim:   kwargs.pop('key', None)
         return super(GISCOService, self).url_geocode(**kwargs)
     
     #/************************************************************************/
@@ -1397,11 +1398,12 @@ class GISCOService(OSMService):
         :meth:`OSMService.url_reverse`.
         """
         nominatim = kwargs.pop('nominatim', False)
-        kwargs.update({'keys': ['lat', 'lon', 'radius', 'distance_sort', 'limit', 'lang'],
+        kwargs.update({'keys': None if nominatim else ['lat', 'lon', 'radius', 'distance_sort', 'limit', 'lang'],
                        'path': 'nominatim' if nominatim else '',
                        'query': 'reverse.php' if nominatim else 'reverse',
                        'protocol': 'http'}
             )
+        if nominatim:   kwargs.pop('key', None)
         return super(GISCOService, self).url_reverse(**kwargs)
 
     #/************************************************************************/
@@ -1903,22 +1905,22 @@ class GISCOService(OSMService):
         return name
         
     #/************************************************************************/
-    def _place2area(self, place, **kwargs): 
-        """Iterable version of :meth:`~GISCOService.place2area`.
+    def _place2geom(self, place, **kwargs): 
+        """Iterable version of :meth:`~GISCOService.place2geom`.
         """
-        kwargs.update({'key': _Decorator.parse_area.KW_FEATURES})
-        #return super(GISCOService,self)._place2area(place, **kwargs)
-        for g in super(GISCOService,self)._place2area(place, **kwargs):
+        kwargs.update({'key': _Decorator.parse_geometry.KW_FEATURES})
+        #return super(GISCOService,self)._place2geom(place, **kwargs)
+        for g in super(GISCOService,self)._place2geom(place, **kwargs):
             yield g
     #/************************************************************************/
     @_Decorator.parse_place
-    def place2area(self, place, **kwargs): 
+    def place2geom(self, place, **kwargs): 
         """Retrieve the geographical information associated to a given place as
         a geometry using |GISCO| service.
         
         ::
         
-            >>> area = serv.place2area(place, **kwargs)
+            >>> geom = serv.place2geom(place, **kwargs)
 
         Arguments
         ---------
@@ -1933,7 +1935,7 @@ class GISCOService(OSMService):
         
         Returns
         -------
-        area : dict, list[dict]
+        geom : dict, list[dict]
             a (list of) geometry(ies), *i.e.* a dictionary describing the geographical
             information related to the input :data:`place`, one for each place 
             mentioned.
@@ -1954,7 +1956,7 @@ class GISCOService(OSMService):
         ::
            
             >>> serv = services.GISCOService()
-            >>> serv.place2area('Madrid, Spain')
+            >>> serv.place2geom('Madrid, Spain')
                 [{'geometry': {'coordinates': [-3.7035825, 40.4167047], 'type': 'Point'},
                   'properties': {'country': 'Spain',
                    'extent': [-3.8889539, 40.6437293, -3.5179163, 40.3119774],
@@ -1990,7 +1992,7 @@ class GISCOService(OSMService):
         
         Note
         ----
-        This method overrides :meth:`OSMService.place2area` by further providing 
+        This method overrides :meth:`OSMService.place2geom` by further providing 
         the :literal:`features` key that will be extracted from the output geometry 
         dictionary(ies).
         
@@ -1999,10 +2001,11 @@ class GISCOService(OSMService):
         :meth:`~GISCOService.place2coord`, :meth:`~GISCOService.coord2place`, 
         :meth:`~GISCOService.coord2nuts`, :meth:`~GISCOService.place2nuts`, 
         :meth:`~GISCOService.coord2route`, :meth:`~GISCOService.url_geocode`, 
-        :meth:`OSMService.place2area`, :meth:`base._Service.get_response`.
+        :meth:`OSMService.place2geom`, :meth:`base._Service.get_response`.
         """
-        kwargs.update({'key': _Decorator.parse_area.KW_FEATURES})
-        return super(GISCOService,self).place2area(place=place, **kwargs)
+        if not kwargs.get('nominatim'):
+            kwargs.update({'key': _Decorator.parse_geometry.KW_FEATURES})
+        return super(GISCOService,self).place2geom(place=place, **kwargs)
         
     #/************************************************************************/
     #@_Decorator.parse_place
@@ -2061,29 +2064,30 @@ class GISCOService(OSMService):
            
         See also
         --------
-        :meth:`~GISCOService.place2area`, :meth:`~GISCOService.coord2place`, 
+        :meth:`~GISCOService.place2geom`, :meth:`~GISCOService.coord2place`, 
         :meth:`~GISCOService.coord2nuts`, :meth:`~GISCOService.place2nuts`, 
         :meth:`~GISCOService.coord2route`, :meth:`OSMService.place2coord`.
         """
         return super(GISCOService,self).place2coord(place=place, **kwargs)
 
     #/************************************************************************/
-    def _coord2area(self, coord, **kwargs): 
-        """Iterable version of :meth:`~GISCOService.coord2area`.
-        """
-        kwargs.update({'key': _Decorator.parse_area.KW_FEATURES})
-        #return super(GISCOService,self)._place2area(place, **kwargs)
-        for a in super(GISCOService,self)._coord2area(coord, **kwargs):
-            yield a
+    #def _coord2geom(self, coord, **kwargs): 
+    #    """Iterable version of :meth:`~GISCOService.coord2geom`.
+    #    """
+    #    if not kwargs.get('nominatim'):
+    #       kwargs.update({'key': _Decorator.parse_geometry.KW_FEATURES})
+    #    #return super(GISCOService,self)._place2geom(place, **kwargs)
+    #    for a in super(GISCOService,self)._coord2geom(coord, **kwargs):
+    #        yield a
     #/************************************************************************/
     @_Decorator.parse_coordinate
-    def coord2area(self, coord, **kwargs): # specific use
+    def coord2geom(self, coord, **kwargs): # specific use
         """Retrieve the place (topo)name of a given location provided by its 
         geographic coordinates using |GISCO| service.
         
         ::
         
-            >>>  area = serv.coord2area(coord, **kwargs)
+            >>>  geom = serv.coord2geom(coord, **kwargs)
 
         Arguments
         ---------
@@ -2099,7 +2103,7 @@ class GISCOService(OSMService):
         
         Returns
         -------
-        area : dict, list[dict]
+        geom : dict, list[dict]
             a (list of) geometry(ies), *i.e.* a dictionary describing the geographical
             information related to the input geographic coordinate(s) in :data:`coord`, 
             one for each coordinate listed.
@@ -2122,49 +2126,63 @@ class GISCOService(OSMService):
         
             >>> berlin = [52.5170365, 13.3888599]
         
-        We can build the desired |OSM| URL to get the result:
+        We can build an |OSM| URL to get the result:
         
         ::
         
             >>> serv = services.OSMService()
-            >>> serv.url_reverse(coord=berlin) 
-                'https://nominatim.openstreetmap.org/reverse?format=json&lat=52.5170365&lon=13.3888599'
+            >>> serv.url_reverse(lat=berlin[0], lon=berlin[1]) 
+                'http://europa.eu/webtools/rest/gisco/nominatim/reverse.php?lat=52.5170365&lon=13.3888599&format=json'
         
-        however, the method :meth:`coord2geom` does everything at once:
+        Otherwise, the method :meth:`coord2geom` can do everything at once, with
+        or without calling the |Nominatim| service:
         
         ::
         
-            >>> serv.coord2area(berlin, format='json')
-                {'address': {'address29': 'Douglas',
-                  'city': 'Berlin',
-                  'city_district': 'Mitte',
-                  'country': 'Deutschland', 'country_code': 'de',
-                  'neighbourhood': 'Spandauer Vorstadt',
-                  'postcode': '10117',
-                  'road': 'Unter den Linden',
-                  'state': 'Berlin',
-                  'suburb': 'Mitte'},
-                 'boundingbox': ['52.517222', '52.517422', '13.388877', '13.389077'],
-                 'display_name': 'Douglas, Unter den Linden, Spandauer Vorstadt, Mitte, Berlin, 10117, Deutschland',
-                 'lat': '52.517322',
-                 'licence': 'Data © OpenStreetMap contributors, ODbL 1.0. https://osm.org/copyright',
-                 'lon': '13.388977',
-                 'osm_id': '1818862993', 'osm_type': 'node',
-                 'place_id': '18439434'}
-        
+            >>> serv.coord2geom(berlin, format='json', nominatim=True)
+                {"place_id": "17695918",
+                "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http:\/\/www.openstreetmap.org\/copyright",
+                "osm_type": "node",
+                "osm_id": "1818862993",
+                "lat": "52.517322", "lon": "13.388977",
+                "display_name": "Douglas, Unter den Linden, Spandauer Vorstadt, Mitte, Berlin, 10117, Germany",
+                "address": {"address29": "Douglas",
+                            "road": "Unter den Linden",
+                            "neighbourhood": "Spandauer Vorstadt",
+                            "suburb": "Mitte",
+                            "city_district": "Mitte",
+                            "city": "Berlin",
+                            "state": "Berlin",
+                            "postcode": "10117",
+                            "country": "Germany",
+                            "country_code": "de"}
+                }
+            >>> serv.coord2geom(berlin, format='json')
+                {'geometry': {'coordinates': [13.3983821, 52.5135992], 
+                    'type': 'Point'},
+                 'properties': {'city': 'Berlin',
+                    'country': 'Germany', 'housenumber': '30',
+                    'osm_id': 1602537143, 'osm_key': 'place', 'osm_type': 'N',
+                    'osm_value': 'house',
+                    'postcode': '10117', 'state': 'Berlin',
+                    'street': 'Caroline-von-Humboldt-Weg'},
+                 'type': 'Feature'
+                 }
+                         
         Note
         ----
-        This method overrides :meth:`OSMService.coord2area` by further providing 
+        This method overrides :meth:`OSMService.coord2geom` by further providing 
         the :literal:`features` key that will be extracted from the output geometry 
         dictionary(ies).
         
         See also
         --------
-        :meth:`~OSMService.coord2area`, :meth:`~OSMService.url_reverse`, 
+        :meth:`~OSMService.coord2geom`, :meth:`~OSMService.url_reverse`, 
         :meth:`base._Service.get_status`, :meth:`base._Service.get_response`.
         """
-        kwargs.update({'key': _Decorator.parse_area.KW_FEATURES})
-        return super(GISCOService,self).coord2area(coord=coord, **kwargs)
+        if not kwargs.get('nominatim'):
+            kwargs.update({'key': _Decorator.parse_geometry.KW_FEATURES})
+        return super(GISCOService,self).coord2geom(coord=coord, **kwargs)
       
     #/************************************************************************/
     @_Decorator.parse_coordinate
@@ -2235,11 +2253,11 @@ class GISCOService(OSMService):
         See also
         --------
         :meth:`~OSMService.coord2place`, :meth:`~GISCOService.place2coord`, 
-        :meth:`~GISCOService.place2area`, :meth:`~GISCOService.coord2nuts`, 
+        :meth:`~GISCOService.place2geom`, :meth:`~GISCOService.coord2nuts`, 
         :meth:`~GISCOService.place2nuts`, :meth:`~GISCOService.coord2route`, 
         :meth:`~GISCOService.url_reverse`.
         """
-        kwargs.update({'key': _Decorator.parse_area.KW_FEATURES})
+        kwargs.update({'key': _Decorator.parse_geometry.KW_FEATURES})
         return super(GISCOService,self).coord2place(coord=coord, **kwargs)
 
     #/************************************************************************/
@@ -2295,7 +2313,7 @@ class GISCOService(OSMService):
     #/************************************************************************/
     @_Decorator.parse_year
     @_Decorator.parse_projection
-    @_Decorator.parse_area
+    @_Decorator.parse_geometry
     @_Decorator.parse_coordinate
     def coord2nuts(self, coord, **kwargs):
         """Retrieve the various |NUTS| geometries (all levels) associated to given 
@@ -2380,7 +2398,7 @@ class GISCOService(OSMService):
         
         See also
         --------
-        :meth:`~GISCOService.place2area`, :meth:`~GISCOService.place2coord`, 
+        :meth:`~GISCOService.place2geom`, :meth:`~GISCOService.place2coord`, 
         :meth:`~GISCOService.place2nuts`, :meth:`~GISCOService.coord2route`,
         :meth:`~GISCOService.coord2place`, :meth:`~GISCOService.url_findnuts`, 
         :meth:`base._Service.get_response`.
@@ -2484,7 +2502,7 @@ class GISCOService(OSMService):
         See also
         --------
         :meth:`~GISCOService.place2coord`, :meth:`~GISCOService.coord2nuts`, 
-        :meth:`~GISCOService.place2area`, :meth:`~GISCOService.coord2place`, 
+        :meth:`~GISCOService.place2geom`, :meth:`~GISCOService.coord2place`, 
         :meth:`~GISCOService.coord2route`, :meth:`~GISCOService.url_geocode`, 
         :meth:`base._Service.get_response`.
         """

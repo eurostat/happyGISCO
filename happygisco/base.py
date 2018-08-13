@@ -618,10 +618,12 @@ class _Service(object):
             raise happyError('web protocol not recognised')
         if not url.startswith(protocol):  
             url = "%s://%s" % (protocol, url)
-        if 'path' in kwargs:      
-            url = "%s/%s" % (url, kwargs.pop('path'))
-        if 'query' in kwargs:      
-            url = "%s/%s" % (url, kwargs.pop('query'))
+        path = kwargs.pop('path','')  
+        if path not in (None,''):
+            url = "%s/%s" % (url, path)
+        query = kwargs.pop('query','')
+        if query not in (None,''):      
+            url = "%s/%s" % (url, query)
         if kwargs != {}:
             #_izip_replicate = lambda d : [(k,i) if isinstance(d[k], (tuple,list))        \
             #        else (k, d[k]) for k in d for i in d[k]]
@@ -638,7 +640,6 @@ class _Service(object):
                 if any([last.endswith(c) for c in ('?', '/')]):     sep = ''
             url = "%s%s%s" % (url, sep, filters)
         return url
-
 
 #%%
 #==============================================================================
@@ -789,16 +790,17 @@ class _Decorator(object):
     
     KW_YEAR         = 'year'
     KW_FEATURE      = 'feat'
+    # KW_FEATURE      = 'feature' 
     KW_FORMAT       = 'fmt'
     KW_SCALE        = 'scale'
-    KW_GEOMETRY     = 'geometry' 
+    KW_GEOMETRY     = 'geom' 
+    # KW_GEOMETRY     = 'geometry' 
     
     KW_LAYER        = 'layer'
     KW_FILE         = 'file'
     KW_URL          = 'url'
     KW_RESPONSE     = 'resp'
     
-    KW_FEATURE      = 'feature' 
     KW_VECTOR       = 'vector' 
     KW_LEVEL        = 'level'
     KW_SIZE         = 'size'
@@ -1008,7 +1010,7 @@ class _Decorator(object):
         See also
         --------
         :meth:`~_Decorator.parse_place`, :meth:`~_Decorator.parse_place_or_coordinate`,
-        :meth:`~_Decorator.parse_area`.
+        :meth:`~_Decorator.parse_geometry`.
         """
         KW_POLYLINE      = 'polyline'
         try:
@@ -1156,7 +1158,7 @@ class _Decorator(object):
         See also
         --------
         :meth:`~_Decorator.parse_coordinate`, :meth:`~_Decorator.parse_place_or_coordinate`,
-        :meth:`~_Decorator.parse_area`.
+        :meth:`~_Decorator.parse_geometry`.
         """ 
         def __call__(self, *args, **kwargs):
             place, address, city, country, zipcode = '', '', '', '', ''
@@ -1278,7 +1280,7 @@ class _Decorator(object):
         See also
         --------
         :meth:`~_Decorator.parse_place`, :meth:`~_Decorator.parse_coordinate`,
-        :meth:`~_Decorator.parse_area`.
+        :meth:`~_Decorator.parse_geometry`.
         """
         def __call__(self, *args, **kwargs):
             try:
@@ -1305,14 +1307,14 @@ class _Decorator(object):
             return self.func(*args, **kwargs)
 
     #/************************************************************************/
-    class parse_area(__base):
+    class parse_geometry(__base):
         """Class decorator of functions and methods used to parse either :literal:`(lat,Lon)` 
         coordinate(s) or (topo)name(s) from JSON-like dictionary parameters (geometry 
         features) formated according to |GISCO| geometry responses (see |GISCOWIKI|).
         
         ::
         
-            >>> new_func = _Decorator.parse_area(func)
+            >>> new_func = _Decorator.parse_geometry(func)
         
         Arguments
         ---------
@@ -1328,7 +1330,7 @@ class _Decorator(object):
         Returns
         -------
         new_func : callable
-            the decorated function that now accepts :data:`area` as a keyword 
+            the decorated function that now accepts :data:`geom` as a keyword 
             argument to parse geographic coordinates, plus some additional keyword 
             arguments (see *Notes* below).
         
@@ -1338,20 +1340,20 @@ class _Decorator(object):
         
         ::
             
-            >>> func = lambda *args, **kwargs: kwargs.get('coord')
-            >>> area = {'A': 1, 'B': 2}
-            >>> _Decorator.parse_area(func)(area=area)
+            >>> func = lambda *args, **kwargs: kwargs.get('geom')
+            >>> geom = {'A': 1, 'B': 2}
+            >>> _Decorator.parse_geometry(func)(geom=geom)
                 happyError: !!! geometry attributes not recognised !!!
-            >>> area = {'geometry': {'coordinates': [1, 2], 'type': 'Point'},
+            >>> geom = {'geometry': {'coordinates': [1, 2], 'type': 'Point'},
                         'properties': {'city': 'somewhere', 
                                        'country': 'some country',
                                        'street': 'sesame street',
                                        'osm_key': 'place'},
                         'type': 'Feature'}
-            >>> _Decorator.parse_area(func)(area=area)
+            >>> _Decorator.parse_geometry(func)(geom=geom)
                 [[2, 1]]
             >>> func = lambda *args, **kwargs: kwargs.get('place')
-            >>> _Decorator.parse_area(func)(area=area, filter='place')
+            >>> _Decorator.parse_geometry(func)(geom=geom, filter='place')
                 ['sesame street, somewhere, some country']
         
         Also note that the argument can be parsed as a positional argument (usage
@@ -1359,9 +1361,9 @@ class _Decorator(object):
         
         ::
             
-            >>> _Decorator.parse_area(func)(area)
+            >>> _Decorator.parse_geometry(func)(geom)
                 []
-            >>> _Decorator.parse_area(func)(area, order='Ll')
+            >>> _Decorator.parse_geometry(func)(geom, order='Ll')
                 [[1, 2]]
 
         and an actual one:
@@ -1369,8 +1371,8 @@ class _Decorator(object):
         ::
             
             >>> serv = services.GISCOService()
-            >>> area = serv.place2area(place='Berlin,Germany')
-            >>> print(area)
+            >>> geom = serv.place2geom(place='Berlin,Germany')
+            >>> print(geom)
                 [{'geometry': {'coordinates': [13.3888599, 52.5170365], 'type': 'Point'},
                   'properties': {'city': 'Berlin', 'country': 'Germany',
                    'name': 'Berlin',
@@ -1399,18 +1401,18 @@ class _Decorator(object):
                    'postcode': '10117', 'state': 'Berlin', 'street': 'Behrenstraße'},
                   'type': 'Feature'}]
                     
-        We can for instance use the :meth:`parse_area` to parse (filter) the 
-        data :data:`area` and retrieve the coordinates:
+        We can for instance use the :meth:`parse_geometry` to parse (filter) the 
+        data :data:`geom` and retrieve the coordinates:
         
         ::
             
             >>> func = lambda **kwargs: kwargs.get('coord')
-            >>> new_func = _Decorator.parse_area(func)
+            >>> new_func = _Decorator.parse_geometry(func)
             >>> hasattr(new_func, '__call__')
                 True
-            >>> new_func(area=area, filter='coord')
+            >>> new_func(geom=geom, filter='coord')
                 [[52.5170365, 13.3888599], [52.5198535, 13.4385964]]
-            >>> new_func(area=area, filter='coord', unique=True, order='Ll')
+            >>> new_func(geom=geom, filter='coord', unique=True, order='Ll')
                 [[13.3888599, 52.5170365]]
             
         One can also similarly retrieve the name of the places:
@@ -1418,10 +1420,10 @@ class _Decorator(object):
         ::
 
             >>> func = lambda **kwargs: kwargs.get('place')
-            >>> new_func = _Decorator.parse_area(func)
+            >>> new_func = _Decorator.parse_geometry(func)
             >>> hasattr(new_func, '__call__')
                 True
-            >>> new_func(area=area, filter='place')
+            >>> new_func(geom=geom, filter='place')
                 ['Berlin, 10117, Germany', 'Germany', 'Dorotheenstraße, Berlin, 10117, Germany',
                 'Unter den Linden, Berlin, 10117, Germany', 'Olympischer Platz, Berlin, 14053, Germany', 
                 'Sauerbruchweg, Berlin, 10117, Germany', 'Eingangsebene, Berlin, 10557, Germany', 
@@ -1436,7 +1438,7 @@ class _Decorator(object):
           positional arguments as :data:`func` and, in addition to the arguments 
           in `data:`**kwargs` already supported by the input method/function :data:`func`, 
           some extra keyword arguments:              
-              + :data:`area` to parse geocoordinates;
+              + :data:`geom` to parse a geometry;
               + :data:`filter` - a flag used to define the output of the decorated
                 function; it is either :literal:`place` or :literal:`coord`;
               + :data:`unique` - when set to :data:`True`, a single geometry is 
@@ -1508,8 +1510,8 @@ class _Decorator(object):
                         geom = args[0]
             if geom is None:
                 __key_area = True
-                geom = kwargs.pop(_Decorator.KW_AREA, None)                 
-            elif not kwargs.get(_Decorator.KW_AREA) is None:
+                geom = kwargs.pop(_Decorator.KW_GEOMETRY, None)                 
+            elif not kwargs.get(_Decorator.KW_GEOMETRY) is None:
                 raise happyError('don''t mess up with me - duplicated geometry argument parsed')
             if geom is None:
                 return self.func(*args, **kwargs)
@@ -1520,24 +1522,24 @@ class _Decorator(object):
             if not all([happyType.ismapping(g) for g in geom]): 
                 raise happyError('wrong formatting/typing of geometry')  
             if filt in ('',None):
-                kwargs.update({_Decorator.KW_AREA: geom}) 
+                kwargs.update({_Decorator.KW_GEOMETRY: geom}) 
             elif filt == 'coord':                            
                 try: # geometry is formatted like an OSM output
-                    coord = [[float(g[_Decorator.parse_area.KW_LAT]),
-                              float(g[_Decorator.parse_area.KW_LON])] for g in geom]
+                    coord = [[float(g[_Decorator.parse_geometry.KW_LAT]),
+                              float(g[_Decorator.parse_geometry.KW_LON])] for g in geom]
                     assert coord not in ([],None,[None])
                 except: # geometry is formatted like a GISCO output
                     coord = [g for g in geom                                                        \
-                       if _Decorator.parse_area.KW_GEOMETRY in g                            \
-                           and _Decorator.parse_area.KW_PROPERTIES in g                     \
-                           and _Decorator.parse_area.KW_TYPE in g                           \
-                           and g[_Decorator.parse_area.KW_TYPE]=='Feature'                  \
-                           and (not(settings.CHECK_TYPE) or g[_Decorator.parse_area.KW_GEOMETRY][_Decorator.parse_area.KW_TYPE]=='Point')          \
-                           and (not(settings.CHECK_OSM_KEY) or g[_Decorator.parse_area.KW_PROPERTIES][_Decorator.parse_area.KW_OSM_KEY]=='place')  \
+                       if _Decorator.parse_geometry.KW_GEOMETRY in g                            \
+                           and _Decorator.parse_geometry.KW_PROPERTIES in g                     \
+                           and _Decorator.parse_geometry.KW_TYPE in g                           \
+                           and g[_Decorator.parse_geometry.KW_TYPE]=='Feature'                  \
+                           and (not(settings.CHECK_TYPE) or g[_Decorator.parse_geometry.KW_GEOMETRY][_Decorator.parse_geometry.KW_TYPE]=='Point')          \
+                           and (not(settings.CHECK_OSM_KEY) or g[_Decorator.parse_geometry.KW_PROPERTIES][_Decorator.parse_geometry.KW_OSM_KEY]=='place')  \
                        ]
                     #coord = dict(zip(['lon','lat'],                                                 \
                     #                  zip(*[c[self.KW_GEOMETRY][self.KW_COORDINATES] for c in coord])))
-                    coord = [_[_Decorator.parse_area.KW_GEOMETRY][_Decorator.parse_area.KW_COORDINATES][::-1]   \
+                    coord = [_[_Decorator.parse_geometry.KW_GEOMETRY][_Decorator.parse_geometry.KW_COORDINATES][::-1]   \
                              for _ in coord]
                 if __key_area and coord in ([],None):
                     raise happyError ('geometry attributes not recognised')
@@ -1547,19 +1549,19 @@ class _Decorator(object):
                 kwargs.update({_Decorator.KW_COORD: coord}) 
             elif filt == 'place':
                 try: # geometry is formatted like an OSM output
-                    place = [g[_Decorator.parse_area.KW_DISPLAYNAME] for g in geom]
+                    place = [g[_Decorator.parse_geometry.KW_DISPLAYNAME] for g in geom]
                     assert place not in ([],[''],None,[None])
                 except: # geometry is formatted like an OSM output 
-                    place = [g.get(_Decorator.parse_area.KW_PROPERTIES) for g in geom \
-                             if _Decorator.parse_area.KW_PROPERTIES in g]
-                    place = [', '.join(filter(None, [p.get(_Decorator.parse_area.KW_STREET) or '',
-                                        p.get(_Decorator.parse_area.KW_CITY) or '',
-                                        '(' + p.get(_Decorator.parse_area.KW_STATE) + ')'               \
-                                            if p.get(_Decorator.parse_area.KW_STATE) not in (None,'')   \
-                                            and p.get(_Decorator.parse_area.KW_STATE)!=p.get(_Decorator.parse_area.KW_CITY) else '',
-                                        p.get(_Decorator.parse_area.KW_POSTCODE) or '',
-                                        p.get(_Decorator.parse_area.KW_COUNTRY) or ''])) \
-                            or p.get(_Decorator.parse_area.KW_NAME) or '' for p in place] 
+                    place = [g.get(_Decorator.parse_geometry.KW_PROPERTIES) for g in geom \
+                             if _Decorator.parse_geometry.KW_PROPERTIES in g]
+                    place = [', '.join(filter(None, [p.get(_Decorator.parse_geometry.KW_STREET) or '',
+                                        p.get(_Decorator.parse_geometry.KW_CITY) or '',
+                                        '(' + p.get(_Decorator.parse_geometry.KW_STATE) + ')'               \
+                                            if p.get(_Decorator.parse_geometry.KW_STATE) not in (None,'')   \
+                                            and p.get(_Decorator.parse_geometry.KW_STATE)!=p.get(_Decorator.parse_geometry.KW_CITY) else '',
+                                        p.get(_Decorator.parse_geometry.KW_POSTCODE) or '',
+                                        p.get(_Decorator.parse_geometry.KW_COUNTRY) or ''])) \
+                            or p.get(_Decorator.parse_geometry.KW_NAME) or '' for p in place] 
                 if unique:          place = [place[0],]
                 if settings.REDUCE_ANSWER and len(place)==1:    place=place[0]
                 kwargs.update({_Decorator.KW_PLACE: place}) 
@@ -1668,7 +1670,7 @@ class _Decorator(object):
             
         See also
         --------
-        :meth:`~_Decorator.parse_area`, :meth:`services.GISCOService.place2area`, 
+        :meth:`~_Decorator.parse_geometry`, :meth:`services.GISCOService.place2area`, 
         :meth:`~geoDecorators.parse_coordinate`, :meth:`services.GISCOService.coord2nuts`, 
         :meth:`services.GISCOService.place2nuts`.            
         """
@@ -2071,7 +2073,7 @@ class _Decorator(object):
         See also
         --------
         :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_scale`,
-        :meth:`~geoDecorators.parse_format`, :meth:`~geoDecorators.parse_geometry`,
+        :meth:`~geoDecorators.parse_format`, :meth:`~geoDecorators.parse_vector`,
         :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_level`.
         """
         def __init__(self, *args, **kwargs):
@@ -2141,7 +2143,7 @@ class _Decorator(object):
         See also
         --------
         :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_year`,
-        :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_geometry`,
+        :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_vector`,
         :meth:`~geoDecorators.parse_format`, :meth:`~geoDecorators.parse_level`.
         """
         ## PROJECTION      = dict(happyType.seqflatten([[(k,v), (v,v)] for k,v in settings.GISCO_PROJECTIONS.items()]))
@@ -2210,7 +2212,7 @@ class _Decorator(object):
         See also
         --------
         :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_year`,
-        :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_geometry`,
+        :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_vector`,
         :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_level`.
         """
         def __init__(self, *args, **kwargs):
@@ -2223,13 +2225,13 @@ class _Decorator(object):
             super(_Decorator.parse_format,self).__init__(*args, **kwargs)
        
     #/************************************************************************/
-    class parse_geometry(__base):
+    class parse_vector(__base):
         """Class decorator of functions and methods used to parse a spatial typology, 
         as defined by |GISCO|.
         
         ::
         
-            >>> new_func = _Decorator.parse_geometry(func)
+            >>> new_func = _Decorator.parse_vector(func)
         
         Arguments
         ---------
@@ -2245,27 +2247,27 @@ class _Decorator(object):
         Returns
         -------
         new_func : callable
-            the decorated function that now accepts :data:`geometry` as a keyword 
+            the decorated function that now accepts :data:`vector` as a keyword 
             argument to parse a feature type (*e.g.*, used when downloading |GISCO| 
-            datasets); the supported vector formats (*i.e.*, parsed to :data:`geometry`) 
+            datasets); the supported vector formats (*i.e.*, parsed to :data:`vector`) 
             are :literal:`'region','label'` and :literal:`'line'` (or :literal:`'boundary'`, 
-            *e.g.* those listed in :data:`settings.GISCO_GEOMETRIES`.   
+            *e.g.* those listed in :data:`settings.GISCO_VECTORS`.   
         
         Examples
         --------          
         
         ::
 
-            >>> func = lambda *args, **kwargs: kwargs.get('geometry')
-            >>> _Decorator.parse_geometry(func)(geometry='1)
+            >>> func = lambda *args, **kwargs: kwargs.get('vector')
+            >>> _Decorator.parse_vector(func)(vector='1)
                 happyError: !!! wrong format for GEOMETRY argument !!!
-            >>> _Decorator.parse_geometry(func)(geometry='polygon')
+            >>> _Decorator.parse_vector(func)(vector='polygon')
                 happyError: !!! wrong value for GEOMETRY argument - geometry 'polygon' not supported !!!
-            >>> _Decorator.parse_geometry(func)(geometry='region')
+            >>> _Decorator.parse_vector(func)(vector='region')
                 'RN'
-            >>> _Decorator.parse_geometry(func)(geometry='line')
+            >>> _Decorator.parse_vector(func)(vector='line')
                 'BN'
-            >>> _Decorator.parse_geometry(func)(geometry='LB')
+            >>> _Decorator.parse_vector(func)(vector='LB')
                 'LB'
             
         See also
@@ -2276,10 +2278,10 @@ class _Decorator(object):
         """
         def __init__(self, *args, **kwargs):
             kwargs.update({'_parse_cls_':   [str, list], 
-                           '_key_':         _Decorator.KW_GEOMETRY, 
-                           '_values_':      settings.GISCO_GEOMETRIES,
-                           '_key_default_': settings.DEF_GISCO_GEOMETRY})
-            super(_Decorator.parse_geometry,self).__init__(*args, **kwargs)
+                           '_key_':         _Decorator.KW_VECTOR, 
+                           '_values_':      settings.GISCO_VECTORS,
+                           '_key_default_': settings.DEF_GISCO_VECTOR})
+            super(_Decorator.parse_vector,self).__init__(*args, **kwargs)
    
     #/************************************************************************/
     class parse_scale(__base):
@@ -2338,10 +2340,10 @@ class _Decorator(object):
         --------
         :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_year`,
         :meth:`~geoDecorators.parse_level`, :meth:`~geoDecorators.parse_format`,
-        :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_geometry`.
+        :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_vector`.
         """
         def __init__(self, *args, **kwargs_):
-            kwargs_.update({'_parse_cls_':   [int, str, list], 
+            kwargs_.update({'_parse_cls_':  [int, str, list], 
                            '_key_':         _Decorator.KW_SCALE, 
                            '_values_':      settings.GISCO_SCALES,
                            '_key_default_': settings.DEF_GISCO_SCALE})
@@ -2406,7 +2408,7 @@ class _Decorator(object):
         --------
         :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_year`,
         :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_format`,
-        :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_geometry`.
+        :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_vector`.
         """
         def __init__(self, *args, **kwargs):
             kwargs.update({'_parse_cls_':   [int, str, list], # list of levels 
@@ -2423,7 +2425,7 @@ class _Decorator(object):
 #                            _values_=settings.GISCO_PROJECTIONS, _key_default_=settings.DEF_GISCO_PROJECTION)
 #_Decorator.parse_format =                       \
 #    _Decorator._parse_class(str, _Decorator.KW_FORMAT, _values_=settings.GISCO_FORMATS)
-#_Decorator.parse_geometry =                      \
+#_Decorator.parse_vector =                      \
 #    _Decorator._parse_class(str, _Decorator.KW_GEOMETRY, 
 #                            _values_=settings.GISCO_GEOMETRIES, _key_default_=settings.DEF_GISCO_GEOMETRY)
 #_Decorator.parse_scale =                        \

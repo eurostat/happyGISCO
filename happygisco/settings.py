@@ -316,14 +316,14 @@ GISCO_FORMATS       = {'shp':               'shx',   # 'shapefile': 'shp',
 DEF_GISCO_FORMAT    = 'geojson'
 """Default format for |GISCO| vector datasets.
 """
-GISCO_GEOMETRIES    = {'region':            'RG', 
+GISCO_VECTORS       = {'region':            'RG', 
                        'label':             'LB',
                        'line':              'BN',
                        'boundary':          'BN'
                        }
-"""Dictionary of spatial typologies, *i.e.* the geometry of |GISCO| feature datasets. 
+"""Dictionary of spatial typologies, *i.e.* the vector features of |GISCO| datasets. 
 """
-DEF_GISCO_GEOMETRY  = 'RG'
+DEF_GISCO_VECTOR  = 'RG'
 """Default spatial typology.
 """
 GISCO_REFNAME       = ''
