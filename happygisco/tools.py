@@ -83,6 +83,7 @@ except ImportError:
 else:
     GDAL_TOOL = True
     happyVerbose('GDAL help: https://pcjericks.github.io/py-gdalogr-cookbook/index.html')
+    gdal.UseExceptions() # so that GDAL raises an exception instead of returning None when it cannot open something
 
 try:
     import ipyleaflet
@@ -1938,7 +1939,7 @@ class GDALTransform(_Tool):
     Arguments
     ---------
     driver_name : str
-        name of the driver used for vector files; default is :data:`settings.DRIVER_NAME`,
+        name of the driver used for vector files; default is :data:`settings.DEF_DRIVER_NAME`,
         *e.g.* :literal:`'ESRI Shapefile'` to load common shapefiles.
         
     Note
@@ -1956,7 +1957,7 @@ class GDALTransform(_Tool):
         except:
             raise IOError('GDAL service not available')
         self.__driver, self.__driver_name = None, ''
-        self.__driver_name = kwargs.pop('driver_name', settings.DRIVER_NAME)
+        self.__driver_name = kwargs.pop('driver_name', settings.DEF_DRIVER_NAME)
         try:
             self.__driver = ogr.GetDriverByName(self.__driver_name)
         except:
@@ -2104,9 +2105,17 @@ class GDALTransform(_Tool):
         :meth:`~tools.GDALTransform.file2layer`, :meth:`osgeo.ogr.Open`,
         :meth:`osgeo.ogr.DataSource.GetLayer`.
         """
-        server = kwargs.pop('server', '')
-        port = kwargs.pop('port', '')
-        vsi = kwargs.pop('vsi', False)
+        server, port = kwargs.pop('server', ''), kwargs.pop('port', '')
+        try:
+            assert (server is None or happyType.isstring(server))    \
+                and (port is None or happyType.isstring(port)) 
+        except:
+            raise happyError('wrong format for PORT/SERVER parameter(s)')
+        vsi = kwargs.pop('vsi', True)
+        try:
+            assert isinstance(vsi,bool)
+        except:
+            raise happyError('wrong format for VSI parameter')
         #fmt = kwargs.pop(_Decorator.KW_FORMAT, settings.DEF_GISCO_FORMAT)
         # specify proxy server
         gdal.SetConfigOption('GDAL_HTTP_PROXY', server + ':' + port if server or port else '')       
@@ -2114,10 +2123,11 @@ class GDALTransform(_Tool):
         gdal.SetConfigOption('GDAL_PROXY_AUTH', 'NTLM')
         gdal.SetConfigOption('GDAL_HTTP_PROXYUSERPWD', ' : ')
         # now fetch a HTTP datasource and do something...
+        pref = '/vsicurl/' if vsi is True else ''
         if not happyType.issequence(url):
             url = [url,]
         try:         
-            ds = [ogr.Open('/vsicurl/' + u if vsi else u) for u in url]
+            ds = [ogr.Open('%s%s' % (pref, u)) for u in url]
             assert ds is not None
         except:
             raise happyError('URL not open')
@@ -2131,33 +2141,65 @@ class GDALTransform(_Tool):
                 raise happyError('could not get vector layer')
         return layer if layer in ([],None) or len(layer)>1 else layer[0]
     
-    
-#gdal.FileFromMemBuffer(vsipath, data) 
-#ds = gdal.Open(vsipath) 
-#geoT = src_ds.GetGeoTransform()
-#proj = src_ds.GetProjection()
-#
-#def read_file(filename):
-#    # https://www.gdal.org/gdal_virtual_file_systems.html#gdal_virtual_file_systems_intro
-#    vsifile = gdal.VSIFOpenL(filename,'r')
-#    gdal.VSIFSeekL(vsifile, 0, 2) # seek to end
-#    vsileng = gdal.VSIFTellL(vsifile)
-#    gdal.VSIFSeekL(vsifile, 0, 0) # seek to beginning
-#    data = gdal.VSIFReadL(1, vsileng, vsifile)
-#    # gdal.VSIFCloseL(vsifile)
-#    return data
-#
-#ds = gdal.VectorTranslate('/vsimem/out.json', gjs, format = 'GeoJSON', layerCreationOptions = ['RFC7946=YES', 'WRITE_BBOX=YES'])
-#print(ds)
-#got = read_file('/vsimem/out.json')
-#print(got)
-
-#'/vsizip//vsicurl/'
-#
-#ds = None
-#gdal.Unlink(path)
-#gdal.Unlink('/vsimem/inMem.tif')
-
+    #/************************************************************************/
+    def vector2layer(self, vector, **kwargs):
+        vsi = kwargs.pop('vsi', True)
+        try:
+            assert isinstance(vsi,bool)
+        except:
+            raise happyError('wrong format for VSI parameter')
+        basename = kwargs.pop('base', None)
+        try:
+            assert basename is None or happyType.isstring(basename)
+        except:
+            raise happyError('wrong format for BASE parameter')
+        else:
+            if basename is None:
+                basename = 'out'
+        try:
+            fmt = kwargs.pop(_Decorator.KW_FORMAT, 'geojson')
+            assert fmt in happyType.seqflatten([(k,v['driver']) for k,v in settings.GISCO2GDAL_DRIVERS.items()])
+        except:
+            raise happyError('wrong format for %s parameter' % _Decorator.KW_FORMAT.upper())
+        else:
+            if fmt in settings.GISCO2GDAL_DRIVERS.keys():
+                fmt = settings.GISCO2GDAL_DRIVERS[fmt]['driver']
+                ext = settings.GISCO_FORMATS[fmt]
+            else:
+                ext = settings.GISCO_FORMATS[[k for k,v in settings.GISCO2GDAL_DRIVERS.items() if v['driver']==fmt][0]]
+            kwargs.update({_Decorator.KW_FORMAT: fmt})
+            options = [v['options'] for k,v in settings.GISCO2GDAL_DRIVERS.items() if v['driver']==fmt][0] # unique
+            if options is not None:
+                kwargs.update({'layerCreationOptions': options})
+        pref = '/vsimem/' if vsi is True else ''  
+        try:
+            ds = [gdal.VectorTranslate('%s%s_%s.%s' % (pref, basename, i, ext), v, **kwargs)     \
+                  for i, v in enumerate(vector)]
+            assert not all([d is None for d in ds])
+        except:
+            raise happyError('impossible to retrieve dataset layer from input vector')
+        else:
+            ds = [d for d in ds if d is not None]
+        #def read_file(fname):
+        #    # https://www.gdal.org/gdal_virtual_file_systems.html#gdal_virtual_file_systems_intro
+        #    vsifile = gdal.VSIFOpenL(fname,'r')
+        #    gdal.VSIFSeekL(vsifile, 0, 2) # seek to end
+        #    vsileng = gdal.VSIFTellL(vsifile)
+        #    gdal.VSIFSeekL(vsifile, 0, 0) # seek to beginning
+        #    data = gdal.VSIFReadL(1, vsileng, vsifile)
+        #    # gdal.VSIFCloseL(vsifile)
+        #    return data
+        ## see https://gis.stackexchange.com/questions/241410/is-it-possible-to-wrap-date-line-with-gdal-vectortranslate/242561#242561
+        #got = [read_file('%s%s_%s.%s' % (pref, basename, i, ext)) for i in range(len(vector))]
+        #[gdal.Unlink('%s%s_%s.%s' % (pref, basename, i, ext)) for i in range(len(vector))]
+        #return got
+        try:
+            layer = [d.GetLayer() for d in ds]
+        except:
+            raise happyError('could not get vegdal.UseExceptions()ctor layer') 
+        else:
+            return layer
+        
     #/************************************************************************/
     def layer2feat(self, layer):
         """Load a vector file using internally defined driver and returns the 
@@ -2359,14 +2401,7 @@ class GDALTransform(_Tool):
                 happyVerbose('could not add geolocation')
             else:
                 geom.AddGeometry(pt)
-        return geom
-    
-    #/************************************************************************/
-    def vector2layer(self, vector):
-        """
-        """
-        pass
-        
+        return geom        
     
     #/************************************************************************/
     def layer2fid(self, layer, geom):

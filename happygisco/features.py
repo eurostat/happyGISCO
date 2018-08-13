@@ -914,11 +914,11 @@ class NUTS(_Feature):
         if self.feature in ([],None):
             self.feature = self.get_vector()
         try:
-            level = [int(f[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL]) \
+            level = [int(f[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL])    \
                     for f in self.feature]
         except:
             try:
-                level = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_LEVEL] \
+                level = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_LEVEL]     \
                          for f in self.feature]
             except:
                 level = None
@@ -957,7 +957,7 @@ class NUTS(_Feature):
     @unit.setter
     def unit(self, unit):
         try:
-            assert unit is None or happyType.isstring(unit) or \
+            assert unit is None or happyType.isstring(unit) or              \
                 (happyType.issequence(unit) and all([happyType.isstring(u) for u in unit]))
         except:
             raise happyError('wrong format for UNIT parameter')
@@ -972,12 +972,12 @@ class NUTS(_Feature):
         """URL property (:data:`setter`/:data:`getter`) of a :class:`NUTS` 
         instance, if any.
         """ 
-        return self.__url if self.__url is None or len(self.__url)>1     \
+        return self.__url if self.__url is None or len(self.__url)>1        \
             else self.__url[0]    
     @url.setter
     def url(self, url):
         try:
-            assert url is None or happyType.isstring(url) or \
+            assert url is None or happyType.isstring(url) or                \
                 (happyType.issequence(url) and all([happyType.isstring(u) for u in url]))
         except:
             raise happyError('wrong format for URL parameter')
@@ -1002,7 +1002,7 @@ class NUTS(_Feature):
     @file.setter
     def file(self, file):
         try:
-            assert file is None or happyType.isstring(file) or \
+            assert file is None or happyType.isstring(file) or              \
                 (happyType.issequence(file) and all([happyType.isstring(f) for f in file]))
         except:
             raise happyError('wrong format for FILE parameter')
@@ -1014,8 +1014,7 @@ class NUTS(_Feature):
     #/************************************************************************/
     @property
     def layer(self):
-        """Layer property (:data:`setter`/:data:`getter`) of a :class:`NUTS` 
-        instance.
+        """Layer property (:data:`setter`/:data:`getter`) of a :class:`NUTS` instance.
         """ 
         if self.__layer in ([],None):
             try:
@@ -1043,8 +1042,7 @@ class NUTS(_Feature):
     #/************************************************************************/
     @property
     def feature(self):
-        """Vector property (:data:`setter`/:data:`getter`) of a :class:`NUTS` 
-        instance.
+        """Vector property (:data:`setter`/:data:`getter`) of a :class:`NUTS` instance.
         """ 
         if self.__feature in ([],None):
             try:
@@ -1072,8 +1070,7 @@ class NUTS(_Feature):
     #/************************************************************************/
     @property
     def vector(self):
-        """Feature property (:data:`setter`/:data:`getter`) of a :class:`NUTS` 
-        instance.
+        """Feature property (:data:`setter`/:data:`getter`) of a :class:`NUTS` instance.
         """ 
         if self.__vector in ([],None):
             try:
@@ -1093,11 +1090,16 @@ class NUTS(_Feature):
             vector = decorator(func)(**{_Decorator.KW_VECTOR: vector})
         except:
             raise happyError('wrong %s argument' % _Decorator.KW_FEATURE) 
+        if not happyType.issequence(vector):
+            vector = [vector,]
+        vector = ["""%s""" % v if not happyType.isstring(v) else v for v in vector]
+        try:
+            self.__vector = [json.loads(v.replace("'","\"")) for v in vector]
+        except:
+            raise happyError('impossible conversion of vector entry') 
         else:
-            if happyType.isstring(vector):
-                self.__vector = json.loads(vector)
-            elif happyType.ismapping(vector) or happyType.issequence(vector):
-                self.__vector = vector
+            if vector is None or len(vector)>1:
+                self.__vector = self.__vector[0]
 
     #/************************************************************************/    
     @property
@@ -1135,7 +1137,7 @@ class NUTS(_Feature):
         """Feature identity property.
         """
         try:
-            fid = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_FID] \
+            fid = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_FID]         \
                    for f in self.feature]
         except:
             fid = None
@@ -1147,7 +1149,7 @@ class NUTS(_Feature):
         """NUTS identity property.
         """
         try:
-            nid = [f[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_ID] \
+            nid = [f[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_ID]     \
                    for f in self.feature]
         except:
             try:
@@ -1164,7 +1166,7 @@ class NUTS(_Feature):
         A name type is :class:`str`.
         """
         try:
-            name = [n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_NAME] \
+            name = [n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_NAME]  \
                     for n in self.feature]
         except:
             try:

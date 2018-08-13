@@ -69,6 +69,7 @@ They are provided here for the sake of an exhaustive documentation.
 import os, sys#analysis:ignore
 import inspect#analysis:ignore
 import collections, itertools, six
+import json
 
 #%%
 #==============================================================================
@@ -123,14 +124,14 @@ KEY_GISCO           = None
 """Dummy |GISCO| key. It is set to :data:`None` since connection to |GISCO| web-services does
 not require authentication.
 """
-GISCO_PROJECTIONS   = {'WGS84':     4326,
-                       'EPSG4326':  4326, 
-                       'ETRS89':    4258,
-                       'EPSG4258':  4258, 
-                       'Mercator':  3857,
-                       'EPSG3857':  3857, 
-                       'LAEA':      3035,
-                       'EPSG3035':  3035
+GISCO_PROJECTIONS   = {'WGS84':             4326,
+                       'EPSG4326':          4326, 
+                       'ETRS89':            4258,
+                       'EPSG4258':          4258, 
+                       'Mercator':          3857,
+                       'EPSG3857':          3857, 
+                       'LAEA':              3035,
+                       'EPSG3035':          3035
                        }
 """Projections and EPSG codes currently supported by |GISCO| services. 
 See http://spatialreference.org for the list of all EPSG codes and corresponding 
@@ -152,19 +153,72 @@ GISCO_TILEDOMAIN    = 'webtools/maps/tiles'
 GISCO_TILEURL       = '%s/%s' % (EC_DOMAIN, GISCO_TILEDOMAIN) 
 """Complete URL of |GISCO| background tiling service.
 """
-GISCO_TILES         = {'bmarble':       {'bckgrd':'bmarble', 'proj': True,           'attr': '© NASA’s Earth Observatory', 'label': 'Blue marble mosaic of Earth'},
-                       'boundaries':    {'bckgrd':'countryboundaries_world', 'proj': True, 'attr': '© Eurogeographics @UN-FAO @Turkstat', 'label': 'boundaries of all countries'},
-                       'roadswater':    {'bckgrd':'roadswater_europe', 'proj': True, 'attr': '© Eurogeographics', 'label': 'cities, roads and rivers'},
-                       'hypso':         {'bckgrd':'hypso', 'proj': True,             'attr': '© Natural Earth', 'label': 'climate shaded relief of Earth'},
-                       'coast':         {'bckgrd':'coast', 'proj': True,             'attr': '© EC-GISCO', 'label': 'continental outlines'},
-                       'copernicus':    {'bckgrd':'copernicus003', 'proj': False,    'attr': '© Core003 Mosaic', 'label': 'Copernicus Core003'},
-                       'osmec':         {'bckgrd':'osm-ec', 'proj': False,           'attr': '© OpenStreetMap', 'label': 'OpenStreetMap'},
-                       'graybg':        {'bckgrd':'gray-bg', 'proj': True,           'attr': '© Eurogeographics', 'label': 'boundaries on gray background'},
-                       'country':       {'bckgrd':'countrynames_europe', 'proj': True, 'attr': '© Eurogeographics', 'label': 'European country names'},
-                       'gray':          {'bckgrd':'gray', 'proj': True,              'attr': '© Natural Earth', 'label': 'gray shaded relief of Earth'},
-                       'natural':       {'bckgrd':'natural', 'proj': True,           'attr': '© Natural Earth', 'label': 'landcover shaded relief of Earth'},
-                       'city':          {'bckgrd':'citynames_europe', 'proj': True,  'attr': '© Eurogeographics', 'label': 'names of settlement'},
-                       'cloudless':     {'bckgrd':'sentinelcloudless', 'proj': False,'attr': 'Sentinel Cloudless', 'label': 'Sentinel Cloudless' } 
+GISCO_TILES         = {'bmarble':           
+                            {'bckgrd':      'bmarble', 
+                             'proj':        True,           
+                             'attr':        '© NASA’s Earth Observatory', 
+                             'label':       'Blue marble mosaic of Earth'
+                             },
+                       'boundaries':        
+                           {'bckgrd':       'countryboundaries_world', 
+                            'proj':         True, 
+                            'attr':         '© Eurogeographics @UN-FAO @Turkstat', 
+                            'label':        'boundaries of all countries'},
+                       'roadswater':       
+                           {'bckgrd':       'roadswater_europe', 
+                            'proj':         True, 
+                            'attr':         '© Eurogeographics', 
+                            'label':        'cities, roads and rivers'},
+                       'hypso':             
+                           {'bckgrd':       'hypso', 
+                            'proj':         True,             
+                            'attr':         '© Natural Earth', 
+                            'label':        'climate shaded relief of Earth'},
+                       'coast':             
+                           {'bckgrd':       'coast', 
+                            'proj':         True,             
+                            'attr':         '© EC-GISCO', 
+                            'label':        'continental outlines'},
+                       'copernicus':        
+                           {'bckgrd':       'copernicus003', 
+                            'proj':         False,    
+                            'attr':         '© Core003 Mosaic', 
+                            'label':        'Copernicus Core003'},
+                       'osmec':             
+                           {'bckgrd':       'osm-ec', 
+                            'proj':         False,           
+                            'attr':         '© OpenStreetMap', 
+                            'label':        'OpenStreetMap'},
+                       'graybg':            
+                           {'bckgrd':       'gray-bg', 
+                            'proj':         True,           
+                            'attr':         '© Eurogeographics', 
+                            'label':        'boundaries on gray background'},
+                       'countrynames':           
+                           {'bckgrd':       'countrynames_europe', 
+                            'proj':         True, 
+                            'attr':         '© Eurogeographics', 
+                            'label':        'European country names'},
+                       'gray':              
+                           {'bckgrd':       'gray', 
+                            'proj':         True,              
+                            'attr':         '© Natural Earth', 
+                            'label':        'gray shaded relief of Earth'},
+                       'natural':           
+                           {'bckgrd':       'natural', 
+                            'proj':         True,           
+                            'attr':         '© Natural Earth', 
+                            'label':        'landcover shaded relief of Earth'},
+                       'citynames':              
+                           {'bckgrd':       'citynames_europe', 
+                            'proj':         True,  
+                            'attr':         '© Eurogeographics', 
+                            'label':        'names of settlement'},
+                       'cloudless':         
+                           {'bckgrd':       'sentinelcloudless', 
+                            'proj':         False,
+                            'attr':         'Sentinel Cloudless', 
+                            'label':        'Sentinel Cloudless' } 
                        }
 """Dictionary for the various |GISCO| background tiles service. See the list
 of `available tiles servers <https://webgate.ec.europa.eu/fpfis/wikis/pages/viewpage.action?spaceKey=webtools&title=Map+-+available+tiles+servers>`_.
@@ -337,16 +391,20 @@ GISCO_LAUDOMAIN     = 'documents/345175/501971'
 GISCO_LAUURL        = '%s/%s' % (ESTAT_URL, GISCO_LAUDOMAIN) 
 """Complete URL of |GISCO| LAU resources.
 """
-NUTS2LAU            =  {2016: {2018: 'EU-28-LAU-2018-NUTS-2016.xlsx',
-                               2017: 'EU-28_LAU_2017_NUTS_2016.xlsx'},
-                        2013: {2017: 'EU-28_LAU_2017_NUTS_2013.xlsx',
-                               2016: 'EU-28_LAU_2016',
-                               2015: 'EU-28_2015.xlsx',
-                               2014: 'EU-28_2014.xlsx',
-                               2013: 'EU-28_2013.xlsx',
-                               2012: 'EU-28_2012.xlsx',
-                               2011: 'EU-28_2011.xlsx',
-                               2010: 'EU-28_2010.xlsx'}
+NUTS2LAU            =  {2016: 
+                            {2018:          'EU-28-LAU-2018-NUTS-2016.xlsx',
+                             2017:          'EU-28_LAU_2017_NUTS_2016.xlsx'
+                             },
+                        2013: 
+                            {2017:          'EU-28_LAU_2017_NUTS_2013.xlsx',
+                             2016:          'EU-28_LAU_2016',
+                             2015:          'EU-28_2015.xlsx',
+                             2014:          'EU-28_2014.xlsx',
+                             2013:          'EU-28_2013.xlsx',
+                             2012:          'EU-28_2012.xlsx',
+                             2011:          'EU-28_2011.xlsx',
+                             2010:          'EU-28_2010.xlsx'
+                             }
                         }
 """Conversion tables between LAU and NUTS datasets.
 """
@@ -380,11 +438,27 @@ DEF_NUTS2JSON_SCALE = DEF_GISCO_SCALE
 """
 NUTS2JSON_NUTSLEVELS = GISCO_NUTSLEVELS
 # dumb variable
-
-DRIVER_NAME         = 'ESRI Shapefile'
+GISCO2GDAL_DRIVERS  = {'geojson': 
+                            {'driver':      'GeoJSON',
+                             'options':     ['RFC7946=YES', 'WRITE_BBOX=YES']
+                             },
+                        #  'topojson':
+                        #        {'driver':       'TopoJSON',
+                        #         'options':      None 
+                        #         },
+                       'shp': 
+                            {'driver':      'ESRI Shapefile',
+                             'options':      None 
+                             }
+                       }
+"""Driver and translate options between |GISCO| disseminated dataset formats 
+and |GDAL| accepted formats.
+"""
+DEF_DRIVER_NAME         = 'ESRI Shapefile'
 """|GDAL| driver name.
 """             
-   
+
+
 POLYLINE            = False
 """
 Boolean flag set to import the package :mod:`polylines` that will enable you to 
@@ -549,6 +623,7 @@ class happyError(Exception):
                  )
             )
 
+
 #%%
 #==============================================================================
 # CLASS happyType
@@ -566,7 +641,7 @@ class happyType(object):
         
         ::
     
-            >>> name = typename(inst)  
+            >>> name = happyType.typename(inst)  
             
         Arguments
         ---------
@@ -591,7 +666,7 @@ class happyType(object):
         
         ::
         
-            >>> ans = istype(inst, str_cls)
+            >>> ans = happyType.istype(inst, str_cls)
             
         Arguments
         ---------
@@ -607,7 +682,7 @@ class happyType(object):
             otherwise.
         """
         try:
-            return happyType.typename(inst) == str_cls
+            return cls.typename(inst) == str_cls
         except:
             raise happyError('class not recognised')
     
@@ -618,7 +693,7 @@ class happyType(object):
         
         ::
         
-            >>> ans = _Types.isstring(arg)
+            >>> ans = happyType.isstring(arg)
       
         Arguments
         ---------
@@ -642,7 +717,7 @@ class happyType(object):
         
         ::
         
-            >>> ans = _Types.issequence(arg)
+            >>> ans = happyType.issequence(arg)
       
         Arguments
         ---------
@@ -657,7 +732,7 @@ class happyType(object):
             instance of the :class:`six.string_types` class), :data:`False` 
             otherwise.
         """
-        return (isinstance(arg, collections.Sequence) and not happyType.isstring(arg))
+        return (isinstance(arg, collections.Sequence) and not cls.isstring(arg))
     
     #/************************************************************************/
     @classmethod
@@ -666,7 +741,7 @@ class happyType(object):
         
         ::
         
-            >>> ans = _Types.ismapping(arg)
+            >>> ans = happyType.ismapping(arg)
       
         Arguments
         ---------
@@ -689,7 +764,7 @@ class happyType(object):
         
         ::
         
-            >>> flat = _Types.seqflatten(arg)
+            >>> flat = happyType.seqflatten(arg)
             
         Arguments
         ---------
@@ -714,3 +789,51 @@ class happyType(object):
         """
         return list(itertools.chain.from_iterable(arg))
 
+
+    #/************************************************************************/
+    @classmethod
+    def _keystr(cls, dic):
+        #
+        for k, v in dic.items():
+            if happyType.ismapping(v):
+                dic.update({k: cls._keystr(v)})
+            else:
+                ndic = dic.copy()
+                for k,v in dic.items():
+                    if not cls.isstring(k):
+                        ndic.update({"%s" % k:v})  
+                        ndic.pop(k)
+                return ndic
+
+    #/************************************************************************/
+    @classmethod
+    def dicjson(cls, arg):
+        """Convert a dictionary into a JSON acceptable dictionary.
+        
+        ::
+        
+            >>> ans = happyType.dicjson(arg)
+      
+        Arguments
+        ---------
+        arg : 
+            an input argument to parse as a JSON dictionary.
+      
+        Returns
+        -------
+        ans : bool
+            :data:`True` if the input argument :data:`arg` is an instance of the 
+            :class:`collections.Mapping` class.
+        """
+        if not cls.issequence(arg):
+            arg = [arg,]
+        for a in arg:
+            arg = cls._keystr(a)
+        arg = ["""%s""" % a if not cls.isstring(a) else a for a in arg]
+        try:
+            arg = [json.loads(a.replace("'","\"")) for a in arg]
+        except:
+            raise happyError('impossible conversion of vector entry') 
+        return arg if arg is None or len(arg)>1 else arg[0]
+
+        

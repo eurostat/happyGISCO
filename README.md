@@ -87,14 +87,14 @@ Note that, in order to make things easier, it is possible to parse lists of plac
 ```python
 >>> axis = ['Rome, Italy', 'Berlin, Germany', 'Tokyo, Japan']
 >>> for p in axis:  # either iterating over the places
-...     print(serv.place2coord(p, unique=True))
+...     print(service.place2coord(p, unique=True))
     [41.8933203, 12.4829321]
     [52.5170365, 13.3888599]
     [34.6968642, 139.4049033]
->>> coord = serv.place2coord(axis, unique=True) # or running the method for the whole list
+>>> coord = service.place2coord(axis, unique=True) # or running the method for the whole list
 >>> print(coord)
     [[41.8933203, 12.4829321], [52.5170365, 13.3888599], [34.6968642, 139.4049033]]
->>> serv.coord2nuts(coord, level=2)
+>>> service.coord2nuts(coord, level=2)
     [{'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '2', 'NAME_LATN': 'Lazio',
       'NUTS_ID': 'ITI4', 'NUTS_NAME': 'Lazio', 'OBJECTID': '330',
       'SHRT_ENGL': 'Italy'},
