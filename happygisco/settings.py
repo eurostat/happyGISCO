@@ -758,82 +758,153 @@ class happyType(object):
     
     #/************************************************************************/
     @classmethod
-    def seqflatten(cls, arg):
-        #ignore
-        """Flatten a list of lists.
+    def seqflatten(cls, arg, rec=False):
+        """Flatten a list of lists (one-level only).
         
         ::
         
-            >>> flat = happyType.seqflatten(arg)
+            >>> flat = happyType.seqflatten(arg, rec = False)
             
         Arguments
         ---------
         arg : list[list]
             a list of nested lists.
+            
+        Keyword argument
+        ----------------
+        rec : bool
+            :data:`True` when the flattening shall be applied recursively over 
+            nested lists; default: :data:`False`.
       
         Returns
         -------
         flat : list
             a list from which all nested elements have been flatten from 1 "level"
-            up.
+            up (case :data:`rec=False`) or through all levels (otherwise).
             
         Examples
         --------
-        
+        A very basic way to flatten a list of lists:
+            
         ::
             
             >>> happyType.seqflatten([[1],[[2,3],[4,5]],[6,7]])
                 [1, [2, 3], [4, 5], 6, 7]
             >>> happyType.seqflatten([[1,1],[[2,2],[3,3],[[4,4],[5,5]]]])
                 [1, 1, [2, 2], [3, 3], [[4, 4], [5, 5]]]
-        """
-        return list(itertools.chain.from_iterable(arg))
-
-
-    #/************************************************************************/
-    @classmethod
-    def _keystr(cls, dic):
-        #
-        for k, v in dic.items():
-            if happyType.ismapping(v):
-                dic.update({k: cls._keystr(v)})
-            else:
-                ndic = dic.copy()
-                for k,v in dic.items():
-                    if not cls.isstring(k):
-                        ndic.update({"%s" % k:v})  
-                        ndic.pop(k)
-                return ndic
-
-    #/************************************************************************/
-    @classmethod
-    def dicjson(cls, arg):
-        """Convert a dictionary into a JSON acceptable dictionary.
-        
+                
+        As for the difference between recursive and non-recursive calls:
+            
         ::
-        
-            >>> ans = happyType.dicjson(arg)
-      
-        Arguments
-        ---------
-        arg : 
-            an input argument to parse as a JSON dictionary.
-      
-        Returns
-        -------
-        ans : bool
-            :data:`True` if the input argument :data:`arg` is an instance of the 
-            :class:`collections.Mapping` class.
+            
+            >>> seq = [[1],[[2,[3.5,3.75]],[[4,4.01],[4.25,4.5],5]],[6,7]]
+            >>> settings.happyType.seqflatten(seq, rec=True)
+                [1, [2, [3.5, 3.75]], [[4, 4.01], [4.25, 4.5], 5], 6, 7]
+            >>> settings.happyType.seqflatten(seq, rec=True)
+                [1, 2, 3.5, 3.75, 4, 4.01, 4.25, 4.5, 5, 6, 7]
         """
         if not cls.issequence(arg):
             arg = [arg,]
-        for a in arg:
-            arg = cls._keystr(a)
-        arg = ["""%s""" % a if not cls.isstring(a) else a for a in arg]
-        try:
-            arg = [json.loads(a.replace("'","\"")) for a in arg]
-        except:
-            raise happyError('impossible conversion of vector entry') 
+        def itemflat(alist):
+            if not any([cls.issequence(a) for a in alist]):
+                return alist
+            if all([cls.issequence(a) for a in alist]):
+               nlist  = list(itertools.chain.from_iterable(alist))
+            else:
+                nlist = alist
+            if any([cls.issequence(nlist) for a in nlist]):
+                res = []
+                for item in nlist:
+                    if cls.issequence(item):
+                        res += itemflat(item)
+                    else:
+                        res.append(item)
+            else:
+                res = nlist
+            return res
+        if rec is True:
+            return itemflat(arg)
+        else:
+            return list(itertools.chain.from_iterable(arg))
+
+    #/************************************************************************/
+    @classmethod
+    def dic2jsonstr(cls, arg, rec=True):
+        """Format a dictionary into a JSON-compliant string where property names
+        are enclosed in double quotes :data:`"`.
+        
+        ::
+        
+            >>> ans = happyType.dic2jsonstr(arg, rec=True)
+      
+        Arguments
+        ---------
+        arg : dict
+            an input argument to parse as a JSON dictionary.
+            
+        Keyword argument
+        ----------------
+        rec : bool
+            :data:`True` when the formatting shall be applied recursively over 
+            nested dictionary; default: :data:`False`.
+      
+        Returns
+        -------
+        ans : str
+            string representing the input dictionary :data:`arg` where all property 
+            names are enclosed in double quotes :data:`"`.
+            
+        Examples
+        --------
+        All keys in the dictionary are transformed in double quoted strings:
+            
+        ::
+            
+            >>> a = {1:'a', 2:{"b":3, 4:5}, "6":'d'}
+            >>> print(settings.happyType.dic2jsonstr(a, rec=False))
+                {1: "a", 2: {"b": 3, 4: 5}, "6": "d"}
+            >>> print(happyType.dic2jsonstr(a))
+                {"1": "a", "2": {"b": 3, "4": 5}, "6": "d"}
+
+        The method can be used to parse the input dictionary as a properly formatted
+        string that can be loaded into a dictionary through :mod:`json`:
+            
+        ::
+
+            >>> import json
+            >>> b = {'a':1, 'b':{'c':2, 'd':3}, 'e':4} 
+            >>> json.loads("%s" % b)
+                Traceback (most recent call last):                
+                ...                
+                JSONDecodeError: Expecting property name enclosed in double quotes            
+            >>> s = happyType.dic2jsonstr(b)
+            >>> print(s)
+                '{"a": 1, "b": {"c": 2, "d": 3}, "e": 4}'
+            >>> json.loads(s)
+                {'a': 1, 'b': {'c': 2, 'd': 3}, 'e': 4}
+        """
+        if not cls.issequence(arg):
+            arg = [arg,]
+        def keystr(dic):
+            ndic = dic.copy()
+            for k, v in dic.items():
+                if not cls.isstring(k):
+                    ndic.update({"%s" % k:v})  
+                    ndic.pop(k)
+                    k = "%s" % k
+                if cls.ismapping(v):
+                    # ndic.update({k: cls._keystr(v)})
+                    ndic[k] = keystr(v)
+            return ndic
+        if rec is True:
+            arg = ["""%s""" % keystr(a) for a in arg]
+        else:
+            arg = ["""%s""" % a if not cls.isstring(a) else a for a in arg]
+        arg = [a.replace("'","\"") for a in arg]        
+        #try:
+        #    arg = [json.loads(a) for a in arg]
+        #except:
+        #    raise happyError('impossible conversion of vector entry') 
         return arg if arg is None or len(arg)>1 else arg[0]
 
         

@@ -867,7 +867,7 @@ class NUTS(_Feature):
 
     #/************************************************************************/    
     @_Decorator._parse_class(ogr.Feature, _Decorator.KW_FEATURE)
-    def __get_vector(self, **kwargs):
+    def __get_geometry(self, **kwargs):
         feature = kwargs.pop(_Decorator.KW_FEATURE, self.__feature)
         if not happyType.issequence(feature): 
             feature = [feature,]
@@ -1069,37 +1069,37 @@ class NUTS(_Feature):
 
     #/************************************************************************/
     @property
-    def vector(self):
+    def geometry(self):
         """Feature property (:data:`setter`/:data:`getter`) of a :class:`NUTS` instance.
         """ 
-        if self.__vector in ([],None):
+        if self.__geometry in ([],None):
             try:
-                vector = self.__get_vector() 
+                geom = self.__get_geometry() 
             except:     
                 #raise happyError('unable to retrieve feature') 
                 pass
             else:
-                self.__vector = vector
-        return self.__vector    
-    @vector.setter
-    def vector(self,vector):
+                self.__geometry = geom
+        return self.__geometry    
+    @geometry.setter
+    def geometry(self, geom):
         try:
-            decorator = _Decorator._parse_class([str,dict,list], _Decorator.KW_VECTOR)
+            decorator = _Decorator._parse_class([str,dict,list], _Decorator.KW_GEOMETRY)
             # decorator = _Decorator._parse_class(None, _Decorator.KW_VECTOR)
-            func = lambda **kw: kw.get(_Decorator.KW_VECTOR)
-            vector = decorator(func)(**{_Decorator.KW_VECTOR: vector})
+            func = lambda **kw: kw.get(_Decorator.KW_GEOMETRY)
+            geom = decorator(func)(**{_Decorator.KW_GEOMETRY: geom})
         except:
-            raise happyError('wrong %s argument' % _Decorator.KW_FEATURE) 
-        if not happyType.issequence(vector):
-            vector = [vector,]
-        vector = ["""%s""" % v if not happyType.isstring(v) else v for v in vector]
+            raise happyError('wrong %s argument' % _Decorator.KW_GEOMETRY) 
+        if not happyType.issequence(geom):
+            geom = [geom,]
+        geom = ["""%s""" % g if not happyType.isstring(g) else g for g in geom]
         try:
-            self.__vector = [json.loads(v.replace("'","\"")) for v in vector]
+            self.__geometry = [json.loads(g.replace("'","\"")) for g in geom]
         except:
-            raise happyError('impossible conversion of vector entry') 
+            raise happyError('impossible conversion of geometry entry') 
         else:
-            if vector is None or len(vector)>1:
-                self.__vector = self.__vector[0]
+            if geom is None or len(geom)>1:
+                self.__geometry = self.__geometry[0]
 
     #/************************************************************************/    
     @property
@@ -1132,6 +1132,7 @@ class NUTS(_Feature):
                 self.__level = level
         return self.__level if self.__level is None or len(self.__level)>1 else self.__level[0] 
     
+    #/************************************************************************/    
     @property
     def fid(self):
         """Feature identity property.
@@ -1144,6 +1145,7 @@ class NUTS(_Feature):
         else:
             return fid if len(fid)>1 else fid[0]
     
+    #/************************************************************************/    
     @property
     def id(self):
         """NUTS identity property.
@@ -1160,6 +1162,7 @@ class NUTS(_Feature):
         else:
             return nid if len(nid)>1 else nid[0]
     
+    #/************************************************************************/    
     @property
     def name(self):
         """Name property (:data:`getter`) of a :class:`NUTS` instance. 
@@ -1177,6 +1180,7 @@ class NUTS(_Feature):
         else:
             return name if name is None or len(name)>1 else name[0]
     
+    #/************************************************************************/    
     @property
     def value(self):
         """Value property (:data:`getter`) of a :class:`NUTS` instance. 
@@ -1189,6 +1193,7 @@ class NUTS(_Feature):
         else:
             return value if value is None or len(value)>1 else value[0]
     
+    #/************************************************************************/    
     @property
     def place(self):
         """Place property of a :class:`NUTS` instance. This is actually a "shortcut"
