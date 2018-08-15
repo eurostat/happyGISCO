@@ -783,7 +783,7 @@ class NUTS(_Feature):
         self.__vector = None
         super(NUTS,self).__init__(**kwargs)
         items = []
-        for kw in ['KW_FILE', 'KW_URL', 'KW_RESPONSE', 'KW_LAYER', 'KW_FEATURE', 'KW_VECTOR', 'KW_UNIT']:
+        for kw in ['KW_FILE', 'KW_URL', 'KW_RESPONSE', 'KW_LAYER', 'KW_FEATURE', 'KW_GEOMETRY', 'KW_UNIT']:
             attr = kwargs.pop(getattr(_Decorator, kw), None)
             try:
                 assert attr not in (None,[],{},'')
@@ -798,6 +798,8 @@ class NUTS(_Feature):
                 raise happyError('incompatible keyword arguments parsed')
             else:
                 raise happyError('missing keyword arguments')
+                
+                
         if self.__unit in ('',[],None):
             return
         for kw in ['KW_YEAR' ,'KW_SCALE' ,'KW_FORMAT' ,'KW_PROJECTION' ,'KW_GEOMETRY' ,'KW_LEVEL']:
@@ -816,7 +818,7 @@ class NUTS(_Feature):
             return super(NUTS,self).__getattribute__(attr_name) 
         except AttributeError:
             try:
-                attr = [n[attr_name] for n in self.__vector]
+                attr = [n[attr_name] for n in self.__geometry]
                 assert not attr in ([],[None])
             except:
                 raise happyError('attribute %s not known' % attr_name)
@@ -827,14 +829,13 @@ class NUTS(_Feature):
     @_Decorator.parse_file
     @_Decorator.parse_url
     def __get_layer(self, **kwargs):
-        file = kwargs.pop(_Decorator.KW_FILE, None)
+        file = kwargs.pop(_Decorator.KW_FILE, self.__file)
         url = kwargs.pop(_Decorator.KW_URL, None)
         try:
             if file is not None:
                 return self.transform.file2layer(file)
             elif url is not None:
-                feat = self.serv.get_response(url)
-                return feat.content
+                return self.transform.url2layer(url)
             else:
                 raise happyError('no input data parsed to extract layer')
         except:
@@ -877,35 +878,35 @@ class NUTS(_Feature):
         try:
             if feature is not None:
                 if getattr(feature, _AttrDict.KW_ATTR) in (None,False):
-                    vector = [json.loads(v.ExportToJson()) for v in feature]
+                    geom = [json.loads(v.ExportToJson()) for v in feature]
                 else:
-                    vector = [json.loads(v.ExportToJson()) for v in feature.values()]
+                    geom = [json.loads(v.ExportToJson()) for v in feature.values()]
             elif url is not None:
-                vector = [self.data2nuts(u) for u in url]
+                geom = [self.data2nuts(u) for u in url]
         except: 
             raise happyError('impossible to extract vector features from data') 
         if kwargs != {}:
-            return _AttrDict(vector, **kwargs)
-        if _Decorator.parse_nuts.KW_ATTRIBUTES in vector[0]:
+            return _AttrDict(geom, **kwargs)
+        if _Decorator.parse_nuts.KW_ATTRIBUTES in geom[0]:
             try:
                 kwargs.update({_AttrDict.KW_ATTR: [_Decorator.parse_nuts.KW_ATTRIBUTES, _Decorator.parse_nuts.KW_NUTS_ID]})
-                return _AttrDict(vector, **kwargs)
+                return _AttrDict(geom, **kwargs)
             except:
                 raise happyError('impossible to build feature dictionary') 
         else: # if _Decorator.parse_nuts.KW_PROPERTIES in feature[0]:
             try:
                 kwargs.update({_AttrDict.KW_ATTR: [_Decorator.parse_nuts.KW_PROPERTIES, _Decorator.parse_nuts.KW_NUTS_ID]})
-                return _AttrDict(vector, **kwargs)
+                return _AttrDict(geom, **kwargs)
             except:
                 pass
             try:
                 kwargs.update({_AttrDict.KW_ATTR: [_Decorator.parse_nuts.KW_PROPERTIES, _Decorator.parse_nuts.KW_FID]})
-                return _AttrDict(vector, **kwargs)
+                return _AttrDict(geom, **kwargs)
             except:
                 pass
             try:
                 kwargs.update({_AttrDict.KW_ATTR: True})
-                return _AttrDict(vector, **kwargs)
+                return _AttrDict(geom, **kwargs)
             except:
                 raise happyError('impossible to build feature dictionary') 
 
@@ -998,7 +999,8 @@ class NUTS(_Feature):
         """File property (:data:`setter`/:data:`getter`) of a :class:`NUTS` 
         instance, if any.
         """ 
-        return self.__file   
+        return self.__file if self.__file is None or len(self.__file)>1     \
+            else self.__file[0]    
     @file.setter
     def file(self, file):
         try:
@@ -1009,7 +1011,7 @@ class NUTS(_Feature):
         else:
             if not happyType.issequence(file):
                 file = [file,]
-            self.__file = file
+        self.__file = file
                 
     #/************************************************************************/
     @property
@@ -1090,16 +1092,7 @@ class NUTS(_Feature):
             geom = decorator(func)(**{_Decorator.KW_GEOMETRY: geom})
         except:
             raise happyError('wrong %s argument' % _Decorator.KW_GEOMETRY) 
-        if not happyType.issequence(geom):
-            geom = [geom,]
-        geom = ["""%s""" % g if not happyType.isstring(g) else g for g in geom]
-        try:
-            self.__geometry = [json.loads(g.replace("'","\"")) for g in geom]
-        except:
-            raise happyError('impossible conversion of geometry entry') 
-        else:
-            if geom is None or len(geom)>1:
-                self.__geometry = self.__geometry[0]
+        self.__geometry = happyType.jsonstringify(geom)
 
     #/************************************************************************/    
     @property

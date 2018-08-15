@@ -829,13 +829,13 @@ class happyType(object):
 
     #/************************************************************************/
     @classmethod
-    def dic2jsonstr(cls, arg, rec=True):
+    def jsonstringify(cls, arg, rec=True):
         """Format a dictionary into a JSON-compliant string where property names
         are enclosed in double quotes :data:`"`.
         
         ::
         
-            >>> ans = happyType.dic2jsonstr(arg, rec=True)
+            >>> ans = happyType.jsonstringify(arg, rec=True)
       
         Arguments
         ---------
@@ -861,9 +861,9 @@ class happyType(object):
         ::
             
             >>> a = {1:'a', 2:{"b":3, 4:5}, "6":'d'}
-            >>> print(settings.happyType.dic2jsonstr(a, rec=False))
+            >>> print(happyType.jsonstringify(a, rec=False))
                 {1: "a", 2: {"b": 3, 4: 5}, "6": "d"}
-            >>> print(happyType.dic2jsonstr(a))
+            >>> print(happyType.jsonstringify(a))
                 {"1": "a", "2": {"b": 3, "4": 5}, "6": "d"}
 
         The method can be used to parse the input dictionary as a properly formatted
@@ -877,7 +877,7 @@ class happyType(object):
                 Traceback (most recent call last):                
                 ...                
                 JSONDecodeError: Expecting property name enclosed in double quotes            
-            >>> s = happyType.dic2jsonstr(b)
+            >>> s = happyType.jsonstringify(b)
             >>> print(s)
                 '{"a": 1, "b": {"c": 2, "d": 3}, "e": 4}'
             >>> json.loads(s)
@@ -907,4 +907,34 @@ class happyType(object):
         #    raise happyError('impossible conversion of vector entry') 
         return arg if arg is None or len(arg)>1 else arg[0]
 
+    #/************************************************************************/
+    @classmethod
+    def dicmerge(cls, *dicts):
+        """Recursively merge an arbitrary number of dictionaries.
+    
+            >>> new_dict = happyType.dicmerge(*dicts)
+    
+        Examples
+        --------
+        
+        ::
+
+            >>> d1 = {'a': {'b': {'x': '1', 'y': '2'}}}
+            >>> d2 = {'a': {'c': {'gg': {'m': '3'},'xx': '4'}}}
+            >>> print mergedict(d1, d2)
+                {'a': {'b': {'x': '1','y': '2'}, 'c': {'gg': {'m': '3'}, 'xx': '4'}}}
+        """    
+        keys = set(k for d in dicts for k in d)    
+        def vals(key):
+            # return all values for `key` in all `dicts`
+            withkey = (d for d in dicts if d.has_key(key))
+            return [d[key] for d in withkey]    
+        def recurse(*values):
+            # recurse if the values are dictionaries
+            if isinstance(values[0], dict):
+                return cls.dicmerge(*values)
+            if len(values) == 1:
+                return values[0]
+            raise happyError("Multiple non-dictionary values for a key.")    
+        return dict((key, recurse(*vals(key))) for key in keys)  
         

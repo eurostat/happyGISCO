@@ -64,7 +64,8 @@ __all__         = ['OSMService', 'GISCOService', 'APIService',
                    '_googleMapsAPI', '_googlePlacesAPI', '_geoCoderAPI']
 
 # generic import
-import os, io, sys#analysis:ignore
+import os, sys#analysis:ignore
+import io, re
 
 import collections
 import functools, itertools#analysis:ignore
@@ -233,7 +234,7 @@ class OSMService(_Service):
         
         See also
         --------
-        :meth:`~OSMService.url_reverse`, :meth:`~OSMService.url_route`, 
+        :meth:`~OSMService.url_reverse`, :meth:`~OSMService.url_routing`, 
         :meth:`~OSMService.url_transform`, :meth:`base._Service.build_url`.
         """
         protocol = kwargs.pop('protocol', 'https')
@@ -291,7 +292,7 @@ class OSMService(_Service):
         
         See also
         --------
-        :meth:`~OSMService.url_geocode`, :meth:`~OSMService.url_route`, 
+        :meth:`~OSMService.url_geocode`, :meth:`~OSMService.url_routing`, 
         :meth:`~OSMService.url_transform`, :meth:`base._Service.build_url`.
         """
         protocol = kwargs.pop('protocol', 'https')
@@ -965,27 +966,27 @@ class GISCOService(OSMService):
             >>> serv.url4nuts('AD')
                 'http://europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AD-region-01m-4326-2013.geojson'
                 
-            >>> serv.url4nuts(year = 2016, scale = 10, geometry = 'boundary')
+            >>> serv.url4nuts(year = 2016, scale = 10, vector = 'boundary')
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_BN_10M_2016_4326_LEVL_0.geojson'
             >>> serv.url4nuts('bulk', year = 2016, scale = 60, fmt = 'shp')
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-60m.shp.zip'
-            >>> serv.url4nuts(year = 2010, geometry = 'label', level = 2)  
+            >>> serv.url4nuts(year = 2010, vector = 'label', level = 2)  
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_LB_2010_4326_LEVL_2.geojson'
-            >>> serv.url4nuts(year = 2010, scale = 1, geometry = 'boundary', level = 'ALL', proj = 'Mercator')  
+            >>> serv.url4nuts(year = 2010, scale = 1, vector = 'boundary', level = 'ALL', proj = 'Mercator')  
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_BN_01M_2010_3857.geojson'
             >>> serv.url4nuts('info', year = 2010)  
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2010-units.json'
                 
-            >>> serv.url4nuts('MK', year = 2006, scale = 20, geometry = 'region', proj = 'LAEA')
+            >>> serv.url4nuts('MK', year = 2006, scale = 20, vector = 'region', proj = 'LAEA')
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/MK-region-20m-3035-2006.geojson'
-            >>> serv.url4nuts('BE100', year = 2016, scale = 3, geometry = 'LB')
+            >>> serv.url4nuts('BE100', year = 2016, scale = 3, vector = 'LB')
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-label-03m-4326-2016.geojson'        
         
         Note also:
         
         ::
                 
-            >>> serv.url4nuts('BE100', year = 2016, scale = 3, geometry = 'boundary', fmt ='shp')
+            >>> serv.url4nuts('BE100', year = 2016, scale = 3, vector = 'boundary', fmt ='shp')
                     ! only LABEL and REGION features are supported with single NUTS units distribution - FEATURE argument ignored !
                     ! only GEOJSON is supported with single NUTS units distribution - FMT argument ignored !
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-region-03m-4326-2016.geojson'       
@@ -1002,7 +1003,8 @@ class GISCOService(OSMService):
                 
         See also
         --------
-        :meth:`~GISCOService.resp4nuts`, :meth:`~GISCOService.url4country`.        
+        :meth:`~GISCOService.resp4nuts`, :meth:`~GISCOService.url4country`,
+        :meth:`~GISCOService.url2nutsid`.        
         """
         # check whether a specific unit is looked for
         # btw, do we want to download GISCO data?
@@ -1028,9 +1030,9 @@ class GISCOService(OSMService):
             proj = settings.GISCO_PROJECTIONS[proj]
         elif proj in settings.NUTS2JSON_PROJECTIONS.keys():
             proj = settings.NUTS2JSON_PROJECTIONS[proj]
-        geom = kwargs.pop(_Decorator.KW_GEOMETRY, settings.DEF_GISCO_GEOMETRY) 
-        if geom in settings.GISCO_GEOMETRIES.keys():
-            geom = settings.GISCO_GEOMETRIES[geom]
+        vec = kwargs.pop(_Decorator.KW_VECTOR, settings.DEF_GISCO_VECTOR) 
+        if vec in settings.GISCO_VECTORS.keys():
+            vec = settings.GISCO_VECTORS[vec]
         level = kwargs.pop(_Decorator.KW_LEVEL, settings.GISCO_NUTSLEVELS[0])        
         # set the compression format
         theme = settings.GISCO_NUTSTHEME 
@@ -1047,7 +1049,7 @@ class GISCOService(OSMService):
             domain = settings.NUTS2JSON_DOMAIN
             url = '{a}://{b}/{c}/{d}/{e}/{f}{g}.{h}'.format                 \
                 (a=protocol, b=domain, c=year, d=proj, e=scale.upper(), 
-                 f='' if fmt!= 'geojson' else ('nutsrg_' if geom == 'RG' else 'nutsbn_'), 
+                 f='' if fmt!= 'geojson' else ('nutsrg_' if vec == 'RG' else 'nutsbn_'), 
                  g=level, h='json')
         elif source == 'BULK': # zipped files
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-10m.shp.zip
@@ -1068,37 +1070,36 @@ class GISCOService(OSMService):
         elif source == 'NUTS': # unit == 'ALL'
             domain = {v:k for k,v in settings.GISCO_FORMATS.items()}[fmt]
             basename = settings.GISCO_PATTERNS['nuts']['base']
-            if not geom in list(settings.GISCO_GEOMETRIES.values()):
-                geom = settings.GISCO_GEOMETRIES[geom]
+            if not vec in list(settings.GISCO_VECTORS.values()):
+                vec = settings.GISCO_VECTORS[vec]
             # no indication of scale!!!
-            scale = '' if geom == 'LB' else '_' + str(scale)
+            scale = '' if vec == 'LB' else '_' + str(scale)
             level = '' if level == 'ALL' else '_LEVL_' + str(level)
             url = '{a}://{b}/{c}/{d}/{e}{f}{g}_{h}_{i}{j}.{k}'.format       \
                 (a=settings.PROTOCOL, b=self.url_cache, c=theme, d=domain,
-                 e=basename, f=geom.upper(), g=scale.upper(), h=year, i=proj, j=level,
+                 e=basename, f=vec.upper(), g=scale.upper(), h=year, i=proj, j=level,
                  k=fmt)
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/topojson/NUTS_BN_01M_2016_3035_LEVL_3.json
         else: # files
             domain = settings.GISCO_PATTERNS['nuts']['domain']
-            if not geom in list(settings.GISCO_GEOMETRIES.keys()):
-                geom = {v:k for k,v in settings.GISCO_GEOMETRIES.items()}[geom]
-            if geom not in ('label','region'):
+            if not vec in list(settings.GISCO_VECTORS.keys()):
+                vec = {v:k for k,v in settings.GISCO_VECTORS.items()}[vec]
+            if vec not in ('label','region'):
                 happyWarning('only LABEL and REGION features are supported with single NUTS units distribution - %s argument ignored' % _Decorator.KW_GEOMETRY.upper())
-                geom = 'region'
-                kwargs.update({_Decorator.KW_GEOMETRY: geom})
-            elif geom == 'label':
+                vec = 'region' # settings.DEF_GISCO_VECTOR
+            elif vec == 'label':
                 scale =''
                 if proj not in (3035,4258):
                     happyWarning('only 3035 and 4258 projections are supported with single LABEL unit distribution - %s argument ignored' % _Decorator.KW_PROJECTION.upper())
                     proj = 3035
-            if geom == 'region': # not elif
+            if vec == 'region': # not elif
                 scale = scale.lower() + '-'
             if fmt != 'geojson':
                 happyWarning('only GEOJSON is supported with single NUTS units distribution - %s argument ignored' % _Decorator.KW_FORMAT.upper())
                 fmt = 'geojson'
             url = '{a}://{b}/{c}/{d}/{e}-{f}-{g}{h}-{i}.{j}'.format        \
                 (a=settings.PROTOCOL, b=self.url_cache, c=theme, d=domain,
-                 e=source, f=geom.lower(), g=scale, h=proj, i=year, 
+                 e=source, f=vec.lower(), g=scale, h=proj, i=year, 
                  j=fmt)
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AT-region-01m-3035-2016.geojson
         return url if url is None or len(url)>1 else url[0]          
@@ -1170,9 +1171,9 @@ class GISCOService(OSMService):
             proj = settings.GISCO_PROJECTIONS[proj]
         elif proj in settings.NUTS2JSON_PROJECTIONS.keys():
             proj = settings.NUTS2JSON_PROJECTIONS[proj]
-        geom = kwargs.pop(_Decorator.KW_GEOMETRY, settings.DEF_GISCO_GEOMETRY) 
-        if geom in settings.GISCO_GEOMETRIES.keys():
-            geom = settings.GISCO_GEOMETRIES[geom]
+        vec = kwargs.pop(_Decorator.KW_VECTOR, settings.DEF_GISCO_VECTOR) 
+        if vec in settings.GISCO_VECTORS.keys():
+            vec = settings.GISCO_VECTORS[vec]
         theme = 'countries'
         if source == 'NUTS2JSON':
             # the files can be retrieved on-the-fly from the base URL 
@@ -1185,7 +1186,7 @@ class GISCOService(OSMService):
             domain = settings.NUTS2JSON_DOMAIN
             url = '{a}://{b}/{c}/{d}/{e}/{f}.{g}'.format                 \
                 (a=protocol, b=domain, c=year, d=proj, e=scale.upper(), 
-                 f='' if fmt!= 'geojson' else ('cntrg' if geom == 'RG' else 'cntbn'), 
+                 f='' if fmt!= 'geojson' else ('cntrg' if vec == 'RG' else 'cntbn'), 
                  g='json')
         elif source == 'INFO':
             domain = ''
@@ -1336,7 +1337,7 @@ class GISCOService(OSMService):
         
         See also
         --------
-        :meth:`~GISCOService.url_reverse`, :meth:`~GISCOService.url_route`, 
+        :meth:`~GISCOService.url_reverse`, :meth:`~GISCOService.url_routing`, 
         :meth:`~GISCOService.url_transform`, :meth:`~GISCOService.url_findnuts`,
         :meth:`OSMService.url_geocode`.
         """
@@ -1393,7 +1394,7 @@ class GISCOService(OSMService):
         
         See also
         --------
-        :meth:`~GISCOService.url_geocode`, :meth:`~GISCOService.url_route`, 
+        :meth:`~GISCOService.url_geocode`, :meth:`~GISCOService.url_routing`, 
         :meth:`~GISCOService.url_transform`, :meth:`~GISCOService.url_findnuts`,
         :meth:`OSMService.url_reverse`.
         """
@@ -1407,13 +1408,13 @@ class GISCOService(OSMService):
         return super(GISCOService, self).url_reverse(**kwargs)
 
     #/************************************************************************/
-    def url_route(self, **kwargs):
+    def url_routing(self, **kwargs):
         """Generate the query URL for |GISCO| routing web-service (from a list of
         geocoordinates to a route).
         
         ::
         
-            >>> url = serv.url_route(**kwargs)
+            >>> url = serv.url_routing(**kwargs)
            
         Keyword Arguments
         -----------------
@@ -1439,7 +1440,7 @@ class GISCOService(OSMService):
         ::
 
             >>> serv = services.GISCOService()
-            >>> serv.url_route(coordinates='13.388860,52.517037;13.397634,52.529407;13.428555,52.523219')
+            >>> serv.url_routing(coordinates='13.388860,52.517037;13.397634,52.529407;13.428555,52.523219')
                 'https://europa.eu/webtools/rest/gisco/route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219'
         
         See also
@@ -1462,7 +1463,7 @@ class GISCOService(OSMService):
         happyVerbose('output url:\n            %s' % url)
         return url
         # test: 
-        # url_route(lat=[13.388860, 13.397634, 13.428555],lon=[52.517037,52.529407,52.523219])
+        # url_routing(lat=[13.388860, 13.397634, 13.428555],lon=[52.517037,52.529407,52.523219])
 
     #/************************************************************************/
     def url_transform(self, **kwargs):
@@ -1504,7 +1505,7 @@ class GISCOService(OSMService):
         See also
         --------
         :meth:`~GISCOService.url_geocode`, :meth:`~GISCOService.url_reverse`, 
-        :meth:`~GISCOService.url_route`, :meth:`~GISCOService.url_findnuts`,
+        :meth:`~GISCOService.url_routing`, :meth:`~GISCOService.url_findnuts`,
         :meth:`base._Service.build_url`.
         """
         protocol = kwargs.pop('protocol', 'https')  
@@ -1520,6 +1521,7 @@ class GISCOService(OSMService):
 
     #/************************************************************************/
     @_Decorator.parse_projection
+    @_Decorator.parse_year
     def url_findnuts(self, **kwargs):
         """Create a query URL to be submitted to the |GISCO| (simple) web-service 
         for NUTS codes identification.
@@ -1557,7 +1559,7 @@ class GISCOService(OSMService):
         See also
         --------
         :meth:`~GISCOService.url_geocode`, :meth:`~GISCOService.url_reverse`, 
-        :meth:`~GISCOService.url_route`, :meth:`~GISCOService.url_transform`,
+        :meth:`~GISCOService.url_routing`, :meth:`~GISCOService.url_transform`,
         :meth:`base._Service.build_url`.
         """
         protocol = kwargs.pop('protocol', 'http')  
@@ -1903,6 +1905,128 @@ class GISCOService(OSMService):
         kwargs.update({_Decorator.KW_ID: _id})
         [name.append(data if len(data)>1 else data[0]) for data in self._nutsid2name(**kwargs)]
         return name
+        
+    #/************************************************************************/
+    def url2nutsid(self, url):
+        """Check whether a given URL represents a |NUTS| dataset disseminated though
+        |GISCO| API.
+        
+        ::
+            
+            >>> keys = serv.url2nutsid(url)
+            
+            
+        Arguments
+        ---------
+        url : str
+        
+        Returns
+        -------
+        keys : dict
+        
+        
+        Examples
+        --------
+        Here are few examples of a simple identification of NUTS parameters 
+        from generated URLs:
+        
+        ::
+            
+            >>> url = serv.url4nuts(source='BULK', fmt='geojson')
+            >>> print(url)
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-60m.geojson.zip'
+            >>> serv.url2nutsid(url)
+                {'fmt':'geojson', 'scale':'60m', 'year':2013}
+            >>> url = serv.url4nuts('BE100', year = 2016, scale = 3, vector = 'label')
+            >>> print(url)
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-label-3035-2016.geojson'
+            >>> serv.url2nutsid(url)
+                {'fmt':'geojson', 'proj':3035, 'source':'BE100', 'vector':'LB', 'year':2016}
+            >>> url = serv.url4nuts('AT', year = 2010, scale = 1, proj = 'Mercator')
+            >>> print(url)
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AT-region-01m-3857-2010.geojson'
+            >>> serv.url2nutsid(url)
+                {'fmt':'geojson', 'proj':3857, 'scale':'01m', 'source':'AT', 'vector':'RG', 'year':2010}
+            >>> url = serv.url4nuts(source='NUTS', level=3, fmt='shp')
+            >>> print(url)
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_RG_60M_2013_4326_LEVL_3.shx'
+            >>> serv.url2nutsid(url)
+                {'fmt':'shp', 'level': 3, 'proj':4326, 'scale':'60M', 'vector':'RG', 'year':2013}
+            >>> url = serv.url4nuts(source='NUTS', level='ALL', vector='label', fmt='geojson')
+            >>> print(url)
+                'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_LB_2013_4326.geojson'
+            >>> serv.url2nutsid(url)
+                {'fmt':'geojson', 'level':'ALL', 'proj':4326, 'vector':'LB', 'year':2013}            
+            >>> url = serv.url4nuts(source='NUTS2JSON',  fmt='geojson')
+            >>> print(url)
+                'https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/2013/3857/60M/nutsrg_0.json'
+            >>> serv.url2nutsid(url)
+                {'fmt':'geojson', 'level':0, 'proj':3857, 'scale':'60M', 'vector':'RG', 'year':2013}
+        """
+        keys = {}
+        unit, year, scale, fmt, proj, vec, level =                         \
+            None, None, None, None, None, None, None
+        isgisco, isnuts2json = url.find(self.url_cache), url.find(settings.NUTS2JSON_DOMAIN)
+        if isgisco < 0 and isnuts2json < 0:
+            happyVerbose('URL not recognised as GISCO/NUTS2JSON URL')
+            return keys
+        # let us look at the last part of the URL only
+        if isgisco > 0:
+            turl = url.split(self.url_cache)[-1]
+            url = url.split('/')[-1]
+            sub = url.split('.')
+            if url.count('.') > 1: # or len(sub)>2
+                fmt = sub[-2] 
+            elif turl.find(settings.GISCO_PATTERNS['bulk']['compress']) >= 0:
+                # if we reach this point, it means that only the compress extension 
+                # appears in the name, not the format of the dataset
+                fmt = None
+            else:
+                fmt = sub[-1]
+            fmt = {v:k for k,v in settings.GISCO_FORMATS.items()}[fmt]
+            if turl.find(settings.GISCO_PATTERNS['bulk']['domain']) >= 0    \
+                    and turl.find(settings.GISCO_PATTERNS['bulk']['base']) > 0:
+                sub = sub[0].replace(settings.GISCO_PATTERNS['bulk']['base'],'').split('-')
+                year, scale = sub
+            elif turl.find(settings.GISCO_PATTERNS['nuts']['fmt']) >= 0     \
+                    and turl.find(settings.GISCO_PATTERNS['nuts']['info']) > 0:
+                year = sub[0].split('-')[1]
+            elif turl.find(settings.GISCO_PATTERNS['nuts']['base']) >= 0:
+                sub = sub[0].replace(settings.GISCO_PATTERNS['nuts']['base'],'').split('_')
+                vec = sub[0]
+                if vec == 'LB':         year, proj = sub[1:3]
+                else:                   scale, year, proj = sub[1:4]
+                if 'LEVL' in sub:       level = sub[-1]
+                else:                   level = 'ALL'
+            elif turl.find(settings.GISCO_PATTERNS['nuts']['domain']) >= 0:
+                sub = sub[0].split('-')
+                unit, vec = sub[0:2]
+                if vec == 'label':      proj, year = sub[2:]
+                else:                   scale, proj, year = sub[2:]
+                vec = settings.GISCO_VECTORS[vec]
+        elif isnuts2json > 0:
+            sub = url.split(settings.NUTS2JSON_DOMAIN)[-1].split('.')[0]
+            if sub.startswith('/'):     sub = sub[1:]
+            year, proj, scale, data = sub.split('/')
+            sub = data.split('_')
+            if len(sub)>1:              vec, level, fmt = *sub, 'geojson'
+            else:                       level, fmt = sub[0], 'topojson'
+            vec = 'RG' if vec=='nutsrg' else ('LB' if vec=='nutsbn' else vec)
+        if unit is not None:
+            keys.update({_Decorator.KW_SOURCE: unit})
+        if year is not None:
+            keys.update({_Decorator.KW_YEAR: int(year)})
+        if scale is not None:
+            keys.update({_Decorator.KW_SCALE: scale})
+        if fmt is not None:
+            keys.update({_Decorator.KW_FORMAT: fmt})
+        if proj is not None:
+            keys.update({_Decorator.KW_PROJECTION: int(proj)})
+        if vec is not None:
+            keys.update({_Decorator.KW_VECTOR: vec})
+        if level is not None:
+            keys.update({_Decorator.KW_LEVEL: int(level) if level!='ALL' else level})
+        return keys
         
     #/************************************************************************/
     def _place2geom(self, place, **kwargs): 
@@ -2573,7 +2697,7 @@ class GISCOService(OSMService):
         See also
         --------
         :meth:`~GISCOService.place2route`, :meth:`~GISCOService.coord2place`, 
-        :meth:`~GISCOService.url_route`, :meth:`base._Service.get_response`.
+        :meth:`~GISCOService.url_routing`, :meth:`base._Service.get_response`.
         """
         routes, waypoints = None, None
         if len(coord)<2 or not all([happyType.issequence(c) for c in coord]):
@@ -2584,7 +2708,7 @@ class GISCOService(OSMService):
             coordinates = kwargs.pop(_Decorator.parse_coordinate.KW_POLYLINE)
         kwargs.update({'coordinates': coordinates})
         try:
-            url = self.url_route(**kwargs)
+            url = self.url_routing(**kwargs)
             assert self.get_status(url) is not None
         except:
             raise happyError('error route request')
@@ -2660,7 +2784,7 @@ class GISCOService(OSMService):
         See also
         --------
         :meth:`~GISCOService.coord2route`, :meth:`~GISCOService.place2coord`, 
-        :meth:`~GISCOService.url_route`.
+        :meth:`~GISCOService.url_routing`.
         """
         if not happyType.issequence(place) or len(place)<2 or not all([happyType.isstring(p) for p in place]):
             raise happyError('wrong format for list of destinations along the route')

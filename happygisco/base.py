@@ -351,8 +351,9 @@ class _Service(object):
     #/************************************************************************/
     @staticmethod
     def __is_cached(pathname, time_out):
-        """Check whether a URL exists and is alread cached.
-        :param url:
+        """Check whether a URL has been already cached.
+        :param pathname:
+        :param time_out:
         :returns: True if the file can be retrieved from the disk (cache)
         """
         if not os.path.exists(pathname):
@@ -366,9 +367,29 @@ class _Service(object):
         else:
             cur = time.time()
             mtime = os.stat(pathname).st_mtime
-            # print("last modified: %s" % time.ctime(mtime))
+            happyVerbose("%s - last modified: %s" % (pathname,time.ctime(mtime)))
             resp = cur - mtime < time_out
         return resp
+
+    #/************************************************************************/
+    @staticmethod
+    def __clean_cache(pathname, time_out):
+        """Clean a cached file.
+        :param pathname:
+        :param time_out:
+        """
+        if not os.path.exists(pathname):
+            resp = False
+        elif time_out is None or time_out <= 0:
+            resp = True
+        else:
+            cur = time.time()
+            mtime = os.stat(pathname).st_mtime
+            happyVerbose("%s - last modified: %s" % (pathname,time.ctime(mtime)))
+            resp = cur - mtime < time_out
+        if resp is True:
+            happyVerbose("removing disk file %s" % pathname)
+            os.remove(pathname)
                         
     #/************************************************************************/
     def __get_response(self, url, **kwargs):
@@ -640,6 +661,13 @@ class _Service(object):
                 if any([last.endswith(c) for c in ('?', '/')]):     sep = ''
             url = "%s%s%s" % (url, sep, filters)
         return url
+    
+    #/************************************************************************/
+    @classmethod
+    def clean_cache(cls, domain=None, **kwargs):
+        """
+        """
+        pass
 
 #%%
 #==============================================================================
