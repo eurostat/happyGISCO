@@ -929,7 +929,7 @@ class _Decorator(object):
                 if self._values is not None:
                     try:
                         # could check: list,tuple in self._parse_cls
-                        _all_values = happyType.seqflatten(self._values.items())
+                        _all_values = happyType.seqflatten(list(self._values.items()))
                         assert (happyType.issequence(value) and set(value).difference(set(_all_values))==set())   \
                             or value in _all_values
                     except:

@@ -910,7 +910,7 @@ class happyType(object):
     #/************************************************************************/
     @classmethod
     def dicmerge(cls, *dicts):
-        """Recursively merge an arbitrary number of dictionaries.
+        """Merge an arbitrary number of dictionaries.
     
             >>> new_dict = happyType.dicmerge(*dicts)
     
@@ -919,20 +919,44 @@ class happyType(object):
         
         ::
 
+            >>> d1 = {1: 2, 3: 4, 10: 11}
+            >>> d2 = {1: 6, 3: 7}
+            >>> happyType.dicmerge(d1, d2)
+                {1: [2, 6], 3: [4, 7], 10: 11}
+        """    
+        dd = collections.defaultdict(list)
+        for d in dicts: 
+            for key, value in d.items():
+                dd[key].append(value)
+        [dd.update({k: v[0]}) for k,v in dd.items() if len(v)==1]
+        return dict(dd.items())
+    
+    #/************************************************************************/
+    @classmethod
+    def nestdicmerge(cls, *dicts):
+        """Recursively merge an arbitrary number of nested dictionaries.
+    
+            >>> new_dict = happyType.nestdicmerge(*dicts)
+    
+        Examples
+        --------
+        
+        ::
+
             >>> d1 = {'a': {'b': {'x': '1', 'y': '2'}}}
             >>> d2 = {'a': {'c': {'gg': {'m': '3'},'xx': '4'}}}
-            >>> print mergedict(d1, d2)
+            >>> happyType.nestdicmerge(d1, d2)
                 {'a': {'b': {'x': '1','y': '2'}, 'c': {'gg': {'m': '3'}, 'xx': '4'}}}
         """    
         keys = set(k for d in dicts for k in d)    
         def vals(key):
             # return all values for `key` in all `dicts`
-            withkey = (d for d in dicts if d.has_key(key))
+            withkey = (d for d in dicts if key in d.keys())
             return [d[key] for d in withkey]    
         def recurse(*values):
             # recurse if the values are dictionaries
             if isinstance(values[0], dict):
-                return cls.dicmerge(*values)
+                return cls.nestdicmerge(*values)
             if len(values) == 1:
                 return values[0]
             raise happyError("Multiple non-dictionary values for a key.")    
