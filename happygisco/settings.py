@@ -58,7 +58,7 @@ They are provided here for the sake of an exhaustive documentation.
     
 **Dependencies**
 
-*require*:      :mod:`os`, :mod:`sys`, :mod:`collection`, :mod:`six`, :mod:`inspect`
+*require*:      :mod:`os`, :mod:`sys`, :mod:`collection`, :mod:`itertools`, :mod:`functools`, :mod:`six`, :mod:`inspect`
 
 **Contents**
 """
@@ -66,10 +66,10 @@ They are provided here for the sake of an exhaustive documentation.
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
 # *since*:        Sat Mar 31 21:54:08 2018
 
-import os, sys#analysis:ignore
-import inspect#analysis:ignore
-import collections, itertools, six
-import json
+import os, sys, warnings#analysis:ignore
+import copy, inspect#analysis:ignore
+import collections, itertools, functools
+import six, json
 
 #%%
 #==============================================================================
@@ -626,6 +626,100 @@ class happyError(Exception):
 
 #%%
 #==============================================================================
+# FUNCTION happyDeprecated
+#==============================================================================
+
+def happyDeprecated(reason, run=True):
+    """This is a decorator which can be used to mark functions as deprecated. 
+    
+    ::
+        
+        >>> new = settings.happyDeprecated(reason)  
+        
+    Arguments
+    ---------
+    reason : str
+        optional string explaining the deprecation.
+        
+    Keywords arguments
+    ------------------
+    run : bool
+        set to run the function/method/... despite being deprecated; default: 
+        :data:`False` and the decorated method/function/... is not run.
+        
+    Examples
+    --------
+    The deprecated function can be used to decorate different objects:
+        
+    ::
+        
+        >>> @happyDeprecated("use another function")
+        ... def old_function(x, y):
+        ...     return x + y
+        >>> old_function(1, 2)        
+            __main__:1: DeprecationWarning: Call to deprecated function old_function (use another function).        
+            3
+        >>> class SomeClass(object):
+        ... @happyDeprecated("use another method", run=False)
+        ... def old_method(self, x, y):
+        ...     return x + y
+        >>> SomeClass().old_method(1, 2)
+            __main__:1: DeprecationWarning: Call to deprecated function old_method (use another method).       
+        >>> @happyDeprecated("use another class")
+        ... class OldClass(object):
+        ...     pass
+        >>> OldClass()
+            __main__:1: DeprecationWarning: Call to deprecated class OldClass (use another class).  
+            <__main__.OldClass at 0x311e410f0>
+            
+    Note
+    ----
+    It will result in a warning being emitted when the function is used and when
+    a :data:`reason` is passed.
+    """
+    # see https://stackoverflow.com/questions/2536307/decorators-in-the-python-standard-lib-deprecated-specifically
+    if isinstance(reason, six.string_types): # happyType.isstring(reason):
+        def decorator(func1):
+            if inspect.isclass(func1):
+                fmt1 = "Call to deprecated class {name} ({reason})."
+            else:
+                fmt1 = "Call to deprecated function {name} ({reason})."
+            @functools.wraps(func1)
+            def new_func1(*args, **kwargs):
+                warnings.simplefilter('always', DeprecationWarning)
+                warnings.warn(
+                    fmt1.format(name=func1.__name__, reason=reason),
+                    category=DeprecationWarning,
+                    stacklevel=2
+                )
+                warnings.simplefilter('default', DeprecationWarning)
+                if run is True:
+                    return func1(*args, **kwargs)
+            return new_func1
+        return decorator
+    elif inspect.isclass(reason) or inspect.isfunction(reason):
+        func2 = reason
+        if inspect.isclass(func2):
+            fmt2 = "Call to deprecated class {name}."
+        else:
+            fmt2 = "Call to deprecated function {name}."
+        @functools.wraps(func2)
+        def new_func2(*args, **kwargs):
+            warnings.simplefilter('always', DeprecationWarning)
+            warnings.warn(
+                fmt2.format(name=func2.__name__),
+                category=DeprecationWarning,
+                stacklevel=2
+            )
+            warnings.simplefilter('default', DeprecationWarning)
+            if run is True:
+                return func2(*args, **kwargs)
+        return new_func2
+    else:
+        raise happyError('wrong type for input reason - %s not supported' % repr(type(reason)))
+        
+#%%
+#==============================================================================
 # CLASS happyType
 #==============================================================================
     
@@ -805,7 +899,7 @@ class happyType(object):
         """
         if not cls.issequence(arg):
             arg = [arg,]
-        def itemflat(alist):
+        def recurse(alist):
             if not any([cls.issequence(a) for a in alist]):
                 return alist
             if all([cls.issequence(a) for a in alist]):
@@ -816,14 +910,14 @@ class happyType(object):
                 res = []
                 for item in nlist:
                     if cls.issequence(item):
-                        res += itemflat(item)
+                        res += recurse(item)
                     else:
                         res.append(item)
             else:
                 res = nlist
             return res
         if rec is True:
-            return itemflat(arg)
+            return recurse(arg)
         else:
             return list(itertools.chain.from_iterable(arg))
 
@@ -885,7 +979,7 @@ class happyType(object):
         """
         if not cls.issequence(arg):
             arg = [arg,]
-        def keystr(dic):
+        def recurse(dic):
             ndic = dic.copy()
             for k, v in dic.items():
                 if not cls.isstring(k):
@@ -894,10 +988,10 @@ class happyType(object):
                     k = "%s" % k
                 if cls.ismapping(v):
                     # ndic.update({k: cls._keystr(v)})
-                    ndic[k] = keystr(v)
+                    ndic[k] = recurse(v)
             return ndic
         if rec is True:
-            arg = ["""%s""" % keystr(a) for a in arg]
+            arg = ["""%s""" % recurse(a) for a in arg]
         else:
             arg = ["""%s""" % a if not cls.isstring(a) else a for a in arg]
         arg = [a.replace("'","\"") for a in arg]        
@@ -909,34 +1003,149 @@ class happyType(object):
 
     #/************************************************************************/
     @classmethod
-    def dicmerge(cls, *dicts):
-        """Merge an arbitrary number of dictionaries.
+    def mapdeepmerge(cls, *dicts):
+        """Deep merge (recursively) an arbitrary number of (nested or not) dictionaries.
     
             >>> new_dict = happyType.dicmerge(*dicts)
+            
+        Arguments
+        ---------
+        dicts : dict
+            an arbitrary number of (possibly nested) dictionaries.
+            
+        Keyword arguments
+        -----------------
+        new_dict : dict
+            say that only two dictionaries are parsed, :data:`d1` and :data:`d2`;
+            for each :data:`k,v` in :data:`d1`: 
+                
+                * if :data:`k` doesn't exist in :data:`d2`, it is deep copied from 
+                  :data:`d1` to :data:`d2`;
+            
+            otherwise: 
+                
+                * if :data:`v` is a list, :data:`d2[k]` is extended with :data:`d1[k]`,
+                * if :data:`v` is a set, :data:`d2[k]` is updated with :data:`v`,
+                * if :data:`v` is a dict, it is recursively "deep"-updated.      
     
         Examples
         --------
+        The method can be used to deep-merge dictionaries storing many different
+        data structures:
         
         ::
 
             >>> d1 = {1: 2, 3: 4, 10: 11}
             >>> d2 = {1: 6, 3: 7}
-            >>> happyType.dicmerge(d1, d2)
+            >>> happyType.mapdeepmerge(d1, d2)
                 {1: [2, 6], 3: [4, 7], 10: 11}
-        """    
-        dd = collections.defaultdict(list)
-        for d in dicts: 
-            for key, value in d.items():
-                dd[key].append(value)
-        [dd.update({k: v[0]}) for k,v in dd.items() if len(v)==1]
-        return dict(dd.items())
+            >>> d1 = {1: 2, 3: {4: {5:6, 7:8}, 9:10}, 11: 12}
+            >>> d2 = {1: -2, 3: {4: {-5:{-6:-7}}}, 8:-9}
+            >>> happyType.mapdeepmerge(d1, d2)
+                {1: -2, 3: {4: {-5: {-6: -7}, 5: 6, 7: 8}, 9: 10}, 8: -9, 11: 12}
+            >>> d1 = {'a': {'b': {'x': '1', 'y': '2'}}}
+            >>> d2 = {'a': {'c': {'gg': {'m': '3'},'xx': '4'}}}
+            >>> happyType.mapdeepmerge(d1, d2)
+                {'a': {'b': {'x': '1','y': '2'}, 'c': {'gg': {'m': '3'}, 'xx': '4'}}}
+        """ 
+        #def recurse(*dicts):        
+        #    dd = collections.defaultdict(list)
+        #    for d in dicts: 
+        #        _d = copy.deepcopy(d)
+        #        for key, value in _d.items():
+        #            if cls.ismapping(dd[key]):
+        #                dd[key] = recurse(value)
+        #            elif cls.ismapping(value) and any([cls.ismapping(item) for item in dd[key]]):
+        #                for item in dd[key]:
+        #                    if cls.ismapping(item):
+        #                        continue
+        #                item.update(value)
+        #            else:
+        #                dd[key].append(value)
+        #    [dd.update({k: v[0]}) for k,v in dd.items() if len(v)==1]
+        #    return dict(dd.items())
+        #return recurse(*dicts)
+        def recurse(target, src):
+            # see original source code by f.Boender at: 
+            #   https://www.electricmonk.nl/log/2017/05/07/merging-two-python-dictionaries-by-deep-updating/
+            # (MIT license)
+            for k, v in src.items():
+                if cls.issequence(v):  # type(v) == list:
+                    if not k in target:     target[k] = copy.deepcopy(v)
+                    else:                   target[k].extend(v)
+                elif cls.ismapping(v):  # type(v) == dict:
+                    if not k in target:     target[k] = copy.deepcopy(v)
+                    else:                   recurse(target[k], v)
+                elif type(v) == set:
+                    if not k in target:     target[k] = v.copy()
+                    else:                   target[k].update(v.copy())
+                else:
+                    target[k] = copy.copy(v)
+        def reduce(*dicts):
+            dd = copy.deepcopy(dicts[0])
+            functools.reduce(recurse, (dd,) + dicts[1:])
+            return dd
+        return reduce(*dicts)
+            
+    #/************************************************************************/
+    @classmethod
+    def mapdeepest(cls, dic, item='values'):
+        """Extract the deepest keys, values or both (items) from a nested dictionary.
+        
+        ::
+            
+            >>> l = happyType.mapdeepest(dic, item='values')
+            
+        Arguments
+        ---------
+        dic : dict
+            a (possibly nested) dictionary.
+            
+        Keyword argument
+        ----------------
+        item : str
+            flag used to define the deepest items to extract from the input dictionary
+            :data:`dic`; it can be :literal:`keys`, :literal:`values` or :literal:`items`
+            to represent both; default is :literal:`values`, hence the deepest values
+            are extracted.
+
+        Returns
+        -------
+        l : list
+            contains the deepest keys, values or items extracted from :data:`dic`,
+            depending on the keyword argument :data:`item`.
+    
+        Examples
+        --------
+        
+        ::
+            
+            >>> d = {4:1, 6:2, 7:{8:3, 9:4, 5:{10:5}, 2:6, 6:{2:7, 1:8}}}
+            >>> happyType.mapdeepest(d)
+                [1, 2, 3, 4, 5, 6, 7, 8]
+            >>> happyType.mapdeepest(d, item='keys')
+                [4, 6, 8, 9, 10, 2, 2, 1]
+            >>> happyType.mapdeepest(d, item='items')
+                [(4, 1), (6, 2), (8, 3), (9, 4), (10, 5), (2, 6), (2, 7), (1, 8)]
+        """
+        def recurse(d):
+            for k, v in d.items():
+                if cls.ismapping(v):
+                    yield from recurse(v)
+                else:
+                    if item=='items':       yield (k, v)
+                    elif item=='keys':      yield k
+                    elif item=='keys':      yield v
+        return list(recurse(dic))
     
     #/************************************************************************/
     @classmethod
-    def nestdicmerge(cls, *dicts):
+    @happyDeprecated('use generic method happyType.mapdeepmerge instead', run=True)
+    def mapnestmerge(cls, *dicts):
+        # ignore
         """Recursively merge an arbitrary number of nested dictionaries.
     
-            >>> new_dict = happyType.nestdicmerge(*dicts)
+            >>> new_dict = happyType.mapnestmerge(*dicts)
     
         Examples
         --------
@@ -945,7 +1154,7 @@ class happyType(object):
 
             >>> d1 = {'a': {'b': {'x': '1', 'y': '2'}}}
             >>> d2 = {'a': {'c': {'gg': {'m': '3'},'xx': '4'}}}
-            >>> happyType.nestdicmerge(d1, d2)
+            >>> happyType.mapnestmerge(d1, d2)
                 {'a': {'b': {'x': '1','y': '2'}, 'c': {'gg': {'m': '3'}, 'xx': '4'}}}
         """    
         keys = set(k for d in dicts for k in d)    
@@ -956,9 +1165,8 @@ class happyType(object):
         def recurse(*values):
             # recurse if the values are dictionaries
             if isinstance(values[0], dict):
-                return cls.nestdicmerge(*values)
+                return cls.mapnestmerge(*values)
             if len(values) == 1:
                 return values[0]
             raise happyError("Multiple non-dictionary values for a key.")    
         return dict((key, recurse(*vals(key))) for key in keys)  
-        
