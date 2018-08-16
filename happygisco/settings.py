@@ -1141,11 +1141,10 @@ class happyType(object):
     #/************************************************************************/
     @classmethod
     @happyDeprecated('use generic method happyType.mapdeepmerge instead', run=True)
-    def mapnestmerge(cls, *dicts):
-        # ignore
+    def __mapnestmerge(cls, *dicts):
         """Recursively merge an arbitrary number of nested dictionaries.
     
-            >>> new_dict = happyType.mapnestmerge(*dicts)
+            >>> new_dict = happyType.__mapnestmerge(*dicts)
     
         Examples
         --------
@@ -1154,7 +1153,7 @@ class happyType(object):
 
             >>> d1 = {'a': {'b': {'x': '1', 'y': '2'}}}
             >>> d2 = {'a': {'c': {'gg': {'m': '3'},'xx': '4'}}}
-            >>> happyType.mapnestmerge(d1, d2)
+            >>> happyType.__mapnestmerge(d1, d2)
                 {'a': {'b': {'x': '1','y': '2'}, 'c': {'gg': {'m': '3'}, 'xx': '4'}}}
         """    
         keys = set(k for d in dicts for k in d)    
@@ -1165,7 +1164,7 @@ class happyType(object):
         def recurse(*values):
             # recurse if the values are dictionaries
             if isinstance(values[0], dict):
-                return cls.mapnestmerge(*values)
+                return cls.__mapnestmerge(*values)
             if len(values) == 1:
                 return values[0]
             raise happyError("Multiple non-dictionary values for a key.")    
