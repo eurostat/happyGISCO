@@ -842,7 +842,7 @@ class GISCOService(OSMService):
     """
     
     CODER = {settings.CODER_GISCO: settings.KEY_GISCO}
-    ORDERED_DATA_DIMENSIONS = ['CODE', 'UNIT', 'YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT']
+    ORDERED_DATA_DIMENSIONS = ['SOURCE', 'YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT']
     
     #/************************************************************************/
     def __init__(self, **kwargs):
@@ -1592,18 +1592,26 @@ class GISCOService(OSMService):
         return url
         
     #/************************************************************************/
-    def _resp4data(self, data, source, dimensions, **kwargs):
+    def _resp4data(self, data, dimensions, **kwargs):
         """Generic version of methods :meth:`~GISCOService.resp4country` and
         :meth:`~GISCOService.resp4nuts`.
         """
         ref = {}; _ref = [ref]
-        [dimensions.pop(attr,None) for attr in ('CODE', 'UNIT')]
+        source = dimensions.get('SOURCE')
+        if happyType.isstring(source) and source in ('NUTS2JSON','NUTS','BULK','INFO'):
+            dimensions.pop('SOURCE') # clean-up
+        if not happyType.issequence(source): 
+            source = [source,]
         for i, attr in enumerate(dimensions.keys()):
             [r.update({k: {} for k in dimensions[attr]}) for r in _ref]
             _ref = [r[k] for r in _ref for k in dimensions[attr]]
+        if 'SOURCE' in dimensions.keys():
+            dimensions.pop('SOURCE') # clean-up
         xdim = functools.reduce(lambda x,y: x*y, [len(v) for v in dimensions.values()])
-        for prod in itertools.product(*list(dimensions.values())):
+        for prod in itertools.product(*[source,]+list(dimensions.values())):
             _ref = ref
+            s, prod = prod[0], prod[1:]
+            if s in _ref.keys(): _ref = _ref[s] # that's actually the case for all non-('NUTS2JSON','NUTS','BULK','INFO') requests
             for i, p in enumerate(prod):
                 if i<len(prod)-1: _ref = _ref[p]
             kwargs.update(dict(zip([getattr(_Decorator,'KW_' + attr) for attr in dimensions.keys()], prod)))
@@ -1612,7 +1620,7 @@ class GISCOService(OSMService):
             except AttributeError:
                 raise happyError('argument DATA not recognised - must be ''nuts'' or ''country''')
             else:
-                url = build_url(source, **kwargs)
+                url = build_url(s, **kwargs)
             try:
                 assert self.get_status(url) is not None
             except:
@@ -1709,6 +1717,8 @@ class GISCOService(OSMService):
         
         Examples
         --------
+        The method can be used to retrieve well-parameterised responses from |GISCO| 
+        Rest API:
         
         ::
             
@@ -1744,51 +1754,77 @@ class GISCOService(OSMService):
             >>> print(r.url)
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-60m.geojson.zip'
                 
+        Note also that multiple units can be called at once:
+            
+        ::
+            
+            >>> serv.resp4nuts(unit=['BE1','AT1'], year=[2013,2016], scale=['20m','60m'], vector='region')
+                (OrderedDict([('SOURCE', ['BE1', 'AT1']),
+                              ('YEAR', [2013, 2016]),
+                              ('PROJECTION', [4326]),
+                              ('SCALE', ['20m', '60m']),
+                              ('VECTOR', ['RG']),
+                              ('FORMAT', ['geojson'])]),
+                 {'AT1': {2013: {4326: {'20m': {'RG': {'geojson': <Response [200]>}},
+                     '60m': {'RG': {'geojson': <Response [200]>}}}},
+                   2016: {4326: {'20m': {'RG': {'geojson': <Response [200]>}},
+                     '60m': {'RG': {'geojson': <Response [200]>}}}}},
+                  'BE1': {2013: {4326: {'20m': {'RG': {'geojson': <Response [200]>}},
+                     '60m': {'RG': {'geojson': <Response [200]>}}}},
+                   2016: {4326: {'20m': {'RG': {'geojson': <Response [200]>}},
+                     '60m': {'RG': {'geojson': <Response [200]>}}}}}})
+                
         See also
         --------
         :meth:`~GISCOService.resp4country`, :meth:`~GISCOService._resp4data`.
         """
         try:
-            unit = kwargs.pop(_Decorator.KW_UNIT, None)
-            assert unit is None or happyType.isstring(unit)
-        except AssertionError:
-            raise happyError('wrong format/value for %s argument' % _Decorator.KW_UNIT.upper())
-        else:
-            if unit is not None and unit=='ALL':
-                unit = 'NUTS'
-        try:
             source = kwargs.pop(_Decorator.KW_SOURCE, None)
             assert source is None or happyType.isstring(source)
         except AssertionError:
             raise happyError('wrong format/value for %s argument' % _Decorator.KW_SOURCE.upper())
-        else:
-            pass
+        try:
+            unit = kwargs.pop(_Decorator.KW_UNIT, None)
+            assert unit is None or happyType.isstring(unit) or                          \
+                (happyType.issequence(unit) and all([happyType.isstring(u) for u in unit]))
+        except AssertionError:
+            raise happyError('wrong format/value for %s argument' % _Decorator.KW_UNIT.upper())        
         try:
             assert source is None or unit is None
         except:
             raise happyError('incompatible parameters %s and %s' % (_Decorator.KW_UNIT.upper(),_Decorator.KW_SOURCE.upper()))
         else:
-            source = source or unit or 'NUTS' # force to 'NUTS' in case both are None
-            source = source.upper()
+            if unit is None and source is None:
+                source = 'NUTS'  # force to 'NUTS' in case both are None
+            elif unit is not None:
+                if unit=='ALL':
+                    source = 'NUTS'
+                elif unit in ('NUTS','BULK','INFO','NUTS2JSON'): # let's avoid dumb mistake
+                    source = unit
+                    unit = None
+                elif not happyType.issequence(unit):
+                    unit = [unit,]
+            else: 
+                source = source.upper()
         dimensions = self.ORDERED_DATA_DIMENSIONS.copy()
         if source == 'BULK':
-            # ['YEAR', 'SCALE', 'FORMAT']
-            [dimensions.remove(attr) for attr in ('CODE', 'UNIT', 'PROJECTION', 'VECTOR', 'LEVEL')] 
+            # ['SOURCE', 'YEAR', 'SCALE', 'FORMAT']
+            [dimensions.remove(attr) for attr in ('PROJECTION', 'VECTOR', 'LEVEL')] 
         elif source == 'INFO':
-            # ['YEAR', 'FORMAT']
-            [dimensions.remove(attr) for attr in ('CODE', 'UNIT', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL')] 
+            # ['SOURCE', 'YEAR', 'FORMAT']
+            [dimensions.remove(attr) for attr in ('PROJECTION', 'SCALE', 'VECTOR', 'LEVEL')] 
         elif source == 'NUTS2JSON':
-            # ['YEAR', 'PROJECTION', 'SCALE', 'LEVEL', 'FORMAT']
-            [dimensions.remove(attr) for attr in ('CODE', 'UNIT', 'VECTOR')] 
+            # ['SOURCE', 'YEAR', 'PROJECTION', 'SCALE', 'LEVEL', 'FORMAT']
+            [dimensions.remove(attr) for attr in ('VECTOR',)] 
         elif source == 'NUTS' or kwargs.get(_Decorator.KW_UNIT) == 'ALL':
-            # ['YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT']
-            [dimensions.remove(attr) for attr in ('CODE', 'UNIT')]
+            # ['SOURCE', 'YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT']
+            pass
         else:
-            # ['UNIT', 'YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'FORMAT']
-            [dimensions.remove(attr) for attr in ('CODE', 'LEVEL')] 
+            # ['SOURCE', 'UNIT', 'YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'FORMAT']
+            [dimensions.remove(attr) for attr in ('LEVEL',)] 
         dimensions = collections.OrderedDict(zip(dimensions,[None]*len(dimensions)))        
         for attr in dimensions.keys():
-            val = kwargs.pop(getattr(_Decorator,attr), None)
+            val = kwargs.pop(getattr(_Decorator,'KW_' + attr), None)
             if val is None: 
                 continue
             if not happyType.issequence(val):      val = [val,]
@@ -1819,10 +1855,11 @@ class GISCOService(OSMService):
                                                           for p in dimensions.get('PROJECTION')]})
             if 'SCALE' in dimensions and _alllabels:
                 dimensions.pop('SCALE')
-        dim = dimensions.copy()
-        if source not in ('NUTS','BULK','INFO','NUTS2JSON'):
-            dim.update({'UNIT': [source,]})
-        return dim, self._resp4data('NUTS', source, dimensions, **kwargs)
+        dimensions.update({'SOURCE': source if source is not None else unit})
+        _dimensions = dimensions.copy()
+        if source is not None: 
+             dimensions.pop('SOURCE')
+        return dimensions, self._resp4data('NUTS', _dimensions, **kwargs)
 
     #/************************************************************************/
     def resp4idname(self, **kwargs):
