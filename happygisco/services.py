@@ -401,11 +401,10 @@ class OSMService(_Service):
         Keyword arguments
         -----------------
         kwargs : dict
-            keywords in :data:`format, json_callback, accept-language, extratags, namedetails,`
-            :data:`street, city, county, state, country, postalcode, countrycodes, viewbox,`
-            :data:`bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson,`
-            :data:`polygon_kml, polygon_svg, polygon_text`;
-            are accepted; see :meth:`~OSMService.url_geocode`.
+            keywords in :literal:`[format, json_callback, accept-language, extratags, namedetails,`
+            :literal:`street, city, county, state, country, postalcode, countrycodes, viewbox,`
+            :literal:`bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson,`
+            :literal:`polygon_kml, polygon_svg, polygon_text]` are accepted; see :meth:`~OSMService.url_geocode`.
         
         Returns
         -------
@@ -584,8 +583,8 @@ class OSMService(_Service):
         Keyword arguments
         -----------------
         kwargs : dict
-            keywords in :data:`format, json_callback, accept-language, extratags, email, osm_type,` 
-            :data:`osm_id, zoom, addressdetails, polygon_geojson, polygon_kml, polygon_svg, polygon`
+            keywords in :literal:`[format, json_callback, accept-language, extratags, email, osm_type,` 
+            :literal:`osm_id, zoom, addressdetails, polygon_geojson, polygon_kml, polygon_svg, polygon]`
             are accepted; see :meth:`~OSMService.url_reverse`.
         
         Returns
@@ -670,11 +669,11 @@ class OSMService(_Service):
         Keyword arguments
         -----------------
         kwargs : dict
-            keywords in :data:`format, json_callback, accept-language, extratags, namedetails,` 
-            :data:`street, city, county, state, country, postalcode, countrycodes, viewbox,`
-            :data:`bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson,`
-            :data:`polygon_kml, polygon_svg`, and :data:`polygon_text`
-            are accepted; see :meth:`~OSMService.url_geocode`.
+            keywords in :literal:`[format, json_callback, accept-language, extratags, namedetails,` 
+            :literal:`street, city, county, state, country, postalcode, countrycodes, viewbox,`
+            :literal:`bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson,`
+            :literal:`polygon_kml, polygon_svg,polygon_text]` are accepted; 
+            see :meth:`~OSMService.url_geocode`.
         unique : bool
             when set to :data:`True`, a single geometry is filtered out, the first 
             available one; default to :data:`False`, hence all geometries are parsed.
@@ -766,11 +765,10 @@ class OSMService(_Service):
         Keyword arguments
         -----------------
         kwargs : dict
-            keywords in :data:`format, json_callback, accept-language, extratags, namedetails,` 
-            :data:`street, city, county, state, country, postalcode, countrycodes, viewbox,`
-            :data:`bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson, polygon_kml,`
-            :data:`polygon_svg`, and :data:`polygon_text`
-            are accepted; see :meth:`~OSMService.url_geocode`.
+            keywords in :literal:`format, json_callback, accept-language, extratags, namedetails,` 
+            :literal:`street, city, county, state, country, postalcode, countrycodes, viewbox,`
+            :literal:`bounded, addressdetails, email, limit, dedupe, debug, polygon_geojson, polygon_kml,`
+            :literal:`polygon_svg, polygon_text]` are accepted; see :meth:`~OSMService.url_geocode`.
         unique : bool
             when set to :data:`True`, a single geometry is filtered out, the first 
             available one; default to :data:`False`, hence all geometries are parsed.
@@ -2285,7 +2283,7 @@ class GISCOService(OSMService):
         Keyword arguments
         -----------------
         kwargs : dict
-            keywords in :data:`[lat, lon, distance_sort, limit, osm_tag, lang]`
+            keywords in :literal:`[lat, lon, distance_sort, limit, osm_tag, lang]`
             are accepted; see :meth:`~GISCOService.url_geocode`.
         
         Returns
@@ -2385,7 +2383,7 @@ class GISCOService(OSMService):
         Keyword arguments
         -----------------
         kwargs : dict
-            keywords in :data:`[lat, lon, distance_sort, limit, osm_tag, lang]`
+            keywords in :literal:`[lat, lon, distance_sort, limit, osm_tag, lang]`
             are accepted; see :meth:`~GISCOService.url_geocode`.
         unique : bool
             when set to :data:`True`, a single geometry is filtered out, the first 
@@ -2453,7 +2451,7 @@ class GISCOService(OSMService):
         Keyword arguments
         -----------------
         kwargs : dict
-            keywords in :data:`[radius, distance_sort, limit, lang]` are accepted; 
+            keywords in :literal:`[radius, distance_sort, limit, lang]` are accepted; 
             see :meth:`~GISCOService.url_reverse`.
         
         Returns
@@ -2558,7 +2556,7 @@ class GISCOService(OSMService):
         Keyword arguments
         -----------------
         kwargs : dict
-            keywords in :data:`[radius, distance_sort, limit, lang]` are accepted; 
+            keywords in :literal:`[radius, distance_sort, limit, lang]` are accepted; 
             see :meth:`~GISCOService.url_reverse`.
         
         Returns
