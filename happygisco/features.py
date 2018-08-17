@@ -858,6 +858,8 @@ class NUTS(_Feature):
         return url
 
     #/************************************************************************/    
+    @_Decorator.parse_url
+    @_Decorator.parse_geometry
     def _get_unit(self):
         if self.feature in ([],None):
             self.feature = self.get_vector()

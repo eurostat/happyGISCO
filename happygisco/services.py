@@ -797,13 +797,6 @@ class GISCOService(OSMService):
         set to {:data:`settings.CODER_GISCO`: :data:`settings.KEY_GISCO` }, *e.g*
         :literal:`{'gisco': None}` since there is currently no authentication 
         requested.
-        
-    Properties
-    ----------
-    rest_url :
-        REST property (:data:`getter`/:data:`setter`) defining the complete
-        URL of REST services, *e.g.* :data:`settings.GISCO_RESTURL`, of an instance 
-        of this class. 
     """
     
     CODER = {settings.CODER_GISCO: settings.KEY_GISCO}
