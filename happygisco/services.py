@@ -204,7 +204,7 @@ class OSMService(_Service):
         
             >>> url = serv.url_geocode(**kwargs)
            
-        Keyword Arguments
+        Keyword arguments
         -----------------
         kwargs : dict
             parameters used to build the query URL; allowed keyword arguments are: 
@@ -261,7 +261,7 @@ class OSMService(_Service):
         
             >>> url = serv.url_reverse(**kwargs)
            
-        Keyword Arguments
+        Keyword arguments
         -----------------
         kwargs : dict
             parameters used to build the query URL; allowed keyword arguments are: 
@@ -925,7 +925,7 @@ class GISCOService(OSMService):
             
             >>> url = serv.url_nuts(source, **kwargs)
            
-        Keyword Arguments
+        Keyword arguments
         -----------------
         file : str
         year : int
@@ -1118,7 +1118,7 @@ class GISCOService(OSMService):
             
             >>> url = serv.url_lau(source=None, **kwargs)
            
-        Keyword Arguments
+        Keyword arguments
         -----------------
         """
         pass
@@ -1233,7 +1233,7 @@ class GISCOService(OSMService):
             see also the list of available tiling systems (together with the respective
             attributions) in :data:`settings.GISCO_TILES`.
            
-        Keyword Arguments
+        Keyword arguments
         -----------------
         proj : str,int
             projection identifier; default identifier is :literal:`'EPSG3857'`, *i.e.* the one
@@ -1316,7 +1316,7 @@ class GISCOService(OSMService):
         
             >>> url = serv.url_geocode(**kwargs)
            
-        Keyword Arguments
+        Keyword arguments
         -----------------
         nominatim : bool
             flag set to :data:`True` when |Nominatim| geocoding service shall be 
@@ -1372,7 +1372,7 @@ class GISCOService(OSMService):
         
             >>> url = serv.url_reverse(**kwargs)
            
-        Keyword Arguments
+        Keyword arguments
         -----------------
         kwargs : dict
             parameters used to build the query URL; allowed keyword arguments are: 
@@ -1429,7 +1429,7 @@ class GISCOService(OSMService):
         
             >>> url = serv.url_routing(**kwargs)
            
-        Keyword Arguments
+        Keyword arguments
         -----------------
         kwargs : dict
             parameters used to build the query URL; allowed parameters are: 
@@ -1488,7 +1488,7 @@ class GISCOService(OSMService):
        
             >>> url = serv.url_transform(**kwargs)
            
-        Keyword Arguments
+        Keyword arguments
         -----------------
         kwargs : dict
             parameters used to build the query URL; allowed parameters are: 
@@ -1543,7 +1543,7 @@ class GISCOService(OSMService):
         
             >>> url = serv.url_findnuts(**kwargs)
            
-        Keyword Arguments
+        Keyword arguments
         -----------------
         kwargs : dict
             parameters used to build the query URL; allowed parameters are: 

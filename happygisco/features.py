@@ -193,7 +193,7 @@ class Location(_Feature):
         for instance 48.8566 and 2.3515 to locate Paris; possibly left empty, so as 
         to consider the keyword argument :literal:`place` in :data:`kwargs`.
         
-    Keyword Arguments
+    Keyword arguments
     -----------------
     radius : float
         accuracy radius around the geolocation :data:`coord` (or :data:`place`); 
@@ -313,7 +313,7 @@ class Location(_Feature):
        
             >>> geom = loc.geometry(**kwargs)
         
-        Keyword Arguments
+        Keyword arguments
         -----------------        
         kwargs : dict  
             see keyword arguments of the :meth:`tools.GDALTransform.coord2geom` method.
@@ -349,7 +349,7 @@ class Location(_Feature):
         
             >>> coord = loc.geocode(**kwargs)
         
-        Keyword Arguments
+        Keyword arguments
         -----------------        
         kwargs : dict  
             see keyword arguments of the (various) :meth:`place2coord` methods.
@@ -480,7 +480,7 @@ class Location(_Feature):
             a location represented either as another instance of :class:`Location`,
             a tuple of (lat,Lon) coordinates or a place name expressed as a string.
             
-        Keyword Arguments
+        Keyword arguments
         -----------------        
         dist : str  
             name of the geo-principle used to estimate the distance: it is any string

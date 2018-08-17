@@ -564,7 +564,7 @@ class _Service(object):
         domain : str
             domain of the URL; default: :data:`domain` is left empty.
            
-        Keyword Arguments
+        Keyword arguments
         -----------------
         protocol : str
             web protocol; default to :data:`settings.DEF_PROTOCOL`, *e.g.* :literal:`http`\ .

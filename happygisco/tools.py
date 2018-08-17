@@ -332,7 +332,7 @@ class GeoDistance(object):
             desired 'destination' unit: any string in the list :literal:`['m','km','mi','ft']`; 
             default to :literal:`'km'`\ .
         
-        Keyword Arguments
+        Keyword arguments
         -----------------
         kwargs : dict
             dictionary of composed distances indexed by their unit, which can be
@@ -605,7 +605,7 @@ class GeoAngle(object):
             desired 'final' unit: any string in :literal:`['deg','rad','dps']`; default
             to :literal:`'deg'`.
         
-        Keyword Arguments
+        Keyword arguments
         -----------------
         kwargs : dict
             dictionary of composed angles indexed by their unit, which can be, again,
@@ -1060,7 +1060,7 @@ class GeoCoordinate(GeoLocation):
             distance to the location; it must be set in the unit defined by :data:`'unit'`
             (see below).
             
-        Keyword Arguments
+        Keyword arguments
         -----------------
         unit : str
             distance measurement unit, *i.e.* distance unit of the input :data:`distance` 
@@ -1131,7 +1131,7 @@ class GeoCoordinate(GeoLocation):
         distance : float
             in between-locations distance, see :meth:`bounding_locations`.
             
-        Keyword Arguments
+        Keyword arguments
         -----------------
         unit_angle : str
             angle measurement unit, *i.e.* unit of the input :data:`loc` parameter; 
@@ -1200,7 +1200,7 @@ class GeoCoordinate(GeoLocation):
             of the :class:`GeoCoordinate` class, representing the vertices of a 
             polygon.
             
-        Keyword Arguments
+        Keyword arguments
         -----------------
         unit_angle : str
             angle measurement unit, *i.e.* unit of the input :data:`args` parameter; 
@@ -1268,7 +1268,7 @@ class GeoCoordinate(GeoLocation):
         other : :class:`~happygisco.tools.GeoCoordinate`
             a :class:`GeoCoordinate` instance to which compute a distance.
             
-        Keyword Arguments
+        Keyword arguments
         -----------------
         unit,radius : 
             see :meth:`bounding_locations`.
@@ -1321,7 +1321,7 @@ class GeoCoordinate(GeoLocation):
             :literal:`(lat,Lon)` coordinates of the two location points, in the 
             same unit as the parameters in :data:`args`.
             
-        Keyword Arguments
+        Keyword arguments
         -----------------
         unit_angle,unit : 
             see :meth:`bounding_locations_from`.
@@ -1391,7 +1391,7 @@ class GeoCoordinate(GeoLocation):
             a pair of locations represented as a tuple of :literal:`(lat,Lon)` 
             geographical coordinates.
 
-        Keyword Arguments
+        Keyword arguments
         -----------------        
         dist : str  
             name of the geo-principle used to estimate the distance: it is any string
@@ -2181,8 +2181,8 @@ class GDALTransform(_Tool):
             geolocation(s) expressed as tuple/list of :literal:`(lat,Lon)` geographic
             coordinates.
             
-        Keyword argument
-        ----------------
+        Keyword arguments
+        -----------------
         format : int,str
             format of the geometry used to store the coordinates; it can be an
             integer value representing a well-known binary format (for instance, 

@@ -864,8 +864,8 @@ class happyType(object):
         arg : list[list]
             a list of nested lists.
             
-        Keyword argument
-        ----------------
+        Keyword arguments
+        -----------------
         rec : bool
             :data:`True` when the flattening shall be applied recursively over 
             nested lists; default: :data:`False`.
@@ -936,8 +936,8 @@ class happyType(object):
         arg : dict
             an input argument to parse as a JSON dictionary.
             
-        Keyword argument
-        ----------------
+        Keyword arguments
+        -----------------
         rec : bool
             :data:`True` when the formatting shall be applied recursively over 
             nested dictionary; default: :data:`False`.
