@@ -927,8 +927,6 @@ class happyType(object):
         """Format a dictionary into a JSON-compliant string where property names
         are enclosed in double quotes :data:`"`.
         
-        ::
-        
             >>> ans = happyType.jsonstringify(arg, rec=True)
       
         Arguments
@@ -952,8 +950,6 @@ class happyType(object):
         --------
         All keys in the dictionary are transformed in double quoted strings:
             
-        ::
-            
             >>> a = {1:'a', 2:{"b":3, 4:5}, "6":'d'}
             >>> print(happyType.jsonstringify(a, rec=False))
                 {1: "a", 2: {"b": 3, 4: 5}, "6": "d"}
@@ -962,8 +958,6 @@ class happyType(object):
 
         The method can be used to parse the input dictionary as a properly formatted
         string that can be loaded into a dictionary through :mod:`json`:
-            
-        ::
 
             >>> import json
             >>> b = {'a':1, 'b':{'c':2, 'd':3}, 'e':4} 
@@ -1091,8 +1085,6 @@ class happyType(object):
     @classmethod
     def mapdeepest(cls, dic, item='values'):
         """Extract the deepest keys, values or both (items) from a nested dictionary.
-        
-        ::
             
             >>> l = happyType.mapdeepest(dic, item='values')
             
@@ -1101,8 +1093,8 @@ class happyType(object):
         dic : dict
             a (possibly nested) dictionary.
             
-        Keyword argument
-        ----------------
+        Keyword arguments
+        -----------------
         item : str
             flag used to define the deepest items to extract from the input dictionary
             :data:`dic`; it can be :literal:`keys`, :literal:`values` or :literal:`items`
@@ -1117,8 +1109,6 @@ class happyType(object):
     
         Examples
         --------
-        
-        ::
             
             >>> d = {4:1, 6:2, 7:{8:3, 9:4, 5:{10:5}, 2:6, 6:{2:7, 1:8}}}
             >>> happyType.mapdeepest(d)
