@@ -354,6 +354,7 @@ class GeoDistance(object):
                 3721.7279999999996
             >>> 2*GeoDistance.MI_TO['m'] + 10.*GeoDistance.FT_TO['m'] + 0.5*GeoDistance.KM_TO['m']
                 3721.7279999999996
+                
         """
         if to_ is None:
             to_ = cls.KM_DIST_UNIT
@@ -974,7 +975,7 @@ class GeoCoordinate(GeoLocation):
  
         See also
         --------
-        :meth:`from_dps`, :meth:`from_radians`\ .         
+        :meth:`from_dps`, :meth:`from_radians`.         
         """
         return cls(deg_lat, deg_Lon, unit_angle=GeoAngle.DEG_ANG_UNIT)
    
@@ -1014,7 +1015,7 @@ class GeoCoordinate(GeoLocation):
 
         See also
         --------
-        :meth:`from_degrees`, :meth:`from_radians`\ .         
+        :meth:`from_degrees`, :meth:`from_radians`.         
         """
         ## deg_lat = cls.dps2deg(dps_lat)
         ## deg_Lon = cls.dps2deg(dps_Lon)
