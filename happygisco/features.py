@@ -90,50 +90,17 @@ else:
 # ENLARGE YOUR _Feature
 #==============================================================================
             
-#/****************************************************************************/
 # let us complement the definition of _Feature
-def __init(inst, *args, **kwargs):
-    # kwargs.pop(_Decorator.KW_PLACE); kwargs.pop(_Decorator.KW_COORD)
-    try:
-        assert GDAL_TOOL
-    except:
-        happyWarning('GDAL transform utilities not available')
-    else:
-        inst.transform = tools.GDALTransform()
-    try:
-        assert LEAFLET_TOOL
-    except:
-        happyWarning('folium mapping services not available')
-    else:
-        inst.mapping = tools.LeafMap()
-    try:
-        assert API_SERVICE or GISCO_SERVICE
-    except:
-        happyWarning('external API and GISCO services not available')
-    else:
-        service = kwargs.pop('serv', settings.CODER_GISCO)
-        if service is None: # whatever works
-            try:
-                assert GISCO_SERVICE is True
-                inst.service = services.GISCOService(coder=service)
-            except:
-                try:
-                    assert API_SERVICE is True
-                    inst.service = services.APIService(coder=service)
-                except:
-                    raise IOError('no service available')
-        elif isinstance(service,str):
-            if service in services.GISCOService.CODER:
-                inst.service = services.GISCOService(coder=service)
-            elif service in services.APIService.CODER:
-                inst.service = services.APIService(coder=service)
-            else:
-                raise IOError('service %s not available' % service)
-        if not isinstance(inst.service,(services.GISCOService,services.APIService)):
-            raise IOError('service %s not supported' % service)
-_Feature.__init__ = classmethod(__init)
 
 #/****************************************************************************/
+def __projection(inst, proj):
+    if not (proj is None or happyType.isstring(proj)):
+        raise happyError('wrong type for PROJ property')
+    elif not proj in happyType.seqflatten(settings.GISCO_PROJECTIONS.items()):
+        raise happyError('projection PROJ not recognised')
+    inst.__projection = proj
+_Feature.projection = _Feature.projection.setter(__projection)
+
 def __lat(inst):
     try:
         lat = inst.coord[0]
@@ -164,11 +131,65 @@ def __coordinates(inst):
 _Feature.coordinates = property(__coordinates) 
 
 def __service(inst, service):
-    if not (service is None or isinstance(service,(services.GISCOService,services.APIService,services.OSMService))):
+    if not (service is None or isinstance(service,(services.GISCOService, services.APIService, services.OSMService))):
         raise happyError('wrong type for SERVICE property')
-    inst._service = service
+    inst.__service = service
 _Feature.service = _Feature.service.setter(__service)
-        
+
+def __transform(inst, transform):
+    if not (transform is None or isinstance(transform,tools.GDALTransform)):
+        raise happyError('wrong type for TRANSFORM property')
+    inst.__transform = transform
+_Feature.transform = _Feature.transform.setter(__transform)
+ 
+def __mapping(inst, mapping):
+    if not (mapping is None or isinstance(mapping,tools.LeafMap)): # ipyleaflet.Map, folium.Map
+        raise happyError('wrong type for MAPPING property')
+    inst.__mapping = mapping
+_Feature.mapping = _Feature.mapping.setter(__mapping)
+  
+#/****************************************************************************/
+def __init(inst, *args, **kwargs):
+    # kwargs.pop(_Decorator.KW_PLACE); kwargs.pop(_Decorator.KW_COORD)
+    try:
+        assert API_SERVICE or GISCO_SERVICE
+    except:
+        happyWarning('external API and GISCO services not available')
+    else:
+        serv = kwargs.pop('serv', settings.CODER_GISCO)
+        if serv is None: # whatever works
+            try:
+                assert GISCO_SERVICE is True
+                inst.service = services.GISCOService(coder=serv)
+            except:
+                try:
+                    assert API_SERVICE is True
+                    inst.service = services.APIService(coder=serv)
+                except:
+                    raise IOError('no service available')
+        elif isinstance(serv,str):
+            if serv in services.GISCOService.CODER:
+                inst.service = services.GISCOService(coder=serv)
+            elif serv in services.APIService.CODER:
+                inst.service = services.APIService(coder=serv)
+            else:
+                raise IOError('service %s not available' % serv)
+        #if not isinstance(inst.service,(services.GISCOService,services.APIService)):
+        #    raise IOError('service %s not supported' % serv)
+    try:
+        assert GDAL_TOOL
+    except:
+        happyWarning('GDAL transform utilities not available')
+    else:
+        inst.transform = tools.GDALTransform()
+    try:
+        assert LEAFLET_TOOL
+    except:
+        happyWarning('folium mapping services not available')
+    else:
+        inst.mapping = tools.LeafMap()
+_Feature.__init__ = classmethod(__init)
+     
 #%%
 #==============================================================================
 # CLASS Location
@@ -177,8 +198,6 @@ _Feature.service = _Feature.service.setter(__service)
 class Location(_Feature):
     """Generic class used so to define a geolocation, *e.g.* a (topo)name or a 
     set of geographic coordinates.
-        
-    ::
         
         >>> loc = features.Location(*args, **kwargs)
     
@@ -308,8 +327,6 @@ class Location(_Feature):
     def geometry(self, **kwargs):
         """Build a vector geometry upon the geographical coordinates represented
         by this instance. 
-         
-        ::
        
             >>> geom = loc.geometry(**kwargs)
         
@@ -345,8 +362,6 @@ class Location(_Feature):
         """Convert the object place name to geographic coordinates using the 
         service used to initialise this instance.
         
-        ::
-        
             >>> coord = loc.geocode(**kwargs)
         
         Keyword arguments
@@ -367,8 +382,6 @@ class Location(_Feature):
 
         Example
         -------
-        
-        ::
 
             >>> loc = features.Location(place='Paris, France', service='GoogleV3')
             >>> print loc.geocode()
@@ -406,8 +419,6 @@ class Location(_Feature):
     def reverse(self, **kwargs):
         """Convert the object geographic coordinates to a place (topo)name using the 
         service used to initialise this instance. 
-         
-        ::
        
             >>> place = loc.reverse(**kwargs)
 
@@ -428,8 +439,6 @@ class Location(_Feature):
 
         Example
         -------
-        
-        ::
 
             >>> loc = features.Location('48.85693, 2.3412')
             >>> paris = loc.reverse()
@@ -470,8 +479,6 @@ class Location(_Feature):
         """Compute pairwise distances between this instance location and other locations 
         parsed indifferently as places names or geographic coordinates.
         
-        ::
-        
             >>> D = loc.distance(loc, **kwargs)
     
         Arguments
@@ -505,8 +512,6 @@ class Location(_Feature):
         --------      
         Let us compute some distances between geolocations expressed as either place 
         names or geographical coordinates:
-            
-        ::
 
             >>> loc = features.Location([26.062951, -80.238853], service='GISCO')
             >>> print(loc.distance([26.060484,-80.207268], dist='vincenty', unit='m'))
@@ -553,8 +558,6 @@ class Location(_Feature):
         """Compute the route starting at this instance location and going through
         the various steps/destinations represented by a list of (topo) name(s) or
         geographic coordinates. 
-        
-        ::
             
             >>> route, waypoints = loc.routing(*args, **kwargs)
     
@@ -609,8 +612,6 @@ class Location(_Feature):
         """Compute the route starting at this instance location and going through
         the various steps/destinations represented by a list of (topo) name(s) or
         geographic coordinates. 
-        
-        ::
             
             >>> id = loc.findnuts(**kwargs)
     
@@ -670,8 +671,6 @@ class Location(_Feature):
     def isnuts(self, nuts):
         """Check the identifier of the NUTS the current geolocation/instance
         belongs to.
-        
-        ::
             
             >>> ans = loc.isnuts(nuts)
             
@@ -701,8 +700,6 @@ class Location(_Feature):
     def iscontained(self, layer):
         """Check whether the current geolocation/instance is contained in the geometry
         defined by a given layer.
-        
-        ::
             
             >>> ans = loc.iscontained(layer)
             
@@ -745,8 +742,6 @@ class NUTS(_Feature):
     """Class representing a |NUTS| geometry and defining simple description of its
     contents.
         
-    ::
-        
         >>> nuts = features.NUTS(*args)
     
     Arguments
@@ -780,16 +775,16 @@ class NUTS(_Feature):
         self.__resp = None
         self.__layer = None
         self.__feature = None
-        self.__vector = None
+        self.__geometry = None
         super(NUTS,self).__init__(**kwargs)
         items = []
-        for kw in ['KW_FILE', 'KW_URL', 'KW_RESPONSE', 'KW_LAYER', 'KW_FEATURE', 'KW_GEOMETRY', 'KW_UNIT']:
-            attr = kwargs.pop(getattr(_Decorator, kw), None)
+        for kw in ['FILE', 'URL', 'RESPONSE', 'LAYER', 'FEATURE', 'GEOMETRY', 'UNIT']:
+            attr = kwargs.pop(getattr(_Decorator, 'KW_' + kw), None)
             try:
                 assert attr not in (None,[],{},'')
             except: pass
             else:
-                setattr(self, getattr(_Decorator, kw), attr) # may raise an Error
+                setattr(self, getattr(_Decorator, 'KW_' + kw), attr) # may raise an Error
                 items.append(attr)
         try:
             assert len(items) == 1
@@ -798,19 +793,18 @@ class NUTS(_Feature):
                 raise happyError('incompatible keyword arguments parsed')
             else:
                 raise happyError('missing keyword arguments')
-                
-                
-        if self.__unit in ('',[],None):
-            return
-        for kw in ['KW_YEAR' ,'KW_SCALE' ,'KW_FORMAT' ,'KW_PROJECTION' ,'KW_GEOMETRY' ,'KW_LEVEL']:
-            attr = kwargs.get(getattr(_Decorator, kw))
+        else:
+            if self.__unit is None:
+                return
+        kwdef = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)
+        for kw in settings.GISCO_DATA_DIMENSIONS: # e.g., ['SOURCE', 'YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT']
+            key = getattr(_Decorator, 'KW_' + kw)
+            attr = kwargs.pop(key, kwdef.get(key))
             try:
                 assert attr not in (None,[],{},'')
             except: pass
             else:
-                setattr(self, getattr(_Decorator, kw), attr)
-        self.url = [kwargs.update({_Decorator.KW_UNIT: u}) or self.service.url_nuts(**kwargs) \
-                    for u in self.__unit]
+                setattr(self, key, attr) # may raise an Error
                     
     #/************************************************************************/
     def __getattr__(self, attr_name): 
@@ -826,40 +820,129 @@ class NUTS(_Feature):
                 return attr if attr is None or len(attr)>1 else attr[0]
 
     #/************************************************************************/    
+    def _get_url(self, **kwargs):
+        source = kwargs.pop(_Decorator.KW_SOURCE, None)
+        unit = kwargs.pop(_Decorator.KW_UNIT, None)
+        try:
+            assert (source is None or happyType.isstring(source))           \
+                and (unit is None or happyType.isstring(unit))
+        except:
+            raise happyError('wrong format for SOURCE/UNIT arguments')
+        try:
+            assert source in ('',None) or unit in ('',None)
+        except:
+            raise happyError('incompatible arguments SOURCE and UNIT - parse one only')
+        if source in ('',None) and unit in ('',None):
+            try:
+                assert self.__unit
+            except AssertionError:
+                raise happyError('missing arguments SOURCE and UNIT - parse one at least')  
+            else:
+                unit = self.unit
+        source = source or unit
+        for kw in settings.GISCO_DATA_DIMENSIONS:
+            if kw == 'SOURCE':      
+                continue
+            else:                   
+                key = getattr(_Decorator, 'KW_' + kw)
+            try:
+                defval = getattr(self, key)
+            except:
+                pass
+            else:
+                kwargs.update({key: kwargs.pop(key, defval)})
+        try:
+            url = self.service.url_nuts(source, **kwargs)            
+        except:
+            raise happyError('impossible to define URL from input data') 
+        return url
+
+    #/************************************************************************/    
+    def _get_unit(self):
+        if self.feature in ([],None):
+            self.feature = self.get_vector()
+        try:
+            unit = 0
+        except:
+            try:
+                unit = 0
+            except:
+                unit = None
+        else:
+            return unit if unit is None or len(unit)>1 else unit[0]
+
+    #/************************************************************************/    
     @_Decorator.parse_file
     @_Decorator.parse_url
-    def __get_layer(self, **kwargs):
-        file = kwargs.pop(_Decorator.KW_FILE, self.__file)
+    def _get_layer(self, **kwargs):
+        file = kwargs.pop(_Decorator.KW_FILE, None)
         url = kwargs.pop(_Decorator.KW_URL, None)
         try:
-            if file is not None:
-                return self.transform.file2layer(file)
-            elif url is not None:
-                return self.transform.url2layer(url)
-            else:
-                raise happyError('no input data parsed to extract layer')
+            assert file in ('',None) or url in ('',None)
         except:
-            raise happyError('impossible to extract layer from input file') 
-
+            raise happyError('incompatible arguments FILE and URL - parse one only')
+        if file in ('',None) and url in ('',None):
+            try:
+                assert self.__url
+            except AssertionError:
+                try:
+                    assert self.__file
+                except AssertionError:
+                    raise happyError('missing arguments FILE and URL - parse one at least')  
+                else:
+                    file = self.file
+            else:
+                url = self.url
+        try:
+            layer = self.transform.url2layer(url)            
+        except:
+            try:
+                layer = self.transform.file2layer(file)    
+            except:
+                raise happyError('impossible to extract layer from input data') 
+        return layer
+        
     #/************************************************************************/  
     @_Decorator.parse_file
+    @_Decorator.parse_url
     @_Decorator._parse_class(ogr.Layer, _Decorator.KW_LAYER)
-    def __get_feature(self, **kwargs):
-        file = kwargs.pop(_Decorator.KW_FILE, self.__file)
-        if not happyType.issequence(file): 
-            file = [file,]
-        layer = kwargs.pop(_Decorator.KW_LAYER, self.__layer)
-        if not happyType.issequence(layer): 
-            layer = [layer,]
+    def _get_feature(self, **kwargs):
+        file = kwargs.pop(_Decorator.KW_FILE, None)
+        layer = kwargs.pop(_Decorator.KW_LAYER, None)
+        url = kwargs.pop(_Decorator.KW_URL, None)
+        _argsTrue = [pred is True for pred in (file in ('',None), url in ('',None), layer in None)]
         try:
-            if layer is not None:
-                feature = [self.transform.layer2feat(l) for l in layer]
-            elif file is not None:
-                feature = [self.transform.file2feat(f) for f in file]
-            else:
-                raise happyError('no input data parsed to extract vector features')
+            assert sum(_argsTrue) >= 2
         except:
-            raise happyError('impossible to extract vector features from input data') 
+            raise happyError('incompatible arguments FILE, URL and LAYER - parse one only')
+        if sum(_argsTrue) == 3:
+            try:
+                assert self.__url
+            except AssertionError:
+                try:
+                    assert self.__layer
+                except AssertionError:
+                    try:
+                        assert self.__file
+                    except AssertionError:
+                        raise happyError('missing arguments FILE, URL and LAYER - parse one at least')  
+                    else:
+                        file = self.file
+                else:
+                    layer = self.layer
+            else:
+                url = self.url
+        try:
+            feature = self.transform.url2feat(url)            
+        except:
+            try:
+                feature = self.transform.layer2feat(layer)
+            except:
+                try:
+                    feature = self.transform.file2feat(file)
+                except:
+                    raise happyError('impossible to extract vector features from input data')
+        #return feature
         try:
             kwargs.update({_AttrDict.KW_ATTR: kwargs.pop(_AttrDict.KW_ATTR, False)})
             return _AttrDict(feature, **kwargs)
@@ -867,8 +950,32 @@ class NUTS(_Feature):
             raise happyError('impossible to build vector features dictionary') 
 
     #/************************************************************************/    
+    @_Decorator.parse_file
+    @_Decorator.parse_url
+    @_Decorator._parse_class(ogr.Layer, _Decorator.KW_LAYER)
     @_Decorator._parse_class(ogr.Feature, _Decorator.KW_FEATURE)
-    def __get_geometry(self, **kwargs):
+    def _get_geometry(self, **kwargs):
+        feature = kwargs.pop(_Decorator.KW_FEATURE, None)
+        url = kwargs.pop(_Decorator.KW_URL, None)
+        try:
+            assert feature is None or url in ('',None)
+        except:
+            raise happyError('incompatible arguments FILE and URL - parse one only')
+        if feature in ('',None) and url in ('',None):
+            try:
+                assert self.__url
+            except AssertionError:
+                try:
+                    assert self.__feature
+                except AssertionError:
+                    raise happyError('missing arguments FILE and URL - parse one at least')  
+                else:
+                    feature = self.feature
+            else:
+                url = self.url
+
+
+
         feature = kwargs.pop(_Decorator.KW_FEATURE, self.__feature)
         if not happyType.issequence(feature): 
             feature = [feature,]
@@ -911,7 +1018,7 @@ class NUTS(_Feature):
                 raise happyError('impossible to build feature dictionary') 
 
     #/************************************************************************/    
-    def __get_level(self):
+    def _get_level(self):
         if self.feature in ([],None):
             self.feature = self.get_vector()
         try:
@@ -925,20 +1032,6 @@ class NUTS(_Feature):
                 level = None
         else:
             return level if level is None or len(level)>1 else level[0]
-
-    #/************************************************************************/    
-    def __get_unit(self):
-        if self.feature in ([],None):
-            self.feature = self.get_vector()
-        try:
-            unit = 0
-        except:
-            try:
-                unit = 0
-            except:
-                unit = None
-        else:
-            return unit if unit is None or len(unit)>1 else unit[0]
                 
     #/************************************************************************/
     @property
@@ -1214,8 +1307,6 @@ class NUTS(_Feature):
     def geocode(self, **kwargs):
         """Convert the NUTS name to geographic coordinates using the service defined 
         when initialising this instance.
-        
-        ::
             
             >>> coord = nuts.geocode(**kwargs)
             
@@ -1263,8 +1354,6 @@ class NUTS(_Feature):
     def contains(self, *args, **kwargs):
         """Check whether the current NUTS geometry contains a given geolocation,
         expressed as either a place name or a set of geographical coordinates.
-        
-        ::
             
             >>> ans = nuts.contains(*args, **kwargs)
             
