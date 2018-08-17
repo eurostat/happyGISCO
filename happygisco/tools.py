@@ -667,11 +667,12 @@ class GeoAngle(object):
                 
         References
         ----------
-        * Wikipedia `latitude page <https://en.wikipedia.org/wiki/Latitude>`_.
+        * Wikipedia `latitude <https://en.wikipedia.org/wiki/Latitude>`_ and
+          `longitude <https://en.wikipedia.org/wiki/Longitude>`_ pages.
         * `Calculation of distance represented by degrees of Latitude and Longitude <https://www.colorado.edu/geography/gcraft/warmup/aquifer/html/distance.html>`_.
         * `Finding distances based on Latitude and Longitude <https://andrew.hedges.name/experiments/haversine/>`_.
         * `Calculate distance between two latitude-longitude points? (Haversine formula) <https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula>`_.
-        * `Jcoord <http://www.jstott.me.uk/jcoord/>_` conversion tool between latitude/longitude.
+        * `Jcoord <http://www.jstott.me.uk/jcoord/>`_ conversion tool between latitude/longitude.
 
         See also
         --------
@@ -713,11 +714,7 @@ class GeoAngle(object):
                 
         References
         ----------
-        * Wikipedia `longitude page <https://en.wikipedia.org/wiki/Longitude>_`.
-        * `Calculation of distance represented by degrees of Latitude and Longitude <https://www.colorado.edu/geography/gcraft/warmup/aquifer/html/distance.html>`_.
-        * `Finding distances based on Latitude and Longitude <https://andrew.hedges.name/experiments/haversine/>`_.
-        * `Calculate distance between two latitude-longitude points? (Haversine formula) <https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula>`_.
-        * `Jcoord <http://www.jstott.me.uk/jcoord/>_` conversion tool between latitude/longitude.
+        See references in :meth:`~GeoCoordinate.latdeg2m`.
             
         See also
         --------
@@ -801,7 +798,7 @@ class GeoAngle(object):
                 
         References
         ----------
-        See references in :meth:`~GeoCoordinate.londeg2m`.
+        See references in :meth:`~GeoCoordinate.latdeg2m`.
             
         See also
         --------
