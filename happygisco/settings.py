@@ -58,7 +58,7 @@ They are provided here for the sake of an exhaustive documentation.
     
 **Dependencies**
 
-*require*:      :mod:`os`, :mod:`sys`, :mod:`collection`, :mod:`itertools`, :mod:`functools`, :mod:`six`, :mod:`inspect`
+*require*:      :mod:`os`, :mod:`sys`, :mod:`warnings`, :mod:`collection`, :mod:`itertools`, :mod:`functools`, :mod:`six`, :mod:`copy`, :mod:`inspect`
 
 **Contents**
 """
@@ -69,7 +69,7 @@ They are provided here for the sake of an exhaustive documentation.
 import os, sys, warnings#analysis:ignore
 import copy, inspect#analysis:ignore
 import collections, itertools, functools
-import six, json
+import six
 
 #%%
 #==============================================================================
@@ -124,6 +124,97 @@ KEY_GISCO           = None
 """Dummy |GISCO| key. It is set to :data:`None` since connection to |GISCO| web-services does
 not require authentication.
 """
+GISCO_CACHEDOMAIN   = 'eurostat/cache/GISCO/distribution/v2'
+"""Domain of cache database, *e.g.* countries and |NUTS| vector datasets themes, 
+for download/distribution.
+"""
+GISCO_CACHEURL      = 'ec.%s/%s' % (EC_DOMAIN, GISCO_CACHEDOMAIN) 
+"""Complete URL of |GISCO| cache database.
+"""
+GISCO_PATTERNS      = {'bulk': 
+                            {'domain':      'download', 
+                             'base':        'ref-nuts-',
+                             'compress':    'zip'
+                             },
+                       'distribution': 
+                            {'domain':      'distribution', 
+                             'base':        ''
+                             },                             
+                       'country':
+                            {'domain':      'distribution', 
+                             'base':        'CNTR_',
+                             'info':        'countries-{year}-units', 
+                             'fmt':         'json'
+                             },
+                       'nuts':
+                            {'domain':      'distribution', 
+                             'base':        'NUTS_',
+                             'info':        'nuts-{year}-units', 
+                             'fmt':         'json'
+                             },
+                        'nutsid':
+                            {'base':        'NUTS_AT_{year}',
+                             'fmt':         'csv'
+                             }
+                       }
+"""String patterns used to define:
+    
+* domains of the services used for theme vector datasets: :literal:`download` for 
+  bulk datasets or :literal:`distribution` for single areas,
+* name and type of the file storing all :literal:`nuts` unit datasets,
+* name and type of the file storing all :literal:`country` unit datasets,
+* Name and type of the file storing the correspondance table between NUTS names
+and their IDs.
+"""
+
+GISCO2GDAL_DRIVERS  = {'geojson': 
+                            {'driver':      'GeoJSON',
+                             'options':     ['RFC7946=YES', 'WRITE_BBOX=YES']
+                             },
+                        #  'topojson':
+                        #        {'driver':       'TopoJSON',
+                        #         'options':      None 
+                        #         },
+                       'shp': 
+                            {'driver':      'ESRI Shapefile',
+                             'options':      None 
+                             }
+                       }
+"""Driver and translate options between |GISCO| disseminated dataset formats 
+and |GDAL| accepted formats.
+"""
+DEF_DRIVER_NAME         = 'ESRI Shapefile'
+"""|GDAL| driver name.
+"""             
+
+GISCO_NUTSDOMAIN    = 'nuts'
+"""Subdomain of |NUTS|.
+"""
+GISCO_NUTSURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_NUTSDOMAIN) 
+"""Complete URL of |NUTS| download/distribution services.
+"""
+GISCO_NUTSTHEME     = 'nuts'
+"""NUTS theme used for URL naming.
+"""
+GISCO_CTRYDOMAIN    = 'countries'
+"""Subdomain of countries.
+"""
+GISCO_CTRYURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_CTRYDOMAIN) 
+"""Complete URL of countries download/distribution services.
+"""
+
+GISCO_DATA_DIMENSIONS = ['SOURCE', 'YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT'
+                         ]
+"""Descriptors/parameters used to define a given |GISCO| dataset, *e.g.* a NUTS
+or a country file.
+"""
+GISCO_YEARS         = [2003, 2006, 2010, 2013, 2016
+                       ]
+"""Years of adoption/revision of |NUTS| areas.
+"""
+DEF_GISCO_YEAR      = 2013
+"""Default year considered for |NUTS| datasets (not the most recent, but up-to-date).
+"""
 GISCO_PROJECTIONS   = {'WGS84':             4326,
                        'EPSG4326':          4326, 
                        'ETRS89':            4258,
@@ -140,13 +231,44 @@ spatial references.
 DEF_GISCO_PROJECTION = 4326
 """Default projection used by |GISCO| services.
 """
-GISCO_CACHEDOMAIN    = 'eurostat/cache/GISCO/distribution/v2'
-"""Domain of cache database, *e.g.* countries and |NUTS| vector datasets themes, 
-for download/distribution.
+GISCO_SCALES        = {1: '01m', 3: '03m', 10: '10m', 20: '20m', 60: '60m'
+                       } 
+"""Scale (1:`scale` Million) of vector datasets.
 """
-GISCO_CACHEURL       = 'ec.%s/%s' % (EC_DOMAIN, GISCO_CACHEDOMAIN) 
-"""Complete URL of |GISCO| cache database.
+DEF_GISCO_SCALE    = GISCO_SCALES[max(GISCO_SCALES.keys())] # largest scale: '60m'
+"""Default scale for |GISCO| vector datasets.
 """
+GISCO_VECTORS      = {'region':            'RG', 
+                      'label':             'LB',
+                      'line':              'BN',
+                      'boundary':          'BN'
+                      }
+"""Dictionary of spatial typologies, *i.e.* the vector features of |GISCO| datasets. 
+"""
+DEF_GISCO_VECTOR    = 'RG'
+"""Default spatial typology.
+"""
+GISCO_NUTSLEVELS    = [0, 1, 2, 3
+                       ]
+"""Levels of |NUTS| areas.
+"""
+DEF_GISCO_NUTSLEVEL = GISCO_NUTSLEVELS[0]
+"""Default |NUTS| level.
+"""
+GISCO_FORMATS       = {'shp':               'shx',   # 'shapefile': 'shp', 
+                       'geojson':           'geojson',  
+                       'topojson':          'json',  # useless topojson, see NUTS2JSON instead
+                       # 'gdb':               'gdb', # bah...
+                       'pbf':               'pbf',
+                       'csv':               'csv'
+                       # 'eps':             'eps'    # seriously? who gives a shit about EPS?
+                       }
+"""Format of |GISCO| vector data files.
+"""
+DEF_GISCO_FORMAT    = 'geojson'
+"""Default format for |GISCO| vector datasets.
+"""
+
 GISCO_TILEDOMAIN    = 'webtools/maps/tiles'
 """Domain of |GISCO| background tiling service.
 """
@@ -232,158 +354,6 @@ DEF_GISCO_TILEPROJ  = 3857
 DEF_GISCO_ZOOM      = 4
 """Default zooming value in map displays.
 """
-GISCO_NUTSDOMAIN    = 'nuts'
-"""Subdomain of |NUTS|.
-"""
-GISCO_NUTSURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_NUTSDOMAIN) 
-"""Complete URL of |NUTS| download/distribution services.
-"""
-GISCO_NUTSTHEME     = 'nuts'
-"""NUTS theme used for URL naming.
-"""
-GISCO_CTRYDOMAIN    = 'countries'
-"""Subdomain of countries.
-"""
-GISCO_CTRYURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_CTRYDOMAIN) 
-"""Complete URL of countries download/distribution services.
-"""
-GISCO_PATTERNS      = {'bulk': 
-                            {'domain':      'download', 
-                             'base':        'ref-nuts-',
-                             'compress':    'zip'
-                             },
-                       'distribution': 
-                            {'domain':      'distribution', 
-                             'base':        ''
-                             },                             
-                       'country':
-                            {'domain':      'distribution', 
-                             'base':        'CNTR_',
-                             'info':        'countries-{year}-units', 
-                             'fmt':         'json'
-                             },
-                       'nuts':
-                            {'domain':      'distribution', 
-                             'base':        'NUTS_',
-                             'info':        'nuts-{year}-units', 
-                             'fmt':         'json'
-                             },
-                        'nutsid':
-                            {'base':        'NUTS_AT_{year}',
-                             'fmt':         'csv'
-                             }
-                       }
-"""String patterns used to define:
-    
-* domains of the services used for theme vector datasets: :literal:`download` for 
-  bulk datasets or :literal:`distribution` for single areas,
-* name and type of the file storing all :literal:`nuts` unit datasets,
-* name and type of the file storing all :literal:`country` unit datasets,
-* Name and type of the file storing the correspondance table between NUTS names
-and their IDs.
-"""
-GISCO_NUTSLEVELS    = [0, 1, 2, 3
-                       ]
-"""Levels of |NUTS| areas.
-"""
-DEF_GISCO_NUTSLEVEL = GISCO_NUTSLEVELS[0]
-"""Default |NUTS| level.
-"""
-GISCO_SCALES        = {1: '01m', 3: '03m', 10: '10m', 20: '20m', 60: '60m'
-                       } 
-"""Scale (1:`scale` Million) of vector datasets.
-"""
-DEF_GISCO_SCALE    = GISCO_SCALES[max(GISCO_SCALES.keys())] # largest scale: '60m'
-"""Default scale for |GISCO| vector datasets.
-"""
-GISCO_YEARS         = [2003, 2006, 2010, 2013, 2016
-                       ]
-"""Years of adoption/revision of |NUTS| areas.
-"""
-DEF_GISCO_YEAR      = 2013
-"""Default year considered for |NUTS| datasets (not the most recent, but up-to-date).
-"""
-GISCO_FORMATS       = {'shp':               'shx',   # 'shapefile': 'shp', 
-                       'geojson':           'geojson',  
-                       'topojson':          'json',  # useless topojson, see NUTS2JSON instead
-                       # 'gdb':               'gdb', # bah...
-                       'pbf':               'pbf',
-                       'csv':               'csv'
-                       # 'eps':             'eps'    # seriously? who gives a shit about EPS?
-                       }
-"""Format of |GISCO| vector data files.
-"""
-DEF_GISCO_FORMAT    = 'geojson'
-"""Default format for |GISCO| vector datasets.
-"""
-GISCO_VECTORS       = {'region':            'RG', 
-                       'label':             'LB',
-                       'line':              'BN',
-                       'boundary':          'BN'
-                       }
-"""Dictionary of spatial typologies, *i.e.* the vector features of |GISCO| datasets. 
-"""
-DEF_GISCO_VECTOR  = 'RG'
-"""Default spatial typology.
-"""
-GISCO_REFNAME       = ''
-"""Generic name used to reference the bulk datasets.
-"""
-
-OSM_URL             = 'nominatim.openstreetmap.org/'
-"""|OSM| web-service complete URL.
-"""
-CODER_OSM         = 'osm'
-"""Identifier of |OSM| geocoder.
-"""
-KEY_OSM           = None
-"""Dummy |OSM| key (connection to |OSM| web-services does not require authentication).
-"""
-
-EU_GEOCENTRE        = [50.033333, 10.35]
-"""The German municipality of `Gädheim <https://en.wikipedia.org/wiki/Gädheim>`_ 
-(in the district of Haßberge in Bavaria) serves as the geographical centre of the 
-European Union (when the United Kingdom leaves on April 2019).
-
-See the Wikipedia  page on the 
-`geographical midpoint of Europe <https://en.wikipedia.org/wiki/Geographical_midpoint_of_Europe>`_
-for discussions on the topic. For the determination of the actual geographical 
-coordinates (50°02′N 10°21′E), see also 
-`this page <https://tools.wmflabs.org/geohack/geohack.php?pagename=Gädheim&params=50_02_N_10_21_E_type:city(1272)_region:DE-BY>`_.
-"""
-
-# dummy variables
-CHECK_TYPE          = True
-CHECK_OSM_KEY       = True
-
-CODER_GOOGLE        = 'GoogleV3'
-"""Identifier of |GISCO| geocoder.
-"""
-CODER_GOOGLE_MAPS   = 'GMaps'
-"""Identifier of |googlemaps| geocoder.
-"""
-CODER_GOOGLE_PLACES = 'GPlace'
-"""Identifier of |googleplaces| geocoder.
-"""
-KEY_GOOGLE          = 'key'
-"""Personal key used for connecting to the various |Google| web-services.
-"""
-
-CODER_GEONAME       = 'GeoNames'
-"""Default geocoder used when the generic :mod:`geopy` package (see website |geopy|) 
-is run for connecting to the "external" (all but |GISCO|) web-services.
-"""
-CODER_LIST          = [CODER_GISCO, CODER_GOOGLE, CODER_GOOGLE_MAPS, CODER_GOOGLE_PLACES
-                       ]
-"""List of geocoders available.
-"""
-CODER_PROJ          = {CODER_GISCO:         DEF_GISCO_PROJECTION,
-                       CODER_GOOGLE:        'EPSG3857',
-                       CODER_GOOGLE_MAPS:   'EPSG3857', 
-                       CODER_GOOGLE_PLACES: 'EPSG3857'
-                       }
-"""Default geographical projections available through the different geocoders.
-"""
 
 GISCO_LAUDOMAIN     = 'documents/345175/501971'
 """
@@ -437,26 +407,63 @@ DEF_NUTS2JSON_SCALE = DEF_GISCO_SCALE
 """Default map dimension (in pixel).
 """
 NUTS2JSON_NUTSLEVELS = GISCO_NUTSLEVELS
-# dumb variable
-GISCO2GDAL_DRIVERS  = {'geojson': 
-                            {'driver':      'GeoJSON',
-                             'options':     ['RFC7946=YES', 'WRITE_BBOX=YES']
-                             },
-                        #  'topojson':
-                        #        {'driver':       'TopoJSON',
-                        #         'options':      None 
-                        #         },
-                       'shp': 
-                            {'driver':      'ESRI Shapefile',
-                             'options':      None 
-                             }
-                       }
-"""Driver and translate options between |GISCO| disseminated dataset formats 
-and |GDAL| accepted formats.
+NUTS2JSON_DATA_DIMENSIONS = GISCO_DATA_DIMENSIONS
+# dumb variables
+
+OSM_URL             = 'nominatim.openstreetmap.org/'
+"""|OSM| web-service complete URL.
 """
-DEF_DRIVER_NAME         = 'ESRI Shapefile'
-"""|GDAL| driver name.
-"""             
+CODER_OSM         = 'osm'
+"""Identifier of |OSM| geocoder.
+"""
+KEY_OSM           = None
+"""Dummy |OSM| key (connection to |OSM| web-services does not require authentication).
+"""
+
+# dummy variables
+CHECK_TYPE          = True
+CHECK_OSM_KEY       = True
+
+CODER_GOOGLE        = 'GoogleV3'
+"""Identifier of |GISCO| geocoder.
+"""
+CODER_GOOGLE_MAPS   = 'GMaps'
+"""Identifier of |googlemaps| geocoder.
+"""
+CODER_GOOGLE_PLACES = 'GPlace'
+"""Identifier of |googleplaces| geocoder.
+"""
+KEY_GOOGLE          = 'key'
+"""Personal key used for connecting to the various |Google| web-services.
+"""
+
+CODER_GEONAME       = 'GeoNames'
+"""Default geocoder used when the generic :mod:`geopy` package (see website |geopy|) 
+is run for connecting to the "external" (all but |GISCO|) web-services.
+"""
+CODER_LIST          = [CODER_GISCO, CODER_GOOGLE, CODER_GOOGLE_MAPS, CODER_GOOGLE_PLACES
+                       ]
+"""List of geocoders available.
+"""
+CODER_PROJ          = {CODER_GISCO:         DEF_GISCO_PROJECTION,
+                       CODER_GOOGLE:        'EPSG3857',
+                       CODER_GOOGLE_MAPS:   'EPSG3857', 
+                       CODER_GOOGLE_PLACES: 'EPSG3857'
+                       }
+"""Default geographical projections available through the different geocoders.
+"""
+
+EU_GEOCENTRE        = [50.033333, 10.35]
+"""The German municipality of `Gädheim <https://en.wikipedia.org/wiki/Gädheim>`_ 
+(in the district of Haßberge in Bavaria) serves as the geographical centre of the 
+European Union (when the United Kingdom leaves on April 2019).
+
+See the Wikipedia  page on the 
+`geographical midpoint of Europe <https://en.wikipedia.org/wiki/Geographical_midpoint_of_Europe>`_
+for discussions on the topic. For the determination of the actual geographical 
+coordinates (50°02′N 10°21′E), see also 
+`this page <https://tools.wmflabs.org/geohack/geohack.php?pagename=Gädheim&params=50_02_N_10_21_E_type:city(1272)_region:DE-BY>`_.
+"""
 
 
 POLYLINE            = False
@@ -494,9 +501,7 @@ class happyWarning(Warning):
         
     Example
     -------
-    
-    ::
-        
+
         >>> happyWarning('This is a very interesting warning');
             happyWarning: ! This is a very interesting warning !
     """
@@ -520,8 +525,6 @@ class happyWarning(Warning):
 class happyVerbose(object):
     """Dummy class for verbose printing mode in this package.
     
-    ::
-    
         >>> happyVerbose(msg, verb=True, expr=None)
 
     Arguments
@@ -540,8 +543,6 @@ class happyVerbose(object):
         
     Example
     -------
-    
-    ::
 
         >>> happyVerbose('The more we talk, we less we do...', verb=True);
             [verbose] - The more we talk, we less we do...
@@ -558,8 +559,6 @@ class happyVerbose(object):
     
 class happyError(Exception):
     """Dummy class for exception raising in this package.
-    
-    ::
     
         >>> raise happyError(errmsg, errtype=None, errcode=None, expr='')
 
@@ -581,8 +580,6 @@ class happyError(Exception):
         
     Example
     -------
-    
-    ::
         
         >>> try:
                 assert False
@@ -631,8 +628,6 @@ class happyError(Exception):
 
 def happyDeprecated(reason, run=True):
     """This is a decorator which can be used to mark functions as deprecated. 
-    
-    ::
         
         >>> new = settings.happyDeprecated(reason)  
         
@@ -650,8 +645,6 @@ def happyDeprecated(reason, run=True):
     Examples
     --------
     The deprecated function can be used to decorate different objects:
-        
-    ::
         
         >>> @happyDeprecated("use another function")
         ... def old_function(x, y):
@@ -731,9 +724,7 @@ class happyType(object):
     @classmethod
     def typename(cls, inst): 
         """Return the class name of a given instance: nothing else than 
-        :literal:`instance.__class__.__name__`.
-        
-        ::
+        :data:`instance.__class__.__name__`.
     
             >>> name = happyType.typename(inst)  
             
@@ -757,8 +748,6 @@ class happyType(object):
     def istype(cls, inst, str_cls):
         """Determine if a given instance is of a certain type defined by a string 
         (instead of a :class:`type` like in :meth:`isintance`).
-        
-        ::
         
             >>> ans = happyType.istype(inst, str_cls)
             
@@ -785,8 +774,6 @@ class happyType(object):
     def isstring(cls, arg):
         """Check whether an argument is a string.
         
-        ::
-        
             >>> ans = happyType.isstring(arg)
       
         Arguments
@@ -808,8 +795,6 @@ class happyType(object):
         """Check whether an argument is a "pure" sequence (*e.g.*, a :data:`list` 
         or a :data:`tuple`), *i.e.* an instance of the :class:`collections.Sequence`,
         except strings excepted.
-        
-        ::
         
             >>> ans = happyType.issequence(arg)
       
@@ -833,8 +818,6 @@ class happyType(object):
     def ismapping(cls, arg):
         """Check whether an argument is a dictionary.
         
-        ::
-        
             >>> ans = happyType.ismapping(arg)
       
         Arguments
@@ -854,8 +837,6 @@ class happyType(object):
     @classmethod
     def seqflatten(cls, arg, rec=False):
         """Flatten a list of lists (one-level only).
-        
-        ::
         
             >>> flat = happyType.seqflatten(arg, rec = False)
             
@@ -880,16 +861,12 @@ class happyType(object):
         --------
         A very basic way to flatten a list of lists:
             
-        ::
-            
             >>> happyType.seqflatten([[1],[[2,3],[4,5]],[6,7]])
                 [1, [2, 3], [4, 5], 6, 7]
             >>> happyType.seqflatten([[1,1],[[2,2],[3,3],[[4,4],[5,5]]]])
                 [1, 1, [2, 2], [3, 3], [[4, 4], [5, 5]]]
                 
         As for the difference between recursive and non-recursive calls:
-            
-        ::
             
             >>> seq = [[1],[[2,[3.5,3.75]],[[4,4.01],[4.25,4.5],5]],[6,7]]
             >>> settings.happyType.seqflatten(seq, rec=True)
@@ -1007,27 +984,26 @@ class happyType(object):
         dicts : dict
             an arbitrary number of (possibly nested) dictionaries.
             
-        Keyword arguments
-        -----------------
+        Returns
+        -------
         new_dict : dict
-            say that only two dictionaries are parsed, :data:`d1` and :data:`d2`;
-            for each :data:`k,v` in :data:`d1`: 
+            say that only two dictionaries are parsed, :data:`d1` and :data:`d2`
+            (in this order); first, :data:`d1` is "deep"-copied into :data:`new_dict`,
+            then for each :data:`k,v` in :data:`d2`: 
                 
-                * if :data:`k` doesn't exist in :data:`d2`, it is deep copied from 
-                  :data:`d1` to :data:`d2`;
+                * if :data:`k` doesn't exist in :data:`new_dict`, it is deep copied 
+                  from :data:`d2` into :data:`new_dict`;
             
             otherwise: 
                 
-                * if :data:`v` is a list, :data:`d2[k]` is extended with :data:`d1[k]`,
-                * if :data:`v` is a set, :data:`d2[k]` is updated with :data:`v`,
-                * if :data:`v` is a dict, it is recursively "deep"-updated.      
+                * if :data:`v` is a list, :data:`new_dict[k]` is extended with :data:`d2[k]`,
+                * if :data:`v` is a set, :data:`new_dict[k]` is updated with :data:`v`,
+                * if :data:`v` is a dict, it is recursively "deep"-updated,
     
         Examples
         --------
         The method can be used to deep-merge dictionaries storing many different
         data structures:
-        
-        ::
 
             >>> d1 = {1: 2, 3: 4, 10: 11}
             >>> d2 = {1: 6, 3: 7}
@@ -1041,6 +1017,12 @@ class happyType(object):
             >>> d2 = {'a': {'c': {'gg': {'m': '3'},'xx': '4'}}}
             >>> happyType.mapdeepmerge(d1, d2)
                 {'a': {'b': {'x': '1','y': '2'}, 'c': {'gg': {'m': '3'}, 'xx': '4'}}}
+                
+        Note
+        ----
+        This code is derived from F.Boender's original source code made available at
+        `this address <https://www.electricmonk.nl/log/2017/05/07/merging-two-python-dictionaries-by-deep-updating/>`_
+        under a *MIT* license.
         """ 
         #def recurse(*dicts):        
         #    dd = collections.defaultdict(list)
@@ -1060,9 +1042,7 @@ class happyType(object):
         #    return dict(dd.items())
         #return recurse(*dicts)
         def recurse(target, src):
-            # see original source code by f.Boender at: 
-            #   https://www.electricmonk.nl/log/2017/05/07/merging-two-python-dictionaries-by-deep-updating/
-            # (MIT license)
+            # source: https://www.electricmonk.nl/log/2017/05/07/merging-two-python-dictionaries-by-deep-updating/
             for k, v in src.items():
                 if cls.issequence(v):  # type(v) == list:
                     if not k in target:     target[k] = copy.deepcopy(v)
@@ -1080,6 +1060,41 @@ class happyType(object):
             functools.reduce(recurse, (dd,) + dicts[1:])
             return dd
         return reduce(*dicts)
+    
+    #/************************************************************************/
+    @classmethod
+    @happyDeprecated('use generic method happyType.mapdeepmerge instead', run=True)
+    def __mapnestmerge(cls, *dicts):
+        """Recursively merge an arbitrary number of nested dictionaries.
+    
+            >>> new_dict = happyType.__mapnestmerge(*dicts)
+            
+        Arguments
+        ---------
+        dicts : dict
+            an arbitrary number of (possibly nested) dictionaries.
+    
+        Examples
+        --------
+
+            >>> d1 = {'a': {'b': {'x': '1', 'y': '2'}}}
+            >>> d2 = {'a': {'c': {'gg': {'m': '3'},'xx': '4'}}}
+            >>> happyType.__mapnestmerge(d1, d2)
+                {'a': {'b': {'x': '1','y': '2'}, 'c': {'gg': {'m': '3'}, 'xx': '4'}}}
+        """    
+        keys = set(k for d in dicts for k in d)    
+        def vals(key):
+            # return all values for `key` in all `dicts`
+            withkey = (d for d in dicts if key in d.keys())
+            return [d[key] for d in withkey]    
+        def recurse(*values):
+            # recurse if the values are dictionaries
+            if isinstance(values[0], dict):
+                return cls.__mapnestmerge(*values)
+            if len(values) == 1:
+                return values[0]
+            raise happyError("Multiple non-dictionary values for a key.")    
+        return dict((key, recurse(*vals(key))) for key in keys)  
             
     #/************************************************************************/
     @classmethod
@@ -1127,39 +1142,7 @@ class happyType(object):
                 if cls.ismapping(v):
                     yield from recurse(v)
                 else:
-                    if item=='items':       yield (k, v)
-                    elif item=='keys':      yield k
-                    elif item=='values':      yield v
+                    if item=='items':           yield (k, v)
+                    elif item=='keys':          yield k
+                    elif item=='values':        yield v
         return list(recurse(dic))
-    
-    #/************************************************************************/
-    @classmethod
-    @happyDeprecated('use generic method happyType.mapdeepmerge instead', run=True)
-    def __mapnestmerge(cls, *dicts):
-        """Recursively merge an arbitrary number of nested dictionaries.
-    
-            >>> new_dict = happyType.__mapnestmerge(*dicts)
-    
-        Examples
-        --------
-        
-        ::
-
-            >>> d1 = {'a': {'b': {'x': '1', 'y': '2'}}}
-            >>> d2 = {'a': {'c': {'gg': {'m': '3'},'xx': '4'}}}
-            >>> happyType.__mapnestmerge(d1, d2)
-                {'a': {'b': {'x': '1','y': '2'}, 'c': {'gg': {'m': '3'}, 'xx': '4'}}}
-        """    
-        keys = set(k for d in dicts for k in d)    
-        def vals(key):
-            # return all values for `key` in all `dicts`
-            withkey = (d for d in dicts if key in d.keys())
-            return [d[key] for d in withkey]    
-        def recurse(*values):
-            # recurse if the values are dictionaries
-            if isinstance(values[0], dict):
-                return cls.__mapnestmerge(*values)
-            if len(values) == 1:
-                return values[0]
-            raise happyError("Multiple non-dictionary values for a key.")    
-        return dict((key, recurse(*vals(key))) for key in keys)  
