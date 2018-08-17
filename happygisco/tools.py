@@ -1194,7 +1194,7 @@ class GeoCoordinate(GeoLocation):
         """Retrieve the approximate centroid of a polygon (bounding box). Accuracy 
         is not a major aspect here. 
         
-            >>> lat, Lon = GeoCoordinate.centroid(*args)            
+            >>> lat, Lon = GeoCoordinate.centroid(*args, **kwargs)            
 
         Arguments
         ---------
