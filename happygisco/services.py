@@ -208,10 +208,9 @@ class OSMService(_Service):
         -----------------
         kwargs : dict
             parameters used to build the query URL; allowed keyword arguments are: 
-            :data:`format, json_callback, accept-language, extratags, namedetails, q, street, city,`
-            :data:`county, state, country, postalcode, countrycodes, viewbox, bounded,addressdetails,`
-            :data:`email, limit, dedupe, debug, polygon_geojson, polygon_kml,polygon_svg`, 
-            and :data:`polygon_text`;
+            :literal:`[format, json_callback, accept-language, extratags, namedetails, q, street, city,`
+            :literal:`county, state, country, postalcode, countrycodes, viewbox, bounded, addressdetails,`
+            :literal:`email, limit, dedupe, debug, polygon_geojson, polygon_kml,polygon_svg, polygon_text]`;
             see |NominatimWIKI| on *background services* for more details.
                 
         Returns
@@ -266,9 +265,8 @@ class OSMService(_Service):
         -----------------
         kwargs : dict
             parameters used to build the query URL; allowed keyword arguments are: 
-            :data:`lat, lon, format, json_callback, accept-language, extratags, email, osm_type,`
-            :data:`osm_id, zoom, addressdetails, polygon_geojson, polygon_kml, polygon_svg`, and 
-            :data:`polygon_text`;
+            :literal:`lat, lon, format, json_callback, accept-language, extratags, email, osm_type,`
+            :literal:`osm_id, zoom, addressdetails, polygon_geojson, polygon_kml, polygon_svg, polygon_text]`;
             see |NominatimWIKI| on *background services* for more details.
                 
         Returns
@@ -1230,15 +1228,15 @@ class GISCOService(OSMService):
         tiles: str
             string representing the background tile layer used for the map display; 
             it must be one of the tiling supported by |GISCO|, *i.e.* any string in 
-            :literal:`['bmarble','borders','roadswater','hypso','coast','copernicus',
-                       'osmec','graybg','country','gray','natural','city','cloudless']`;
+            :literal:`['bmarble','borders','roadswater','hypso','coast','copernicus',`
+            :literal:`'osmec','graybg','country','gray','natural','city','cloudless']`;
             see also the list of available tiling systems (together with the respective
             attributions) in :data:`settings.GISCO_TILES`.
            
         Keyword Arguments
         -----------------
         proj : str,int
-            projection identifier; default identifier is  'EPSG3857', *i.e.* the one
+            projection identifier; default identifier is :literal:`'EPSG3857'`, *i.e.* the one
             in :data:`settings.DEF_GISCO_TILEPROJ`.
         order : str
             order of the dimensions :literal:`x,y` and :literal:`z` of the tiling
@@ -1325,7 +1323,7 @@ class GISCOService(OSMService):
             used; default is :data:`False`.
         kwargs : dict
             parameters used to build the query URL; allowed keyword arguments are: 
-            :data:`q, lat, lon, distance_sort, limit, osm_tag`, and :data:`lang`;
+            :literal:`q, lat, lon, distance_sort, limit, osm_tag`, and :literal:`lang`;
             see |GISCOWIKI| on *background services* for more details.
                 
         Returns
@@ -1378,7 +1376,7 @@ class GISCOService(OSMService):
         -----------------
         kwargs : dict
             parameters used to build the query URL; allowed keyword arguments are: 
-            :data:`lat, lon, radius, distance_sort, limit`, and :data:`lang`;
+            :literal:`lat, lon, radius, distance_sort, limit`, and :literal:`lang`;
             see |GISCOWIKI| on *background services* for more details.
         nominatim : bool
             flag set to :data:`True` when |Nominatim| reverse service shall be 
@@ -1435,7 +1433,7 @@ class GISCOService(OSMService):
         -----------------
         kwargs : dict
             parameters used to build the query URL; allowed parameters are: 
-            :data:`coordinates, polyline, overview`, and :data:`???`;
+            :literal:`coordinates, polyline, overview`, and :literal:`???`;
             see |GISCOWIKI| on *background services* for more details.
                 
         Returns
@@ -1494,7 +1492,7 @@ class GISCOService(OSMService):
         -----------------
         kwargs : dict
             parameters used to build the query URL; allowed parameters are: 
-            :data:`inSR, outSR, geometries, transformation, transformForward` and :data:`f`;
+            :literal:`inSR, outSR, geometries, transformation, transformForward` and :literal:`f`;
             see |GISCOWIKI| on *background services* for more details.
                 
         Returns
