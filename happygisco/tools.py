@@ -1317,7 +1317,7 @@ class GeoCoordinate(GeoLocation):
 
         Arguments
         ---------
-        loc1,loc2 : list,:class:`~happygisco.tools.GeoCoordinate`
+        loc1,loc2 : :class:`~happygisco.tools.GeoCoordinate`, list
             :literal:`(lat,Lon)` coordinates of the two location points, in the 
             same unit as the parameters in :data:`args`.
             
