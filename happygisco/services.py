@@ -152,8 +152,6 @@ except ImportError:
 class OSMService(_Service):
     """Class providing conversion methods and geocoding tools that run the |Nominatim| 
     online web-service of the |OSM| API.
-        
-    ::
        
         >>> serv = services.OSMService(**kwargs)
             
@@ -200,8 +198,6 @@ class OSMService(_Service):
         """Generate the query URL for |Nominatim| geocoding web-service (from toponame to
         geocoordinate).
         
-        ::
-        
             >>> url = serv.url_geocode(**kwargs)
            
         Keyword arguments
@@ -224,8 +220,6 @@ class OSMService(_Service):
         Example
         -------
         Let us create a simple URL for querying the geolocation of a toponame:
-        
-        ::
             
             >>> serv = services.OSMService()
             >>> serv.url_geocode(q='Paris+France', format='json')
@@ -257,8 +251,6 @@ class OSMService(_Service):
         """Generate the query URL for |Nominatim| reverse geocoding web-service (from 
         geocoordinate to toponame).
         
-        ::
-        
             >>> url = serv.url_reverse(**kwargs)
            
         Keyword arguments
@@ -281,8 +273,6 @@ class OSMService(_Service):
         -------
         We can generate the URL for querying the toponame associated to a given
         geolocation:
-        
-        ::
 
             >>> serv = services.OSMService()
             >>> serv.url_reverse(lon=10, lat=52)
@@ -387,8 +377,6 @@ class OSMService(_Service):
         """Retrieve the geographical information associated to a given place as a
         geometry object using |OSM| service.
         
-        ::
-        
             >>> area = serv.place2geom(place, **kwargs)
 
         Arguments
@@ -424,13 +412,9 @@ class OSMService(_Service):
         --------
         We will retrieve the geolocation of Berlin, Germany:
         
-        ::
-        
             >>> berlin = 'Berlin, Germany'
         
         For that purpose, we can build the desired |OSM| URL:
-        
-        ::
         
             >>> serv = services.OSMService()
             >>> serv.url_geocode(place=berlin) 
@@ -438,8 +422,6 @@ class OSMService(_Service):
         
         though the method :meth:`place2geom` enables us to run the operation all
         in once: 
-        
-        ::
 
             >>> serv.place2geom(berlin, format='json')
                 [{'boundingbox': ['52.3570365', '52.6770365', '13.2288599', '13.5488599'],
@@ -567,8 +549,6 @@ class OSMService(_Service):
     def coord2geom(self, coord, **kwargs): # specific use
         """Retrieve the place (topo)name of a given location provided by its 
         geographic coordinates using |OSM| service.
-                
-        ::
 
             >>>  area = serv.coord2geom(coord, **kwargs)
 
@@ -606,21 +586,15 @@ class OSMService(_Service):
         Let us what we actually retrieve when we enter the geolocation of the
         (approximate) centre of Berlin, Germany:
         
-        ::
-        
             >>> berlin = [52.5170365, 13.3888599]
         
         We can build the desired |OSM| URL to get the result:
-        
-        ::
         
             >>> serv = services.OSMService()
             >>> serv.url_reverse(coord=berlin) 
                 'https://nominatim.openstreetmap.org/reverse?format=json&lat=52.5170365&lon=13.3888599'
         
         however, the method :meth:`coord2geom` does everything at once:
-         
-        ::
        
             >>> serv.coord2geom(berlin, format='json')
                 {'address': {'address29': 'Douglas',
@@ -655,8 +629,6 @@ class OSMService(_Service):
         """Retrieve the  geographic coordinates of a given place provided by its 
         (topo)name using |OSM| service.
         
-        ::
-        
             >>> coord = serv.place2coord(place, **kwargs)
 
         Arguments
@@ -690,8 +662,6 @@ class OSMService(_Service):
         --------
         We can easily retrieve the geolocations associated to well-known places:
         
-        ::
-        
             >>> serv = services.OSMService()
             >>> serv.place2coord('Berlin, Germany')
                 [[52.5170365, 13.3888599],
@@ -711,8 +681,6 @@ class OSMService(_Service):
         -----
         * Note that the geocoding may apparently result in some erroneous answer
           owing to the naming ambiguity, *e.g.*:
-        
-        ::
             
             >>> serv.place2coord('Rome, Italy') # most surely the right location
                 [41.8933203, 12.4829321]
@@ -739,7 +707,7 @@ class OSMService(_Service):
         coord = []
         # note the presence below of *a so as to ensure that None responses are 
         # also parsed
-        func = lambda *a, **kw: [kw.get('coord')]
+        func = lambda *a, **kw: [kw.get(_Decorator.KW_COORD)]
         [coord.append(data if data is None or len(data)>1 else data[0])     \
              for g in self._place2geom(place, **kwargs)                     \
              for data in _Decorator.parse_geometry(func)(g, filter='coord', order=order, unique=unique)]
@@ -749,8 +717,6 @@ class OSMService(_Service):
     def coord2place(self, coord, **kwargs):
         """Retrieve the (topo)name of a given location provided by its geographic 
         coordinates using |OSM| service.
-        
-        ::
        
             >>> place = serv.coord2place(coord, **kwargs)
 
@@ -779,8 +745,6 @@ class OSMService(_Service):
         Examples
         --------
         Let us see whether we can identify some places through their geolocations:
-        
-        ::
             
             >>> serv = services.OSMService()
             >>> serv.coord2place([41.8933203, 12.4829321])
@@ -800,7 +764,7 @@ class OSMService(_Service):
         """
         unique = kwargs.pop('unique',False)
         place = []
-        func = lambda *a, **kw: [kw.get('place')]
+        func = lambda *a, **kw: [kw.get(_Decorator.KW_PLACE)]
         [place.append(data if data is None or len(data)>1 else data[0])     \
              for a in self._coord2geom(coord, **kwargs)                     \
              for data in _Decorator.parse_geometry(func)(a, filter='place', unique=unique)]
@@ -814,8 +778,6 @@ class OSMService(_Service):
 class GISCOService(OSMService):
     """Class providing conversion methods and geocoding tools that run the |GISCO| 
     online web-service, itself based on |OSM| |Nominatim| API.
-        
-    ::
        
         >>> serv = services.GISCOService(**kwargs)
             
@@ -835,10 +797,16 @@ class GISCOService(OSMService):
         set to {:data:`settings.CODER_GISCO`: :data:`settings.KEY_GISCO` }, *e.g*
         :literal:`{'gisco': None}` since there is currently no authentication 
         requested.
+        
+    Properties
+    ----------
+    rest_url :
+        REST property (:data:`getter`/:data:`setter`) defining the complete
+        URL of REST services, *e.g.* :data:`settings.GISCO_RESTURL`, of an instance 
+        of this class. 
     """
     
     CODER = {settings.CODER_GISCO: settings.KEY_GISCO}
-    ORDERED_DATA_DIMENSIONS = ['SOURCE', 'YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT']
     
     #/************************************************************************/
     def __init__(self, **kwargs):
@@ -920,8 +888,6 @@ class GISCOService(OSMService):
     def url_nuts(self, source=None, **kwargs):
         """Generate the URL in the |GISCO| domain for the (bulk or not) download 
         of NUTS data (in vector format).
-        
-        ::
             
             >>> url = serv.url_nuts(source, **kwargs)
            
@@ -952,8 +918,8 @@ class GISCOService(OSMService):
         
         Examples
         --------
-        
-        ::
+        It is actually possible to generate the URLs of all |NUTS| related datasets 
+        available from |GISCO| Rest API and/or bulk download website:
             
             >>> serv = services.GISCOService()
             >>> serv.url_nuts()  # default: a given NUTS dataset...
@@ -980,8 +946,6 @@ class GISCOService(OSMService):
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-label-4326-2016.geojson'        
         
         Note also:
-        
-        ::
                 
             >>> serv.url_nuts('BE100', year = 2016, scale = 3, vector = 'boundary', fmt ='shp')
                     ! only LABEL and REGION features are supported with single NUTS units distribution - FEATURE argument ignored !
@@ -990,8 +954,6 @@ class GISCOService(OSMService):
         
         Further note that it is possible to build the URL linking to the NUTS datasets 
         from the preformated |Nuts2json| data collection:
-        
-        ::  
             
             >>> serv.url_nuts('nuts2json', scale = '20m', level = 2)
                 'https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/2013/4326/20M/nutsrg_2.json'
@@ -1113,8 +1075,6 @@ class GISCOService(OSMService):
     #/************************************************************************/
     def url_lau(self, source=None, **kwargs):
         """Generate the URL of the |GISCO| LAU data files.
-        
-        ::
             
             >>> url = serv.url_lau(source=None, **kwargs)
            
@@ -1126,16 +1086,12 @@ class GISCOService(OSMService):
     #/************************************************************************/
     def url_country(self, source=None, **kwargs):
         """Generate the URL (or name) of the |GISCO| countries vector datasets.
-        
-        ::
             
             >>> url = serv.url_country(source=None, **kwargs)
             
             
         Examples
         --------
-        
-        ::
             
             >>> serv = services.GISCOService()
             >>> serv.url_country()
@@ -1150,7 +1106,8 @@ class GISCOService(OSMService):
                 
         See also
         --------
-        :meth:`~GISCOService.resp_country`, :meth:`~GISCOService.url_nuts`.        
+        :meth:`~GISCOService.resp_country`, :meth:`~GISCOService.country_codes`, 
+        :meth:`~GISCOService.url_nuts`.        
         """
         # check whether a specific unit is looked for
         try:
@@ -1218,8 +1175,6 @@ class GISCOService(OSMService):
     def url_tile(self, tiles=None, **kwargs):
         """Generate the URL (or name) of the |GISCO| tiling web-service that can
         be used as a background layer in map displays.
-        
-        ::
             
             >>> url, attr = serv.url_tile(tiles=None, **kwargs)
            
@@ -1250,8 +1205,6 @@ class GISCOService(OSMService):
         
         Examples
         --------
-        
-        ::
             
             >>> serv = services.GISCOService()
             >>> serv.url_tile('bmarble')
@@ -1312,8 +1265,6 @@ class GISCOService(OSMService):
         """Generate the query URL for |GISCO| geocoding web-service (from toponame 
         to geocoordinate).
         
-        ::
-        
             >>> url = serv.url_geocode(**kwargs)
            
         Keyword arguments
@@ -1337,8 +1288,6 @@ class GISCOService(OSMService):
         Example
         -------
         Let us create a simple URL for querying the geolocation of a toponame:
-        
-        ::
             
             >>> serv = services.GISCOService()
             >>> serv.url_geocode(q='Paris+France')
@@ -1368,8 +1317,6 @@ class GISCOService(OSMService):
         """Generate the query URL for |GISCO| reverse geocoding web-service (from 
         geocoordinate to toponame).
         
-        ::
-        
             >>> url = serv.url_reverse(**kwargs)
            
         Keyword arguments
@@ -1394,8 +1341,6 @@ class GISCOService(OSMService):
         -------
         We can generate the URL for querying the toponame associated to a given
         geolocation:
-        
-        ::
 
             >>> serv = services.GISCOService()
             >>> serv.url_reverse(lon=10, lat=52)
@@ -1425,8 +1370,6 @@ class GISCOService(OSMService):
         """Generate the query URL for |GISCO| routing web-service (from a list of
         geocoordinates to a route).
         
-        ::
-        
             >>> url = serv.url_routing(**kwargs)
            
         Keyword arguments
@@ -1449,8 +1392,6 @@ class GISCOService(OSMService):
         -------
         Let us generate the URL for querying the route going through a series of
         geolocations:
-        
-        ::
 
             >>> serv = services.GISCOService()
             >>> serv.url_routing(coordinates='13.388860,52.517037;13.397634,52.529407;13.428555,52.523219')
@@ -1483,8 +1424,6 @@ class GISCOService(OSMService):
         """Generate the query URL for |GISCO| projection tranform web-service (from 
         a geocoordinate in a given projection reference system to its transformation
         in another projection reference system)
-         
-        ::
        
             >>> url = serv.url_transform(**kwargs)
            
@@ -1507,8 +1446,6 @@ class GISCOService(OSMService):
         -------
         We can generate the URL for querying the tranform of a given geolocation
         from *WGS84* projection system to *LAEA*:
-        
-        ::
 
             >>> serv = services.GISCOService()
             >>> serv.url_transform(inSR=4326, outSR=3035, f='json',
@@ -1539,8 +1476,6 @@ class GISCOService(OSMService):
         """Create a query URL to be submitted to the |GISCO| (simple) web-service 
         for NUTS codes identification.
         
-        ::
-        
             >>> url = serv.url_findnuts(**kwargs)
            
         Keyword arguments
@@ -1562,8 +1497,6 @@ class GISCOService(OSMService):
         -----
         Let us build the URL that will allow us to identify the NUTS actually 
         associated with Berlin, Germany:
-        
-        ::
 
             >>> serv = services.GISCOService()
             >>> serv.url_findnuts(y=52.5170365, x=13.3888599, f='JSON', proj=4326)
@@ -1642,8 +1575,6 @@ class GISCOService(OSMService):
     def resp_country(self, **kwargs):
         """Download, and cache when requested, country vector files from |GISCO| Rest
         API.
-        
-        ::
             
             >>> dim, dresp = serv.resp_country(code=None, **kwargs)            
             
@@ -1683,7 +1614,7 @@ class GISCOService(OSMService):
                     code = [code,]
             else: 
                 source = source.upper()
-        dimensions = self.ORDERED_DATA_DIMENSIONS.copy()
+        dimensions = settings.GISCO_DATA_DIMENSIONS.copy()
         if source == 'INFO':
             # ['SOURCE', 'YEAR', 'FORMAT']
             [dimensions.remove(attr) for attr in ('PROJECTION', 'SCALE', 'VECTOR', 'LEVEL')] 
@@ -1716,8 +1647,6 @@ class GISCOService(OSMService):
     def resp_nuts(self, **kwargs):
         """Download, and cache when requested, responses associated to NUTS vector 
         files available through |GISCO| Rest API.
-        
-        ::
             
             >>> dim, dresp = serv.resp_nuts(**kwargs)
             
@@ -1730,8 +1659,6 @@ class GISCOService(OSMService):
         --------
         The method can be used to retrieve well-parameterised responses from |GISCO| 
         Rest API:
-        
-        ::
             
             >>> serv = services.GISCOService()
             >>> d, r = serv.resp_nuts(source='NUTS', year=2010)
@@ -1766,8 +1693,6 @@ class GISCOService(OSMService):
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-60m.geojson.zip'
                 
         Note also that multiple units can be called at once:
-            
-        ::
             
             >>> serv.resp_nuts(unit=['BE1','AT1'], year=[2013,2016], scale=['20m','60m'], vector='region')
                 (OrderedDict([('SOURCE', ['BE1', 'AT1']),
@@ -1817,7 +1742,7 @@ class GISCOService(OSMService):
                     unit = [unit,]
             else: 
                 source = source.upper()
-        dimensions = self.ORDERED_DATA_DIMENSIONS.copy()
+        dimensions = settings.GISCO_DATA_DIMENSIONS.copy()
         if source == 'BULK':
             # ['SOURCE', 'YEAR', 'SCALE', 'FORMAT']
             [dimensions.remove(attr) for attr in ('PROJECTION', 'VECTOR', 'LEVEL')] 
@@ -1875,20 +1800,43 @@ class GISCOService(OSMService):
     #/************************************************************************/
     @_Decorator.parse_level
     def nuts_units(self, **kwargs):
-        """
-        
-        ::
+        """Returns the list of identifiers of all |NUTS| available (at any level)
+        in |GISCO| database.
             
             >>> units = serv.nuts_units(**kwargs)
+            
+        Keyword arguments
+        -----------------
+        unit : str, list
+            (list of) ISO-code(s) of country from which NUTS units/regions are 
+            returned; when the :data:`level` argument below is parsed, it is actually
+            parsed as a prefix of the regions/units to select; default: this is not
+            used.
+        level : int, str, list 
+            NUTS level to consider when selecting the regions/units of interest;
+            it can take any value in :data:`settings.GISCO_NUTSLEVELS`; default:
+            :data:`level='ALL'`, *i.e.* all NUTS levels are considered.
+            
+        Returns
+        -------
+        units : list
+            list of NUTS regions/units available in |GISCO| database, given the arguments
+            :data:`unit` and :data:`level` above.
         
         Examples
         --------
-        
-        ::
             
-            >>> serv.nuts_units(unit='AT', level=2)
+            >>> units = serv.nuts_units(unit='AT', level=2)
+            >>> print(units)
                 ['AT11', 'AT12', 'AT13', 'AT21', 'AT22', 'AT31', 'AT32', 'AT33', 'AT34']
-            >>> serv.nuts_units(unit='AT', level=[2,3])
+            >>> units = serv.nuts_units(level=0)
+            >>> print(units)
+                ['AT', 'BE', 'BG', 'CH', 'CY', 'CZ', 'DE', 'DEA', 'DEB', 'DEC', 'DED', 'DEE', 'DEF', 'DEG', 'DK', 'EE', 
+                'EL', 'ES', 'FI', 'FR', 'FRA', 'HR', 'HU', 'IE', 'IS', 'IT', 'ITC', 'ITF', 'ITG', 'ITH', 'ITI', 'LI', 
+                'LT', 'LU', 'LV', 'ME', 'MK', 'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK', 'TR', 'TRA', 'TRB',
+                'TRC', 'UK', 'UKC', 'UKD', 'UKE', 'UKF', 'UKG', 'UKH', 'UKI', 'UKJ', 'UKK', 'UKL', 'UKM', 'UKN']            
+            >>> units = serv.nuts_units(unit='AT', level=[2,3])
+            >>> print(units)
                 ['AT11', 'AT111', 'AT112', 'AT113', 'AT12', 'AT121', 'AT122', 'AT123', 'AT124', 'AT125', 'AT126', 
                  'AT127', 'AT13', 'AT130', 'AT21', 'AT211', 'AT212', 'AT213', 'AT22', 'AT221', 'AT222', 'AT223', 
                  'AT224', 'AT225', 'AT226', 'AT31', 'AT311', 'AT312', 'AT313', 'AT314', 'AT315', 'AT32', 'AT321', 
@@ -1896,7 +1844,8 @@ class GISCOService(OSMService):
         
         See also
         --------
-        :meth:`~GISCOService.country_codes`, :meth:`~GISCOService.resp_nuts`.
+        :meth:`~GISCOService.country_codes`, :meth:`~GISCOService.resp_nuts`, 
+        :meth:`~GISCOService.url_nuts`.
         """
         level = kwargs.pop(_Decorator.KW_LEVEL, settings.GISCO_NUTSLEVELS) 
         if level == 'ALL':
@@ -1920,8 +1869,6 @@ class GISCOService(OSMService):
     #/************************************************************************/
     def country_codes(self):
         """Returns the list of ISO-codes of countries available in |GISCO| database.
-        
-        ::
             
             >>> countries = serv.country_codes()
             
@@ -1933,9 +1880,7 @@ class GISCOService(OSMService):
         
         Example
         -------
-        One single command:
-        
-        ::
+        One single command used to return all availble countries:
             
             >>> serv.country_codes()
                 ['AD', 'AE', 'AF', 'AG', 'AI', 'AL', 'AM', 'AO', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AW',
@@ -1944,7 +1889,8 @@ class GISCOService(OSMService):
         
         See also
         --------
-        :meth:`~GISCOService.nuts_units`, :meth:`~GISCOService.resp_country`.
+        :meth:`~GISCOService.nuts_units`, :meth:`~GISCOService.resp_country`, 
+        :meth:`~GISCOService.url_country`.
         """
         _, r = self.resp_country(source='info', fmt='json')
         return list(json.loads(r.text).keys())
@@ -1952,8 +1898,6 @@ class GISCOService(OSMService):
     #/************************************************************************/
     def resp_idname(self, **kwargs):
         """
-        
-        ::
             
             >>> fref  = serv.resp_idname(nuts, **kwargs)
             
@@ -1962,8 +1906,6 @@ class GISCOService(OSMService):
         
         Example
         -------
-        
-        ::
             
             >>> serv = services.GISCOService()
             >>> f = serv.lut_idnuts()
@@ -2067,8 +2009,6 @@ class GISCOService(OSMService):
     #/************************************************************************/
     def nutsname2id(self, name, **kwargs):
         """
-        
-        ::
             
             >>> id = serv.nutsname2id(name, **kwargs)
             
@@ -2087,8 +2027,6 @@ class GISCOService(OSMService):
     #/************************************************************************/
     def nutsid2name(self, _id, **kwargs):
         """
-        
-        ::
             
             >>> name = serv.nutsid2name(id, **kwargs)
             
@@ -2107,9 +2045,7 @@ class GISCOService(OSMService):
     #/************************************************************************/
     def url2nutsid(self, url):
         """Check whether a given URL represents a |NUTS| dataset disseminated though
-        |GISCO| API.
-        
-        ::
+        |GISCO| Rest API.
             
             >>> keys = serv.url2nutsid(url)
             
@@ -2125,10 +2061,8 @@ class GISCOService(OSMService):
         
         Examples
         --------
-        Here are few examples of a simple identification of NUTS parameters 
-        from generated URLs:
-        
-        ::
+        Here are few examples of a simple identification of |NUTS| parameters from
+        automatically generated URLs (reversing the generation process):
             
             >>> url = serv.url_nuts(source='BULK', fmt='geojson')
             >>> print(url)
@@ -2185,6 +2119,10 @@ class GISCOService(OSMService):
                              ('VECTOR', 'RG'),
                              ('LEVEL', 0),
                              ('FORMAT', 'geojson')])
+                
+        See also
+        --------
+        :meth:`~GISCOService.url_nuts`.
         """
         unit, year, scale, fmt, proj, vec, level =                         \
             None, None, None, None, None, None, None
@@ -2250,7 +2188,7 @@ class GISCOService(OSMService):
             kwargs.update({'LEVEL': int(level) if level!='ALL' else level})
         if fmt is not None:
             kwargs.update({'FORMAT': fmt})      
-        dimensions = collections.OrderedDict(zip(self.ORDERED_DATA_DIMENSIONS,[None]*len(self.ORDERED_DATA_DIMENSIONS)))
+        dimensions = collections.OrderedDict(zip(settings.GISCO_DATA_DIMENSIONS,[None]*len(settings.GISCO_DATA_DIMENSIONS)))
         keys = list(dimensions.keys())
         [dimensions.update({k: kwargs.get(k)}) if k in kwargs else dimensions.pop(k) for k in keys]
         return dimensions
@@ -2268,8 +2206,6 @@ class GISCOService(OSMService):
     def place2geom(self, place, **kwargs): 
         """Retrieve the geographical information associated to a given place as
         a geometry using |GISCO| service.
-        
-        ::
         
             >>> geom = serv.place2geom(place, **kwargs)
 
@@ -2303,8 +2239,6 @@ class GISCOService(OSMService):
         Example
         -------
         The method returns the complete list of geometries output by the web-servive:
-         
-        ::
            
             >>> serv = services.GISCOService()
             >>> serv.place2geom('Madrid, Spain')
@@ -2369,8 +2303,6 @@ class GISCOService(OSMService):
         """Retrieve the geographic coordinates of a given place provided by its 
         (topo)name using |GISCO| service.
         
-        ::
-        
             >>> coord = serv.place2coord(place, **kwargs)
 
         Arguments
@@ -2400,8 +2332,6 @@ class GISCOService(OSMService):
         Examples
         --------
         We can easily retrieve the geolocations associated to well-known places:
-        
-        ::
         
             >>> serv = services.GISCOService()
             >>> serv.place2coord('Berlin, Germany')
@@ -2435,8 +2365,6 @@ class GISCOService(OSMService):
     def coord2geom(self, coord, **kwargs): # specific use
         """Retrieve the place (topo)name of a given location provided by its 
         geographic coordinates using |GISCO| service.
-        
-        ::
         
             >>>  geom = serv.coord2geom(coord, **kwargs)
 
@@ -2473,13 +2401,9 @@ class GISCOService(OSMService):
         Let us what we actually retrieve when we enter the geolocation of the
         (approximate) centre of Berlin, Germany:
         
-        ::
-        
             >>> berlin = [52.5170365, 13.3888599]
         
         We can build an |OSM| URL to get the result:
-        
-        ::
         
             >>> serv = services.OSMService()
             >>> serv.url_reverse(lat=berlin[0], lon=berlin[1]) 
@@ -2487,8 +2411,6 @@ class GISCOService(OSMService):
         
         Otherwise, the method :meth:`coord2geom` can do everything at once, with
         or without calling the |Nominatim| service:
-        
-        ::
         
             >>> serv.coord2geom(berlin, format='json', nominatim=True)
                 {"place_id": "17695918",
@@ -2541,8 +2463,6 @@ class GISCOService(OSMService):
         """Retrieve the (topo)name of a given location provided by its geographic 
         coordinates using |GISCO| service.
         
-        ::
-        
             >>>  place = serv.coord2place(coord, **kwargs)
 
         Arguments
@@ -2576,21 +2496,15 @@ class GISCOService(OSMService):
         Let us what we actually retrieve when we enter the geolocation of the
         (approximate) centre of Berlin, Germany:
         
-        ::
-        
             >>> berlin = [52.5170365, 13.3888599]
         
         We can build the desired |OSM| URL to get the result:
-        
-        ::
         
             >>> serv = services.GISCOService()
             >>> serv.url_reverse(lat=berlin[0], lon=berlin[1])
                 'http://europa.eu/webtools/rest/gisco/reverse?lat=52.5170365&lon=13.3888599'
         
         however, the method :meth:`coord2place` does everything at once:
-        
-        ::
         
             >>> serv.coord2place(berlin, format='json')
                 'Caroline-von-Humboldt-Weg, Berlin, 10117, Germany'
@@ -2670,8 +2584,6 @@ class GISCOService(OSMService):
         """Retrieve the various |NUTS| geometries (all levels) associated to given 
         geolocation(s) provided as geographic coordinates.
         
-        ::
-        
             >>> nuts = serv.coord2nuts(coord, **kwargs)
 
         Arguments
@@ -2701,8 +2613,6 @@ class GISCOService(OSMService):
         --------
         We can easily retrieve all NUTS geometry associated to Rome, Italia from its
         geocoordinates:
-        
-        ::
             
             >>> serv.coord2nuts([41.8933203,12.4829321])
                 [{'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '0',
@@ -2735,8 +2645,6 @@ class GISCOService(OSMService):
                   'value': 'ITI43'}]  
             
         If we are interested in one level only instead:
-                
-        ::
 
             >>> serv.coord2nuts([41.8933203,12.4829321], level=2)
                 {'attributes': {'CNTR_CODE': 'IT', 'LEVL_CODE': '2',
@@ -2759,7 +2667,7 @@ class GISCOService(OSMService):
         kwargs.update({'key': _Decorator.parse_nuts.KW_RESULTS})
         nuts = []        
         #[nuts.append(data if len(data)>1 else data[0]) for data in self._coord2nuts(coord, **kwargs)]
-        func = lambda *a, **kw: [kw.get('nuts')]
+        func = lambda *a, **kw: [kw.get(_Decorator.KW_NUTS)]
         [nuts.append(data if data is None or len(data)>1 else data[0])      \
              for g in self._coord2nuts(coord, **kwargs)                     \
              for data in _Decorator.parse_nuts(func)(g, level=level)]
@@ -2772,8 +2680,6 @@ class GISCOService(OSMService):
     def place2nuts(self, place, **kwargs): # specific use
         """Retrieve the various |NUTS| geometries (all levels) associated to given 
         geolocation(s) provided as a (topo)name.
-        
-        ::
         
             >>> nuts = serv.place2nuts(place, **kwargs)
 
@@ -2798,8 +2704,6 @@ class GISCOService(OSMService):
         Example
         -------
         Let us run a simple example:
-        
-        ::
             
             >>> serv = services.GISCOService()
             >>> serv.place2nuts('Vilnius, Lituania')
@@ -2833,8 +2737,6 @@ class GISCOService(OSMService):
                   'value': 'LT00A'}]
             
         Or one can also run:
-        
-        ::
             
             >>> serv.place2nuts('Valencia, Spain', level=2)
                 {'attributes': {'CNTR_CODE': 'ES', 'LEVL_CODE': '2',
@@ -2868,8 +2770,6 @@ class GISCOService(OSMService):
         """Retrieve the route going through the various steps/destinations represented 
         by a list of geographic coordinates. 
         
-        ::
-        
             >>>  route, waypoints = serv.coord2route(coord, **kwargs)
 
         Arguments
@@ -2900,8 +2800,6 @@ class GISCOService(OSMService):
         -------
         Let us retrieve the route between Sofia and Prague, using the other methods
         defined by the service:
-        
-        ::
         
             >>> serv = services.GISCOService()
             >>> sofia = serv.place2coord(place='Sofia, Bulgaria', unique=True)
@@ -2962,8 +2860,6 @@ class GISCOService(OSMService):
     def place2route(self, place, **kwargs):
         """Retrieve the route going through the various steps/destinations represented 
         by a list of (topo) name(s). 
-         
-        ::
        
             >>>  route, waypoints = serv.place2route(place, **kwargs)
 
@@ -2989,8 +2885,6 @@ class GISCOService(OSMService):
         -------    
         We reproduce here the example already used in :meth:`~GISCOService.coord2route`
         but parsing directly the toponames to the method: 
-        
-        ::
         
             >>> serv = services.GISCOService()
             >>> serv.place2route(place=['Sofia, Bulgaria','Prague, Czech Republic'])
@@ -3229,8 +3123,6 @@ _googlePlacesAPI.__doc__ =                                                  \
 class APIService(_Service):
     """Class providing conversion methods and geocoding tools that run the |GISCO| 
     online web-service, itself based on |OSM| |Nominatim| API.
-        
-    ::
        
         >>> serv = services.APIService(**kwargs)
             
@@ -3324,8 +3216,6 @@ class APIService(_Service):
     def place2coord(self, place, **kwargs):
         """Retrieve the geographic coordinates of a given place provided by 
         its (topo)name.
-                
-        ::
 
             >>> coord = serv.place2coord(place, **kwargs)
 
@@ -3376,8 +3266,6 @@ class APIService(_Service):
     def coord2place(self, coord, **kwargs):
         """Retrieve the (topo)name of a given location provided by its geographic
         coordinates using the API geocoding service.
-        
-        ::
         
             >>> place = serv.coord2place(coord, **kwargs)
 
