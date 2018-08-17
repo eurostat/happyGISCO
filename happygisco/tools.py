@@ -295,8 +295,6 @@ class GeoDistance(object):
     def units_to(cls, from_, to_, dist=1.):            
         """Perform simple distance units conversion.
         
-        ::
-        
             >>> d = GeoDistance.units_to(from_, to_, dist)
 
         Arguments
@@ -309,8 +307,6 @@ class GeoDistance(object):
 
         Example
         -------
-        
-        ::
             
             >>> GeoDistance.units_to('mi', 'ft',  10.)
                 52800.0
@@ -327,8 +323,6 @@ class GeoDistance(object):
     @classmethod
     def convert_distance_units(cls, to_=None, **kwargs):
         """Convert composed distance units to a single one.
-        
-        ::
         
             >>> d = GeoDistance.convert_distance_units(to_='km', **kwargs)
 
@@ -354,8 +348,6 @@ class GeoDistance(object):
         Use indifferently dictionaries or positional arguments to pass the quantities 
         to convert:  
         
-        ::
-        
             >>> GeoDistance.convert_distance_units('m', **{'km':1, 'm':10}) 
                 1010
             >>> GeoDistance.convert_distance_units(to_='m', mi=2,  ft=10, km=0.5)
@@ -378,8 +370,6 @@ class GeoDistance(object):
         """Calculate the Earth radius at a given latitude, according to the WGS-84 
         ellipsoid [m].
         
-        ::
-        
             >>> R = GeoDistance.estimate_radius_WGS84(lat, **kwargs)
             
         Raises
@@ -390,8 +380,6 @@ class GeoDistance(object):
         Example
         -------
         The Earth radius at Paris, France latitude is approximately:
-        
-        ::
             
             >>> GeoDistance.estimate_radius_WGS84(48.864716)
                 6357.369614537118
@@ -427,16 +415,12 @@ class GeoAngle(object):
     def dps2deg(cls, dps):
         """Convert (degrees, primes, seconds) format to degrees.
         
-        ::
-        
             >>> degrees = GeoAngle.dps2deg(dps)
             
         Example
         -------
         Paris, France latitude in DPS format is: 48° 51' 52.9776'' N. Let us convert 
         it to degrees:
-        
-        ::
         
             >>> GeoAngle.dps2deg([48, 51, 52.9776])
                 48.864716
@@ -453,16 +437,11 @@ class GeoAngle(object):
     def deg2dps(cls, degrees): 
         """Convert degrees format to (degrees, primes, seconds).
         
-        ::
-        
             >>> dps = GeoAngle.deg2dps(degrees)
             
         Example
         -------
         Let us convert Paris, France latitude (48.864716 degrees) into DPS format:
-        
-        
-        ::
             
             >>> GeoAngle.deg2dps(48.864716) 
                 (48, 51, 52.9776)
@@ -483,14 +462,10 @@ class GeoAngle(object):
     def deg2rad(cls, degrees): 
         """Convert degrees format to radians.
         
-        ::
-        
             >>> radians = GeoAngle.deg2rad(degrees)
             
         Example
         -------
-        
-        ::
             
             >>> import math
             >>> GeoAngle.deg2rad(90) == math.pi/2
@@ -507,14 +482,10 @@ class GeoAngle(object):
     def rad2deg(cls, radians): 
         """Convert radians format to degrees.
         
-        ::
-        
             >>> degrees = GeoAngle.rad2deg(radians)
             
         Example
         -------
-        
-        ::
 
             >>> import math
             >>> GeoAngle.rad2deg(math.pi) == 180
@@ -531,14 +502,10 @@ class GeoAngle(object):
     def dps2rad(cls, dps):  
         """Convert (degrees, primes, seconds) format to radians.
         
-        ::
-        
             >>> radians = GeoAngle.dps2rad(dps)
             
         Examples
         --------
-        
-        ::
         
             >>> import math
             >>> GeoAngle.dps2rad([45,0,0]) == math.pi/4
@@ -561,14 +528,10 @@ class GeoAngle(object):
     def rad2dps(cls, rad):  
         """Convert radians format to (degrees, primes, seconds).
         
-        ::
-        
             >>> dps = GeoAngle.rad2dps(radians)
             
         Example
         -------
-        
-        ::
             
             >>> import math
             >>> GeoAngle.rad2dps(math.pi)
@@ -591,8 +554,6 @@ class GeoAngle(object):
     def ang_units_to(cls, from_, to_, ang=0.):            
         """Perform simple angular units conversion.
         
-        ::
-        
             >>> u = GeoAngle.ang_units_to(from_, to_, ang=0.)
 
         Arguments
@@ -606,8 +567,6 @@ class GeoAngle(object):
         -------
         Here is another way to convert Paris, France latitude (48.864716 degrees) 
         into DPS format:
-        
-        ::
         
             >>> GeoAngle.ang_units_to('deg','dps',48.864716)
                 (48, 51, 52.9776)
@@ -637,8 +596,6 @@ class GeoAngle(object):
     @classmethod
     def convert_angle_units(cls, to_=None, **kwargs):
         """Convert composed angular units to a single one.
-        
-        ::
         
             >>> u = GeoAngle.convert_angle_units(to_='deg', **kwargs)
 
@@ -685,8 +642,6 @@ class GeoAngle(object):
         """Convert latitude difference in degrees into meters at given average
         latitude.
         
-        ::
-        
             >>> dy = GeoCoordinate.latdeg2m(dlat, alat)
 
         Arguments
@@ -703,12 +658,9 @@ class GeoAngle(object):
             latitude difference in meters.
             
         Example
-        -------
-        
+        -------        
         What do 0.1 degree latitude difference at the latitude of Bee (VB), Italia,
         correspond to in meters? Approximately 11.11km!
-        
-        ::
             
             >>> GeoCoordinate.latdeg2m(0.1, 45.9611)
                 11114.987939044277
@@ -736,8 +688,6 @@ class GeoAngle(object):
         """Convert longitude difference in degrees into meters at given average
         latitude.
         
-        ::
-        
             >>> dx = GeoCoordinate.londeg2m(dLon, alat)
 
         Arguments
@@ -754,12 +704,9 @@ class GeoAngle(object):
             longitude difference in meters.
             
         Example
-        -------
-        
+        -------        
         What do 0.1 degree longitude difference at the latitude of Bee (VB), Italia,
         correspond to in meters? Approximately 7.75km!
-        
-        ::
             
             >>> GeoCoordinate.londeg2m(0.1, 45.9611)
                 7751.998346588658
@@ -787,8 +734,6 @@ class GeoAngle(object):
         """Convert latitude difference in meters into degrees at given average
         latitude.
         
-        ::
-        
             >>> dlat = GeoCoordinate.latm2deg(dy, alat)
 
         Arguments
@@ -805,12 +750,9 @@ class GeoAngle(object):
             latitude difference in degrees.
             
         Example
-        -------
-        
+        -------        
         What do 100km latitude difference at the latitude of Bee (VB), Italia,
         correspond to in degrees? Approximately 0.9 degrees!
-        
-        ::
             
             >>> GeoCoordinate.latm2deg(100000, 45.9611)
                 0.8996860864664017
@@ -834,8 +776,6 @@ class GeoAngle(object):
         """Convert longitude difference in degrees into meters at given average
         latitude.
         
-        ::
-        
             >>> dLon = GeoCoordinate.lonm2deg(dx, alat)
 
         Arguments
@@ -852,12 +792,9 @@ class GeoAngle(object):
             longitude difference in degrees.
             
         Example
-        -------
-        
+        -------        
         What do 100km longitude difference at the latitude of Bee (VB), Italia,
         correspond to in degrees? Approximately 1.29 degrees!
-        
-        ::
             
             >>> GeoCoordinate.lonm2deg(100000, 45.9611)
                 1.2899899552223972
@@ -890,8 +827,6 @@ class GeoCoordinate(GeoLocation):
     instead, methods :meth:`distance_to` (computation of great circle distance 
     between geolocations) and :meth:`bounding_locations` (computation of the 
     bounding coordinates of all points) are overriden.
-        
-    ::
  
         >>> coord = GeoCoordinate(*args, **kwargs)
             
@@ -965,8 +900,6 @@ class GeoCoordinate(GeoLocation):
         """Return a geolocation instance from :literal:`(lat,Lon)` coordinates 
         expressed in degrees.
         
-        ::
-        
             >>> coord = GeoCoordinate.from_radians(rad_lat, rad_Lon)
          
         Arguments
@@ -983,7 +916,6 @@ class GeoCoordinate(GeoLocation):
         Example
         -------
         
-        ::
             >>> import math 
             >>> loc = GeoCoordinate.from_radians(math.pi/4,math.pi/2)
             >>> isinstance(loc, GeoCoordinate)
@@ -1055,8 +987,6 @@ class GeoCoordinate(GeoLocation):
         """Return a geolocation instance from :literal:`(lat,Lon)` coordinates 
         expressed in DPS format.
         
-        ::
-        
             >>> coord = GeoCoordinate.from_dps(dps_lat, dps_Lon)
          
         Arguments
@@ -1074,7 +1004,6 @@ class GeoCoordinate(GeoLocation):
         Example
         -------
         
-        ::
             >>> import math 
             >>> loc = GeoCoordinate.from_dps((45, 0, 0.0),(90, 0, 0.0))
             >>> isinstance(loc, GeoCoordinate)
@@ -1125,9 +1054,7 @@ class GeoCoordinate(GeoLocation):
         for computing bounding coordinates of all points on the surface of a sphere 
         that have a great circle distance to the point represented by this 
         :class:GeoCoordinate` instance that is less or equal to the distance argument.
-        
-        ::
-        
+                
             >>> bbox = coord.bounding_locations(dist, **kwargs)
 
         Arguments
@@ -1157,12 +1084,9 @@ class GeoCoordinate(GeoLocation):
             parameter.
             
         Example
-        -------
-        
+        -------        
         Let us define a boundinx box of 10km (in each direction) around Paris 
         city centre:
-            
-        ::
             
             >>> paris = GeoCoordinate(48.85693, 2.3412)
             >>> bbox = paris.bounding_locations(10)
@@ -1199,8 +1123,6 @@ class GeoCoordinate(GeoLocation):
         that have a great circle distance to a given point that is less or equal 
         to the distance argument. 
         
-        ::
-        
             >>> bbox = GeoCoordinate.bounding_locations_from(loc, distance, **kwargs)
     
         Arguments
@@ -1226,12 +1148,9 @@ class GeoCoordinate(GeoLocation):
         Generalise the :meth:`GeoCoordinate.bounding_locations` method.
             
         Example
-        -------
-        
-        Note that can pass indifferently a :class:`GeoCoordinate` instances or a 
+        -------        
+        Note that one can pass indifferently a :class:`GeoCoordinate` instances or a 
         list of :literal:`(lat,Lon)` geographical coordinates:
-        
-        ::
             
             >>> paris = GeoCoordinate(48.85693, 2.3412)
             >>> bbox = GeoCoordinate.bounding_locations_from(paris,1)
@@ -1275,8 +1194,6 @@ class GeoCoordinate(GeoLocation):
         """Retrieve the approximate centroid of a polygon (bounding box). Accuracy 
         is not a major aspect here. 
         
-        ::
-        
             >>> lat, Lon = GeoCoordinate.centroid(*args)            
 
         Arguments
@@ -1303,19 +1220,14 @@ class GeoCoordinate(GeoLocation):
             
         Example
         -------
-
         Let us first retrieve the corner coordinates of a bounding box built around
         Paris city centre:
-            
-        ::
             
             >>> paris = GeoCoordinate(48.85693, 2.3412)
             >>> bbox = paris.bounding_locations(1)
             
         then we can already retrieve the centroid of the polygon associated to
         the corners only, and see it coincides with Paris location:
-            
-        ::
             
             >>> centroid =  GeoCoordinate.centroid(*bbox)      
             >>> print(centroid)
@@ -1352,8 +1264,6 @@ class GeoCoordinate(GeoLocation):
         for computing the great circle distance between this :class:`GeoCoordinate` 
         instance and another (where measurement unit is passed as an argument).
         
-        ::
-        
             >>> R = coord.distance_to(other, **kwargs)
 
         Arguments
@@ -1373,12 +1283,9 @@ class GeoCoordinate(GeoLocation):
             argument (default is :literal:`km`).
             
         Example
-        -------
-        
+        -------        
         We can easily retrieve the geodesic distance between two geolocations, for
         instance between Paris, France and Bee, Italia (in km):
-            
-        ::
             
             >>> paris = GeoCoordinate(48.85693, 2.3412)
             >>> bee = GeoCoordinate.from_degrees(45.9611, 8.5809)    
@@ -1409,8 +1316,6 @@ class GeoCoordinate(GeoLocation):
         the Earth (specified in decimal degrees). Accuracy is not a major aspect 
         here. 
         
-        ::
-        
             >>> R = GeoCoordinate.distance_to_from(loc1, loc2, **kwargs)            
 
         Arguments
@@ -1432,8 +1337,6 @@ class GeoCoordinate(GeoLocation):
         -------
         Following the schema of the :meth:`` method, one can equivalently retrieve
         distances between geolocations:
-            
-        ::
             
             >>> paris = GeoCoordinate(48.85693, 2.3412)
             >>> bee = GeoCoordinate.from_degrees(45.9611, 8.5809)    
@@ -1483,8 +1386,6 @@ class GeoCoordinate(GeoLocation):
         """Class method used for computing pairwise distances between given locations, 
         passed as geographic coordinates.
         
-        ::
-        
             >>> D = GeoCoordinate.distance(*args, **kwargs)
     
         Arguments
@@ -1519,8 +1420,6 @@ class GeoCoordinate(GeoLocation):
             
         Examples
         --------  
-        
-        ::
 
             >>> GeoCoordinate.distance((26.062951, -80.238853), (26.060484,-80.207268), 
                                        dist='vincenty', unit='m')
@@ -1572,8 +1471,6 @@ class GeoCoordinate(GeoLocation):
     def round(cls, coordinates):
         """Round coordinates up to an (internal, fixed) precision of 5 digits.
         
-        ::
-        
             >>> coordinates = GeoCoordinate.round(coordinates)
             
         Arguments
@@ -1590,8 +1487,6 @@ class GeoCoordinate(GeoLocation):
             
         Examples
         -------- 
-        
-        ::
 
             >>> GeoCoordinate.round(2.216707433489782)
                 2.21671
@@ -1612,8 +1507,6 @@ class GeoCoordinate(GeoLocation):
     def bbox2latlon(cls, bbox): 
         """Convert an AOI bounding box into the corresponding :literal:`(lat, Lon, rad)` format.
         
-        ::
-        
             >>> lat, Lon, rad = GeoCoordinate.bbox2latlon(bbox)
         
         Arguments
@@ -1629,8 +1522,6 @@ class GeoCoordinate(GeoLocation):
 
         Examples
         -------- 
-        
-        ::
             
             >>> bbox = [2.216707433489782, 48.72843804413901, 2.477292566510218, 48.98924195586099]
             >>> lLr = GeoCoordinate.bbox2latlon(bbox)
@@ -1638,8 +1529,6 @@ class GeoCoordinate(GeoLocation):
                 (2.347, 48.85884, 14.50401801879798)
         
         As mentioned, no idempotence, but the centre of the bounding box is still preserved: 
-        
-        ::
         
             >>> GeoCoordinate.latlon2bbox(*lLr) == bbox
                 False
@@ -1672,8 +1561,6 @@ class GeoCoordinate(GeoLocation):
         """Convert an AOI in :literal:`(lat, Lon, rad)` format into the corresponding 
         bounding box.
         
-        ::
-        
             >>> bbox = GeoCoordinate.latlon2bbox(lat, Lon, rad, **kwargs)
         
         Arguments
@@ -1690,9 +1577,7 @@ class GeoCoordinate(GeoLocation):
 
         Example
         ------- 
-        
-        ::
-        
+         
             >>> lLr = (2.347, 48.85884, 14.50401801879798)
             >>> GeoCoordinate.latlon2bbox(*lLr)
                 [2.216707433489782, 48.72843804413901, 2.477292566510218, 48.98924195586099]
@@ -1708,8 +1593,6 @@ class GeoCoordinate(GeoLocation):
     def bbox2polygon(cls, bbox, order='lL'): 
         """Convert an AOI bounding box into the corresponding polygon of :literal:`(lat, Lon)`
         or :literal:`(Lon, lat)` coordinates (the latter case is used in GeoJSON format).
-        
-        ::
         
             >>> polygon = GeoCoordinate.bbox2polygon(bbox, order='lL')
         
@@ -1738,8 +1621,6 @@ class GeoCoordinate(GeoLocation):
             
         Example
         ------- 
-        
-        ::
 
             >>> GeoCoordinate.bbox2polygon([2.2241, 48.81554, 2.4699, 48.90214])
                 [[2.2241, 48.81554], [2.4699, 48.81554], [2.4699, 48.90214], [2.2241, 48.90214]] 
@@ -1765,8 +1646,6 @@ class GeoCoordinate(GeoLocation):
         """Convert a polygon of :literal:`(lat, Lon)` (or :literal:`(Lon, lat)`)
         coordinates into an AOI bounding box.
         
-        ::
-        
             >>> bbox = GeoCoordinate.polygon2bbox(polygon, order='lL')
         
         Arguments
@@ -1787,8 +1666,6 @@ class GeoCoordinate(GeoLocation):
 
         Example
         ------- 
-        
-        ::
 
             >>> GeoCoordinate.polygon2bbox([[2.2241, 48.81554], [2.4699, 48.81554],
                                            [2.4699, 48.90214], [2.2241, 48.90214]])
@@ -1811,8 +1688,6 @@ class GeoCoordinate(GeoLocation):
     @classmethod      
     def bboxintersects(cls, bbox1, bbox2): 
         """Determine if two AOI bounding boxes do intersect.
-        
-        ::
         
             >>> resp = GeoCoordinate.bboxintersects(bbox1, bbox2)
         
@@ -1840,8 +1715,6 @@ class GeoCoordinate(GeoLocation):
     def bboxwithin(cls, bbox1, bbox2):  
         """Determine if an AOI bounding box is contained in another one.
         
-        ::
-        
             >>> resp = GeoCoordinate.bboxwithin(bbox1, bbox2)
         
         Returns
@@ -1852,8 +1725,6 @@ class GeoCoordinate(GeoLocation):
             
         Example
         ------- 
-        
-        ::
 
             >>> bbox = [2.2241, 48.81554, 2.4699, 48.90214]
             >>> lLr = (2.347, 48.85884, 14.50401801879798)
@@ -1870,8 +1741,6 @@ class GeoCoordinate(GeoLocation):
     @classmethod      
     def bboxintersection(cls, bbox1, bbox2): 
         """Retrieve the intersection of two AOI bounding boxes.
-        
-        ::
         
             >>> bbox = GeoCoordinate.bboxintersection(bbox1, bbox2)
         
@@ -1898,8 +1767,6 @@ class GeoCoordinate(GeoLocation):
     @classmethod      
     def bboxunion(bbox1, bbox2):  # takes the largest envelop
         """Retrieve the union (largest encompassing) of two AOI bounding boxes.
-        
-        ::
         
             >>> bbox = GeoCoordinate.bboxunion(bbox1, bbox2)
 
@@ -1928,8 +1795,6 @@ class GeoCoordinate(GeoLocation):
 class GDALTransform(_Tool):
     """Class implementing simple |GDAL|-based operations on raster and/or vector
     data.
-        
-    ::
 
         >>> tool = tools.GDALTransform(**kwargs)
 
@@ -2023,8 +1888,6 @@ class GDALTransform(_Tool):
     def file2layer(self, fname):
         """Load a vector file using internally defined driver and returns the 
         corresponding vector layer.
-        
-        ::
             
             >>> layer = tool.file2layer(fname)
             
@@ -2038,12 +1901,10 @@ class GDALTransform(_Tool):
         layer : :class:`osgeo.ogr.Layer`
             output single vector layer stored in the input :data:`file`.
             
-        Example
-        -------
+        Examples
+        --------
         Let us consider the NUTS data at level 2 imported within the happyGISCO 
         project, that is:
-            
-        ::
             
             >>> import os
             >>> dirname = './data/ref-nuts-2013-01m/'
@@ -2055,8 +1916,6 @@ class GDALTransform(_Tool):
         We can load the associated (vector) data into a structured layer using
         the *shapefile* driver available in |GDAL| (note that's actually the 
         default implemented in :class:`GDALTransform` class):
-            
-        ::
             
             >>> layer = tool.file2layer(myfile)
             >>> layer.GetName()
@@ -2082,8 +1941,6 @@ class GDALTransform(_Tool):
     #@_Decorator.parse_url
     def url2layer(self, url, **kwargs):
         """Load an online URL and returns the corresponding vector layer.
-        
-        ::
             
             >>> layer = tool.url2layer(url)
             
@@ -2201,8 +2058,6 @@ class GDALTransform(_Tool):
     def layer2feat(self, layer):
         """Load a vector file using internally defined driver and returns the 
         corresponding list of features.
-        
-        ::
             
             >>> feat = tool.layer2feat(layer)
             
@@ -2221,8 +2076,6 @@ class GDALTransform(_Tool):
         Let us consider the NUTS data at level 2 imported within the happyGISCO 
         project, that is:
             
-        ::
-            
             >>> myfile = './data/ref-nuts-2013-01m/NUTS_RG_01M_2013_4326_LEVL_2.shp'
             >>> layer = tool.file2layer(myfile)
             >>> layer.GetDescription()
@@ -2230,8 +2083,6 @@ class GDALTransform(_Tool):
             
         We can then retrieve all the vector features represented in the vector 
         layer:
-            
-        ::
             
             >>> vector = tool.layer2feat(layer)
             >>> vector
@@ -2263,8 +2114,6 @@ class GDALTransform(_Tool):
     def file2feat(self, fname):
         """Load a vector file using the internally defined driver and returns the 
         corresponding list of features.
-        
-        ::
             
             >>> feat = tool.file2feat(fname)
             
@@ -2302,8 +2151,6 @@ class GDALTransform(_Tool):
     #@_Decorator.parse_url
     def url2feat(self, url, **kwargs):
         """Load an online URL and and returns the corresponding list of features.
-        
-        ::
             
             >>> feat = tool.url2feat(url, **kwargs)
             
@@ -2328,8 +2175,6 @@ class GDALTransform(_Tool):
     @_Decorator.parse_coordinate
     def coord2geom(self, coord, **kwargs):
         """Transform a set of geographic coordinates into a vector geometry.
-        
-        ::
         
             >>> geom = tool.coord2geom(coord, **kwargs)
             
@@ -2358,8 +2203,6 @@ class GDALTransform(_Tool):
         -------
         Let us store the locations of several European capitals in a vectorial
         *multipoint* geometry (default format):
-            
-        ::
             
             >>> madrid = [40.416775, -3.703790]
             >>> lisbon = [38.722252, -9.139337]
@@ -2405,8 +2248,6 @@ class GDALTransform(_Tool):
         """Identify the feature(s) of a layer that contain(s) the point(s) of a given 
         geometry.
         
-        ::
-        
            >>> idfeat = tool.layer2fid(layer, geom)
 
         Arguments
@@ -2428,14 +2269,10 @@ class GDALTransform(_Tool):
         -------
         Assuming we already created an instance of the :class:`GDALTransform` class:
             
-        ::
-            
             >>> tool = tools.GDALTransform(driver_name='ESRI Shapefile')
 
         assuming also that the coordinates of different locations have been informed
         (see :meth:`coord2vec`) and a source file has been defined (see :meth:`file2layer`):
-            
-        ::
             
             >>> layer = tool.file2layer(myfile)
             >>> idfeat = tool.layer2fid(layer, [madrid, lisbon, oslo, riga])
@@ -2443,8 +2280,6 @@ class GDALTransform(_Tool):
                 [120, 226, 210, 190]
                 
         It is then possible to actually retrieve the vector features from the indices:
-            
-        ::
             
             >>> import ogr
             >>> feat = layer.GetFeature(idfeat[0])
@@ -2504,8 +2339,6 @@ class GDALTransform(_Tool):
         """Identify the feature(s) of a vector file that contain(s) some given
         geolocation(s) expressed as geographic coordinates.
         
-        ::
-        
             >>> feat = tool.coord2feat(coord, **kwargs)
             
         Arguments
@@ -2533,14 +2366,10 @@ class GDALTransform(_Tool):
         -------
         Assuming we already created an instance of the :class:`GDALTransform` class:
             
-        ::
-            
             >>> tool = tools.GDALTransform(driver_name='ESRI Shapefile')
 
         assuming also that the coordinates of different locations have been informed
         (see :meth:`coord2vec`) and a source file has been defined (see :meth:`file2layer`):
-            
-        ::
             
             >>> feat = tool.coord2feat(coord=[madrid, lisbon, oslo, riga], file=myfile)
             >>> feat
@@ -2736,8 +2565,6 @@ class LeafMap(_Tool):
     #/************************************************************************/
     def add_location(self, *args, **kwargs):
         """Generic method used to add markers.
-        
-        ::
             
             >>> m.add_location(*args, **kwargs)
             
