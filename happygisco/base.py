@@ -153,8 +153,6 @@ _CachedResponse.__init__ = classmethod(__init)
 _CachedResponse.__doc__ =                                               \
     """Generic class used for representing a cached response.
         
-    ::
-        
         >>> resp = base._CachedResponse(*args, resp, path)
     """
 
@@ -169,10 +167,7 @@ class _Service(object):
     This class is used to defined a web-session and simple connection operations 
     called by a web-service. 
         
-    ::
-        
-       >>> serv = base._Service()
-        
+       >>> serv = base._Service()        
     """
     
     #/************************************************************************/
@@ -231,6 +226,8 @@ class _Service(object):
     #/************************************************************************/
     @property
     def cache_store(self):
+        """
+        """
         return self.__cache_store
     @cache_store.setter
     def cache_store(self, cache_store):
@@ -251,6 +248,8 @@ class _Service(object):
     #/************************************************************************/
     @property
     def expire_after(self):
+        """
+        """
         return self.__expire_after
     @expire_after.setter
     def expire_after(self, expire_after):
@@ -282,8 +281,6 @@ class _Service(object):
     def get_status(self, url):
         """Retrieve the header of a URL and return the server's status code.
         
-        ::
-        
             >>> status = serv.get_status(url)
             
         Arguments
@@ -309,8 +306,6 @@ class _Service(object):
         We can see the response status code when connecting to different web-pages
         or services:
         
-        ::
-        
             >>> serv = base._Service()
             >>> serv.get_status('http://dumb')
                 ConnectionError: connection failed
@@ -318,8 +313,6 @@ class _Service(object):
                 301 
         
         Let us actually check that the status is ok when connecting to |Eurostat| website:
-        
-        ::
             
             >>> stat = serv.get_status(settings.ESTAT_URL)
             >>> print(stat)
@@ -439,8 +432,6 @@ class _Service(object):
     def get_response(self, url, **kwargs):
         """Retrieve the GET response of a URL.
         
-        ::
-        
             >>> response = serv.get_response(url, **kwargs)
             
         Arguments
@@ -464,8 +455,6 @@ class _Service(object):
         Examples
         --------
         Some simple tests:
-        
-        ::
             
             >>> serv = base._Service()
             >>> serv.get_response('http://dumb')
@@ -483,8 +472,6 @@ class _Service(object):
             
         We can view the server’s response headers when connecting to |Eurostat|
         webpage:
-        
-        ::
             
             >>> resp = serv.get_response(settings.ESTAT_URL)
             >>> print(resp.headers)
@@ -500,8 +487,6 @@ class _Service(object):
         
         We can also access the response body as bytes (though that is usually
         adapted to non-text requests):
-        
-        ::
             
             >>> print(resp.content)
                 b'<!DOCTYPE html PUBLIC " ...
@@ -555,8 +540,6 @@ class _Service(object):
     def build_url(cls, domain=None, **kwargs):
         """Create a complete query URL to be used by a web-service.
         
-        ::
-        
             >>> url = _Service.build_url(domain, **kwargs)
             
         Arguments
@@ -595,8 +578,6 @@ class _Service(object):
         -------
         Let us, for instance, build a URL query to *Eurostat* Rest API (just enter 
         the output URL in your browser to check the output):
-        
-        ::
             
             >>> from happygisco.base import _Service
             >>> _Service.build_url(settings.ESTAT_URL,
@@ -608,8 +589,6 @@ class _Service(object):
                 'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li03?precision=1&indic_il=LI_R_MD60&time=2015'
         
         Note that another way to call the method is:
-        
-        ::
 
             >>> _Service.build_url(domain=settings.ESTAT_URL,
                                    path='wdds/rest/data/v2.1/json/en',
@@ -619,8 +598,6 @@ class _Service(object):
         
         Similarly, we will be able to access to |GISCO| service (see :meth:`GISCOService.url_geocode`
         below):
-         
-        ::
 
             >>> _Service.build_url(domain=settings.GISCO_URL,
                                    query='api', 
@@ -715,8 +692,9 @@ class _Feature(object):
     #@abc.abstractmethod
     def service(self):
         """Service property (:data:`getter`) of a :class:`_Feature` instance. 
-        A :data:`service` object will be generally a :class:`~happygisco.services.GISCOService` 
-        or a :class:`~happygisco.services.APIService` instance.
+        The :data:`service` property returns an object as an instance of the
+        :class:`~happygisco.services.GISCOService` or :class:`~happygisco.services.APIService`
+        classes.
         """
         return self.__service
     @service.setter
@@ -728,8 +706,8 @@ class _Feature(object):
     #@abc.abstractmethod
     def transform(self):
         """Geospatial transform property (:data:`getter`) of a :class:`_Feature` instance.
-        A :data:`service` object will be generally a :class:`~happygisco.tools.GDALTransform` 
-        instance.
+        The :data:`transform` property returns an object as an instance of the 
+        :class:`~happygisco.tools.GDALTransform` class.
         """
         return self.__transform
     @transform.setter
@@ -741,27 +719,35 @@ class _Feature(object):
     #@abc.abstractmethod
     def mapping(self):
         """Geospatial mapping property (:data:`getter`) of a :class:`_Feature` instance.
-        A :data:`service` object will be generally a :class:`~happygisco.tools.FoliumMap` 
-        instance.
+        The :data:`mapping` property returns an object as an instance of the
+        :class:`~happygisco.tools.FoliumMap` class.
         """
         return self.__mapping
     @mapping.setter
     def mapping(self, mapping):
         self.__mapping = mapping
      
+     
+    #/************************************************************************/
+    @property
+    #@abc.abstractmethod
+    def projection(self):
+        """Projection property (:data:`getter`) of a :class:`_Feature` instance.
+        """ 
+        return self.__projection
+
     #/************************************************************************/
     @property
     #@abc.abstractmethod
     def coord(self):
         # ignore: this will be overwritten              
-        """Pair of :literal:`(lat,Lon)` geographic coordinates (:data:`getter`) 
+        """Pair of :literal:`(lat,Lon)` geographic coordinates (:data:`getter`/:data:`setter`) 
         of a :class:`_Feature` instance.
         """ 
         return self.__coord
     @coord.setter
     def coord(self, coord):
-        self.__coord = coord
-        
+        self.__coord = coord        
         
     #/************************************************************************/
     @property
@@ -775,7 +761,7 @@ class _Feature(object):
     @property
     def Lon(self):                                                       
         """Longitude property (:data:`getter`) of a :class:`_Feature` instance. 
-        A `Lon` type is (a list of) :class:`float`.
+        A :data:`Lon` type is (a list of) :class:`float`.
         """
         pass
 
@@ -783,7 +769,7 @@ class _Feature(object):
     @property
     def lat(self): 
         """Latitude property (:data:`getter`) of a :class:`_Feature` instance. 
-        A `lat` type is (a list of) :class:`float`\ .
+        A :data:`lat` type is (a list of) :class:`float`.
         """
         pass
     
@@ -949,8 +935,6 @@ class _Decorator(object):
         """Class decorator of functions and methods used to parse place :literal:`(lat,Lon)` 
         coordinates.
         
-        ::
-        
             >>> new_func = _Decorator.parse_coordinate(func)
         
         Arguments
@@ -983,8 +967,6 @@ class _Decorator(object):
         Examples
         --------        
         Some dummy examples:
-        
-        ::
             
             >>> func = lambda coord, *args, **kwargs: coord
             >>> new_func = _Decorator.parse_coordinate(func)
@@ -999,8 +981,6 @@ class _Decorator(object):
             
         Note that the new decorated method also supports the parsing of the coordinates 
         as positional arguments (usage not recommended):
-        
-        ::
             
             >>> new_func([1,-1])
                 [[1,-1]]
@@ -1010,8 +990,6 @@ class _Decorator(object):
                 [[1, -1], [2, -2]]
 
         Therefore, things like that should be avoided:
-        
-        ::
 
             >>> new_func([[1,-1],[2,-2]], lat=[1,2], Lon=[-1,-2])
                 happyError: !!! dont mess up with me - duplicated coordinate argument parsed !!!
@@ -1120,8 +1098,6 @@ class _Decorator(object):
         """Class decorator of functions and methods used to parse place (topo,geo) 
         names.
         
-        ::
-        
             >>> new_func = _Decorator.parse_place(func)
         
         Arguments
@@ -1144,8 +1120,6 @@ class _Decorator(object):
         Examples
         --------
         Very basic parsing examples:
-        
-        ::
             
             >>> func = lambda place, *args, **kwargs: place
             >>> new_func = _Decorator.parse_place(func)
@@ -1164,15 +1138,11 @@ class _Decorator(object):
             
         Note that the new decorated method also supports the parsing of the place
         (topo)name as a positional argument (usage not recommended):
-        
-        ::
 
             >>> new_func('Athens, Hellas')
                 ['Athens, Hellas']
 
         Therefore, things like that should be avoided:
-        
-        ::
 
             >>> new_func('Athens, Hellas', place='Berlin, Germany')
                 happyError: !!! dont mess up with me - duplicated place argument parsed !!!
@@ -1261,8 +1231,6 @@ class _Decorator(object):
         """Class decorator of functions and methods used to parse place :literal:`(lat,Lon)` 
         coordinates or place names.
         
-        ::
-        
             >>> new_func = _Decorator.parse_place_or_coordinate(func)
         
         Arguments
@@ -1287,8 +1255,6 @@ class _Decorator(object):
         Examples
         --------
         Some dummy examples:
-        
-        ::
             
             >>> func = lambda *args, **kwargs: [kwargs.get('coord'), kwargs.get('place')]
             >>> new_func = _Decorator.parse_place_or_coordinate(func)
@@ -1340,8 +1306,6 @@ class _Decorator(object):
         coordinate(s) or (topo)name(s) from JSON-like dictionary parameters (geometry 
         features) formated according to |GISCO| geometry responses (see |GISCOWIKI|).
         
-        ::
-        
             >>> new_func = _Decorator.parse_geometry(func)
         
         Arguments
@@ -1365,8 +1329,6 @@ class _Decorator(object):
         Examples
         --------
         Some dummy examples:
-        
-        ::
             
             >>> func = lambda *args, **kwargs: kwargs.get('geom')
             >>> geom = {'A': 1, 'B': 2}
@@ -1386,8 +1348,6 @@ class _Decorator(object):
         
         Also note that the argument can be parsed as a positional argument (usage
         not recommended):
-        
-        ::
             
             >>> _Decorator.parse_geometry(func)(geom)
                 []
@@ -1395,8 +1355,6 @@ class _Decorator(object):
                 [[1, 2]]
 
         and an actual one:
-        
-        ::
             
             >>> serv = services.GISCOService()
             >>> geom = serv.place2geom(place='Berlin,Germany')
@@ -1431,8 +1389,6 @@ class _Decorator(object):
                     
         We can for instance use the :meth:`parse_geometry` to parse (filter) the 
         data :data:`geom` and retrieve the coordinates:
-        
-        ::
             
             >>> func = lambda **kwargs: kwargs.get('coord')
             >>> new_func = _Decorator.parse_geometry(func)
@@ -1444,8 +1400,6 @@ class _Decorator(object):
                 [[13.3888599, 52.5170365]]
             
         One can also similarly retrieve the name of the places:
-        
-        ::
 
             >>> func = lambda **kwargs: kwargs.get('place')
             >>> new_func = _Decorator.parse_geometry(func)
@@ -1601,8 +1555,6 @@ class _Decorator(object):
         from JSON-like dictionary parameters formated according to |GISCO| |NUTS| 
         responses (see |GISCOWIKI|).
         
-        ::
-        
             >>> new_func = _Decorator.parse_nuts(func)
         
         Arguments
@@ -1625,8 +1577,6 @@ class _Decorator(object):
         Examples
         --------
         Some dummy examples:
-        
-        ::
             
             >>> func = lambda *args, **kwargs: kwargs.get('nuts')
             >>> nuts = {'A': 1, 'B': 2}
@@ -1644,8 +1594,6 @@ class _Decorator(object):
                 True
         
         and an even dummier one:
-        
-        ::
             
             >>> serv = services.GISCOService()
             >>> nuts = serv.place2nuts(place='Lisbon,Portugal')
@@ -1813,8 +1761,6 @@ class _Decorator(object):
     class parse_file(__base):
         """Class decorator of functions and methods used to parse a filename.
         
-        ::
-        
             >>> new_func = _Decorator.parse_file(func)
         
         Arguments
@@ -1837,8 +1783,6 @@ class _Decorator(object):
         
         Examples
         --------          
-        
-        ::
 
             >>> func = lambda *args, **kwargs: kwargs.get('file')
             >>> _Decorator.parse_file(func)(file='test.txt')
@@ -1898,8 +1842,6 @@ class _Decorator(object):
     class parse_url(__base):
         """Class decorator of functions and methods used to parse a url.
         
-        ::
-        
             >>> new_func = _Decorator.parse_url(func)
         
         Arguments
@@ -1923,8 +1865,6 @@ class _Decorator(object):
         
         Examples
         --------          
-        
-        ::
 
             >>> func = lambda *args, **kwargs: kwargs.get('url')
             >>> _Decorator.parse_url(func)(url=0)
@@ -1978,8 +1918,6 @@ class _Decorator(object):
         """Generic method that enables defining a class decorator of functions 
         and methods that can parse any parameter of a given class.
         
-        ::
-        
             >>> decorator = _Decorator._parse_class(parse_cls, key, 
                                                     _values_=None, _key_default_=None)
         
@@ -2011,8 +1949,6 @@ class _Decorator(object):
         Let say for instance we want to parse a :class:`str` argument that can 
         take values in :literal:`['a','b','c']` only with a :literal:`dummy_key`
         key:
-        
-        ::
             
             >>> key = 'dummy_key'
             >>> parse_cls = str
@@ -2020,8 +1956,6 @@ class _Decorator(object):
             >>> func = lambda *args, **kwargs: kwargs.get(key)
             
         we then use:
-        
-        ::
                 
             >>> decorator = _Decorator._parse_class(parse_cls, key, _values_=values)
             >>> decorator(func)(dummy_key=0)
@@ -2032,8 +1966,6 @@ class _Decorator(object):
                 'a'
                 
         what if we use a dictionary for :data:`values` instead:
-            
-        ::
                 
             >>> values = {'a':1, 'b':2, 'c':3}
             >>> decorator = _Decorator._parse_class(parse_cls, key, _values_=values)
@@ -2054,8 +1986,6 @@ class _Decorator(object):
     class parse_year(__base):
         """Class decorator of functions and methods used to parse a reference 
         year for NUTS regulation.
-        
-        ::
         
             >>> new_func = _Decorator.parse_year(func)
         
@@ -2082,8 +2012,6 @@ class _Decorator(object):
         Examples
         --------          
         This can be used to parse years of implementation of NUTS regulation:
-        
-        ::
     
             >>> func = lambda *args, **kwargs: kwargs.get('year')
             >>> _Decorator.parse_year(func)(year=2000)
@@ -2092,8 +2020,6 @@ class _Decorator(object):
                 2010
                 
         Note that it forces to parse a non-empty :data:`year` parameter:
-            
-        ::
             
             >>> _Decorator.parse_year(func)()
                 2013
@@ -2116,8 +2042,6 @@ class _Decorator(object):
     class parse_projection(__base):
         """Class decorator of functions and methods used to parse a projection
         reference system.
-        
-        ::
         
             >>> new_func = _Decorator.parse_projection(func)
         
@@ -2146,8 +2070,6 @@ class _Decorator(object):
         --------          
         It can be used to check that the projection is actually one of those accepted 
         by |GISCO| services:
-        
-        ::
             
             >>> func = lambda *args, **kwargs: kwargs.get('proj')
             >>> _Decorator.parse_projection(func)(proj='dumb')
@@ -2162,8 +2084,6 @@ class _Decorator(object):
                 3035
                 
         Note also that the default projection can be parsed:
-            
-        ::
             
             >>> _Decorator.parse_projection(func)()
                 4326
@@ -2186,8 +2106,6 @@ class _Decorator(object):
     #/************************************************************************/
     class parse_format(__base):
         """Class decorator of functions and methods used to parse a vector format.
-        
-        ::
         
             >>> new_func = _Decorator.parse_format(func)
         
@@ -2215,8 +2133,6 @@ class _Decorator(object):
         --------     
         The formats supported by |GISCO| are parsed/checked through the call to
         this class:
-        
-        ::
 
             >>> func = lambda *args, **kwargs: kwargs.get('fmt')
             >>> _Decorator.parse_format(func)(fmt='1)
@@ -2231,8 +2147,6 @@ class _Decorator(object):
                 'shx'
                 
         A default format shall be parsed as well:
-            
-        ::
             
             >>> _Decorator.parse_format(func)()
                 'geojson'
@@ -2256,8 +2170,6 @@ class _Decorator(object):
     class parse_vector(__base):
         """Class decorator of functions and methods used to parse a spatial typology, 
         as defined by |GISCO|.
-        
-        ::
         
             >>> new_func = _Decorator.parse_vector(func)
         
@@ -2283,8 +2195,6 @@ class _Decorator(object):
         
         Examples
         --------          
-        
-        ::
 
             >>> func = lambda *args, **kwargs: kwargs.get('vector')
             >>> _Decorator.parse_vector(func)(vector='1)
@@ -2316,8 +2226,6 @@ class _Decorator(object):
         """Class decorator of functions and methods used to parse a scale resolution 
         unit, as defined by |GISCO|.
         
-        ::
-        
             >>> new_func = _Decorator.parse_scale(func)
         
         Arguments
@@ -2344,8 +2252,6 @@ class _Decorator(object):
         --------          
         The representation scales implemented in |GISCO| vector datasets are parsed
         thanks to this class:
-        
-        ::
 
             >>> func = lambda *args, **kwargs: kwargs.get('scale')
             >>> _Decorator.parse_scale(func)(scale=45)
@@ -2358,8 +2264,6 @@ class _Decorator(object):
                 '60m'
             
         A default scale is automatically parsed:
-        
-        ::
             
             >>> _Decorator.parse_scale(func)()
                 '01m'
@@ -2381,8 +2285,6 @@ class _Decorator(object):
     class parse_level(__base):
         """Class decorator of functions and methods used to parse a level for |NUTS| 
         units.
-        
-        ::
         
             >>> new_func = _Decorator.parse_level(func)
         
@@ -2407,8 +2309,6 @@ class _Decorator(object):
         Examples
         --------          
         All current NUTS levels can parsed/checked using this class:
-            
-        ::
 
             >>> func = lambda *args, **kwargs: kwargs.get('level')
             >>> _Decorator.parse_level(func)(level='dumb')
@@ -2419,15 +2319,11 @@ class _Decorator(object):
                 1
 
         It also supports the parsing of multiple levels:
-
-        ::
             
             >>> _Decorator.parse_level(func)(level=[0,1,2])
                 [0,1,2]
                 
         and forces the parsing of one default level at level:
-
-        ::
             
             >>> _Decorator.parse_level(func)()
                 0
@@ -2444,6 +2340,90 @@ class _Decorator(object):
                            '_values_':      settings.GISCO_NUTSLEVELS + ['ALL',],
                            '_key_default_': settings.DEF_GISCO_NUTSLEVEL})
             super(_Decorator.parse_level,self).__init__(*args, **kwargs)
+            
+    
+    #/************************************************************************/
+    @classmethod
+    def parse_default(cls, dimensions):
+        """Method defining default parsing arguments.
+        
+            >>> kwdef = parse_default(dimensions)
+            
+        Arguments
+        ---------
+        dimensions : str, list
+            a list of dimensions defining parsing parameters for which default
+            values have been set; see for instance the dimensions provided in the
+            variable :data:`settings.GISCO_DATA_DIMENSIONS`.
+            
+        Returns
+        -------
+        kwdef : dict
+            dictionary of default values for all the parsing parameters listed in 
+            the :data:`dimensions` list.
+            
+        Examples
+        --------
+        
+            >>> _Decorator.parse_default('DUMB')
+                Traceback (most recent call last):
+                ...
+                happyError: !!! AttributeError: dimension DUMB not recognised !!!
+            >>> _Decorator.parse_default('PLACE')
+                Traceback (most recent call last):
+                ...
+                happyError: !!! AssertionError: no input place arguments passed !!!
+            >>> _Decorator.parse_default('SOURCE')
+                {}
+            >>> _Decorator.parse_default('PROJECTION')
+                {'proj': [4326]}
+            >>> _Decorator.parse_def_kwargs(['LEVEL','SCALE'])
+                {'level': [0], 'scale': ['60m']}
+            >>> _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)
+                {'fmt': ['geojson'], 'level': [0], 'proj': [4326], 'scale': ['60m'], 'vector': ['RG'], 'year': [2013]}
+        
+        Note
+        ----
+        * For each dimension :data:`dim` in the input list :data:`dimensions`, both
+          a variable :data:`KW_<dim>` and a parsing method :data:`parse_<dim>` need 
+          to be defined in the class :class:`_Decorator`.
+        * The parsing methods :data:`parse_<dim>` need to define default values when 
+          no keyword argument is parsed.
+          
+        See also
+        --------
+        :meth:`~_Decorator.parse_year`, :meth:`~_Decorator.parse_projection`, 
+        :meth:`~_Decorator.parse_format`, :meth:`~_Decorator.parse_vector`, 
+        :meth:`~_Decorator.parse_scale`, :meth:`~_Decorator.parse_level`, 
+        :meth:`~_Decorator.parse_projection`. 
+        """
+        try:
+            assert happyType.isstring(dimensions) or happyType.issequence(dimensions)
+        except:
+            raise happyError('wrong format for DIMENSIONS arguments')
+        else:
+            if not happyType.issequence(dimensions):
+                dimensions = [dimensions,]           
+        kwargs = {}
+        for dim in dimensions:
+            try:
+                key = getattr(cls, 'KW_' + dim)
+            except:
+                raise happyError('dimension %s not recognised' % dim)
+            try:
+                dim = dim.lower()
+                parse = getattr(cls, 'parse_' + dim)
+            except:
+                # raise happyError('parse method parse_%s not recognised' % dim)
+                happyVerbose('parse method parse_%s not recognised' % dim)
+                continue # pass 
+            try:
+                func = lambda *a, **kw: [kw.get(key)]
+                kwargs.update({key: parse(func)()})
+            except:
+                raise happyError('error while parsing dimension %s' % dim)
+        return kwargs
+
         
 #_Decorator.parse_year =                         \
 #    _Decorator._parse_class(int, _Decorator.KW_YEAR, 
@@ -2473,14 +2453,39 @@ class _Decorator(object):
 #==============================================================================
 
 class _AttrDict(dict):
-    """
+    """A dictionary that allows indexing based on the dictionary contents and merging
+    of dictionaries.
+    
+        >>> d = _AttrDict(_attr_=False, **kwargs)
+        >>> d = _AttrDict(*mappings, _attr_=False)
+        >>> d = _AttrDict(*iterables, _attr_=False)
+
+    Arguments
+    ---------
+    kwargs : 
+        keyword arguments; optional.
+    mappings :
+        (an)other dictionar(y)ies; optional.
+    iterables :
+        (an)other iterable object(s) in a form of key-value pair(s) where keys should 
+        be immutable; optional.
+
+    Keyword arguments
+    -----------------
+    _attr_ : bool, list
+        either a list of keys (that must exist in the input dictionary) or a boolean 
+        flag, it is used to set additional keys in the dictionary:
+            
+            * when :data:`_attr_` contains keys, the values accessed through these
+              (chained) keys are used as supplementary keys in the returned dictionary,
+            * when :data:`_attr_` is boolean, numeric ordered keys are used;
+            
+        default: :data:`_attr_` is :data:`False`.
     
     Examples
     --------
     It overrides the class :class:`dict` since it can be initialised like its 
     parent class.
-    
-    ::
         
         >>> _AttrDict([('a',1),('b',2)])
             {'a': 1, 'b': 2}
@@ -2489,25 +2494,33 @@ class _AttrDict(dict):
         >>> _AttrDict(a=1, b=2)
             {'a': 1, 'b': 2}
         
-    However, in addition the keyword parameter :literal:`_attr_` allows for 
-    further manipulations.
-    
-    ::
+    However, in addition the keyword parameter :data:`_attr_` allows for key 
+    settings, like adding a numeric key:
         
         >>> _AttrDict({'a': 1, 'b': 2}, _attr_=True)
             {0: {'a': 1, 'b': 2}}
-        >>> _AttrDict([{'a': {'b': 1}, 'c': 2}, {'a': {'b': -1}, 'c': -2}],  \
-                    _attr_=True)
+    
+    like merging two dictionaries into the same one by adding a new key as a new 
+    identifier of the dictionaries:
+        
+        >>> _AttrDict([{'a': {'b': 1}, 'c': 2}, {'a': {'b': -1}, 'c': -2}], _attr_=True)
             {0: {'a': {'b': 1}, 'c': 2}, 1: {'a': {'b': -1}, 'c': -2}}
-        >>> _AttrDict([{'a': {'b': 1}, 'c': 2}, {'a': {'b': -1}, 'c': -2}],  \
-                    _attr_=['a','b'])
+            
+    or like merging those dictionaries again, this time using the (common) values 
+    stored along the `'a','b'` keys as new identifiers:
+        
+        >>> _AttrDict([{'a': {'b': 1}, 'c': 2}, {'a': {'b': -1}, 'c': -2}], _attr_=['a','b'])
             {1: {'a': {'b': 1}, 'c': 2}, -1: {'a': {'b': -1}, 'c': -2}}
-        
-        
+                
     Note
     ----
-    See also :mod:`AttrDict` module for more complex dictionary data structures.
+    See also `Python` module :mod:`AttrDict` that will allow you to handle more complex 
+    dictionary data structures
     (source available `here <https://github.com/bcj/AttrDict>`_).
+    
+    See also
+    --------
+    :meth:`settings.happyType.ismapping`, :meth:`settings.happyType.mapdeepmerge`.
     """
     
     KW_ATTR = '_attr_'
