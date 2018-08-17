@@ -997,7 +997,7 @@ class GeoCoordinate(GeoLocation):
 
         See also
         --------
-        :meth:`from_dps`, :meth:`from_degrees`\ .        
+        :meth:`from_dps`, :meth:`from_degrees`.        
         """
         return cls(rad_lat, rad_Lon, unit_angle=GeoAngle.RAD_ANG_UNIT)
     
@@ -1006,8 +1006,6 @@ class GeoCoordinate(GeoLocation):
     def from_degrees(cls, deg_lat, deg_Lon):
         """Return a geolocation instance from :literal:`(lat,Lon)` coordinates 
         expressed in degrees.
-        
-        ::
         
             >>> coord = GeoCoordinate.from_degrees(deg_lat, deg_Lon)
          
@@ -1024,8 +1022,7 @@ class GeoCoordinate(GeoLocation):
             
         Example
         -------
-        
-        ::
+            
             >>> import math 
             >>> loc = GeoCoordinate.from_degrees(45,90)
             >>> isinstance(loc, GeoCoordinate)
