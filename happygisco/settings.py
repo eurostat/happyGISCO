@@ -1128,6 +1128,10 @@ class happyType(object):
             >>> happyType.mapdeepest(d, item='items')
                 [(4, 1), (6, 2), (8, 3), (9, 4), (10, 5), (2, 6), (2, 7), (1, 8)]
         """
+        try:
+            assert item in (None,'') or item in ('items','keys','values')
+        except:
+            raise happyError('wrong format/value for ITEM argument')
         def recurse(d):
             for k, v in d.items():
                 if cls.ismapping(v):
@@ -1135,7 +1139,7 @@ class happyType(object):
                 else:
                     if item=='items':       yield (k, v)
                     elif item=='keys':      yield k
-                    elif item=='keys':      yield v
+                    elif item=='values':      yield v
         return list(recurse(dic))
     
     #/************************************************************************/
