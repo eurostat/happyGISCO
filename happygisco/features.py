@@ -55,7 +55,7 @@ import functools#analysis:ignore
 from happygisco import settings
 from happygisco.settings import happyWarning, happyVerbose, happyError, happyType#analysis:ignore
 #from happygisco import base
-from happygisco.base import _Feature, _Decorator, _AttrDict#analysis:ignore
+from happygisco.base import _Feature, _Decorator, _NestedDict#analysis:ignore
 from happygisco import tools     
 from happygisco.tools import GDAL_TOOL, FOLIUM_TOOL, LEAFLET_TOOL
 from happygisco import services     
@@ -435,7 +435,7 @@ class Location(_Feature):
         Raises
         ------
         happyError
-            when unable to recognize coordinates.
+            when unable to recognise coordinates.
 
         Example
         -------
@@ -778,6 +778,7 @@ class NUTS(_Feature):
         self.__geometry = None
         super(NUTS,self).__init__(**kwargs)
         items = []
+        # get/set the attributes of the NUTS feature 
         for kw in ['FILE', 'URL', 'RESPONSE', 'LAYER', 'FEATURE', 'GEOMETRY', 'UNIT']:
             attr = kwargs.pop(getattr(_Decorator, 'KW_' + kw), None)
             try:
@@ -786,20 +787,22 @@ class NUTS(_Feature):
             else:
                 setattr(self, getattr(_Decorator, 'KW_' + kw), attr) # may raise an Error
                 items.append(attr)
+        # check that one at least is parsed
         try:
             assert len(items) == 1
         except AssertionError:
             if len(items)>1:
                 raise happyError('incompatible keyword arguments parsed')
             else:
-                raise happyError('missing keyword arguments')
+                raise happyError('missing keyword arguments - NUTS cannot be defined')
         else:
             if self.__unit is None:
                 return
-        kwdef = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)
-        for kw in settings.GISCO_DATA_DIMENSIONS: # e.g., ['SOURCE', 'YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT']
-            key = getattr(_Decorator, 'KW_' + kw)
-            attr = kwargs.pop(key, kwdef.get(key))
+        # set default GISCO parameters (those in settings.GISCO_DATA_DIMENSIONS)
+        # e.g., ['SOURCE', 'YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT']
+        defkw = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)(lambda **kw: kw)()
+        for key in defkw.keys(): 
+            attr = kwargs.pop(key, defkw.get(key))
             try:
                 assert attr not in (None,[],{},'')
             except: pass
@@ -840,6 +843,7 @@ class NUTS(_Feature):
             else:
                 unit = self.unit
         source = source or unit
+        defkw = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)(lambda **kw: kw)()
         for kw in settings.GISCO_DATA_DIMENSIONS:
             if kw == 'SOURCE':      
                 continue
@@ -850,7 +854,7 @@ class NUTS(_Feature):
             except:
                 pass
             else:
-                kwargs.update({key: kwargs.pop(key, defval)})
+                kwargs.update({key: kwargs.pop(key, defval or defkw[key])})
         try:
             url = self.service.url_nuts(source, **kwargs)            
         except:
@@ -947,7 +951,7 @@ class NUTS(_Feature):
         #return feature
         try:
             kwargs.update({_AttrDict.KW_ATTR: kwargs.pop(_AttrDict.KW_ATTR, False)})
-            return _AttrDict(feature, **kwargs)
+            return _NestedDict(feature, **kwargs)
         except:
             raise happyError('impossible to build vector features dictionary') 
 

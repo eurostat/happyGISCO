@@ -59,7 +59,7 @@ They are provided here for the sake of an exhaustive documentation.
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
 # *since*:        Sat May  5 00:09:56 2018
 
-__all__         = ['_Service', '_Feature', '_Tool', '_Decorator', '_AttrDict']
+__all__         = ['_Service', '_Feature', '_Tool', '_Decorator', '_NestedDict']
 
 #%%
 #==============================================================================
@@ -73,6 +73,7 @@ import collections#analysis:ignore
 
 import time
 import hashlib
+import copy
 #import abc
 
 # local imports
@@ -2345,9 +2346,10 @@ class _Decorator(object):
     #/************************************************************************/
     @classmethod
     def parse_default(cls, dimensions):
-        """Method defining default parsing arguments.
+        """Class method decorator defining default parsing arguments.
         
-            >>> kwdef = parse_default(dimensions)
+            >>> decorator = parse_default(dimensions)
+            >>> new_func = decorator(func)
             
         Arguments
         ---------
@@ -2358,12 +2360,14 @@ class _Decorator(object):
             
         Returns
         -------
-        kwdef : dict
-            dictionary of default values for all the parsing parameters listed in 
-            the :data:`dimensions` list.
+        decorator : 
+            a method decorator that parse a dictionary of default values for all 
+            the parsing parameters listed in the :data:`dimensions` list; all other
+            keyword arguments are preserved.
             
         Examples
         --------
+        The class returns a decorator:
         
             >>> _Decorator.parse_default('DUMB')
                 Traceback (most recent call last):
@@ -2373,14 +2377,38 @@ class _Decorator(object):
                 Traceback (most recent call last):
                 ...
                 happyError: !!! AssertionError: no input place arguments passed !!!
-            >>> _Decorator.parse_default('SOURCE')
-                {}
             >>> _Decorator.parse_default('PROJECTION')
-                {'proj': [4326]}
-            >>> _Decorator.parse_def_kwargs(['LEVEL','SCALE'])
-                {'level': [0], 'scale': ['60m']}
-            >>> _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)
-                {'fmt': ['geojson'], 'level': [0], 'proj': [4326], 'scale': ['60m'], 'vector': ['RG'], 'year': [2013]}
+                happygisco.base._Decorator.parse_default.<locals>.decorator
+                
+        It can be used to decorate any method accepting keyword arguments:
+
+            >>> @_Decorator.parse_default('SOURCE')
+            ... def func(*args,**kwargs):
+            ...     print(kwargs)
+            >>> func()
+                {}
+            >>> @_Decorator.parse_default('PROJECTION')
+            ... def func(*args,**kwargs):
+            ...     print(kwargs)
+            >>> func(key = 'dumb')
+                {key = 'dumb', 'proj': [4326]}    
+            >>> @_Decorator.parse_def_kwargs(['LEVEL','SCALE'])
+            ... def func(*args,**kwargs):
+            ...     print(kwargs)
+            >>> func(key = 0, level = -1, scale = 'dumb')
+                {'key': 0, 'level': [0], 'scale': ['60m']}
+            >>> @_Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)
+            ... def func(*args,**kwargs):
+            ...     print(kwargs)
+            >>> func()
+                {'fmt': ['geojson'], 'level': [0], 'proj': [4326], 'scale': ['60m'], 'vector': ['RG'], 'year': [2013]}                
+        
+        Note in particular that, in order to retrieve, all at once, the dictionary 
+        of |GISCO| default dimension parameters, one can run:
+            
+            >>> defkw = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)(lambda **kw: kw)
+            >>> defkw()
+                {'fmt': ['geojson'], 'level': [0], 'proj': [4326], 'scale': ['60m'], 'vector': ['RG'], 'year': [2013]}                
         
         Note
         ----
@@ -2404,7 +2432,7 @@ class _Decorator(object):
         else:
             if not happyType.issequence(dimensions):
                 dimensions = [dimensions,]           
-        kwargs = {}
+        def_kwargs = {}
         for dim in dimensions:
             try:
                 key = getattr(cls, 'KW_' + dim)
@@ -2419,12 +2447,17 @@ class _Decorator(object):
                 continue # pass 
             try:
                 func = lambda *a, **kw: [kw.get(key)]
-                kwargs.update({key: parse(func)()})
+                def_kwargs.update({key: parse(func)()})
             except:
                 raise happyError('error while parsing dimension %s' % dim)
-        return kwargs
-
+        # return def_kwargs
+        class decorator(cls.__base):
+            def __call__(self, *args, **kwargs):  
+                kwargs.update(def_kwargs)
+                return self.func(*args, **kwargs)
+        return decorator
         
+    
 #_Decorator.parse_year =                         \
 #    _Decorator._parse_class(int, _Decorator.KW_YEAR, 
 #                            _values_=settings.GISCO_YEARS, _key_default_= settings.DEF_GISCO_YEAR)
@@ -2449,16 +2482,16 @@ class _Decorator(object):
 
 #%%
 #==============================================================================
-# CLASS _AttrDict
+# CLASS _NestedDict
 #==============================================================================
 
-class _AttrDict(dict):
-    """A dictionary that allows indexing based on the dictionary contents and merging
-    of dictionaries.
+class _NestedDict(dict):
+    """A dictionary that allows nested indexing of the dictionary contents and merging
+    of multiple dictionaries.
     
-        >>> d = _AttrDict(_attr_=False, **kwargs)
-        >>> d = _AttrDict(*mappings, _attr_=False)
-        >>> d = _AttrDict(*iterables, _attr_=False)
+        >>> d = _NestedDict(_order_=None, _values_=None, **kwargs)
+        >>> d = _NestedDict(*mappings, _order_=None, _values_=None)
+        >>> d = _NestedDict(*iterables, _order_=None, _values_=None)
 
     Arguments
     ---------
@@ -2472,7 +2505,7 @@ class _AttrDict(dict):
 
     Keyword arguments
     -----------------
-    _attr_ : bool, list
+    _order_ : bool, list
         either a list of keys (that must exist in the input dictionary) or a boolean 
         flag, it is used to set additional keys in the dictionary:
             
@@ -2484,38 +2517,45 @@ class _AttrDict(dict):
     
     Examples
     --------
-    It overrides the class :class:`dict` since it can be initialised like its 
-    parent class.
+    Note the initialisation that completely differs from a "normal" :obj:`dict`
+    data structure:
         
-        >>> _AttrDict([('a',1),('b',2)])
-            {'a': 1, 'b': 2}
-        >>> _AttrDict({'a': 1, 'b': 2})
-            {'a': 1, 'b': 2}
-        >>> _AttrDict(a=1, b=2)
+        >>> dic = _NestedDict({'a': 1, 'b': 2})
+        >>> print(dic)
+            {1: {2: {}}}
+        >>> print(dic.order)
+            ['a', 'b']
+        >>> dic = base._NestedDict([('a',1),('b',2)])
+        >>> print(dic)
+            {'a': {'b': {}, 2: {}}, 1: {'b': {}, 2: {}}}
+        >>> print(dic.order)
+            [0, 1]
+        
+        >>> _NestedDict(a=1, b=2)
             {'a': 1, 'b': 2}
         
     However, in addition the keyword parameter :data:`_attr_` allows for key 
     settings, like adding a numeric key:
         
-        >>> _AttrDict({'a': 1, 'b': 2}, _attr_=True)
+        >>> _NestedDict({'a': 1, 'b': 2}, _attr_=True)
             {0: {'a': 1, 'b': 2}}
     
     like merging two dictionaries into the same one by adding a new key as a new 
     identifier of the dictionaries:
         
-        >>> _AttrDict([{'a': {'b': 1}, 'c': 2}, {'a': {'b': -1}, 'c': -2}], _attr_=True)
+        >>> _NestedDict([{'a': {'b': 1}, 'c': 2}, {'a': {'b': -1}, 'c': -2}], _attr_=True)
             {0: {'a': {'b': 1}, 'c': 2}, 1: {'a': {'b': -1}, 'c': -2}}
             
     or like merging those dictionaries again, this time using the (common) values 
     stored along the `'a','b'` keys as new identifiers:
         
-        >>> _AttrDict([{'a': {'b': 1}, 'c': 2}, {'a': {'b': -1}, 'c': -2}], _attr_=['a','b'])
+        >>> _NestedDict([{'a': {'b': 1}, 'c': 2}, {'a': {'b': -1}, 'c': -2}], _attr_=['a','b'])
             {1: {'a': {'b': 1}, 'c': 2}, -1: {'a': {'b': -1}, 'c': -2}}
                 
     Note
     ----
-    See also `Python` module :mod:`AttrDict` that will allow you to handle more complex 
-    dictionary data structures
+    See also `Python` module :mod:`AttrDict` that handles more complex dictionary 
+    data structures
     (source available `here <https://github.com/bcj/AttrDict>`_).
     
     See also
@@ -2523,57 +2563,381 @@ class _AttrDict(dict):
     :meth:`settings.happyType.ismapping`, :meth:`settings.happyType.mapdeepmerge`.
     """
     
-    KW_ATTR = '_attr_'
+    KW_ORDER        = 'order'
+    KW_VALUES       = 'values'
 
     #/************************************************************************/
     def __init__(self, *args, **kwargs):
-        attr = None
-        if len(args) > 1:
-            raise happyError('%s expected at most 1 arguments' % _AttrDict.__name__)
+        """Create a nested dictionary from a list of keys along given dimensions. 
+        
+            >>> nestdic = happyType.mapnest(dic, order=None)
+            
+        Arguments
+        ---------
+        dic : dict
+            dictionary of dimensions and keys along these dimensions.
+        
+        Keyword arguments
+        -----------------
+        order : list
+            provides the depth order of the dimensions in the output dictionary;
+            default: :data:`order` is :data:`None` and is ignored and the order
+            of the dimensions in the output dictionary depends on their extraction
+            as (key,value) items; unless the input :data:`dict` is an instance of 
+            the :class:`collections.OrderedDict` class, it is highly recommended 
+            to use this keyword argument.
+        
+        Returns
+        -------
+        nestdic : dict
+            a empty nested dictionary whose (key,value) pairs are defined and
+            ordered according to the arguments :data:`dic` and :data:`order`; say
+            for instance that :data:`dic = {'dim1': 0, 'dim2': [1, 2]}, then:
+                
+                * :data:`happyType.mapnest(dic)` returns :data:`nestdic={0: {1: {}, 2: {}}}`. 
+                * :data:`happyType.mapnest(dic, order=['dim2', 'dim1'])` returns :data:`nestdic={1: {0: {}}, 2: {0: {}}}`. 
+        
+        Examples
+        --------
+        
+            >>> dic = {'a': [1,2], 'b': [3,4]}
+            >>> base._NestedDict(dic)
+                {1: {3: {}, 4: {}}, 2: {3: {}, 4: {}}}
+            >>> base._NestedDict(dic, order = ['b', 'a'])
+                {3: {1: {}, 2: {}}, 4: {1: {}, 2: {}}}
+            >>> dic = collections.OrderedDict({'b': [3,4], 'a': [1,2]})
+            >>> base._NestedDict(dic)
+                {3: {1: {}, 2: {}}, 4: {1: {}, 2: {}}}
+            >>> base._NestedDict(dic, values=[None])
+                {3: {1: None, 2: None}, 4: {1: None, 2: None}}
+            >>> base._NestedDict(dic, values=[10,20,30,40])
+                {3: {1: 10, 2: 20}, 4: {1: 30, 2: 40}}
+        """
+        order = kwargs.pop(self.KW_ORDER,None)
+        values = kwargs.pop(self.KW_VALUES,None)
+        try:
+            assert order is None or isinstance(order,bool) or happyType.issequence(order)
+        except:
+            raise happyError('wrong type/value for keyword argument ORDER')
+        self.__order = None
+        self.__xkeys, self.__xlen = {}, {}
         if args != ():
-            if happyType.issequence(args[0]):
-                args = args[0]
-            if all([happyType.ismapping(a) for a in args]):
-                attr = kwargs.pop(_AttrDict.KW_ATTR, False)
-                if attr is False:
-                    args = args[0]
-                    pass
-                elif attr is True:
-                    attr = list(range(len(args)))
-                    args = zip(attr, args)
-                else:
-                    temp = args
-                    for i in range(len(attr)): # very naive way...
-                        try:
-                            temp = [t.__getitem__(attr[i]) for t in temp]
-                        except:
-                            raise happyError('key %s not found in input argument' % attr[i])
-                    args = zip(temp, args) # list([(k,v) for k,v in zip(attr, args)])
-            elif not any([happyType.ismapping(a) for a in args]): 
-                if kwargs != {}:
-                    raise happyError('wrong setting for attribute dictionary object')
-                elif all([happyType.issequence(a) for a in args]):
-                    pass # args = args[0]
-                else:
-                    args = zip(args,[None]*len(args))
-        elif kwargs != {}:       
-            attr = kwargs.pop(_AttrDict.KW_ATTR,None)
-            if attr in (False,None):
-                args = list(kwargs.items())
+            if len(args) > 1:
+                raise happyError('%s expected at most 1 arguments' % _NestedDict.__name__)
             else:
-                args = zip(attr,[None]*len(attr))
-        setattr(self, _AttrDict.KW_ATTR, attr if attr in (None,False) or len(attr)>1 else attr[0])
-        super(_AttrDict, self).__init__(args)
+                args = args[0]
+            try:
+                assert happyType.ismapping(args) or happyType.issequence(args)
+            except:
+                raise happyError('wrong format for %s input arguments' % _NestedDict.__name__)
+            if order is not None and len(order)!=len(args):
+                raise happyError('incompatible input arguments and keyword argument ORDER for %s' % _NestedDict.__name__)                
+            if happyType.ismapping(args):
+                if order is not None and not isinstance(order,bool):
+                    try:
+                        assert set(order) == set(args.keys())
+                    except:
+                        raise happyError('dimensions parsed as arguments and dimensions in ORDER do not match')             
+                    args = sorted(args.items(), key = lambda t: order.index(t[0]))
+            elif all([len(a)==2 and happyType.issequence(a[1]) for a in args]):
+                if order is not None and not isinstance(order,bool):
+                    try:
+                        assert set(order) == set([a[0] for a in args])
+                    except:
+                        raise happyError('dimensions parsed as arguments and dimensions in ORDER do not match')             
+                    args = sorted(args, key = lambda t: order.index(t[0]))
+            #elif not all([happyType.issequence(a) for a in args]):
+            #   raise happyError('wrong format for %s input arguments' % _NestedDict.__name__)
+            else:
+                args = list(enumerate(args))
+            if not happyType.ismapping(args):
+                args = collections.OrderedDict(args)
+            if order is not False:
+                order =  list(args.keys())
+        [args.update({k: [v,] for k,v in args.items() if not happyType.issequence(v)})]
+        value = {} # None
+        for attr in order[::-1]:
+            dic = {a: copy.deepcopy(value) for a in args[attr]} 
+            # why not?
+            #   dic = dict.fromkeys(args[attr], copy.deepcopy(value))
+            # we avoid each element to be assigned a reference to the same object
+            self.__xkeys.update({attr: args[attr]})
+            value = dic
+        self.__xlen = {k: len(v) for k,v in self.__xkeys.items()}
+        #dic = {}; _dic = [dic]
+        #for i, attr in enumerate(order or args.keys()):
+        #    [r.update({k: {} for k in args[attr]}) for r in _dic]
+        #    #[r.update({k: {} if values is None or i<len(order)-1 else values[(j-1)*len(_ref)+l]     \
+        #    #           for l, k in enumerate(dic[attr])}) for j, r in enumerate(_ref)]
+        #    _dic = [r[k] for r in _dic for k in args[attr]]           
+        super(_NestedDict, self).__init__(dic)
+        self.order = order
+        if values is not None:
+            self.set(values)
+            
+    #/************************************************************************/
+    @property
+    def order(self):
+        return self.__order
+    @order.setter
+    def order(self, order):
+        try:
+            assert order is None or happyType.issequence(order)
+        except:
+            raise happyError('wrong argument for ORDER attribute')
+        else:
+            self.__order = order
+    
+    @property
+    def depth(self):
+        #return list(recurse(list(self.values())[0], 1))[0]
+        #depth = {}
+        #def recurse(v, i):
+        #    if happyType.ismapping(v):
+        #        yield from recurse(v.values(), i+1)
+        #    else:
+        #        yield i
+        #depth.update({k: list(recurse(v, 1))[0] for k,v in self.items()})
+        #return depth
+        return len(self.order) #-1
+
+    #/************************************************************************/
+    def __deepsearch(self, attr, *arg, **kwargs):
+        try:
+            assert attr in ('get', 'keys', 'values')
+        except:
+            raise happyError('wrong parsed attribute')
+        try:
+            assert self.order is not None
+        except:
+            raise happyError('dimensions not supported with unordered dictionary')
+        try:
+            assert set(kwargs.keys()).difference(set(self.order)) == set()
+        except:
+            raise happyError('parsed dimensions are not recognised')  
+        order = self.order.copy()
+        if attr == 'keys':
+            if arg != ():
+                dic = dict(self.items())
+                for dim in self.order:
+                    if dim!=arg[0]:        dic = list(dic.values())[0]
+                    else:                   break
+                return list(dic.keys())
+            else:
+                #dim = order[-1]
+                #if dim in kwargs:
+                #    happyVerbose('dimension %s cannot be parsed as key - %s ignored' % (dim,kwargs.get(dim)))
+                #    kwargs.pop(dim)
+                #if kwargs == {}: 
+                #    return
+                pass
+        elif attr == 'get':
+            while True:
+                if order[-1] not in kwargs.keys():
+                    order.pop(-1)
+                else:
+                    break
+        else:
+            pass
+        val = [self]
+        for i, dim in enumerate(order):
+            val = happyType.seqflatten([list(v.items()) for v in val])
+            vval = val.copy()
+            if dim in kwargs.keys():
+                keys = kwargs.get(dim)
+                if not happyType.issequence(keys):
+                    keys = [keys,]
+                [val.remove(v) for v in vval if v[0] not in keys]
+            if attr == 'keys' and i == len(order)-1:
+                val = [v[0] for v in val]
+            else:
+                val = [v[1] for v in val]
+        return val[0] if happyType.issequence(val) and len(val)==1 else val
+    
+    #/************************************************************************/
+    def get(self, *args, **kwargs):
+        """Retrieval of nested dictionary.
+        """
+        if args!=():
+            if len(args)>1 or happyType.issequence(args[0]):
+                if len(args)==1:    args = args[0]
+                kwargs.update({k: v for k,v in zip(self.order, args)})
+        if kwargs == {}:
+            return super(_NestedDict, self).get(*args)
+        return self.__deepsearch('get', *args, **kwargs)
         
     #/************************************************************************/
-    def __len__(self):
-        lenght = super(_AttrDict, self).__len__()
-        attr = getattr(self, _AttrDict.KW_ATTR) 
-        if not (attr is None or attr is False) and lenght==1:
-            return len(self[attr])
+    def set(self, *arg, **kwargs):
+        try:
+            assert len(arg) == 1 or happyType.issequence(arg[0])
+        except:
+            raise happyError('wrong type/value for input argument')
         else:
-            return lenght
+            values = arg[0] if happyType.issequence(arg[0]) else arg
+        xkeys = self.xkeys(**kwargs)
+        try:
+            assert len(values) == 1 or len(values) == len(xkeys)
+        except:
+            raise happyError('wrong number of assignments in dictionary')
+        else:
+            if len(values)==1 and len(xkeys)>1:
+                values = values * len(xkeys)
+        for i, xk in enumerate(xkeys):
+            rdic = self
+            for j, x in enumerate(xk):
+                if j<len(xk)-1:     rdic = rdic[x]
+            rdic.update({x: values[i]})
+    
+    #/************************************************************************/
+    def keys(self, *arg, **kwargs):
+        """Retrieve deepest keys from a nested dictionary.
+        """
+        try:
+            assert arg == () or kwargs == {}
+        except:
+            raise happyError('both argument or keyword arguments cannot be accepted simultaneously')
+        if arg == () and kwargs == {}:
+            return super(_NestedDict, self).keys()
+        else:
+            return self.__deepsearch('keys', *arg, **kwargs)
 
+    #/************************************************************************/
+    def xkeys(self, **kwargs):
+        """
+        Examples
+        --------
+        
+            >>> dic = {'a': [1,2], 'b': [3,4,5], 'c':[6,7,8,9]}
+            >>> res = _NestedDict(dic, order = ['b', 'c', 'a'])
+            >>> res.xkeys()
+                [(3, 6, 1), (3, 6, 2), (3, 7, 1), (3, 7, 2), (3, 8, 1), (3, 8, 2), (3, 9, 1), (3, 9, 2),
+                 (4, 6, 1), (4, 6, 2), (4, 7, 1), (4, 7, 2), (4, 8, 1), (4, 8, 2), (4, 9, 1), (4, 9, 2),
+                 (5, 6, 1), (5, 6, 2), (5, 7, 1), (5, 7, 2), (5, 8, 1), (5, 8, 2), (5, 9, 1), (5, 9, 2)]
+            >>> res.xkeys(c=7)
+                [(3, 7, 1), (3, 7, 2), (4, 7, 1), (4, 7, 2), (5, 7, 1), (5, 7, 2)]
+            >>> res.xkeys(c=7, a=2)
+                [(3, 7, 2), (4, 7, 2), (5, 7, 2)]
+        """
+        try:
+            assert set(kwargs.keys()).difference(set(self.order)) == set()
+        except:
+            raise happyError('parsed dimensions are not recognised')  
+        xkeys = list(itertools.product(*[self.__xkeys[k] for k in self.order]))
+        if kwargs == {}:
+            return xkeys
+        for i, dim in enumerate(self.order):
+            xxkeys = xkeys.copy()
+            if dim in kwargs.keys():
+                keys = kwargs.get(dim)
+                if not happyType.issequence(keys):
+                    keys = [keys,]
+                [xkeys.remove(k) for k in xxkeys if k[i] not in keys]
+        return xkeys
+    
+    #/************************************************************************/
+    def values(self, *arg, **kwargs):
+        """Retrieve deepest end-values of nested dictionary.
+        """
+        try:
+            assert arg == () or kwargs == {}
+        except:
+            raise happyError('both argument or keyword arguments cannot be accepted simultaneously')
+        try:
+            assert arg == () or happyType.issequence(arg)
+        except:
+            raise happyError('both argument or keyword arguments cannot be accepted simultaneously')
+        if arg != ():
+            kwargs.update({k: v for k,v in zip(self.order, arg[0])})
+        if kwargs == {}:
+            return super(_NestedDict, self).values()
+        return self.__deepsearch('values', **kwargs)
+    
+    #/************************************************************************/
+    def xvalues(self, **kwargs):
+        """
+        """
+        dic = {} 
+        for xk in self.xkeys(**kwargs):
+            rdic = dic
+            for x in xk:
+                if x not in rdic:
+                    rdic.update({x: {}})
+                rdic = rdic[x]
+            rdic = self.get(xk)
+        return dic
+
+    #/************************************************************************/
+    def items(self, **kwargs):
+        """Retrieve deepest items of nested dictionary.
+        """
+        if kwargs == {}:
+            return super(_NestedDict, self).items()
+        return list(zip(itertools.cycle(self.keys(**kwargs)),
+                        self.values(**kwargs)))
+    
+    #/************************************************************************/
+    def xitems(self, **kwargs):
+        """
+        Examples
+        --------
+        
+            >>> dic = {'a': [1,2], 'b': [3,4,5], 'c': [6,7,8,9]}
+            >>> res = _NestedDict(dic, order = ['b', 'c', 'a'])
+            >>> print(res)
+                {3: {6: {1: {}, 2: {}}, 7: {1: {}, 2: {}}, 8: {1: {}, 2: {}}, 9: {1: {}, 2: {}}},
+                 4: {6: {1: {}, 2: {}}, 7: {1: {}, 2: {}}, 8: {1: {}, 2: {}}, 9: {1: {}, 2: {}}},
+                 5: {6: {1: {}, 2: {}}, 7: {1: {}, 2: {}}, 8: {1: {}, 2: {}}, 9: {1: {}, 2: {}}}}
+            >>> res.xitems(b=4)
+                [((4, 6, 1), {}), ((4, 6, 2), {}), ((4, 7, 1), {}), ((4, 7, 2), {}),
+                 ((4, 8, 1), {}), ((4, 8, 2), {}), ((4, 9, 1), {}), ((4, 9, 2), {})]
+            >>> res.xitems(c=6, a=2)
+                [((3, 6, 2), {}), ((4, 6, 2), {}), ((5, 6, 2), {})]        
+        """
+        return list(zip(self.xkeys(**kwargs), self.values(**kwargs)))
+    
+    #/************************************************************************/
+    def xlen(self, *arg):
+        """
+        Examples
+        --------
+        
+            >>> dic = {'a': [1,2], 'b': [3,4,5], 'c': [6,7,8,9]}
+            >>> res = _NestedDict(dic, order = ['b', 'c', 'a'])
+            >>> print(res)
+                {3: {6: {1: {}, 2: {}}, 7: {1: {}, 2: {}}, 8: {1: {}, 2: {}}, 9: {1: {}, 2: {}}},
+                 4: {6: {1: {}, 2: {}}, 7: {1: {}, 2: {}}, 8: {1: {}, 2: {}}, 9: {1: {}, 2: {}}},
+                 5: {6: {1: {}, 2: {}}, 7: {1: {}, 2: {}}, 8: {1: {}, 2: {}}, 9: {1: {}, 2: {}}}}
+            >>> res.xlen('a')
+                2
+            >>> res.xlen('a','b','c')
+                {'a': 2, 'b': 3, 'c': 4}
+            >>> res.xlen()
+                24
+        """
+        if arg == ():
+            dimensions = self.order
+        elif happyType.issequence(arg[0]):
+            dimensions = arg[0]
+        else:
+            dimensions = arg
+        try:
+            assert set(dimensions).difference(set(self.order)) == set()
+        except:
+            raise happyError('wrong type/value for input argument')
+        try:    
+            xlen = {k: v for k,v in self.__xlen.items() if k in dimensions}
+        except:
+            xlen = {}
+            dic = [self]
+            for i, dim in enumerate(self.order):
+                if dim in dimensions:
+                    xlen.update({dim: len(dic[0].keys())})
+                dic = list(dic[0].values())
+        if arg == ():
+            return functools.reduce(lambda x,y: x*y, xlen.values())
+        else:
+            return xlen if len(xlen)>1 else list(xlen.values())[0]
+       
     #/************************************************************************/
     __getattr__ = dict.__getitem__
     # __setattr__ = dict.__setitem__

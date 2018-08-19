@@ -1146,3 +1146,4 @@ class happyType(object):
                     elif item=='keys':          yield k
                     elif item=='values':        yield v
         return list(recurse(dic))
+

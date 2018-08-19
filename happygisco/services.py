@@ -75,7 +75,7 @@ import chardet#analysis:ignore
 # local imports
 from happygisco import settings
 from happygisco.settings import happyVerbose, happyWarning, happyError, happyType
-from happygisco.base import _Decorator, _Service, _AttrDict#analysis:ignore
+from happygisco.base import _Decorator, _Service, _NestedDict#analysis:ignore
 
 # requirements
 try: # dummy me...
@@ -991,6 +991,9 @@ class GISCOService(OSMService):
         if vec in settings.GISCO_VECTORS.keys():
             vec = settings.GISCO_VECTORS[vec]
         level = kwargs.pop(_Decorator.KW_LEVEL, settings.GISCO_NUTSLEVELS[0])        
+        ## retrieve the default parameters values    
+        #defkw = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)(lambda **kw: kw)
+        #defkw = defkw()
         # set the compression format
         theme = settings.GISCO_NUTSTHEME 
         # start...
@@ -1520,22 +1523,21 @@ class GISCOService(OSMService):
         """Generic version of methods :meth:`~GISCOService.resp_country` and
         :meth:`~GISCOService.resp_nuts`.
         """
-        ref = {}; _ref = [ref]
         source = dimensions.get('SOURCE')
         if happyType.isstring(source) and source in ('NUTS2JSON','NUTS','BULK','INFO'):
             dimensions.pop('SOURCE') # clean-up
         if not happyType.issequence(source): 
             source = [source,]
-        for i, attr in enumerate(dimensions.keys()):
-            [r.update({k: {} for k in dimensions[attr]}) for r in _ref]
-            _ref = [r[k] for r in _ref for k in dimensions[attr]]
+        ref = _NestedDict(dimensions, order=settings.GISCO_DATA_DIMENSIONS)
+        # happyType.mapemptynest(dimensions) # order=settings.GISCO_DATA_DIMENSIONS
         if 'SOURCE' in dimensions.keys():
             dimensions.pop('SOURCE') # clean-up
         xdim = functools.reduce(lambda x,y: x*y, [len(v) for v in dimensions.values()])
         for prod in itertools.product(*[source,]+list(dimensions.values())):
             _ref = ref
             s, prod = prod[0], prod[1:]
-            if s in _ref.keys(): _ref = _ref[s] # that's actually the case for all non-('NUTS2JSON','NUTS','BULK','INFO') requests
+            if s in _ref.keys():  # case of not-('NUTS2JSON','NUTS','BULK','INFO') requests
+                _ref = _ref[s]
             for i, p in enumerate(prod):
                 if i<len(prod)-1: _ref = _ref[p]
             kwargs.update(dict(zip([getattr(_Decorator,'KW_' + attr) for attr in dimensions.keys()], prod)))
