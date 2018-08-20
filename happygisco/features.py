@@ -771,8 +771,7 @@ class NUTS(_Feature):
     * bulk download: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/
     * list of datasets: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/datasets.json
     * `units 2016 <http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2016-units.html>`_
-    listed in the `json file <http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2016-units.json>`_
-    
+      listed in the `json file <http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2016-units.json>`_.
     """
             
     #/************************************************************************/

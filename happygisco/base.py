@@ -130,12 +130,17 @@ try:
     assert SERVICE_AVAILABLE is True
 except:
     class _CachedResponse(object):
-        pass
+        #doc-ignore
+        pass 
 else:
     class _CachedResponse(requests.Response):
+        """Generic class used for representing a cached response.
+            
+            >>> resp = base._CachedResponse(resp, url, path='')
+        """
         def __init__(self, *args, **kwargs):
             r, url = args
-            path = kwargs.pop('pathname','')
+            path = kwargs.pop('path','')
             try:
                 assert happyType.isstring(url) and happyType.isstring(path) \
                     and isinstance(r,(bytes,requests.Response))
@@ -151,11 +156,6 @@ else:
                 for attr in r.__dict__:
                     setattr(self, attr, getattr(r, attr))
             # self._encoding = ?
-_CachedResponse.__doc__ =                                               \
-    """Generic class used for representing a cached response.
-        
-        >>> resp = base._CachedResponse(*args, resp, path)
-    """
 
 #%%
 #==============================================================================
@@ -528,7 +528,7 @@ class _Service(object):
             except:
                 raise happyError('wrong request formulated')  
             else:
-                response = _CachedResponse(response, url, pathname=pathname)
+                response = _CachedResponse(response, url, path=pathname)
         try:
             assert response is not None
             response.raise_for_status()
@@ -3013,9 +3013,11 @@ class _Memoized(object):
         return self.cache[key]
 
     def __repr__(self):
-        """Return the function's docstring."""
+        """Return the function's docstring.
+        """
         return self.func.__doc__
     
     def __get__(self, obj, objtype):
-        """Support instance methods."""
+        """Support instance methods.
+        """
         return functools.partial(self.__call__, obj)
