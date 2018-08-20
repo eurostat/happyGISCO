@@ -1519,6 +1519,28 @@ class GISCOService(OSMService):
         return url
         
     #/************************************************************************/
+    def url2response(self, url, **kwargs):
+        """
+        """
+        data = kwargs.pop(_Decorator.KW_DATA, None)
+        try:
+            assert data is None or (happyType.isstring(data) and data in ('text', 'content'))
+        except:
+            raise happyError('wrong DATA parameter - must be either ''text'' or ''content;''')
+        try:
+            assert self.get_status(url) is not None
+        except:
+            raise happyError('error API request - wrong URL status')
+        try:
+            response = self.get_response(url)
+        except:
+            raise happyError('URL data for %s not loaded' % url)
+        else:
+            if data is not None:
+                data = getattr(response, data)
+        return data or response 
+        
+    #/************************************************************************/
     def _resp_data(self, data, dimensions, **kwargs):
         """Generic version of methods :meth:`~GISCOService.resp_country` and
         :meth:`~GISCOService.resp_nuts`.
@@ -1529,9 +1551,7 @@ class GISCOService(OSMService):
         ref = _NestedDict([(getattr(_Decorator,'KW_' + k), v) for k,v in dimensions.items()],
                            order = True) # [getattr(_Decorator,'KW_' + k) for k in dimensions.keys()]
         [kwargs.pop(key) for key in list(kwargs.keys()) if key not in dimensions.keys()]
-        # for prod in itertools.product(*[source,]+list(dimensions.values())):
         for prod in itertools.product(*list(dimensions.values())):
-            # s, prod = prod[0], prod[1:]
             kwargs.update(dict(zip([getattr(_Decorator,'KW_' + attr) for attr in dimensions.keys()], prod)))
             try:
                 build_url = getattr(self, 'url_' + data.lower())
@@ -1540,11 +1560,13 @@ class GISCOService(OSMService):
             else:
                 url = build_url(**kwargs)
             try:
-                assert self.get_status(url) is not None
-            except:
-                raise happyError('error API request - wrong URL status')
-            try:
-                response = self.get_response(url)
+                response = self.url2response(url)
+            #try:
+            #    assert self.get_status(url) is not None
+            #except:
+            #    raise happyError('error API request - wrong URL status')
+            #try:
+            #    response = self.get_response(url)
             except:
                 raise happyError('file for %s data not loaded' % data)
             else:
@@ -1927,7 +1949,6 @@ class GISCOService(OSMService):
                        _Decorator.KW_YEAR: year})
         try:
             url = self.url_nuts(**kwargs)
-            print(url)
             assert self.get_status(url) is not None
         except:
             raise happyError('error NUTS data request')
