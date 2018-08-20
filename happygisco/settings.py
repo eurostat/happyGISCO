@@ -445,12 +445,12 @@ CODER_LIST          = [CODER_GISCO, CODER_GOOGLE, CODER_GOOGLE_MAPS, CODER_GOOGL
                        ]
 """List of geocoders available.
 """
-CODER_PROJ          = {CODER_GISCO:         DEF_GISCO_PROJECTION,
+CODER_PROJECTIONS   = {CODER_GISCO:         DEF_GISCO_PROJECTION,
                        CODER_GOOGLE:        'EPSG3857',
                        CODER_GOOGLE_MAPS:   'EPSG3857', 
                        CODER_GOOGLE_PLACES: 'EPSG3857'
                        }
-"""Default geographical projections available through the different geocoders.
+"""Default geographical projections available with the different geocoders.
 """
 
 EU_GEOCENTRE        = [50.033333, 10.35]
@@ -768,6 +768,31 @@ class happyType(object):
             return cls.typename(inst) == str_cls
         except:
             raise happyError('class not recognised')
+    
+    
+    #/************************************************************************/
+    @classmethod
+    def isnumeric(cls, arg):
+        """Check whether an argument is a number.
+        
+            >>> ans = happyType.isnumeric(arg)
+      
+        Arguments
+        ---------
+        arg : 
+            any input to test.
+      
+        Returns
+        -------
+        ans : bool
+            :data:`True` if the input argument :data:`arg` is a number, :data:`False` 
+            otherwise.
+        """
+        try:
+            float(arg)
+            return True
+        except (ValueError,TypeError):
+            return False    
     
     #/************************************************************************/
     @classmethod
