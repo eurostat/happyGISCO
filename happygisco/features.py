@@ -94,11 +94,13 @@ else:
 
 #/****************************************************************************/
 def __projection(inst, proj):
-    if not (proj is None or happyType.isstring(proj)):
+    if proj is None:
+        pass
+    elif not (happyType.isstring(proj) or happyType.isnumeric(proj)):
         raise happyError('wrong type for PROJ property')
-    elif not proj in happyType.seqflatten(settings.GISCO_PROJECTIONS.items()):
+    elif not proj in happyType.seqflatten(list(settings.GISCO_PROJECTIONS.items())):
         raise happyError('projection PROJ not recognised')
-    inst.__projection = proj
+    inst._Feature__projection = proj
 _Feature.projection = _Feature.projection.setter(__projection)
 
 def __lat(inst):
@@ -109,7 +111,7 @@ def __lat(inst):
             lat = inst.coord.get(_Decorator.KW_LAT)
         except:  # AttributeError
             raise happyError('coordinates parameter not set')
-    return lat if lat is None or len(lat)>1 else lat[0]
+    return lat if lat is None or happyType.isnumeric(lat) or len(lat)>1 else lat[0]
 _Feature.lat = property(__lat) 
 
 def __Lon(inst):
@@ -120,7 +122,7 @@ def __Lon(inst):
             Lon = inst.coord.get(_Decorator.KW_LON)
         except:  # AttributeError
             raise happyError('coordinates parameter not set')
-    return Lon if Lon is None or len(Lon)>1 else Lon[0]
+    return Lon if Lon is None or happyType.isnumeric(Lon) or len(Lon)>1 else Lon[0]
 _Feature.Lon = property(__Lon) 
     
 def __coordinates(inst):  
@@ -133,49 +135,55 @@ _Feature.coordinates = property(__coordinates)
 def __service(inst, service):
     if not (service is None or isinstance(service,(services.GISCOService, services.APIService, services.OSMService))):
         raise happyError('wrong type for SERVICE property')
-    inst.__service = service
+    inst._Feature__service = service # we override the private attribute here
 _Feature.service = _Feature.service.setter(__service)
 
 def __transform(inst, transform):
     if not (transform is None or isinstance(transform,tools.GDALTransform)):
         raise happyError('wrong type for TRANSFORM property')
-    inst.__transform = transform
+    inst._Feature__transform = transform
 _Feature.transform = _Feature.transform.setter(__transform)
  
 def __mapping(inst, mapping):
     if not (mapping is None or isinstance(mapping,tools.LeafMap)): # ipyleaflet.Map, folium.Map
         raise happyError('wrong type for MAPPING property')
-    inst.__mapping = mapping
+    inst._Feature__mapping = mapping
 _Feature.mapping = _Feature.mapping.setter(__mapping)
   
 #/****************************************************************************/
 def __init(inst, *args, **kwargs):
-    # kwargs.pop(_Decorator.KW_PLACE); kwargs.pop(_Decorator.KW_COORD)
     try:
         assert API_SERVICE or GISCO_SERVICE
     except:
         happyWarning('external API and GISCO services not available')
     else:
-        serv = kwargs.pop('serv', settings.CODER_GISCO)
-        if serv is None: # whatever works
+        coder = kwargs.pop(_Decorator.KW_CODER, settings.CODER_GISCO)
+        proj = kwargs.pop(_Decorator.KW_PROJECTION, None)
+        if coder is None: # whatever works
             try:
                 assert GISCO_SERVICE is True
-                inst.service = services.GISCOService(coder=serv)
+                inst.service = services.GISCOService(coder=coder)
             except:
                 try:
                     assert API_SERVICE is True
-                    inst.service = services.APIService(coder=serv)
+                    inst.service = services.APIService(coder=coder)
                 except:
                     raise IOError('no service available')
-        elif isinstance(serv,str):
-            if serv in services.GISCOService.CODER:
-                inst.service = services.GISCOService(coder=serv)
-            elif serv in services.APIService.CODER:
-                inst.service = services.APIService(coder=serv)
+        elif isinstance(coder,str):
+            if coder in services.GISCOService.CODER:
+                inst.service = services.GISCOService(coder=coder)
+            elif coder in services.APIService.CODER:
+                inst.service = services.APIService(coder=coder)
             else:
-                raise IOError('service %s not available' % serv)
+                raise IOError('service %s not available' % coder)
+        if proj is None:
+            try:
+                proj = settings.CODER_PROJECTIONS[coder]
+            except:
+                proj = settings.DEF_GISCO_PROJECTION
+        inst.projection = proj
         #if not isinstance(inst.service,(services.GISCOService,services.APIService)):
-        #    raise IOError('service %s not supported' % serv)
+        #    raise IOError('service %s not supported' % coder)
     try:
         assert GDAL_TOOL
     except:
@@ -188,7 +196,7 @@ def __init(inst, *args, **kwargs):
         happyWarning('folium mapping services not available')
     else:
         inst.mapping = tools.LeafMap()
-_Feature.__init__ = classmethod(__init)
+_Feature.__init__ = __init
      
 #%%
 #==============================================================================
