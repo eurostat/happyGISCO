@@ -192,7 +192,7 @@ class _Service(object):
        >>> serv = base._Service()        
     """
 
-    RESPONSE_FORMATS = ['resp', 'str', 'stringio', 'bytes', 'bytesio', 'json']
+    RESPONSE_FORMATS = ['resp', 'zip', 'str', 'stringio', 'bytes', 'bytesio', 'json']
     ZIP_OPERATIONS  = ['extract', 'extractall', 'getinfo', 'namelist', 'read', 'infolist']
     
     #/************************************************************************/
@@ -561,35 +561,29 @@ class _Service(object):
         return response
         
     #/************************************************************************/
-    def load_url(self, url, **kwargs):
-        """Returns the (possibly formatted) response of a given URL.
+    def read_response(self, response, **kwargs):
+        """Read the response of a given request.
         
-            >>> data = serv.load_url(url, **kwargs)
+            >>> data = serv.read_response(response, **kwargs)
+            
+        Examples
+        --------
+        
         """
         fmt = kwargs.pop('fmt', None)
+        if fmt in (None,'resp'):
+            return response
         try:
             assert fmt is None or happyType.isstring(fmt)
         except:
             raise happyError('wrong format for FMT parameter') 
         else:
-            if fmt is None:
-                fmt = 'resp'
             fmt = fmt.lower()
         try:
             assert fmt in ['jsonstr', 'jsonbytes'] + self.RESPONSE_FORMATS # only for developers
         except:
             raise happyError('wrong value for FMT parameter - must be in %s' % self.RESPONSE_FORMATS) 
-        try:
-            assert self.get_status(url) is not None
-        except:
-            raise happyError('error API request - wrong URL status')
-        try:
-            response = self.get_response(url)
-        except:
-            raise happyError('URL data for %s not loaded' % url)
-        if fmt == 'resp':
-            return response
-        elif fmt.startswith('json'):
+        if fmt.startswith('json'):
             try:
                 assert fmt not in ('jsonstr', 'jsonbytes')
                 data = response.json()
@@ -613,7 +607,7 @@ class _Service(object):
                 data = response.text
             except:
                 raise happyError('error accessing ''text'' attribute of response')
-        elif fmt in ('bytes', 'bytesio'):
+        elif fmt in ('bytes', 'bytesio', 'zip'):
             try:
                 data = response.content 
             except:
@@ -623,7 +617,7 @@ class _Service(object):
                 data = io.StringIO(data)
             except:
                 raise happyError('error loading StringIO data')
-        elif fmt == 'bytesio':
+        elif fmt in ('bytesio', 'zip'):
             try:
                 data = io.BytesIO(data)
             except:
@@ -642,21 +636,17 @@ class _Service(object):
                         data = json.loads(data.decode(chardet.detect(data)["encoding"]))
                     except:
                         raise happyError('error JSON-encoding of bytes content')
-        return data 
-
-        
-    #/************************************************************************/
-    def load_zipurl(self, url, **kwargs):
-        """
-        """
+        if fmt != 'zip':
+            return data 
+        # deal with special case
         try:
             assert set(kwargs.keys()).difference(set(self.ZIP_OPERATIONS)) == set()
         except:
             raise happyError('parsed operations are not recognised')  
         else:
-            operators = [op in kwargs.keys() for op in self.ZIP_OPERATIONS] 
+            operators = [op for op in self.ZIP_OPERATIONS if op in kwargs.keys()] 
         try:
-            assert sum(operators) == 1
+            assert sum([1 for op in operators]) == 1
         except:
             raise happyError('only one operation supported per call')  
         else:
@@ -673,11 +663,9 @@ class _Service(object):
                 raise happyError('no operation parsed')
         if not happyType.issequence(members):
             members = [members,]
-        try:
-            data = self.load_url(url, fmt='bytesio')
-        except:
-            raise happyError('error loading data from URL %s' % url)        
         with zipfile.ZipFile(data) as zf:
+            #if not zipfile.is_zipfile(zf): # does not work
+            #    raise happyError('file not recognised as zip file')    
             if operator in  ('infolist','namelist'):
                 return getattr(zf, operator)()
             elif members is not None:
@@ -686,8 +674,24 @@ class _Service(object):
             if operator in ('extract', 'getinfo', 'read'):
                 return [getattr(zf, operator)(m) for m in members]
             elif operator == 'extractall':
-                return zf.extractall(path=path)
-    
+                return zf.extractall(path=path)    
+            
+    #/************************************************************************/
+    def read_url(self, url, **kwargs):
+        """Returns the (possibly formatted) response of a given URL.
+        
+            >>> data = serv.read_url(url, **kwargs)
+        """
+        try:
+            assert self.get_status(url) is not None
+        except:
+            raise happyError('error API request - wrong URL status')
+        try:
+            response = self.get_response(url)
+        except:
+            raise happyError('URL data for %s not loaded' % url)
+        return self.read_response(response, **kwargs)
+            
     #/************************************************************************/
     @classmethod
     def build_url(cls, domain=None, **kwargs):
