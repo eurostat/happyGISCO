@@ -69,8 +69,6 @@ import io, re#analysis:ignore
 
 import collections
 import functools, itertools#analysis:ignore
-import zipfile
-import chardet#analysis:ignore
 
 # local imports
 from happygisco import settings
@@ -88,7 +86,7 @@ try:
     import googlemaps
 except ImportError:
     API_SERVICE = False
-    happyWarning('GOOGLEMAPS package (https://pypi.python.org/pypi/googlemaps/) not loaded')
+    happyWarning('missing GOOGLEMAPS package (https://pypi.python.org/pypi/googlemaps/)')
 else:
     API_SERVICE = True
     happyVerbose('GOOGLEMAPS help: https://github.com/googlemaps/google-maps-services-python')
@@ -96,7 +94,7 @@ else:
 try:
     import googleplaces
 except ImportError:
-    happyWarning('GOOGLEPLACES package (https://github.com/slimkrazy/python-google-places) not loaded')   
+    happyWarning('missing GOOGLEPLACES package (https://github.com/slimkrazy/python-google-places)')   
 else:
     API_SERVICE = True
     happyVerbose('GOOGLEPLACES help: https://github.com/slimkrazy/python-google-places')
@@ -104,7 +102,7 @@ else:
 try:
     import geopy
 except ImportError:
-    happyWarning('GEOPY package (https://github.com/geopy/geopy) not loaded')   
+    happyWarning('missing GEOPY package (https://github.com/geopy/geopy)')   
 else:
     API_SERVICE = True
     happyVerbose('GEOPY help: http://geopy.readthedocs.io/en/latest/')
@@ -113,13 +111,13 @@ try:
     assert geopy or googlemaps or googleplaces
 except:
     API_SERVICE = False
-    happyWarning('external API service not available')
+    happyWarning('NO external API service available')
    
 try:
     import pandas as pd
 except ImportError:
     PANDAS_INSTALLED = False
-    happyWarning('Pandas package (http://pandas.pydata.org) not loaded')   
+    happyWarning('missing Pandas package (http://pandas.pydata.org)')   
 except:
     PANDAS_INSTALLED = True
     happyVerbose('pandas help: https://pandas.pydata.org/pandas-docs/stable/')
@@ -128,7 +126,7 @@ try:
     import Levenshtein
 except ImportError:
     LEVENSHTEIN_INSTALLED = False
-    happyWarning('python-Levenshtein package (https://github.com/ztane/python-Levenshtein) not loaded - Map resources not available')
+    happyWarning('missing python-Levenshtein package (https://github.com/ztane/python-Levenshtein) - Map resources not available')
 else:
     LEVENSHTEIN_INSTALLED = True
     happyVerbose('Levenshtein help: https://rawgit.com/ztane/python-Levenshtein/master/docs/Levenshtein.html')
@@ -136,11 +134,11 @@ else:
 try:                                
     import simplejson as json
 except ImportError:
-    happyWarning("missing SIMPLEJSON package (https://pypi.python.org/pypi/simplejson/)", ImportWarning)
+    # happyWarning("missing SIMPLEJSON package (https://pypi.python.org/pypi/simplejson/)", ImportWarning)
     try:                                
         import json
     except ImportError: 
-        happyWarning("JSON module missing in Python Standard Library", ImportWarning)
+        # happyWarning("JSON module missing in Python Standard Library", ImportWarning)
         class json:
             def loads(arg):  return '%s' % arg
 
@@ -314,13 +312,10 @@ class OSMService(_Service):
             kwargs.update({'q': p})
             try:
                 url = self.url_geocode(**kwargs)
-                assert self.get_status(url) is not None
             except:
-                raise happyError('error geolocation request')
-            else:
-                response = self.get_response(url)
+                raise happyError('error geolocation URL formatting')
             try:
-                data = json.loads(response.text)
+                data = self.load_url(url, fmt='JSON')
                 assert data not in({},None)
             except:
                 raise happyError('geolocation for place %s not loaded' % p)
@@ -487,13 +482,10 @@ class OSMService(_Service):
             kwargs.update({'lat': coord[i][0], 'lon': coord[i][1]})
             try:
                 url = self.url_reverse(**kwargs)
-                assert self.get_status(url) is not None
             except:
-                raise happyError('error geolocation request')
-            else:
-                response = self.get_response(url)
+                raise happyError('error geolocation reverse URL formatting')
             try:
-                data = json.loads(response.text) # response.content
+                data = self.load_url(url, fmt='JSON')
                 assert data not in ({},None)
             except:
                 raise happyError('place for geolocation %s not loaded' % coord[i])
@@ -968,6 +960,9 @@ class GISCOService(OSMService):
             if source in (None, ''): 
                 source = 'NUTS' # force to 'NUTS' in case it is None
             source = source.upper()
+            
+        print('in url_nuts: %s' % source)
+        
         # retrieve the keyword parameters... note that all this parsing/checking/cleaning
         # may have been done thanks to the parse_* methods
         year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
@@ -1519,28 +1514,6 @@ class GISCOService(OSMService):
         return url
         
     #/************************************************************************/
-    def url2response(self, url, **kwargs):
-        """
-        """
-        data = kwargs.pop(_Decorator.KW_DATA, None)
-        try:
-            assert data is None or (happyType.isstring(data) and data in ('text', 'content'))
-        except:
-            raise happyError('wrong DATA parameter - must be either ''text'' or ''content;''')
-        try:
-            assert self.get_status(url) is not None
-        except:
-            raise happyError('error API request - wrong URL status')
-        try:
-            response = self.get_response(url)
-        except:
-            raise happyError('URL data for %s not loaded' % url)
-        else:
-            if data is not None:
-                data = getattr(response, data)
-        return data or response 
-        
-    #/************************************************************************/
     def _resp_data(self, data, dimensions, **kwargs):
         """Generic version of methods :meth:`~GISCOService.resp_country` and
         :meth:`~GISCOService.resp_nuts`.
@@ -1548,7 +1521,7 @@ class GISCOService(OSMService):
         source = dimensions.get('SOURCE')
         if happyType.isstring(source) and source in ('NUTS2JSON','NUTS','BULK','INFO'):
             dimensions.pop('SOURCE') # clean-up
-        ref = _NestedDict([(getattr(_Decorator,'KW_' + k), v) for k,v in dimensions.items()],
+        dic = _NestedDict([(getattr(_Decorator,'KW_' + k), v) for k,v in dimensions.items()],
                            order = True) # [getattr(_Decorator,'KW_' + k) for k in dimensions.keys()]
         [kwargs.pop(key) for key in list(kwargs.keys()) if key not in dimensions.keys()]
         for prod in itertools.product(*list(dimensions.values())):
@@ -1560,20 +1533,13 @@ class GISCOService(OSMService):
             else:
                 url = build_url(**kwargs)
             try:
-                response = self.url2response(url)
-            #try:
-            #    assert self.get_status(url) is not None
-            #except:
-            #    raise happyError('error API request - wrong URL status')
-            #try:
-            #    response = self.get_response(url)
+                response = self.load_url(url) # fmt = 'resp'
             except:
                 raise happyError('file for %s data not loaded' % data)
             else:
-                ref.set(response, **kwargs)
+                dic.xupdate(response, **kwargs)
                 response = None
-        # xdim = functools.reduce(lambda x,y: x*y, [len(v) for v in dimensions.values()])
-        return ref #if xdim>1 else response 
+        return dic 
     
     #/************************************************************************/
     @_Decorator.parse_year
@@ -1763,6 +1729,9 @@ class GISCOService(OSMService):
             else: 
                 source = source.upper()
         dimensions = settings.GISCO_DATA_DIMENSIONS.copy()
+            
+        print('in resp_nuts: %s' % source)
+
         if source == 'BULK':
             # ['SOURCE', 'YEAR', 'SCALE', 'FORMAT']
             [dimensions.remove(attr) for attr in ('PROJECTION', 'VECTOR', 'LEVEL')] 
@@ -1949,18 +1918,17 @@ class GISCOService(OSMService):
                        _Decorator.KW_YEAR: year})
         try:
             url = self.url_nuts(**kwargs)
-            assert self.get_status(url) is not None
         except:
-            raise happyError('error NUTS data request')
-        else:
-            response = self.get_response(url)
+            raise happyError('error NUTS URL formatting')
         base = settings.GISCO_PATTERNS['nutsid']['base'].format(year=year)
         fmt = settings.GISCO_PATTERNS['nutsid']['fmt']
-        with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
-            if '%s.%s' % (base,fmt) not in zf.namelist():
-                raise happyError('impossible to retrieve name to ID correspondance of NUTS')
-            return io.BytesIO(zf.read('%s.%s' % (base,fmt)))
-        # return pd.read_csv(io.BytesIO(zf.read(data)))
+        try:
+            data = self.read_zipurl(url, read = '%s.%s' % (base,fmt))
+        except:
+            raise happyError('error zip NUTS loading')
+        else:
+        #   return pd.read_csv(io.BytesIO(data))
+            return io.BytesIO(data)
         
     #/************************************************************************/
     def _nutsid2name(self, **kwargs):
@@ -2561,13 +2529,10 @@ class GISCOService(OSMService):
             kwargs.update({'x': coord[i][1], 'y': coord[i][0]})
             try:
                 url = self.url_findnuts(**kwargs)
-                assert self.get_status(url) is not None
             except:
-                raise happyError('error NUTS request')
-            else:
-                response = self.get_response(url)
+                raise happyError('error findnuts URL formatting')
             try:
-                data = json.loads(response.text)
+                data = self.load_url(url, fmt='JSON')
                 assert data not in ({},None)
             except:
                 happyError('NUTS for location %s not loaded' % coord[i])
@@ -2850,14 +2815,10 @@ class GISCOService(OSMService):
         kwargs.update({'coordinates': coordinates})
         try:
             url = self.url_routing(**kwargs)
-            assert self.get_status(url) is not None
         except:
-            raise happyError('error route request')
-        else:
-            response = self.get_response(url)
-        pass
+            raise happyError('error route URL formatting')
         try:
-            data = json.loads(response.text)
+            data = self.load_url(url, fmt='JSON')
             assert data is not None
         except:
             raise happyError('route not available')
