@@ -967,9 +967,9 @@ class NUTS(_Feature):
         return feature
 
     #/************************************************************************/    
-    @_Decorator.parse_file
+    #@_Decorator.parse_file
     @_Decorator.parse_url
-    @_Decorator._parse_class(ogr.Layer, _Decorator.KW_LAYER)
+    #@_Decorator._parse_class(ogr.Layer, _Decorator.KW_LAYER)
     @_Decorator._parse_class(ogr.Feature, _Decorator.KW_FEATURE)
     def _get_geometry(self, **kwargs):
         feature = kwargs.pop(_Decorator.KW_FEATURE, None)
@@ -998,10 +998,10 @@ class NUTS(_Feature):
             geom = [json.loads(v.ExportToJson()) for v in feature]
         except:
             try:
-                geom = [self.url2data(u, data='text') for u in url]
+                geom = [self.load_url(u, fmt='JSON') for u in url]
             except: 
                 try:
-                    geom = [self.url2data(u, data='content') for u in url]
+                    geom = [self.load_url(u, fmt='bytes') for u in url]
                 except: 
                     raise happyError('impossible to extract vector geometries from data') 
         return geom
@@ -1072,6 +1072,9 @@ class NUTS(_Feature):
                 unit = [unit,]
             self.__unit = unit
                 
+            
+            
+            
     #/************************************************************************/
     @property
     def url(self):
