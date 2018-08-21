@@ -66,19 +66,28 @@ __all__         = ['_Service', '_Feature', '_Tool', '_Decorator', '_NestedDict']
 # IMPORT STATEMENTS
 #==============================================================================
 
-# generic import
+# standard import
 import io, os, sys#analysis:ignore
 import itertools, functools
 import collections#analysis:ignore
 
 import time
-import hashlib
+import hashlib, zipfile
 import copy
 #import abc
 
 # local imports
 from happygisco import settings
-from happygisco.settings import happyVerbose, happyWarning, happyError, happyType
+from happygisco.settings import happyVerbose, happyWarning, happyError, happyType, happyDeprecated
+
+# another standard import
+try:                                
+    import datetime
+except ImportError:          
+    happyWarning("missing DATETIME module in Python Standard Library", ImportWarning)
+    class datetime:
+        class timedelta: 
+            def __init__(self,arg): return arg
 
 # requirements
 try:                
@@ -86,13 +95,13 @@ try:
     import requests # urllib2
 except ImportError:                 
     SERVICE_AVAILABLE = False                
-    happyWarning('REQUESTS package (https://pypi.python.org/pypi/requests/) not loaded - GISCO ONLINE service will not be accessed')
+    happyWarning('missing REQUESTS package (https://pypi.python.org/pypi/requests/) - GISCO ONLINE service will not be accessed')
 
 try:                                
     import requests_cache 
 except ImportError:
     REQUESTS_CACHE_INSTALLED = False
-    happyWarning("REQUESTS_CACHE package (https://pypi.python.org/pypi/requests-cache) not loaded", ImportWarning)
+    happyWarning("missing REQUESTS_CACHE package (https://pypi.python.org/pypi/requests-cache)", ImportWarning)
 else:
     REQUESTS_CACHE_INSTALLED = True
     happyVerbose('REQUESTS_CACHE help: http://requests-cache.readthedocs.io/en/latest/')
@@ -101,7 +110,7 @@ try:
     import cachecontrol#analysis:ignore
 except ImportError:  
     CACHECONTROL_INSTALLED = False
-    happyWarning("CACHECONTROL package (visit https://pypi.python.org/pypi/requests-cache) not loaded", ImportWarning)
+    happyWarning("missing CACHECONTROL package (visit https://pypi.python.org/pypi/requests-cache)", ImportWarning)
 else:
     CACHECONTROL_INSTALLED = True
     happyVerbose('CACHECONTROL help: https://cachecontrol.readthedocs.io/en/latest/')
@@ -111,15 +120,27 @@ else:
         import fasteners#analysis:ignore
         #import lockfile#deprecated
     except ImportError:  
-        happyWarning("FASTENERS package (https://pypi.org/project/fasteners/) not loaded", ImportWarning)
+        happyWarning("missing FASTENERS package (https://pypi.org/project/fasteners/)", ImportWarning)
+    
+try:                                
+    import simplejson as json
+except ImportError:
+    happyWarning("missing SIMPLEJSON package (https://pypi.python.org/pypi/simplejson/)", ImportWarning)
+    try:                                
+        import json
+    except ImportError: 
+        happyWarning("JSON module missing in Python Standard Library", ImportWarning)
+        class json:
+            def loads(arg):  return '%s' % arg
 
 try:                                
-    import datetime
-except ImportError:          
-    happyWarning("DATETIME module missing in Python Standard Library", ImportWarning)
-    class datetime:
-        class timedelta: 
-            def __init__(self,arg): return arg
+    import chardet
+except ImportError:  
+    CHARDET_INSTALLED = False
+    happyWarning("missing CHARDET package (visit https://pypi.org/project/chardet/)", ImportWarning)
+else:
+    CHARDET_INSTALLED = True
+    happyVerbose('CHARDET help: https://chardet.readthedocs.io/en/latest')
 
 #%%
 #==============================================================================
@@ -170,6 +191,9 @@ class _Service(object):
         
        >>> serv = base._Service()        
     """
+
+    RESPONSE_FORMATS = ['resp', 'str', 'stringio', 'bytes', 'bytesio', 'json']
+    ZIP_OPERATIONS  = ['extract', 'extractall', 'getinfo', 'namelist', 'read', 'infolist']
     
     #/************************************************************************/
     def __init__(self, **kwargs):
@@ -535,6 +559,134 @@ class _Service(object):
         except:
             raise happyError('wrong response retrieved')  
         return response
+        
+    #/************************************************************************/
+    def load_url(self, url, **kwargs):
+        """Returns the (possibly formatted) response of a given URL.
+        
+            >>> data = serv.load_url(url, **kwargs)
+        """
+        fmt = kwargs.pop('fmt', None)
+        try:
+            assert fmt is None or happyType.isstring(fmt)
+        except:
+            raise happyError('wrong format for FMT parameter') 
+        else:
+            if fmt is None:
+                fmt = 'resp'
+            fmt = fmt.lower()
+        try:
+            assert fmt in ['jsonstr', 'jsonbytes'] + self.RESPONSE_FORMATS # only for developers
+        except:
+            raise happyError('wrong value for FMT parameter - must be in %s' % self.RESPONSE_FORMATS) 
+        try:
+            assert self.get_status(url) is not None
+        except:
+            raise happyError('error API request - wrong URL status')
+        try:
+            response = self.get_response(url)
+        except:
+            raise happyError('URL data for %s not loaded' % url)
+        if fmt == 'resp':
+            return response
+        elif fmt.startswith('json'):
+            try:
+                assert fmt not in ('jsonstr', 'jsonbytes')
+                data = response.json()
+            except:
+                try:
+                    assert fmt != 'jsonbytes'
+                    data = response.text
+                except:
+                    try:
+                        data = response.content 
+                    except:
+                        raise happyError('error JSON-encoding of response')
+                    else:
+                        fmt = 'jsonbytes' # force
+                else:
+                    fmt = 'jsonstr' # force
+            else:
+                return data
+        elif fmt in ('str', 'stringio'):
+            try:
+                data = response.text
+            except:
+                raise happyError('error accessing ''text'' attribute of response')
+        elif fmt in ('bytes', 'bytesio'):
+            try:
+                data = response.content 
+            except:
+                raise happyError('error accessing ''content'' attribute of response')
+        if fmt == 'stringio':
+            try:
+                data = io.StringIO(data)
+            except:
+                raise happyError('error loading StringIO data')
+        elif fmt == 'bytesio':
+            try:
+                data = io.BytesIO(data)
+            except:
+                raise happyError('error loading BytesIO data')
+        elif fmt == 'jsonstr':
+            try:
+                data = json.loads(data)
+            except:
+                raise happyError('error JSON-encoding of str text')
+        elif fmt == 'jsonbytes':                
+                try:
+                    data = json.loads(data.decode())
+                except:
+                    try:            
+                        assert CHARDET_INSTALLED is True
+                        data = json.loads(data.decode(chardet.detect(data)["encoding"]))
+                    except:
+                        raise happyError('error JSON-encoding of bytes content')
+        return data 
+
+        
+    #/************************************************************************/
+    def load_zipurl(self, url, **kwargs):
+        """
+        """
+        try:
+            assert set(kwargs.keys()).difference(set(self.ZIP_OPERATIONS)) == set()
+        except:
+            raise happyError('parsed operations are not recognised')  
+        else:
+            operators = [op in kwargs.keys() for op in self.ZIP_OPERATIONS] 
+        try:
+            assert sum(operators) == 1
+        except:
+            raise happyError('only one operation supported per call')  
+        else:
+            operator = operators[0] 
+        members, path = None, None
+        if operator in ('extract', 'getinfo', 'read'):
+            members = kwargs.pop(operator, None)
+        elif operator == 'extractall':
+            path = kwargs.pop('extractall', None)
+        else: # elif operator in ('infolist','namelist'):
+            try:
+                assert kwargs.get(operator) not in (False,None)
+            except:
+                raise happyError('no operation parsed')
+        if not happyType.issequence(members):
+            members = [members,]
+        try:
+            data = self.load_url(url, fmt='bytesio')
+        except:
+            raise happyError('error loading data from URL %s' % url)        
+        with zipfile.ZipFile(data) as zf:
+            if operator in  ('infolist','namelist'):
+                return getattr(zf, operator)()
+            elif members is not None:
+                if not all([m in zf.namelist() for m in members]):
+                    raise happyError('impossible to retrieve member file(s) from zipped data')
+            if operator in ('extract', 'getinfo', 'read'):
+                return [getattr(zf, operator)(m) for m in members]
+            elif operator == 'extractall':
+                return zf.extractall(path=path)
     
     #/************************************************************************/
     @classmethod
@@ -639,7 +791,7 @@ class _Service(object):
                 if any([last.endswith(c) for c in ('?', '/')]):     sep = ''
             url = "%s%s%s" % (url, sep, filters)
         return url
-    
+        
     #/************************************************************************/
     @classmethod
     def clean_cache(cls, domain=None, **kwargs):
@@ -2628,6 +2780,7 @@ class _NestedDict(dict):
         self.__order = None
         self.__xlen = {}
         self.__dimensions = {}
+        self.__cursor = 0
         if args != ():
             if len(args) > 1:
                 raise happyError('%s expected at most 1 argument' % _NestedDict.__name__)
@@ -2707,6 +2860,19 @@ class _NestedDict(dict):
             return "%s" % self.values(**self.dimensions)
 
     #/************************************************************************/
+    def __iter__(self):
+        return self
+    
+    #/************************************************************************/
+    def __next__(self):
+        if self.__cursor >= self.xlen():
+            self.__cursor = 0
+            raise StopIteration
+        _next = list(self.xvalues())[self.__cursor]
+        self.__cursor += 1
+        return _next
+
+    #/************************************************************************/
     @property
     def order(self):
         return self.__order
@@ -2737,7 +2903,9 @@ class _NestedDict(dict):
         return len(self.order) #-1
 
     #/************************************************************************/
-    def __deepsearch(self, attr, *arg, **kwargs):
+    def _deepsearch(self, attr, *arg, **kwargs):
+        """
+        """
         try:
             assert attr in ('get', 'keys', 'values')
         except:
@@ -2787,12 +2955,186 @@ class _NestedDict(dict):
             else:
                 val = [v[1] for v in val]
         return val[0] if happyType.issequence(val) and len(val)==1 else val
+
+    #/************************************************************************/
+    @classmethod
+    def _deepmerge(cls, *dicts, in_place=False):
+        """Deep merge (recursively) an arbitrary number of (nested or not) dictionaries.
+    
+            >>> new_dict = _NestedDict._deepmerge(*dicts)
+            
+        Arguments
+        ---------
+        dicts : dict
+            an arbitrary number of (possibly nested) dictionaries.
+            
+        Keyword arguments
+        -----------------
+        in_place : bool
+            flag set to update the first dictionary from the input list :data:`dicts`
+            of dictionaries.
+
+        Returns
+        -------
+        new_dict : dict
+            say that only two dictionaries are parsed, :data:`d1` and :data:`d2`
+            (in this order); first, :data:`d1` is "deep"-copied into :data:`new_dict`,
+            then for each :data:`k,v` in :data:`d2`: 
+                
+                * if :data:`k` doesn't exist in :data:`new_dict`, it is deep copied 
+                  from :data:`d2` into :data:`new_dict`;
+            
+            otherwise: 
+                
+                * if :data:`v` is a list, :data:`new_dict[k]` is extended with :data:`d2[k]`,
+                * if :data:`v` is a set, :data:`new_dict[k]` is updated with :data:`v`,
+                * if :data:`v` is a dict, it is recursively "deep"-updated,
+    
+        Examples
+        --------
+        The method can be used to deep-merge dictionaries storing many different
+        data structures:
+
+            >>> d1 = {1: 2, 3: 4, 10: 11}
+            >>> d2 = {1: 6, 3: 7}
+            >>> _NestedDict._deepmerge(d1, d2)
+                {1: [2, 6], 3: [4, 7], 10: 11}
+            >>> d1 = {1: 2, 3: {4: {5:6, 7:8}, 9:10}, 11: 12}
+            >>> d2 = {1: -2, 3: {4: {-5:{-6:-7}}}, 8:-9}
+            >>> _NestedDict._deepmerge(d1, d2)
+                {1: -2, 3: {4: {-5: {-6: -7}, 5: 6, 7: 8}, 9: 10}, 8: -9, 11: 12}
+            >>> d1 = {'a': {'b': {'x': '1', 'y': '2'}}}
+            >>> d2 = {'a': {'c': {'gg': {'m': '3'},'xx': '4'}}}
+            >>> _NestedDict._deepmerge(d1, d2, in_place = True)
+            >>> print(d1)
+                {'a': {'b': {'x': '1','y': '2'}, 'c': {'gg': {'m': '3'}, 'xx': '4'}}}
+                
+        Note
+        ----
+        This code is adapted from F.Boender's original source code available at
+        `this address <https://www.electricmonk.nl/log/2017/05/07/merging-two-python-dictionaries-by-deep-updating/>`_
+        under a *MIT* license.
+        """ 
+        def recurse(target, src):
+            for k, v in src.items():
+                if happyType.issequence(v):  # type(v) == list:
+                    if k in target:         target[k].extend(v)
+                    else:                   target[k] = copy.deepcopy(v)
+                elif happyType.ismapping(v):  # type(v) == dict:
+                    if k in target:         recurse(target[k], v)
+                    else:                   target[k] = copy.deepcopy(v)
+                elif type(v) == set:
+                    if k in target:         target[k].update(v.copy())
+                    else:                   target[k] = v.copy()
+                else:
+                    if k in target:     
+                        if type(target[k]) == tuple:        target[k] = list(target[k])
+                        elif not type(target[k]) == list:   target[k] = [target[k],]
+                        target[k].append(v)
+                    else:
+                        target[k] = copy.copy(v)
+        def reduce(*dicts):
+            if in_place is False:
+                dd = copy.deepcopy(dicts[0])
+                functools.reduce(recurse, (dd,) + dicts[1:])
+            else:
+                dd = None
+                functools.reduce(recurse, dicts)
+            return dd # or dicts[0]
+        return reduce(*dicts)
     
     #/************************************************************************/
-    def get(self, *args, **kwargs):
-        """Retrieval of nested dictionary.
+    @classmethod
+    @happyDeprecated('use generic method _deepmerge instead', run=True)
+    def __nestmerge(cls, *dicts):
+        #ignore-doc
+        """Recursively merge an arbitrary number of nested dictionaries.
+    
+            >>> new_dict = happyType.__mapnestmerge(*dicts)
+            
+        Arguments
+        ---------
+        dicts : dict
+            an arbitrary number of (possibly nested) dictionaries.
+    
+        Examples
+        --------
+
+            >>> d1 = {'a': {'b': {'x': '1', 'y': '2'}}}
+            >>> d2 = {'a': {'c': {'gg': {'m': '3'},'xx': '4'}}}
+            >>> happyType.__mapnestmerge(d1, d2)
+                {'a': {'b': {'x': '1','y': '2'}, 'c': {'gg': {'m': '3'}, 'xx': '4'}}}
+        """    
+        keys = set(k for d in dicts for k in d)    
+        def vals(key):
+            withkey = (d for d in dicts if key in d.keys())
+            return [d[key] for d in withkey]    
+        def recurse(*values):
+            if isinstance(values[0], dict):
+                return cls.__mapnestmerge(*values)
+            if len(values) == 1:
+                return values[0]
+            raise happyError("Multiple non-dictionary values for a key.")    
+        return dict((key, recurse(*vals(key))) for key in keys)  
+            
+    #/************************************************************************/
+    @classmethod
+    def _deepest(cls, dic, item='values'):
+        """Extract the deepest keys, values or both (items) from a nested dictionary.
+            
+            >>> l = _NestedDict._deepest(dic, item='values')
+            
+        Arguments
+        ---------
+        dic : dict
+            a (possibly nested) dictionary.
+            
+        Keyword arguments
+        -----------------
+        item : str
+            flag used to define the deepest items to extract from the input dictionary
+            :data:`dic`; it can be :literal:`keys`, :literal:`values` or :literal:`items`
+            to represent both; default is :literal:`values`, hence the deepest values
+            are extracted.
+
+        Returns
+        -------
+        l : list
+            contains the deepest keys, values or items extracted from :data:`dic`,
+            depending on the keyword argument :data:`item`.
+    
+        Examples
+        --------
+            
+            >>> d = {4:1, 6:2, 7:{8:3, 9:4, 5:{10:5}, 2:6, 6:{2:7, 1:8}}}
+            >>> _NestedDict._deepest(d)
+                [1, 2, 3, 4, 5, 6, 7, 8]
+            >>> _NestedDict._deepest(d, item='keys')
+                [4, 6, 8, 9, 10, 2, 2, 1]
+            >>> _NestedDict._deepest(d, item='items')
+                [(4, 1), (6, 2), (8, 3), (9, 4), (10, 5), (2, 6), (2, 7), (1, 8)]
+        """
+        try:
+            assert item in (None,'') or item in ('items','keys','values')
+        except:
+            raise happyError('wrong format/value for ITEM argument')
+        def recurse(d):
+            for k, v in d.items():
+                if happyType.ismapping(v) and v!={}:
+                    yield from recurse(v)
+                else:
+                    if item=='items':           yield (k, v)
+                    elif item=='keys':          yield k
+                    elif item=='values':        yield v
+        return list(recurse(dic))
+    
+    #/************************************************************************/
+    def xget(self, *args, **kwargs):
+        """Retrieval of deep nested dictionary.
         """
         __force_list = kwargs.pop(self.KW_FORCE_LIST, False)
+        if args in ((),(None,)) and kwargs=={}:
+            return self._deepest(self, item='values')
         if args!=():
             if len(args)>1 or happyType.issequence(args[0]):
                 if len(args)==1:    args = args[0]
@@ -2800,39 +3142,51 @@ class _NestedDict(dict):
         if kwargs == {}:
             return super(_NestedDict, self).get(*args)
         # let us check the complexive lenght of the dimensions that have been left out
-        xlen = functools.reduce(lambda x, y: x*y , 
-                                self.xlen(list(set(self.order).difference(set(kwargs)))).values())
+        xlen = self.xlen(list(set(self.order).difference(set(kwargs))))
+        if happyType.ismapping(xlen):
+            xlen = functools.reduce(lambda x, y: x*y, xlen.values())
         def deep_get(dic):
             rdic = copy.deepcopy(dic)
             while happyType.ismapping(rdic):
                 rdic = list(rdic.values())[0]
             return rdic
-        res = self.__deepsearch('get', *args, **kwargs)
+        res = self._deepsearch('get', *args, **kwargs)
         return res if __force_list is True or res is None or xlen>1 else deep_get(res)
 
     #/************************************************************************/
-    def set(self, *arg, **kwargs):
+    def xupdate(self, *arg, **kwargs):
+        """Update of deep nested dictionary.
+        """
         try:
-            assert len(arg) == 1 or happyType.issequence(arg[0])
+            assert len(arg) == 1
+            #   or (happyType.issequence(arg[0]) or happyType.ismapping(arg[0]))
         except:
             raise happyError('wrong type/value for input argument')
-        else:
-            values = arg[0] if happyType.issequence(arg[0]) else arg
-        kwargs.update({self.KW_FORCE_LIST: True})
-        xkeys = self.xkeys(**kwargs)
         try:
-            assert len(values) == 1 or len(values) == len(xkeys)
+             assert not happyType.ismapping(arg[0]) or kwargs == {}
         except:
-            raise happyError('wrong number of assignments in dictionary')
+            raise happyError('no keyword argument requested with input dictionary argument')
         else:
-            if len(values)==1 and len(xkeys)>1:
-                values = values * len(xkeys)
-        for i, xk in enumerate(xkeys):
-            rdic = self
-            for j, x in enumerate(xk):
-                if j<len(xk)-1:     rdic = rdic[x]
-            rdic.update({x: values[i]})
-    
+            values = arg[0] if happyType.issequence(arg[0]) or happyType.ismapping(arg[0]) \
+                else arg
+        if happyType.ismapping(values):
+            self._deepmerge(self, values, in_place=True)
+        else:
+            kwargs.update({self.KW_FORCE_LIST: True})
+            xkeys = self.xkeys(**kwargs)
+            try:
+                assert len(values) == 1 or len(values) == len(xkeys)
+            except:
+                raise happyError('wrong number of assignments in dictionary')
+            else:
+                if len(values)==1 and len(xkeys)>1:
+                    values = values * len(xkeys)
+            for i, xk in enumerate(xkeys):
+                rdic = self
+                for j, x in enumerate(xk):
+                    if j<len(xk)-1:     rdic = rdic[x]
+                rdic.update({x: values[i]})
+
     #/************************************************************************/
     def keys(self, *arg, **kwargs):
         """Retrieve deepest keys from a nested dictionary.
@@ -2844,7 +3198,7 @@ class _NestedDict(dict):
         if arg in ((),([],),(None,)) and kwargs == {}:
             return super(_NestedDict, self).keys()
         else:
-            return self.__deepsearch('keys', *arg, **kwargs)
+            return self._deepsearch('keys', *arg, **kwargs)
 
     #/************************************************************************/
     def xkeys(self, **kwargs):
@@ -2863,6 +3217,8 @@ class _NestedDict(dict):
             >>> res.xkeys(c=7, a=2)
                 [(3, 7, 2), (4, 7, 2), (5, 7, 2)]
         """
+        #if kwargs=={}:
+        #    return self._deepest(self, item='keys')
         __force_list = kwargs.pop(self.KW_FORCE_LIST, False)
         try:
             assert set(kwargs.keys()).difference(set(self.order)) == set()
@@ -2894,23 +3250,26 @@ class _NestedDict(dict):
             kwargs.update({k: v for k,v in zip(self.order, arg[0])})
         if kwargs == {}:
             return super(_NestedDict, self).values()
-        return self.__deepsearch('values', **kwargs)
+        return self._deepsearch('values', **kwargs)
     
     #/************************************************************************/
     def xvalues(self, **kwargs):
         """
         """
         __force_list = kwargs.pop(self.KW_FORCE_LIST, False)
-        dic = {} 
-        values = []
-        kwargs.update({self.KW_FORCE_LIST: True})
-        for xk in self.xkeys(**kwargs):
-            rdic = dic
-            for x in xk:
-                if x not in rdic:
-                    rdic.update({x: {}})
-                rdic = rdic[x]
-            values.append(self.get(xk))
+        if kwargs=={}:
+            values = self._deepest(self, item='values')
+        else:
+            dic = {} 
+            values = []
+            kwargs.update({self.KW_FORCE_LIST: True})
+            for xk in self.xkeys(**kwargs):
+                rdic = dic
+                for x in xk:
+                    if x not in rdic:
+                        rdic.update({x: {}})
+                    rdic = rdic[x]
+                values.append(self.get(xk))
         return values if __force_list is True or values is None or len(values)>1 else values[0]
 
     #/************************************************************************/
@@ -3021,3 +3380,4 @@ class _Memoized(object):
         """Support instance methods.
         """
         return functools.partial(self.__call__, obj)
+
