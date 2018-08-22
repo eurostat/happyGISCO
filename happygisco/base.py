@@ -144,797 +144,6 @@ else:
 
 #%%
 #==============================================================================
-# CLASS _CachedResponse
-#==============================================================================
-
-try:
-    assert SERVICE_AVAILABLE is True
-except:
-    class _CachedResponse(object):
-        #doc-ignore
-        pass 
-else:
-    class _CachedResponse(requests.Response):
-        """Generic class used for representing a cached response.
-            
-            >>> resp = base._CachedResponse(resp, url, path='')
-        """
-        def __init__(self, *args, **kwargs):
-            r, url = args
-            path = kwargs.pop('path','')
-            try:
-                assert happyType.isstring(url) and happyType.isstring(path) \
-                    and isinstance(r,(bytes,requests.Response))
-            except:
-                raise happyError('parsed initialising parameters not recognised')
-            super(_CachedResponse,self).__init__()
-            self.url = url
-            self._cache_path = path
-            if isinstance(r,bytes):
-                self.reason, self.status_code = "OK", 200
-                self._content, self._content_consumed = r, True           
-            elif isinstance(r,requests.Response):
-                for attr in r.__dict__:
-                    setattr(self, attr, getattr(r, attr))
-            # self._encoding = ?
-
-#%%
-#==============================================================================
-# CLASS _Service
-#==============================================================================
-
-class _Service(object):
-    """Base class for web-based geospatial services.
-    
-    This class is used to defined a web-session and simple connection operations 
-    called by a web-service. 
-        
-       >>> serv = base._Service()        
-    """
-
-    RESPONSE_FORMATS = ['resp', 'zip', 'str', 'stringio', 'bytes', 'bytesio', 'json']
-    ZIP_OPERATIONS  = ['extract', 'extractall', 'getinfo', 'namelist', 'read', 'infolist']
-    
-    #/************************************************************************/
-    def __init__(self, **kwargs):
-        self.__session           = None
-        self.__cache_store       = True
-        self.__expire_after      = None # datetime.deltatime(0)
-        self.__cache_backend     = None
-        # update with keyword arguments passed
-        if kwargs != {}:
-            attrs = ('cache_store','expire_after','force_download')
-            for attr in list(set(attrs).intersection(kwargs.keys())):
-                setattr(self, '%s' % attr, kwargs.pop(attr))
-        # determine appropriate setting for a given session, taking into account
-        # the explicit setting on that request, and the setting in the session. 
-        self.__cache_backend = 'File'
-        if isinstance(self.cache_store,bool):
-            self.__cache_store = self.__default_cache() if self.cache_store else None
-        # determine appropriate setting for a given session, taking into account
-        # the explicit setting on that request, and the setting in the session. 
-        try:
-            # whether requests_cache is defined or not, no matter
-            self.__session = requests.Session()
-            # session = requests.session(**kwargs)
-        except:
-            raise happyError('wrong requests setting - SESSION not initialised')
-        if CACHECONTROL_INSTALLED is True and self.cache_store is not None:
-            try:
-                if self.expire_after is None or int(self.expire_after) > 0:
-                    cache_store = FileCache(os.path.abspath(self.cache_store))  
-                else:
-                    cache_store = FileCache(os.path.abspath(self.cache_store), forever=True)
-            except:
-                pass
-            else:
-                self.__session = CacheControl(self.session, cache_store)
-        try:
-            assert self.session is not None
-        except:
-            raise happyError('wrong definition for SESSION parameters - SESSION not initialised')
-        
-    #/************************************************************************/
-    @property
-    def session(self):
-        """Session property (:data:`getter`/:data:`setter`) of an instance of
-        a class :class:`_Service`. `session` is actually an instance of a
-        :class:`requests.session.Session` class.
-        """ # A session type is :class:`requests.session.Session`.
-        return self.__session
-    @session.setter#analysis:ignore
-    def session(self, session):
-        if session is not None and not isinstance(session, requests.sessions.Session):
-            raise happyError('wrong type for SESSION parameter')
-        self.__session = session
-    
-    #/************************************************************************/
-    @property
-    def cache_store(self):
-        """
-        """
-        return self.__cache_store
-    @cache_store.setter
-    def cache_store(self, cache_store):
-        if not(cache_store is None or isinstance(cache_store, (str,bool))):
-            raise happyError('wrong type for CACHE_STORE parameter')
-        else:
-            #if cache_store not in (False,'',None) and requests_cache is None and CACHECONTROL_INSTALLED is False:
-            #    raise happyError('caching not supported in the absence of modules requests_cache and cachecontrol')                
-            pass
-        self.__cache_store = cache_store
-    
-    #/************************************************************************/
-    @property
-    def cache_backend(self):
-        return self.__cache_backend
-    # note: no setter ... 
-
-    #/************************************************************************/
-    @property
-    def expire_after(self):
-        """
-        """
-        return self.__expire_after
-    @expire_after.setter
-    def expire_after(self, expire_after):
-        if expire_after is None or isinstance(expire_after, (int, datetime.timedelta)) \
-                and (int(expire_after)>=0 or expire_after==-1):
-            self.__expire_after = expire_after
-        elif not isinstance(expire_after, (int, datetime.timedelta)):
-            raise happyError('wrong type for EXPIRE_AFTER parameter')
-        #elif isinstance(expire_after, int) and expire_after<0:
-        #    raise happyError('wrong time setting for EXPIRE_AFTER parameter')
-
-    #/************************************************************************/
-    @staticmethod
-    def __default_cache():
-        """Create default pathname for cache directory depending on OS platform.
-        Inspired by `Python` package `mod:wbdata`: default path defined for 
-        `property:path` property of `class:Cache` class.
-        """
-        platform = sys.platform
-        if platform.startswith("win"): # windows
-            basedir = os.getenv("LOCALAPPDATA",os.getenv("APPDATA",os.path.expanduser("~")))
-        elif platform.startswith("darwin"): # Mac OS
-            basedir = os.path.expanduser("~/Library/Caches")
-        else:
-            basedir = os.getenv("XDG_CACHE_HOME",os.path.expanduser("~/.cache"))
-        return os.path.join(basedir, settings.PACKAGE)    
-        
-    #/************************************************************************/   
-    def get_status(self, url):
-        """Retrieve the header of a URL and return the server's status code.
-        
-            >>> status = serv.get_status(url)
-            
-        Arguments
-        ---------
-        url : str
-            complete URL name whom status will be checked.
-        
-        Returns
-        -------
-        status : int
-            response status code.
-            
-        Raises
-        ------
-        ~settings.happyError
-            error is raised in the cases:
-                
-                * the request is wrongly formulated,
-                * the connection fails.
-            
-        Examples
-        --------
-        We can see the response status code when connecting to different web-pages
-        or services:
-        
-            >>> serv = base._Service()
-            >>> serv.get_status('http://dumb')
-                ConnectionError: connection failed
-            >>> serv.get_status('http://www.dumbanddumber.com')
-                301 
-        
-        Let us actually check that the status is ok when connecting to |Eurostat| website:
-            
-            >>> stat = serv.get_status(settings.ESTAT_URL)
-            >>> print(stat)
-                200
-            >>> import requests
-            >>> stat == requests.codes.ok
-                True
-        
-        See also
-        --------
-        :meth:`~_Service.get_response`, :meth:`~_Service.build_url`.
-        """ 
-        try:
-            response = self.session.head(url)
-        except requests.ConnectionError:
-            raise happyError('connection failed')  
-        else:
-            happyVerbose('response status from web-service: %s' % response.status_code)
-        response.raise_for_status()
-        try:
-            response.raise_for_status()
-        except:
-            raise happyError('wrong request formulated')  
-        else:
-            status = response.status_code
-            response.close()
-        return status
-
-    #/************************************************************************/
-    @staticmethod
-    def __is_cached(pathname, time_out):
-        """Check whether a URL has been already cached.
-        :param pathname:
-        :param time_out:
-        :returns: True if the file can be retrieved from the disk (cache)
-        """
-        if not os.path.exists(pathname):
-            resp = False
-        elif time_out is None:
-            resp = True
-        elif time_out < 0:
-            resp = True
-        elif time_out == 0:
-            resp = False
-        else:
-            cur = time.time()
-            mtime = os.stat(pathname).st_mtime
-            happyVerbose("%s - last modified: %s" % (pathname,time.ctime(mtime)))
-            resp = cur - mtime < time_out
-        return resp
-
-    #/************************************************************************/
-    @staticmethod
-    def __clean_cache(pathname, time_out):
-        """Clean a cached file.
-        :param pathname:
-        :param time_out:
-        """
-        if not os.path.exists(pathname):
-            resp = False
-        elif time_out is None or time_out <= 0:
-            resp = True
-        else:
-            cur = time.time()
-            mtime = os.stat(pathname).st_mtime
-            happyVerbose("%s - last modified: %s" % (pathname,time.ctime(mtime)))
-            resp = cur - mtime < time_out
-        if resp is True:
-            happyVerbose("removing disk file %s" % pathname)
-            os.remove(pathname)
-                        
-    #/************************************************************************/
-    def __get_response(self, url, **kwargs):
-        """Download URL from internet and store the downloaded content into 
-        <cache>/file.
-        If <cache>/file already exists, it returns content from disk.
-        
-            >>> page = S.__get_response(url, cache_store=False, force_download=False, expire_after=-1)
-        """
-        # create cache directory only the fist time it is needed
-        # note: html must be a str type not byte type
-        cache_store = kwargs.get('cache_store') or self.cache_store or False
-        if isinstance(cache_store, bool) and cache_store is True:
-            cache_store = self.__default_cache()
-        force_download = kwargs.get('force_download') or False
-        expire_after = kwargs.get('expire_after') or self.expire_after
-        # build unique filename from URL name and cache directory, _e.g._ using 
-        # hashlib encoding.
-        pathname = url.encode('utf-8')
-        try:
-            pathname = hashlib.md5(pathname).hexdigest()
-        except:
-            pathname = pathname.hex()
-        pathname = os.path.join(cache_store or './', pathname)
-        if force_download is True or not self.__is_cached(pathname, expire_after):
-            response = self.session.get(url)
-            content = response.content
-            if cache_store is not None:
-                if not os.path.exists(cache_store):
-                    os.makedirs(cache_store)
-                elif not os.path.isdir(cache_store):
-                    raise happyError('cache {} is not a directory'.format(cache_store))
-                # write "content" to a given pathname
-                with open(pathname, 'wb') as f:
-                    f.write(content)
-                    f.close()  
-        else:
-            if not os.path.exists(cache_store) or not os.path.isdir(cache_store):
-                raise happyError('cache %s is not a directory' % cache_store)
-            # read "content" from a given pathname.
-            with open(pathname, 'rb') as f:
-                content = f.read()
-                f.close()
-        return pathname, content
-    
-    #/************************************************************************/
-    def get_response(self, url, **kwargs):
-        """Retrieve the GET response of a URL.
-        
-            >>> response = serv.get_response(url, **kwargs)
-            
-        Arguments
-        ---------
-        url : str
-            complete URL name whose response is retrieved.
-        
-        Returns
-        -------
-        response : :class:`requests.models.Response`
-            response retrieved from the URL.
-            
-        Raises
-        ------
-        ~settings.happyError
-            error is raised in the cases:
-            
-                * the request is wrongly formulated,
-                * a wrong response is retrieved.
-            
-        Examples
-        --------
-        Some simple tests:
-            
-            >>> serv = base._Service()
-            >>> serv.get_response('http://dumb')
-                happyError: wrong request formulated
-            >>> resp = serv.get_response('http://www.example.com')
-            >>> print(resp.text)
-                <!doctype html>
-                <html>
-                <head>
-                    <title>Example Domain</title>
-                    <meta charset="utf-8" />
-                    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-                    <meta name="viewport" content="width=device-width, initial-scale=1" />
-                    ...
-            
-        We can view the server’s response headers when connecting to |Eurostat|
-        webpage:
-            
-            >>> resp = serv.get_response(settings.ESTAT_URL)
-            >>> print(resp.headers)
-                {   'Date': 'Wed, 18 Apr 2018 11:54:40 GMT', 
-                    'X-Content-Type-Options': 'nosniff', 
-                    'X-Frame-Options': 'SAMEORIGIN', 
-                    'X-XSS-Protection': '1', 
-                    'Content-Type': 'text/html;charset=UTF-8', 
-                    'Transfer-Encoding': 'chunked', 
-                    'Server': 'Europa', 
-                    'Connection': 'Keep-Alive', 
-                    'Content-Encoding': 'gzip' }
-        
-        We can also access the response body as bytes (though that is usually
-        adapted to non-text requests):
-            
-            >>> print(resp.content)
-                b'<!DOCTYPE html PUBLIC " ...
-        
-        See also
-        --------
-        :meth:`~_Service.get_status`, :meth:`~_Service.build_url`.
-        """
-        force_download = kwargs.pop('force_download',False)
-        if not isinstance(force_download, bool):
-            raise happyError('wrong type for FORCE_DOWNLOAD parameter')
-        cache_store = kwargs.pop('cache_store',None) or self.cache_store or False
-        expire_after = kwargs.pop('expire_after',None) or self.expire_after or 0
-        if isinstance(cache_store, bool) and cache_store is True:
-            cache_store = self.__default_cache()
-        if force_download is True:
-            try:
-                if requests_cache is None:
-                    response = self.session.get(url)                
-                else:
-                    with requests_cache.disabled():
-                        response = self.session.get(url)    
-            except:
-                raise happyError('wrong request formulation') 
-        else: 
-            pathname = ''
-            try:
-                if CACHECONTROL_INSTALLED is True:
-                    response = self.session.get(url)                
-                elif REQUESTS_CACHE_INSTALLED is True:
-                    with requests_cache.enabled(self.cache_store, **kwargs):
-                        response = self.session.get(url)                
-                else:
-                    kwargs.update({'force_download': force_download,
-                                   'cache_store': cache_store,
-                                   'expire_after': expire_after})
-                    pathname, response = self.__get_response(url, **kwargs)
-            except:
-                raise happyError('wrong request formulated')  
-            else:
-                response = _CachedResponse(response, url, path=pathname)
-        try:
-            assert response is not None
-            response.raise_for_status()
-        except:
-            raise happyError('wrong response retrieved')  
-        return response
-        
-    #/************************************************************************/
-    def read_response(self, response, **kwargs):
-        """Read the response of a given request.
-        
-            >>> data = serv.read_response(response, **kwargs)
-            
-        Examples
-        --------
-        
-        """
-        fmt = kwargs.pop('fmt', None)
-        if fmt in (None,'resp'):
-            return response
-        try:
-            assert fmt is None or happyType.isstring(fmt)
-        except:
-            raise happyError('wrong format for FMT parameter') 
-        else:
-            fmt = fmt.lower()
-        try:
-            assert fmt in ['jsonstr', 'jsonbytes'] + self.RESPONSE_FORMATS # only for developers
-        except:
-            raise happyError('wrong value for FMT parameter - must be in %s' % self.RESPONSE_FORMATS) 
-        if fmt.startswith('json'):
-            try:
-                assert fmt not in ('jsonstr', 'jsonbytes')
-                data = response.json()
-            except:
-                try:
-                    assert fmt != 'jsonbytes'
-                    data = response.text
-                except:
-                    try:
-                        data = response.content 
-                    except:
-                        raise happyError('error JSON-encoding of response')
-                    else:
-                        fmt = 'jsonbytes' # force
-                else:
-                    fmt = 'jsonstr' # force
-            else:
-                return data
-        elif fmt in ('str', 'stringio'):
-            try:
-                data = response.text
-            except:
-                raise happyError('error accessing ''text'' attribute of response')
-        elif fmt in ('bytes', 'bytesio', 'zip'):
-            try:
-                data = response.content 
-            except:
-                raise happyError('error accessing ''content'' attribute of response')
-        if fmt == 'stringio':
-            try:
-                data = io.StringIO(data)
-            except:
-                raise happyError('error loading StringIO data')
-        elif fmt in ('bytesio', 'zip'):
-            try:
-                data = io.BytesIO(data)
-            except:
-                raise happyError('error loading BytesIO data')
-        elif fmt == 'jsonstr':
-            try:
-                data = json.loads(data)
-            except:
-                raise happyError('error JSON-encoding of str text')
-        elif fmt == 'jsonbytes':                
-                try:
-                    data = json.loads(data.decode())
-                except:
-                    try:            
-                        assert CHARDET_INSTALLED is True
-                        data = json.loads(data.decode(chardet.detect(data)["encoding"]))
-                    except:
-                        raise happyError('error JSON-encoding of bytes content')
-        if fmt != 'zip':
-            return data 
-        # deal with special case
-        try:
-            assert set(kwargs.keys()).difference(set(self.ZIP_OPERATIONS)) == set()
-        except:
-            raise happyError('parsed operations are not recognised')  
-        else:
-            operators = [op for op in self.ZIP_OPERATIONS if op in kwargs.keys()] 
-        try:
-            assert sum([1 for op in operators]) == 1
-        except:
-            raise happyError('only one operation supported per call')  
-        else:
-            operator = operators[0] 
-        members, path = None, None
-        if operator in ('extract', 'getinfo', 'read'):
-            members = kwargs.pop(operator, None)
-        elif operator == 'extractall':
-            path = kwargs.pop('extractall', None)
-        else: # elif operator in ('infolist','namelist'):
-            try:
-                assert kwargs.get(operator) not in (False,None)
-            except:
-                raise happyError('no operation parsed')
-        if not happyType.issequence(members):
-            members = [members,]
-        with zipfile.ZipFile(data) as zf:
-            #if not zipfile.is_zipfile(zf): # does not work
-            #    raise happyError('file not recognised as zip file')    
-            if operator in  ('infolist','namelist'):
-                return getattr(zf, operator)()
-            elif members is not None:
-                if not all([m in zf.namelist() for m in members]):
-                    raise happyError('impossible to retrieve member file(s) from zipped data')
-            if operator in ('extract', 'getinfo', 'read'):
-                return [getattr(zf, operator)(m) for m in members]
-            elif operator == 'extractall':
-                return zf.extractall(path=path)    
-            
-    #/************************************************************************/
-    def read_url(self, url, **kwargs):
-        """Returns the (possibly formatted) response of a given URL.
-        
-            >>> data = serv.read_url(url, **kwargs)
-        """
-        try:
-            assert self.get_status(url) is not None
-        except:
-            raise happyError('error API request - wrong URL status')
-        try:
-            response = self.get_response(url)
-        except:
-            raise happyError('URL data for %s not loaded' % url)
-        return self.read_response(response, **kwargs)
-            
-    #/************************************************************************/
-    @classmethod
-    def build_url(cls, domain=None, **kwargs):
-        """Create a complete query URL to be used by a web-service.
-        
-            >>> url = _Service.build_url(domain, **kwargs)
-            
-        Arguments
-        ---------
-        domain : str
-            domain of the URL; default: :data:`domain` is left empty.
-           
-        Keyword arguments
-        -----------------
-        protocol : str
-            web protocol; default to :data:`settings.DEF_PROTOCOL`, *e.g.* :literal:`http`\ .
-        domain : str
-            this keyword can be used when :data:`domain` is not passed as a 
-            positional argument already.
-        path : str
-            path completing the domain to form the URL: it will actually be concatenated
-            to :data:`domain` so as to form the composite string :data:`domain/path`; hence, 
-            :data:`path` could simply be concatenated with :data:`domain` in input already.
-        query : str
-            query of the URL: it is concatenated to the string :data:`domain/path` so
-            as to form the string :data:`domain/path/query?`\ .
-        kwargs : dict
-            any other keyword argument can be added as further "filters" to the output
-            URL, *e.g.* when :data:`{'par': 1}` is passed as an additional keyword argument,
-            the string :literal:`par=1` will be concatenated at the end of the URL formed
-            by the other parameters.
-                
-        Returns
-        -------
-        url : str
-            URL uniquely defined by the input parameters; the generic form of :data:`url`
-            is :data:`protocol://domain/path/query?filters`, when all parameters above
-            are passed.
-    
-        Example
-        -------
-        Let us, for instance, build a URL query to *Eurostat* Rest API (just enter 
-        the output URL in your browser to check the output):
-            
-            >>> from happygisco.base import _Service
-            >>> _Service.build_url(settings.ESTAT_URL,
-                                   path='wdds/rest/data/v2.1/json/en',
-                                   query='ilc_li03', 
-                                   precision=1,
-                                   indic_il='LI_R_MD60',
-                                   time='2015')
-                'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li03?precision=1&indic_il=LI_R_MD60&time=2015'
-        
-        Note that another way to call the method is:
-
-            >>> _Service.build_url(domain=settings.ESTAT_URL,
-                                   path='wdds/rest/data/v2.1/json/en',
-                                   query='ilc_li01', 
-                                   **{'precision': 1, 'hhtyp': 'A1', 'time': '2010'})
-                'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li01?precision=1&hhtyp=A1&time=2010'
-        
-        Similarly, we will be able to access to |GISCO| service (see :meth:`GISCOService.url_geocode`
-        below):
-
-            >>> _Service.build_url(domain=settings.GISCO_URL,
-                                   query='api', 
-                                   **{'q': 'Berlin+Germany', 'limit': 2})
-                'http://europa.eu/webtools/rest/gisco/api?q=Berlin+Germany&limit=2'  
-        
-        See also
-        --------
-        :meth:`~_Service.get_status`, :meth:`~_Service.get_response`.
-        """
-        # retrieve parameters/build url
-        if domain is None:      domain = kwargs.pop('domain','')
-        url = domain.strip("/")
-        protocol = kwargs.pop('protocol', settings.DEF_PROTOCOL)
-        if protocol not in settings.PROTOCOLS:
-            raise happyError('web protocol not recognised')
-        if not url.startswith(protocol):  
-            url = "%s://%s" % (protocol, url)
-        path = kwargs.pop('path','')  
-        if path not in (None,''):
-            url = "%s/%s" % (url, path)
-        query = kwargs.pop('query','')
-        if query not in (None,''):      
-            url = "%s/%s" % (url, query)
-        if kwargs != {}:
-            #_izip_replicate = lambda d : [(k,i) if isinstance(d[k], (tuple,list))        \
-            #        else (k, d[k]) for k in d for i in d[k]]
-            _izip_replicate = lambda d : [[(k,i) for i in d[k]] if isinstance(d[k], (tuple,list))        \
-                else (k, d[k])  for k in d]          
-            filters = '&'.join(['{k}={v}'.format(k=k, v=v) for (k, v) in _izip_replicate(kwargs)])
-            # filters = '&'.join(map("=".join,kwargs.items()))
-            sep = '?'
-            try:        
-                last = url.rsplit('/',1)[1]
-            except:     
-                pass
-            else:
-                if any([last.endswith(c) for c in ('?', '/')]):     sep = ''
-            url = "%s%s%s" % (url, sep, filters)
-        return url
-        
-    #/************************************************************************/
-    @classmethod
-    def clean_cache(cls, domain=None, **kwargs):
-        """
-        """
-        pass
-
-#%%
-#==============================================================================
-# CLASS _Tool
-#==============================================================================
-
-class _Tool(object):   
-    """Dummy base class for geospatial "tools". 
-    """
-    #__metaclass__  = abc.ABCMeta
-    pass
-
-
-#%%
-#==============================================================================
-# CLASS _Feature
-#==============================================================================
-            
-class _Feature(object):    
-    """Base class for geographic features.
-    
-        >>> feat = base._Feature()
-    """
-    #__metaclass__  = abc.ABCMeta
-
-    #/************************************************************************/
-    def __init__(self):
-        self.__coord, self.__projection = None, None
-        self.__service, self.__mapping, self.__transform = None, None, None
-        try:
-            assert True
-        except:
-            happyWarning('transform/mapping tool(s) not available')
-        else:
-            self.__transform = _Tool()
-            self.__mapping = _Tool()
-        try:
-            assert SERVICE_AVAILABLE
-        except:
-            happyWarning('web service(s) not available')
-        else:
-            self.__service = _Service()
-       
-    #/************************************************************************/
-    @property
-    #@abc.abstractmethod
-    def service(self):
-        """Service property (:data:`getter`) of a :class:`_Feature` instance. 
-        The :data:`service` property returns an object as an instance of the
-        :class:`~happygisco.services.GISCOService` or :class:`~happygisco.services.APIService`
-        classes.
-        """
-        return self.__service
-    @service.setter
-    def service(self, service):
-        self.__service = service
-        
-    #/************************************************************************/
-    @property
-    #@abc.abstractmethod
-    def transform(self):
-        """Geospatial transform property (:data:`getter`) of a :class:`_Feature` instance.
-        The :data:`transform` property returns an object as an instance of the 
-        :class:`~happygisco.tools.GDALTransform` class.
-        """
-        return self.__transform
-    @transform.setter
-    def transform(self, transform):
-        self.__transform = transform
-       
-    #/************************************************************************/
-    @property
-    #@abc.abstractmethod
-    def mapping(self):
-        """Geospatial mapping property (:data:`getter`) of a :class:`_Feature` instance.
-        The :data:`mapping` property returns an object as an instance of the
-        :class:`~happygisco.tools.FoliumMap` class.
-        """
-        return self.__mapping
-    @mapping.setter
-    def mapping(self, mapping):
-        self.__mapping = mapping
-     
-    #/************************************************************************/
-    @property
-    #@abc.abstractmethod
-    def projection(self):
-        """Projection property (:data:`getter`) of a :class:`_Feature` instance.
-        """ 
-        return self.__projection
-    @projection.setter
-    def projection(self, proj):
-        self.__projection = proj
-
-    #/************************************************************************/
-    @property
-    #@abc.abstractmethod
-    def coord(self):
-        # ignore: this will be overwritten              
-        """Pair of :literal:`(lat,Lon)` geographic coordinates (:data:`getter`/:data:`setter`) 
-        of a :class:`_Feature` instance.
-        """ 
-        return self.__coord
-    @coord.setter
-    def coord(self, coord):
-        self.__coord = coord        
-        
-    #/************************************************************************/
-    @property
-    def coordinates(self):                                              
-        """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) of 
-        a :class:`_Feature` instance.
-        """ 
-        pass
-        
-    #/************************************************************************/
-    @property
-    def Lon(self):                                                       
-        """Longitude property (:data:`getter`) of a :class:`_Feature` instance. 
-        A :data:`Lon` type is (a list of) :class:`float`.
-        """
-        pass
-
-    #/************************************************************************/
-    @property
-    def lat(self): 
-        """Latitude property (:data:`getter`) of a :class:`_Feature` instance. 
-        A :data:`lat` type is (a list of) :class:`float`.
-        """
-        pass
-    
-#%%
-#==============================================================================
 # CLASS _Decorator
 #==============================================================================
     
@@ -945,6 +154,17 @@ class _Decorator(object):
     
     Methods from the :mod:`services` module rely on these classes.
     """
+    KW_SESSION      = 'session'
+    KW_CACHING      = '_caching_'
+    KW_CACHE        = 'cache_store'
+    KW_EXPIRE       = 'expire_after'
+    KW_FORCE        = '_force_download_' 
+    KW_BACKEND      = 'cache_backend'
+    
+    KW_REST_URL     = 'rest_url'
+    KW_CACHE_URL    = 'cache_url'
+    KW_MAP_URL      = 'map_url'
+    KW_ARCGIS       = 'arcgis'
     
     KW_PLACE        = 'place'
     KW_ADDRESS      = 'address'
@@ -965,12 +185,10 @@ class _Decorator(object):
     KW_PROJECTION   = 'proj' 
     
     KW_YEAR         = 'year'
-    KW_FEATURE      = 'feat'
-    # KW_FEATURE      = 'feature' 
+    KW_FEATURE      = 'feat' # 'feature' 
     KW_FORMAT       = 'fmt'
     KW_SCALE        = 'scale'
-    KW_GEOMETRY     = 'geom' 
-    # KW_GEOMETRY     = 'geometry' 
+    KW_GEOMETRY     = 'geom' # 'geometry' 
     
     KW_LAYER        = 'layer'
     KW_FILE         = 'file'
@@ -991,6 +209,12 @@ class _Decorator(object):
     KW_TILE         = 'tile'
     KW_ATTR         = 'attr'
     KW_VALUES       = 'values'
+    
+    KW_INFO         = 'info'
+            
+    KW_ORDER        = 'order'
+    KW_VALUES       = 'values'
+    KW_FORCE_LIST   = '_force_list_'
 
     #/************************************************************************/
     class __base(object):
@@ -2618,8 +1842,7 @@ class _Decorator(object):
                 kwargs.update(def_kwargs)
                 return self.func(*args, **kwargs)
         return decorator
-        
-    
+         
 #_Decorator.parse_year =                         \
 #    _Decorator._parse_class(int, _Decorator.KW_YEAR, 
 #                            _values_=settings.GISCO_YEARS, _key_default_= settings.DEF_GISCO_YEAR)
@@ -2641,6 +1864,813 @@ class _Decorator(object):
 #    _Decorator._parse_class(ogr.Layer, _Decorator.KW_LAYER)
 #_Decorator.parse_vector =                        \
 #    _Decorator._parse_class(ogr.Feature, _Decorator.KW_VECTOR)
+        
+
+#%%
+#==============================================================================
+# CLASS _CachedResponse
+#==============================================================================
+
+try:
+    assert SERVICE_AVAILABLE is True
+except:
+    class _CachedResponse(object):
+        #doc-ignore
+        pass 
+else:
+    class _CachedResponse(requests.Response):
+        """Generic class used for representing a cached response.
+            
+            >>> resp = base._CachedResponse(resp, url, path='')
+        """
+        def __init__(self, *args, **kwargs):
+            r, url = args
+            path = kwargs.pop('path','')
+            try:
+                assert happyType.isstring(url) and happyType.isstring(path) \
+                    and isinstance(r,(bytes,requests.Response))
+            except:
+                raise happyError('parsed initialising parameters not recognised')
+            super(_CachedResponse,self).__init__()
+            self.url = url
+            self._cache_path = path
+            if isinstance(r,bytes):
+                self.reason, self.status_code = "OK", 200
+                self._content, self._content_consumed = r, True           
+            elif isinstance(r,requests.Response):
+                for attr in r.__dict__:
+                    setattr(self, attr, getattr(r, attr))
+            # self._encoding = ?
+
+
+#%%
+#==============================================================================
+# CLASS _Service
+#==============================================================================
+
+class _Service(object):
+    """Base class for web-based geospatial services.
+    
+    This class is used to defined a web-session and simple connection operations 
+    called by a web-service. 
+        
+       >>> serv = base._Service()        
+    """
+    
+    RESPONSE_FORMATS = ['resp', 'zip', 'str', 'stringio', 'bytes', 'bytesio', 'json']
+    ZIP_OPERATIONS  = ['extract', 'extractall', 'getinfo', 'namelist', 'read', 'infolist']
+    
+    #/************************************************************************/
+    def __init__(self, **kwargs):
+        self.__session           = None
+        self.__cache_store       = True
+        self.__expire_after      = None # datetime.deltatime(0)
+        self.__cache_backend     = None
+        # update with keyword arguments passed
+        if kwargs != {}:
+            attrs = (_Decorator.KW_CACHE,_Decorator.KW_EXPIRE,_Decorator.KW_FORCE)
+            for attr in list(set(attrs).intersection(kwargs.keys())):
+                setattr(self, '%s' % attr, kwargs.pop(attr))
+        # determine appropriate setting for a given session, taking into account
+        # the explicit setting on that request, and the setting in the session. 
+        self.__cache_backend = 'File'
+        if isinstance(self.cache_store,bool):
+            self.__cache_store = self.__default_cache() if self.cache_store else None
+        # determine appropriate setting for a given session, taking into account
+        # the explicit setting on that request, and the setting in the session. 
+        try:
+            # whether requests_cache is defined or not, no matter
+            self.__session = requests.Session()
+            # session = requests.session(**kwargs)
+        except:
+            raise happyError('wrong requests setting - SESSION not initialised')
+        if CACHECONTROL_INSTALLED is True and self.cache_store is not None:
+            try:
+                if self.expire_after is None or int(self.expire_after) > 0:
+                    cache_store = FileCache(os.path.abspath(self.cache_store))  
+                else:
+                    cache_store = FileCache(os.path.abspath(self.cache_store), forever=True)
+            except:
+                pass
+            else:
+                self.__session = CacheControl(self.session, cache_store)
+        try:
+            assert self.session is not None
+        except:
+            raise happyError('wrong definition for SESSION parameters - SESSION not initialised')
+        
+    #/************************************************************************/
+    @property
+    def session(self):
+        """Session property (:data:`getter`/:data:`setter`) of an instance of
+        a class :class:`_Service`. `session` is actually an instance of a
+        :class:`requests.session.Session` class.
+        """ # A session type is :class:`requests.session.Session`.
+        return self.__session
+    @session.setter#analysis:ignore
+    def session(self, session):
+        if session is not None and not isinstance(session, requests.sessions.Session):
+            raise happyError('wrong type for SESSION parameter')
+        self.__session = session
+    
+    #/************************************************************************/
+    @property
+    def cache_store(self):
+        """
+        """
+        return self.__cache_store
+    @cache_store.setter
+    def cache_store(self, cache_store):
+        if not(cache_store is None or isinstance(cache_store, (str,bool))):
+            raise happyError('wrong type for %s parameter' % _Decorator.KW_CACHE.upper())
+        else:
+            #if cache_store not in (False,'',None) and requests_cache is None and CACHECONTROL_INSTALLED is False:
+            #    raise happyError('caching not supported in the absence of modules requests_cache and cachecontrol')                
+            pass
+        self.__cache_store = cache_store
+    
+    #/************************************************************************/
+    @property
+    def cache_backend(self):
+        return self.__cache_backend
+    # note: no setter ... 
+
+    #/************************************************************************/
+    @property
+    def expire_after(self):
+        """
+        """
+        return self.__expire_after
+    @expire_after.setter
+    def expire_after(self, expire_after):
+        if expire_after is None or isinstance(expire_after, (int, datetime.timedelta)) \
+                and (int(expire_after)>=0 or expire_after==-1):
+            self.__expire_after = expire_after
+        elif not isinstance(expire_after, (int, datetime.timedelta)):
+            raise happyError('wrong type for %s parameter' % _Decorator.KW_EXPIRE.upper())
+        #elif isinstance(expire_after, int) and expire_after<0:
+        #    raise happyError('wrong time setting for %s parameter' % _Decorator.KW_EXPIRE.upper())
+
+    #/************************************************************************/
+    @staticmethod
+    def __default_cache():
+        """Create default pathname for cache directory depending on OS platform.
+        Inspired by `Python` package `mod:wbdata`: default path defined for 
+        `property:path` property of `class:Cache` class.
+        """
+        platform = sys.platform
+        if platform.startswith("win"): # windows
+            basedir = os.getenv("LOCALAPPDATA",os.getenv("APPDATA",os.path.expanduser("~")))
+        elif platform.startswith("darwin"): # Mac OS
+            basedir = os.path.expanduser("~/Library/Caches")
+        else:
+            basedir = os.getenv("XDG_CACHE_HOME",os.path.expanduser("~/.cache"))
+        return os.path.join(basedir, settings.PACKAGE)    
+        
+    #/************************************************************************/   
+    def get_status(self, url):
+        """Retrieve the header of a URL and return the server's status code.
+        
+            >>> status = serv.get_status(url)
+            
+        Arguments
+        ---------
+        url : str
+            complete URL name whom status will be checked.
+        
+        Returns
+        -------
+        status : int
+            response status code.
+            
+        Raises
+        ------
+        ~settings.happyError
+            error is raised in the cases:
+                
+                * the request is wrongly formulated,
+                * the connection fails.
+            
+        Examples
+        --------
+        We can see the response status code when connecting to different web-pages
+        or services:
+        
+            >>> serv = base._Service()
+            >>> serv.get_status('http://dumb')
+                ConnectionError: connection failed
+            >>> serv.get_status('http://www.dumbanddumber.com')
+                301 
+        
+        Let us actually check that the status is ok when connecting to |Eurostat| website:
+            
+            >>> stat = serv.get_status(settings.ESTAT_URL)
+            >>> print(stat)
+                200
+            >>> import requests
+            >>> stat == requests.codes.ok
+                True
+        
+        See also
+        --------
+        :meth:`~_Service.get_response`, :meth:`~_Service.build_url`.
+        """ 
+        try:
+            response = self.session.head(url)
+        except requests.ConnectionError:
+            raise happyError('connection failed')  
+        else:
+            happyVerbose('response status from web-service: %s' % response.status_code)
+        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except:
+            raise happyError('wrong request formulated')  
+        else:
+            status = response.status_code
+            response.close()
+        return status
+
+    #/************************************************************************/
+    @staticmethod
+    def __is_cached(pathname, time_out):
+        """Check whether a URL has been already cached.
+        :param pathname:
+        :param time_out:
+        :returns: True if the file can be retrieved from the disk (cache)
+        """
+        if not os.path.exists(pathname):
+            resp = False
+        elif time_out is None:
+            resp = True
+        elif time_out < 0:
+            resp = True
+        elif time_out == 0:
+            resp = False
+        else:
+            cur = time.time()
+            mtime = os.stat(pathname).st_mtime
+            happyVerbose("%s - last modified: %s" % (pathname,time.ctime(mtime)))
+            resp = cur - mtime < time_out
+        return resp
+
+    #/************************************************************************/
+    @staticmethod
+    def __clean_cache(pathname, time_out):
+        """Clean a cached file.
+        :param pathname:
+        :param time_out:
+        """
+        if not os.path.exists(pathname):
+            resp = False
+        elif time_out is None or time_out <= 0:
+            resp = True
+        else:
+            cur = time.time()
+            mtime = os.stat(pathname).st_mtime
+            happyVerbose("%s - last modified: %s" % (pathname,time.ctime(mtime)))
+            resp = cur - mtime < time_out
+        if resp is True:
+            happyVerbose("removing disk file %s" % pathname)
+            os.remove(pathname)
+                        
+    #/************************************************************************/
+    def __get_response(self, url, **kwargs):
+        """Download URL from internet and store the downloaded content into 
+        <cache>/file.
+        If <cache>/file already exists, it returns content from disk.
+        
+            >>> page = S.__get_response(url, cache_store=False, 
+                                        _force_download_=False, _expire_after_=-1)
+        """
+        # create cache directory only the fist time it is needed
+        # note: html must be a str type not byte type
+        cache_store = kwargs.get(_Decorator.KW_CACHE) or self.cache_store or False
+        if isinstance(cache_store, bool) and cache_store is True:
+            cache_store = self.__default_cache()
+        force_download = kwargs.get(_Decorator.KW_FORCE) or False
+        expire_after = kwargs.get(_Decorator.KW_EXPIRE) or self.expire_after
+        # build unique filename from URL name and cache directory, _e.g._ using 
+        # hashlib encoding.
+        pathname = url.encode('utf-8')
+        try:
+            pathname = hashlib.md5(pathname).hexdigest()
+        except:
+            pathname = pathname.hex()
+        pathname = os.path.join(cache_store or './', pathname)
+        if force_download is True or not self.__is_cached(pathname, expire_after):
+            response = self.session.get(url)
+            content = response.content
+            if cache_store is not None:
+                if not os.path.exists(cache_store):
+                    os.makedirs(cache_store)
+                elif not os.path.isdir(cache_store):
+                    raise happyError('cache {} is not a directory'.format(cache_store))
+                # write "content" to a given pathname
+                with open(pathname, 'wb') as f:
+                    f.write(content)
+                    f.close()  
+        else:
+            if not os.path.exists(cache_store) or not os.path.isdir(cache_store):
+                raise happyError('cache %s is not a directory' % cache_store)
+            # read "content" from a given pathname.
+            with open(pathname, 'rb') as f:
+                content = f.read()
+                f.close()
+        return pathname, content
+    
+    #/************************************************************************/
+    def get_response(self, url, **kwargs):
+        """Retrieve the GET response of a URL.
+        
+            >>> response = serv.get_response(url, **kwargs)
+            
+        Arguments
+        ---------
+        url : str
+            complete URL name whose response is retrieved.
+            
+        Keyword arguments
+        -----------------
+        cache_store : str
+        _expire_after_ : int,datetime
+        _force_download_ : bool
+        _caching_ : bool
+            flag set to actually use caching when fetching the response; default: 
+            :data:`_caching_=False`, the cache (even if it exists is not used) and
+            nothing is written on the disk.
+            
+        Returns
+        -------
+        response : :class:`requests.models.Response`
+            response retrieved from the URL.
+            
+        Raises
+        ------
+        ~settings.happyError
+            error is raised in the cases:
+            
+                * the request is wrongly formulated,
+                * a wrong response is retrieved.
+            
+        Examples
+        --------
+        Some simple tests:
+            
+            >>> serv = base._Service()
+            >>> serv.get_response('http://dumb')
+                happyError: wrong request formulated
+            >>> resp = serv.get_response('http://www.example.com')
+            >>> print(resp.text)
+                <!doctype html>
+                <html>
+                <head>
+                    <title>Example Domain</title>
+                    <meta charset="utf-8" />
+                    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1" />
+                    ...
+            
+        We can view the server’s response headers when connecting to |Eurostat|
+        webpage:
+            
+            >>> resp = serv.get_response(settings.ESTAT_URL)
+            >>> print(resp.headers)
+                {   'Date': 'Wed, 18 Apr 2018 11:54:40 GMT', 
+                    'X-Content-Type-Options': 'nosniff', 
+                    'X-Frame-Options': 'SAMEORIGIN', 
+                    'X-XSS-Protection': '1', 
+                    'Content-Type': 'text/html;charset=UTF-8', 
+                    'Transfer-Encoding': 'chunked', 
+                    'Server': 'Europa', 
+                    'Connection': 'Keep-Alive', 
+                    'Content-Encoding': 'gzip' }
+        
+        We can also access the response body as bytes (though that is usually
+        adapted to non-text requests):
+            
+            >>> print(resp.content)
+                b'<!DOCTYPE html PUBLIC " ...
+        
+        See also
+        --------
+        :meth:`~_Service.get_status`, :meth:`~_Service.build_url`.
+        """
+        force_download = kwargs.pop(_Decorator.KW_FORCE, False)
+        caching = kwargs.pop(_Decorator.KW_CACHING, True)
+        if not isinstance(force_download, bool):
+            raise happyError('wrong type for %s parameter' % _Decorator.KW_FORCE.upper())
+        cache_store = kwargs.pop(_Decorator.KW_CACHE,None) or self.cache_store or False
+        expire_after = kwargs.pop(_Decorator.KW_EXPIRE,None) or self.expire_after or 0
+        if isinstance(cache_store, bool) and cache_store is True:
+            cache_store = self.__default_cache()
+        if caching is False or cache_store is None:
+            try:
+                if REQUESTS_CACHE_INSTALLED is True:
+                    with requests_cache.disabled():
+                        response = self.session.get(url)    
+                else:
+                    response = self.session.get(url)                
+            except:
+                raise happyError('wrong request formulation') 
+        else: 
+            pathname = ''
+            try:
+                if CACHECONTROL_INSTALLED is True:
+                    response = self.session.get(url)                
+                elif REQUESTS_CACHE_INSTALLED is True:
+                    with requests_cache.enabled(self.cache_store, **kwargs):
+                        response = self.session.get(url)                
+                else:
+                    kwargs.update({_Decorator.KW_FORCE: force_download,
+                                   _Decorator.KW_CACHE: cache_store,
+                                   _Decorator.KW_EXPIRE: expire_after})
+                    pathname, response = self.__get_response(url, **kwargs)
+            except:
+                raise happyError('wrong request formulated')  
+            else:
+                response = _CachedResponse(response, url, path=pathname)
+        try:
+            assert response is not None
+            response.raise_for_status()
+        except:
+            raise happyError('wrong response retrieved')  
+        return response
+        
+    #/************************************************************************/
+    def read_response(self, response, **kwargs):
+        """Read the response of a given request.
+        
+            >>> data = serv.read_response(response, **kwargs)
+            
+        Examples
+        --------
+        
+        """
+        fmt = kwargs.pop('fmt', None)
+        if fmt in (None,'resp'):
+            return response
+        try:
+            assert fmt is None or happyType.isstring(fmt)
+        except:
+            raise happyError('wrong format for FMT parameter') 
+        else:
+            fmt = fmt.lower()
+        try:
+            assert fmt in ['jsonstr', 'jsonbytes'] + self.RESPONSE_FORMATS # only for developers
+        except:
+            raise happyError('wrong value for FMT parameter - must be in %s' % self.RESPONSE_FORMATS) 
+        if fmt.startswith('json'):
+            try:
+                assert fmt not in ('jsonstr', 'jsonbytes')
+                data = response.json()
+            except:
+                try:
+                    assert fmt != 'jsonbytes'
+                    data = response.text
+                except:
+                    try:
+                        data = response.content 
+                    except:
+                        raise happyError('error JSON-encoding of response')
+                    else:
+                        fmt = 'jsonbytes' # force
+                else:
+                    fmt = 'jsonstr' # force
+            else:
+                return data
+        elif fmt in ('str', 'stringio'):
+            try:
+                data = response.text
+            except:
+                raise happyError('error accessing ''text'' attribute of response')
+        elif fmt in ('bytes', 'bytesio', 'zip'):
+            try:
+                data = response.content 
+            except:
+                raise happyError('error accessing ''content'' attribute of response')
+        if fmt == 'stringio':
+            try:
+                data = io.StringIO(data)
+            except:
+                raise happyError('error loading StringIO data')
+        elif fmt in ('bytesio', 'zip'):
+            try:
+                data = io.BytesIO(data)
+            except:
+                raise happyError('error loading BytesIO data')
+        elif fmt == 'jsonstr':
+            try:
+                data = json.loads(data)
+            except:
+                raise happyError('error JSON-encoding of str text')
+        elif fmt == 'jsonbytes':                
+                try:
+                    data = json.loads(data.decode())
+                except:
+                    try:            
+                        assert CHARDET_INSTALLED is True
+                        data = json.loads(data.decode(chardet.detect(data)["encoding"]))
+                    except:
+                        raise happyError('error JSON-encoding of bytes content')
+        if fmt != 'zip':
+            return data 
+        # deal with special case
+        operators = [op for op in self.ZIP_OPERATIONS if op in kwargs.keys()] 
+        try:
+            #assert set(kwargs.keys()).difference(set(self.ZIP_OPERATIONS)) == set()
+            assert operators not in ([],[None])
+        except:
+            raise happyError('parsed operations are not recognised')
+        try:
+            assert sum([1 for op in operators]) == 1
+        except:
+            raise happyError('only one operation supported per call')  
+        else:
+            operator = operators[0] 
+        members, path = None, None
+        if operator in ('extract', 'getinfo', 'read'):
+            members = kwargs.pop(operator, None)
+        elif operator == 'extractall':
+            path = kwargs.pop('extractall', None)
+        else: # elif operator in ('infolist','namelist'):
+            try:
+                assert kwargs.get(operator) not in (False,None)
+            except:
+                raise happyError('no operation parsed')
+        if not happyType.issequence(members):
+            members = [members,]
+        with zipfile.ZipFile(data) as zf:
+            #if not zipfile.is_zipfile(zf): # does not work
+            #    raise happyError('file not recognised as zip file')    
+            if operator in  ('infolist','namelist'):
+                return getattr(zf, operator)()
+            elif members is not None:
+                if not all([m in zf.namelist() for m in members]):
+                    raise happyError('impossible to retrieve member file(s) from zipped data')
+            if operator in ('extract', 'getinfo', 'read'):
+                data = [getattr(zf, operator)(m) for m in members]
+                return data if data in ([],[None]) or len(data)>1 else data[0]
+            elif operator == 'extractall':
+                return zf.extractall(path=path)    
+            
+    #/************************************************************************/
+    def read_url(self, url, **kwargs):
+        """Returns the (possibly formatted) response of a given URL.
+        
+            >>> data = serv.read_url(url, **kwargs)
+        """
+        try:
+            assert self.get_status(url) is not None
+        except:
+            raise happyError('error API request - wrong URL status')
+        try:
+            response = self.get_response(url, **kwargs)
+        except:
+            raise happyError('URL data for %s not loaded' % url)
+        return self.read_response(response, **kwargs)
+            
+    #/************************************************************************/
+    @classmethod
+    def build_url(cls, domain=None, **kwargs):
+        """Create a complete query URL to be used by a web-service.
+        
+            >>> url = _Service.build_url(domain, **kwargs)
+            
+        Arguments
+        ---------
+        domain : str
+            domain of the URL; default: :data:`domain` is left empty.
+           
+        Keyword arguments
+        -----------------
+        protocol : str
+            web protocol; default to :data:`settings.DEF_PROTOCOL`, *e.g.* :literal:`http`\ .
+        domain : str
+            this keyword can be used when :data:`domain` is not passed as a 
+            positional argument already.
+        path : str
+            path completing the domain to form the URL: it will actually be concatenated
+            to :data:`domain` so as to form the composite string :data:`domain/path`; hence, 
+            :data:`path` could simply be concatenated with :data:`domain` in input already.
+        query : str
+            query of the URL: it is concatenated to the string :data:`domain/path` so
+            as to form the string :data:`domain/path/query?`\ .
+        kwargs : dict
+            any other keyword argument can be added as further "filters" to the output
+            URL, *e.g.* when :data:`{'par': 1}` is passed as an additional keyword argument,
+            the string :literal:`par=1` will be concatenated at the end of the URL formed
+            by the other parameters.
+                
+        Returns
+        -------
+        url : str
+            URL uniquely defined by the input parameters; the generic form of :data:`url`
+            is :data:`protocol://domain/path/query?filters`, when all parameters above
+            are passed.
+    
+        Example
+        -------
+        Let us, for instance, build a URL query to *Eurostat* Rest API (just enter 
+        the output URL in your browser to check the output):
+            
+            >>> from happygisco.base import _Service
+            >>> _Service.build_url(settings.ESTAT_URL,
+                                   path='wdds/rest/data/v2.1/json/en',
+                                   query='ilc_li03', 
+                                   precision=1,
+                                   indic_il='LI_R_MD60',
+                                   time='2015')
+                'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li03?precision=1&indic_il=LI_R_MD60&time=2015'
+        
+        Note that another way to call the method is:
+
+            >>> _Service.build_url(domain=settings.ESTAT_URL,
+                                   path='wdds/rest/data/v2.1/json/en',
+                                   query='ilc_li01', 
+                                   **{'precision': 1, 'hhtyp': 'A1', 'time': '2010'})
+                'http://ec.europa.eu/eurostat/wdds/rest/data/v2.1/json/en/ilc_li01?precision=1&hhtyp=A1&time=2010'
+        
+        Similarly, we will be able to access to |GISCO| service (see :meth:`GISCOService.url_geocode`
+        below):
+
+            >>> _Service.build_url(domain=settings.GISCO_URL,
+                                   query='api', 
+                                   **{'q': 'Berlin+Germany', 'limit': 2})
+                'http://europa.eu/webtools/rest/gisco/api?q=Berlin+Germany&limit=2'  
+        
+        See also
+        --------
+        :meth:`~_Service.get_status`, :meth:`~_Service.get_response`.
+        """
+        # retrieve parameters/build url
+        if domain is None:      domain = kwargs.pop('domain','')
+        url = domain.strip("/")
+        protocol = kwargs.pop('protocol', settings.DEF_PROTOCOL)
+        if protocol not in settings.PROTOCOLS:
+            raise happyError('web protocol not recognised')
+        if not url.startswith(protocol):  
+            url = "%s://%s" % (protocol, url)
+        path = kwargs.pop('path','')  
+        if path not in (None,''):
+            url = "%s/%s" % (url, path)
+        query = kwargs.pop('query','')
+        if query not in (None,''):      
+            url = "%s/%s" % (url, query)
+        if kwargs != {}:
+            #_izip_replicate = lambda d : [(k,i) if isinstance(d[k], (tuple,list))        \
+            #        else (k, d[k]) for k in d for i in d[k]]
+            _izip_replicate = lambda d : [[(k,i) for i in d[k]] if isinstance(d[k], (tuple,list))        \
+                else (k, d[k])  for k in d]          
+            filters = '&'.join(['{k}={v}'.format(k=k, v=v) for (k, v) in _izip_replicate(kwargs)])
+            # filters = '&'.join(map("=".join,kwargs.items()))
+            sep = '?'
+            try:        
+                last = url.rsplit('/',1)[1]
+            except:     
+                pass
+            else:
+                if any([last.endswith(c) for c in ('?', '/')]):     sep = ''
+            url = "%s%s%s" % (url, sep, filters)
+        return url
+        
+    #/************************************************************************/
+    @classmethod
+    def clean_cache(cls, domain=None, **kwargs):
+        """
+        """
+        pass
+
+#%%
+#==============================================================================
+# CLASS _Tool
+#==============================================================================
+
+class _Tool(object):   
+    """Dummy base class for geospatial "tools". 
+    """
+    #__metaclass__  = abc.ABCMeta
+    pass
+
+
+#%%
+#==============================================================================
+# CLASS _Feature
+#==============================================================================
+            
+class _Feature(object):    
+    """Base class for geographic features.
+    
+        >>> feat = base._Feature()
+    """
+    #__metaclass__  = abc.ABCMeta
+
+    #/************************************************************************/
+    def __init__(self):
+        self.__coord, self.__projection = None, None
+        self.__service, self.__mapping, self.__transform = None, None, None
+        try:
+            assert True
+        except:
+            happyWarning('transform/mapping tool(s) not available')
+        else:
+            self.__transform = _Tool()
+            self.__mapping = _Tool()
+        try:
+            assert SERVICE_AVAILABLE
+        except:
+            happyWarning('web service(s) not available')
+        else:
+            self.__service = _Service()
+       
+    #/************************************************************************/
+    @property
+    #@abc.abstractmethod
+    def service(self):
+        """Service property (:data:`getter`) of a :class:`_Feature` instance. 
+        The :data:`service` property returns an object as an instance of the
+        :class:`~happygisco.services.GISCOService` or :class:`~happygisco.services.APIService`
+        classes.
+        """
+        return self.__service
+    @service.setter
+    def service(self, service):
+        self.__service = service
+        
+    #/************************************************************************/
+    @property
+    #@abc.abstractmethod
+    def transform(self):
+        """Geospatial transform property (:data:`getter`) of a :class:`_Feature` instance.
+        The :data:`transform` property returns an object as an instance of the 
+        :class:`~happygisco.tools.GDALTransform` class.
+        """
+        return self.__transform
+    @transform.setter
+    def transform(self, transform):
+        self.__transform = transform
+       
+    #/************************************************************************/
+    @property
+    #@abc.abstractmethod
+    def mapping(self):
+        """Geospatial mapping property (:data:`getter`) of a :class:`_Feature` instance.
+        The :data:`mapping` property returns an object as an instance of the
+        :class:`~happygisco.tools.FoliumMap` class.
+        """
+        return self.__mapping
+    @mapping.setter
+    def mapping(self, mapping):
+        self.__mapping = mapping
+     
+    #/************************************************************************/
+    @property
+    #@abc.abstractmethod
+    def projection(self):
+        """Projection property (:data:`getter`) of a :class:`_Feature` instance.
+        """ 
+        return self.__projection
+    @projection.setter
+    def projection(self, proj):
+        self.__projection = proj
+
+    #/************************************************************************/
+    @property
+    #@abc.abstractmethod
+    def coord(self):
+        # ignore: this will be overwritten              
+        """Pair of :literal:`(lat,Lon)` geographic coordinates (:data:`getter`/:data:`setter`) 
+        of a :class:`_Feature` instance.
+        """ 
+        return self.__coord
+    @coord.setter
+    def coord(self, coord):
+        self.__coord = coord        
+        
+    #/************************************************************************/
+    @property
+    def coordinates(self):                                              
+        """:literal:`(lat,Lon)` geographic coordinates property (:data:`getter`) of 
+        a :class:`_Feature` instance.
+        """ 
+        pass
+        
+    #/************************************************************************/
+    @property
+    def Lon(self):                                                       
+        """Longitude property (:data:`getter`) of a :class:`_Feature` instance. 
+        A :data:`Lon` type is (a list of) :class:`float`.
+        """
+        pass
+
+    #/************************************************************************/
+    @property
+    def lat(self): 
+        """Latitude property (:data:`getter`) of a :class:`_Feature` instance. 
+        A :data:`lat` type is (a list of) :class:`float`.
+        """
+        pass
+    
 
 #%%
 #==============================================================================
@@ -2723,10 +2753,6 @@ class _NestedDict(dict):
     --------
     :meth:`settings.happyType.ismapping`, :meth:`settings.happyType.mapdeepmerge`.
     """
-    
-    KW_ORDER        = 'order'
-    KW_VALUES       = 'values'
-    KW_FORCE_LIST   = '_force_list_'
 
     #/************************************************************************/
     def __init__(self, *args, **kwargs):
@@ -2775,8 +2801,8 @@ class _NestedDict(dict):
             >>> base._NestedDict(dic, values=[10,20,30,40])
                 {3: {1: 10, 2: 20}, 4: {1: 30, 2: 40}}
         """
-        order = kwargs.pop(self.KW_ORDER,None)
-        values = kwargs.pop(self.KW_VALUES,None)
+        order = kwargs.pop(_Decorator.KW_ORDER,None)
+        values = kwargs.pop(_Decorator.KW_VALUES,None)
         try:
             assert order is None or isinstance(order,bool) or happyType.issequence(order)
         except:
@@ -2849,7 +2875,7 @@ class _NestedDict(dict):
         #if attr in inspect.getmembers(base._NestedDict, predicate=inspect.ismethod):
         #   return object.__getattribute__(self, attr)
         try:
-            res = [getattr(v, attr) for v in self.xvalues(**{_NestedDict.KW_FORCE_LIST: True})]
+            res = [getattr(v, attr) for v in self.xvalues(**{_Decorator.KW_FORCE_LIST: True})]
         except:
             raise AttributeError('attribute %s not recognised' % attr)
             # raise happyError('attribute %s not recognised' % attr)
@@ -3136,7 +3162,7 @@ class _NestedDict(dict):
     def xget(self, *args, **kwargs):
         """Retrieval of deep nested dictionary.
         """
-        __force_list = kwargs.pop(self.KW_FORCE_LIST, False)
+        __force_list = kwargs.pop(_Decorator.KW_FORCE_LIST, False)
         if args in ((),(None,)) and kwargs=={}:
             return self._deepest(self, item='values')
         if args!=():
@@ -3176,7 +3202,7 @@ class _NestedDict(dict):
         if happyType.ismapping(values):
             self._deepmerge(self, values, in_place=True)
         else:
-            kwargs.update({self.KW_FORCE_LIST: True})
+            kwargs.update({_Decorator.KW_FORCE_LIST: True})
             xkeys = self.xkeys(**kwargs)
             try:
                 assert len(values) == 1 or len(values) == len(xkeys)
@@ -3223,7 +3249,7 @@ class _NestedDict(dict):
         """
         #if kwargs=={}:
         #    return self._deepest(self, item='keys')
-        __force_list = kwargs.pop(self.KW_FORCE_LIST, False)
+        __force_list = kwargs.pop(_Decorator.KW_FORCE_LIST, False)
         try:
             assert set(kwargs.keys()).difference(set(self.order)) == set()
         except:
@@ -3260,13 +3286,13 @@ class _NestedDict(dict):
     def xvalues(self, **kwargs):
         """
         """
-        __force_list = kwargs.pop(self.KW_FORCE_LIST, False)
+        __force_list = kwargs.pop(_Decorator.KW_FORCE_LIST, False)
         if kwargs=={}:
             values = self._deepest(self, item='values')
         else:
             dic = {} 
             values = []
-            kwargs.update({self.KW_FORCE_LIST: True})
+            kwargs.update({_Decorator.KW_FORCE_LIST: True})
             for xk in self.xkeys(**kwargs):
                 rdic = dic
                 for x in xk:
@@ -3303,7 +3329,7 @@ class _NestedDict(dict):
             >>> res.xitems(c=6, a=2)
                 [((3, 6, 2), {}), ((4, 6, 2), {}), ((5, 6, 2), {})]        
         """
-        kwargs.update({self.KW_FORCE_LIST: True})
+        kwargs.update({_Decorator.KW_FORCE_LIST: True})
         return list(zip(self.xkeys(**kwargs), self.xvalues(**kwargs)))
     
     #/************************************************************************/

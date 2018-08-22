@@ -153,7 +153,7 @@ GISCO_PATTERNS      = {'bulk':
                              'fmt':         'json'
                              },
                         'nutsid':
-                            {'base':        'NUTS_AT_{year}',
+                            {'info':        'NUTS_AT_{year}',
                              'fmt':         'csv'
                              }
                        }

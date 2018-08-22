@@ -806,11 +806,25 @@ class GISCOService(OSMService):
         except:
             happyVerbose('parameter DOMAIN ignored (URL_REST can be used instead)', verb=True)
             # raise happyError('incompatible parameters DOMAIN and URL_REST')
-        self.__domain = kwargs.get('rest_url', settings.GISCO_RESTURL) # or self.rest_url
-        self.__cache_url = kwargs.get('cache_url', settings.GISCO_CACHEURL)
-        self.__map_url = kwargs.get('map_url', settings.GISCO_TILEURL)
-        self.__arcgis = kwargs.get('arcgis', settings.GISCO_ARCGIS)
-                
+        self.__domain = kwargs.get(_Decorator.KW_REST_URL,      settings.GISCO_RESTURL) # or self.rest_url
+        self.__cache_url = kwargs.get(_Decorator.KW_CACHE_URL,  settings.GISCO_CACHEURL)
+        self.__map_url = kwargs.get(_Decorator.KW_MAP_URL,      settings.GISCO_TILEURL)
+        self.__arcgis = kwargs.get(_Decorator.KW_ARCGIS,        settings.GISCO_ARCGIS)
+                 
+    #/************************************************************************/
+    def __getattr__(self, attr): 
+        #if attr in inspect.getmembers(base._NestedDict, predicate=inspect.ismethod):
+        #   return object.__getattribute__(self, attr)
+        try:
+            assert attr in [settings.GISCO_PATTERNS[entity]['info'].format(year=year) 
+                for year in settings.GISCO_YEARS for entity in ('country','nuts','nutsid')]
+            # 'countries-{year}-units',  'nuts-{year}-units',  'NUTS_AT_{year}',
+            return getattr(self, '__' + attr)
+        except AssertionError:
+            # raise happyError('attribute %s not recognised' % attr)
+            raise AttributeError('attribute %s not recognised' % attr)
+        # ok, we are being naughty here, hiding this from the user...
+
     #/************************************************************************/
     @property
     def rest_url(self):
@@ -822,7 +836,7 @@ class GISCOService(OSMService):
     @rest_url.setter#analysis:ignore
     def rest_url(self, url):
         if url is not None and not happyType.isstring(url):
-            raise TypeError('wrong type for rest_url parameter')
+            raise TypeError('wrong type for %s parameter' % _Decorator.KW_REST_URL.upper())
         self.__domain = url or ''
         
     # let us just override the super property domain
@@ -839,7 +853,7 @@ class GISCOService(OSMService):
     @cache_url.setter#analysis:ignore
     def cache_url(self, url):
         if url is not None and not happyType.isstring(url):
-            raise TypeError('wrong type for cache_url parameter')
+            raise TypeError('wrong type for %s parameter' % _Decorator.KW_CACHE_URL.upper())
         self.__cache_url = url or ''
 
     #/************************************************************************/
@@ -853,7 +867,7 @@ class GISCOService(OSMService):
     @map_url.setter#analysis:ignore
     def map_url(self, url):
         if url is not None and not happyType.isstring(url):
-            raise TypeError('wrong type for map_url parameter')
+            raise TypeError('wrong type for %s parameter' % _Decorator.KW_MAP_URL.upper())
         self.__map_url = url or ''
 
     #/************************************************************************/
@@ -866,7 +880,7 @@ class GISCOService(OSMService):
     @arcgis.setter#analysis:ignore
     def arcgis(self, arcgis):
         if arcgis is not None and not happyType.isstring(arcgis):
-            raise TypeError('wrong type for ARCGIS parameter')
+            raise TypeError('wrong type for %s parameter' % _Decorator.KW_ARCGIS.upper())
         self.__arcgis = arcgis or ''
     
     #/************************************************************************/
@@ -947,7 +961,7 @@ class GISCOService(OSMService):
                 
         See also
         --------
-        :meth:`~GISCOService.resp_nuts`, :meth:`~GISCOService.url_country`,
+        :meth:`~GISCOService.nuts_response`, :meth:`~GISCOService.url_country`,
         :meth:`~GISCOService.url2nutsid`.        
         """
         # check whether a specific unit is looked for
@@ -1094,7 +1108,7 @@ class GISCOService(OSMService):
                 
         See also
         --------
-        :meth:`~GISCOService.resp_country`, :meth:`~GISCOService.country_codes`, 
+        :meth:`~GISCOService.country_response`, :meth:`~GISCOService.country_codes`, 
         :meth:`~GISCOService.url_nuts`.        
         """
         # check whether a specific unit is looked for
@@ -1511,31 +1525,30 @@ class GISCOService(OSMService):
         return url
         
     #/************************************************************************/
-    def _resp_data(self, data, dimensions):
-        """Generic version of methods :meth:`~GISCOService.resp_country` and
-        :meth:`~GISCOService.resp_nuts`.
+    def _data_response(self, data, dimensions, **kwargs):
+        """Generic version of methods :meth:`~GISCOService.country_response` and
+        :meth:`~GISCOService.nuts_response`.
         """
         dic = _NestedDict([(getattr(_Decorator,'KW_' + k), v) for k,v in dimensions.items()],
-                           order = True) # [getattr(_Decorator,'KW_' + k) for k in dimensions.keys()]
-        #[kwargs.pop(key) for key in list(kwargs.keys()) if key not in dimensions.keys()]
-        kwargs = {}
+                           **{_Decorator.KW_ORDER: True}) # [getattr(_Decorator,'KW_' + k) for k in dimensions.keys()]
+        dim = {}
         source = dimensions.get('SOURCE')
         for prod in itertools.product(*list(dimensions.values())):
-            kwargs.update(dict(zip([getattr(_Decorator,'KW_' + attr) for attr in dimensions.keys()], prod)))
+            dim.update(dict(zip([getattr(_Decorator,'KW_' + attr) for attr in dimensions.keys()], prod)))
             try:
                 build_url = getattr(self, 'url_' + data.lower())
             except AttributeError:
                 raise happyError('argument DATA not recognised - must be ''nuts'' or ''country''')
             else:
-                url = build_url(**kwargs)
+                url = build_url(**dim)
             try:
-                response = self.read_url(url) # fmt = 'resp'
+                response = self.read_url(url, **kwargs) # fmt = 'resp'
             except:
                 raise happyError('file for %s data not loaded' % data)
             else:
                 if happyType.isstring(source) and source in ('NUTS2JSON','NUTS','BULK','INFO'):
                     kwargs.pop('SOURCE')
-                dic.xupdate(response, **kwargs)
+                dic.xupdate(response, **dim)
                 response = None
         return dic 
     
@@ -1545,11 +1558,11 @@ class GISCOService(OSMService):
     @_Decorator.parse_format
     @_Decorator.parse_scale
     @_Decorator.parse_vector 
-    def resp_country(self, **kwargs):
+    def country_response(self, **kwargs):
         """Download, and cache when requested, country vector files from |GISCO| Rest
         API.
             
-            >>> dresp = serv.resp_country(code=None, **kwargs)            
+            >>> dresp = serv.country_response(code=None, **kwargs)            
             
         Returns
         -------
@@ -1557,7 +1570,7 @@ class GISCOService(OSMService):
         
         See also
         --------
-        :meth:`~GISCOService.resp_country`, :meth:`~GISCOService._resp_data`.
+        :meth:`~GISCOService.country_response`, :meth:`~GISCOService._data_response`.
         """
         try:
             source = kwargs.pop(_Decorator.KW_SOURCE, None)
@@ -1603,7 +1616,7 @@ class GISCOService(OSMService):
             if not happyType.issequence(val):      val = [val,]
             dimensions.update({attr: val})
         dimensions.update({'SOURCE': [source,] if source is not None else code})
-        return self._resp_data('country', dimensions)
+        return self._data_response('country', dimensions, **kwargs)
 
     #/************************************************************************/
     @_Decorator.parse_year
@@ -1612,11 +1625,11 @@ class GISCOService(OSMService):
     @_Decorator.parse_level
     @_Decorator.parse_scale
     @_Decorator.parse_vector
-    def resp_nuts(self, **kwargs):
+    def nuts_response(self, **kwargs):
         """Download, and cache when requested, responses associated to NUTS vector 
         files available through |GISCO| Rest API.
             
-            >>> dresp = serv.resp_nuts(**kwargs)
+            >>> dresp = serv.nuts_response(**kwargs)
             
         Returns
         -------
@@ -1628,7 +1641,7 @@ class GISCOService(OSMService):
         Rest API:
             
             >>> serv = services.GISCOService()
-            >>> r = serv.resp_nuts(source='NUTS', year=2010)
+            >>> r = serv.nuts_response(source='NUTS', year=2010)
             >>> print(r)
                 <Response [200]>
             >>> print(r.url)
@@ -1640,7 +1653,7 @@ class GISCOService(OSMService):
                              ('vector', ['RG']),
                              ('level', [0]),
                              ('format', ['geojson'])])
-            >>> r= serv.resp_nuts(unit='AT1', year=[2013,2016], scale=['20m','60m'], vector='region')
+            >>> r= serv.nuts_response(unit='AT1', year=[2013,2016], scale=['20m','60m'], vector='region')
             >>> print(r)
                  {2013: {4326: {'20m': {'RG': {'geojson': <Response [200]>}},
                     '60m': {'RG': {'geojson': <Response [200]>}}}},
@@ -1648,7 +1661,7 @@ class GISCOService(OSMService):
                     '60m': {'RG': {'geojson': <Response [200]>}}}}})            
             >>> print(r.url)
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AT1-region-60m-4326-2013.geojson' 
-            >>> r = serv.resp_nuts(source='BULK', year=2016, scale='60m')
+            >>> r = serv.nuts_response(source='BULK', year=2016, scale='60m')
             >>> print(r.dimensions)
                 OrderedDict([('year', [2016]),
                              ('scale', ['60m']),
@@ -1658,7 +1671,7 @@ class GISCOService(OSMService):
                 
         Note also that multiple units can be called at once:
             
-            >>> r = serv.resp_nuts(unit=['BE1','AT1'], year=[2013,2016], scale=['20m','60m'], vector='region')
+            >>> r = serv.nuts_response(unit=['BE1','AT1'], year=[2013,2016], scale=['20m','60m'], vector='region')
             >>> print(r)
                  {'AT1': {2013: {4326: {'20m': {'RG': {'geojson': <Response [200]>}},
                      '60m': {'RG': {'geojson': <Response [200]>}}}},
@@ -1695,7 +1708,7 @@ class GISCOService(OSMService):
 
         See also
         --------
-        :meth:`~GISCOService.resp_country`, :meth:`~GISCOService._resp_data`.
+        :meth:`~GISCOService.country_response`, :meth:`~GISCOService._data_response`.
         """
         try:
             source = kwargs.pop(_Decorator.KW_SOURCE, None)
@@ -1775,54 +1788,71 @@ class GISCOService(OSMService):
             if 'SCALE' in dimensions and _alllabels:
                 dimensions.pop('SCALE')
         dimensions.update({'SOURCE': [source,] if source is not None else unit})
-        return self._resp_data('NUTS', dimensions)
+        return self._data_response('NUTS', dimensions, **kwargs)
 
     #/************************************************************************/
-    @_Decorator.parse_level
+    @_Decorator.parse_year
+    @_Decorator.parse_scale
+    #@_Decorator.parse_level # we actually set None as default value
     def nuts_info(self, **kwargs):
-        """Returns some information regarding the NUTS datasets disseminated through
-        |GISCO| Rest API, *e.g.*:
+        """Returns some information regarding the |NUTS| datasets disseminated through
+        |GISCO| Rest API.
             
-            * the list of identifiers of all |NUTS| available (at any level),
-            * the list of datasets included in the bulk (zipped) download files.
-            
-            >>> info = serv.nuts_info(**kwargs)
+            >>> data = serv.nuts_info(**kwargs)
             
         Keyword arguments
         -----------------
-        source : str
-            in order to retrieve information about the bulk download files, this
-            variable should be set to :literal:`BULK`; incompatible with the parameter 
-            :data:`unit` below.
+        info : str
+            defines the nature of the information that will be retrieved; it can be
+            either:
+            
+                * :literal:'UNITS' to return the identifiers of all NUTS regions 
+                  (or a subset of it) available at any level,
+                * :literal:'BULK' to return the list of NUTS datasets included 
+                  in the bulk (zipped) download files,
+                * :literal:'NAMES' to return the correspondance table between the 
+                  names and the identifiers of all NUTS regions (or a subset of it);
+                  
+            default: :data:`info=UNITS`, and information regarding the NUTS 
+            identifiers is returned.
         unit : str, list
-            (list of) ISO-code(s) of country from which NUTS units/regions are 
-            returned; when the :data:`level` argument below is parsed, it is actually
-            parsed as a prefix of the regions/units to select; default: this is not
-            used; incompatible with the parameter :data:`source` above.
+            (list of) ISO-code(s) of country/regions from about which information  
+            is returned; in the case :data:`info` is set to :literal:'UNITS' or
+            :literal:'NAMES', it is actually used as a prefix to further filter/select
+            the regions/units of interest; it is ignored otherwise (*i.e.* in the
+            case :data:`info=BULK`); default: this is not used.
         level : int, str, list 
-            when :data:`unit` is parsed as an argument (instead of :data:`source`),
-            this is the NUTS level to consider when selecting the regions/units 
-            of interest; it can take any value in :data:`settings.GISCO_NUTSLEVELS`; 
-            default: :data:`level='ALL'`, *i.e.* all NUTS levels are considered.
+            level of the NUTS region to consider; in the case :data:`info` is set 
+            to :literal:'UNITS' or :literal:'NAMES', this (these) NUTS level(s) 
+            is(are) also used to further filter the regions/units of interest; it 
+            can take any value in :data:`settings.GISCO_NUTSLEVELS`; default: 
+            :data:`level='ALL'`, *i.e.* all NUTS levels are considered.
+        _caching_ : bool
+            flag set to actually download the files when retrieving the information; 
+            default: :data:`_caching_=False`, *i.e.* the file(s) is (are) not written
+            on the disk; see also :meth:`base._Service.get_service`.
             
         Returns
         -------
-        info : list
-            depending on the information to retrieve, it can be:
+        data : list,pandas.DataFrame
+            output dataset/list depending on the information to retrieve, it can be:
                 
                 * the list of NUTS regions/units available in |GISCO| database, 
                   given the arguments :data:`unit` and :data:`level` above;
-                * the content of the bulk (zipped) download files of NUTS datasets. 
+                * the content of the bulk (zipped) download files of NUTS datasets,
+                * the correspondance table between the names and the identifiers
+                  of NUTS regions/units available in |GISCO| database, given the 
+                  arguments :data:`unit` and :data:`level` above. 
         
         Examples
         --------
         Here is the best way to retrieve the list of NUTS units disseminated on |GISCO|
         database:
             
-            >>> units = serv.nuts_info(unit='AT', level=2)
+            >>> units = serv.nuts_info(info='UNITS', unit='AT', level=2)
             >>> print(units)
                 ['AT11', 'AT12', 'AT13', 'AT21', 'AT22', 'AT31', 'AT32', 'AT33', 'AT34']
-            >>> units = serv.nuts_info(level=0)
+            >>> units = serv.nuts_info(info='UNITS', level=0)
             >>> print(units)
                 ['AT', 'BE', 'BG', 'CH', 'CY', 'CZ', 'DE', 'DEA', 'DEB', 'DEC', 'DED', 'DEE', 'DEF', 'DEG', 'DK', 'EE', 
                 'EL', 'ES', 'FI', 'FR', 'FRA', 'HR', 'HU', 'IE', 'IS', 'IT', 'ITC', 'ITF', 'ITG', 'ITH', 'ITI', 'LI', 
@@ -1836,9 +1866,9 @@ class GISCOService(OSMService):
                  'AT322', 'AT323', 'AT33', 'AT331', 'AT332', 'AT333', 'AT334', 'AT335', 'AT34', 'AT341', 'AT342']
  
         One can also retrieve some information regarding the list of files available
-        in the bulk NUTS download file:
+        in one of the bulk NUTS download files:
             
-            >>> serv.nuts_info(source='BULK')
+            >>> serv.nuts_info(info='BULK', year=2013, scale='60m')
                 ['NUTS_RG_60M_2013_3035.geojson',
                  'NUTS_RG_60M_2013_3035_LEVL_0.geojson',
                  'NUTS_RG_60M_2013_3035_LEVL_1.geojson',
@@ -1855,58 +1885,199 @@ class GISCOService(OSMService):
                  'NUTS_RG_BN_60M_2013.csv',
                  'metadata.pdf',
                  'metadata.xml',
-                 'release-notes.txt']            
-       
+                 'release-notes.txt']      
+                
+        Finally, one can get information regarding the names of the NUTS regions:
+            
+            >>> data = serv.nuts_info(info='NAMES')
+            >>> data.head()
+                     CNTR_CODE NUTS_ID                                         NUTS_NAME
+                0           AT     AT1                                     OSTÖSTERREICH
+                1           AT    AT11                                   Burgenland (AT)
+                2           AT   AT111                                  Mittelburgenland
+                3           AT   AT112                                    Nordburgenland
+                4           AT   AT113                                     Südburgenland
+                5           AT    AT12                                  Niederösterreich                
+                ...
+                1943        UK    UKN0                                  Northern Ireland
+                1944        UK   UKN05                West and South of Northern Ireland
+                1945        CY      CY                                            ΚΥΠΡΟΣ
+                1946        ES      ES                                            ESPAÑA
+                1947        HU      HU                                      MAGYARORSZÁG
+                1948        ME      ME                                         ЦРНА ГОРА
+                1949        NL      NL                                         NEDERLAND
+                1950        SI      SI                                         SLOVENIJA        
+            >>> serv.nuts_info(info='NAMES', units=['BE','BG'])
+                     CNTR_CODE NUTS_ID                                          NUTS_NAME
+                41          BE     BE1  RÉGION DE BRUXELLES-CAPITALE / BRUSSELS HOOFDS...
+                42          BE   BE100  Arr. de Bruxelles-Capitale / Arr. van Brussel-...
+                43          BE     BE2                                      VLAAMS GEWEST
+                44          BE    BE21                                    Prov. Antwerpen
+                45          BE   BE211                                     Arr. Antwerpen
+                46          BE   BE212                                      Arr. Mechelen    
+                ...
+                1720        BG   BG334                                          Търговище
+                1721        BG   BG341                                             Бургас
+                1722        BG   BG344                                       Стара Загора
+                1723        BG     BG4               ЮГОЗАПАДНА И ЮЖНА ЦЕНТРАЛНА БЪЛГАРИЯ
+                1724        BG   BG422                                            Хасково
+                1725        BG   BG424                                             Смолян   
+            >>> serv.nuts_info(info='NAMES', unit=['BE','BG'], level=[0,2])
+                     CNTR_CODE NUTS_ID                                          NUTS_NAME
+                1675        BE      BE                                    BELGIQUE-BELGIË
+                1676        BG      BG                                           БЪЛГАРИЯ
+                44          BE    BE21                                    Prov. Antwerpen
+                48          BE    BE22                                 Prov. Limburg (BE)
+                52          BE    BE23                              Prov. Oost-Vlaanderen
+                58          BE    BE24                               Prov. Vlaams-Brabant
+                69          BE    BE31                               Prov. Brabant Wallon
+                77          BE    BE33                                        Prov. Liège
+                82          BE    BE34                              Prov. Luxembourg (BE)
+                88          BE    BE35                                        Prov. Namur
+                1709        BE    BE10  Région de Bruxelles-Capitale / Brussels Hoofds...
+                1711        BE    BE25                              Prov. West-Vlaanderen
+                1713        BE    BE32                                      Prov. Hainaut
+                92          BG    BG31                                      Северозападен
+                102         BG    BG33                                      Североизточен
+                105         BG    BG34                                         Югоизточен
+                108         BG    BG41                                         Югозападен
+                114         BG    BG42                                     Южен централен
+                1717        BG    BG32                                  Северен централен
+                            
+        Notes
+        -----
+        * In the case :data:`info=NAMES`, a :class:`pandas.DataFrame` data structure
+          is returned. 
+        * When providing information about a bulk (zipped) download file, the file
+          is, by default, NOT downloaded (*i.e.*, not physically written on the drive).
+          If you want to avoid multiple requests and actually already download the
+          file when retrieving the information, set the :data:`_caching_` variable to 
+          :data:`True`.
+        * It is recommended, for efficiency reasons, to set the option :data:`_caching_=True`
+          considering that some of the info requests may be formulated several times.
+        
         See also
         --------
-        :meth:`~GISCOService.country_info`, :meth:`~GISCOService.resp_nuts`, 
+        :meth:`~GISCOService.country_info`, :meth:`~GISCOService.nuts_response`, 
         :meth:`~GISCOService.url_nuts`, :meth:`base._Service.read_response`.
         """
+        data = None
+        info = kwargs.pop(_Decorator.KW_INFO, None)
         try:
-            source = kwargs.pop(_Decorator.KW_SOURCE, None)
-            assert source is None or source=='BULK'
+            assert info is None or happyType.isstring(info)
         except AssertionError:
-            raise happyError('wrong value for %s argument' % _Decorator.KW_SOURCE.upper())
-        try:
-            unit = kwargs.pop(_Decorator.KW_UNIT, None) 
-        except:
-            pass # all checks done later in resp_nuts
-        try:
-            assert source is None or unit is None
-        except:
-            raise happyError('incompatible parameters %s and %s' % (_Decorator.KW_UNIT.upper(),_Decorator.KW_SOURCE.upper()))
+            raise happyError('wrong format for %s argument' % _Decorator.KW_INFO.upper())        
         else:
-            if source is None and unit is not None:
-                source='info'
-        level = kwargs.pop(_Decorator.KW_LEVEL, settings.GISCO_NUTSLEVELS) 
-        if level == 'ALL':
-            level = settings.GISCO_NUTSLEVELS
+            if info is None:
+                info = 'UNITS'
+            info = info.upper()            
         try:
-            resp = self.resp_nuts(source=source, **kwargs)
-        except:
-            raise happyError('error loading NUTS response')
-        if source == 'BULK':
-            info = self.read_response(resp, fmt='zip', namelist=True)
+            assert info in ('NAMES', 'BULK', 'UNITS')
+        except AssertionError:
+            raise happyError('wrong value for %s argument' % _Decorator.KW_INFO.upper())        
+        unit = kwargs.pop(_Decorator.KW_UNIT, None)
+        try:
+            assert unit is None or happyType.isstring(unit)            \
+                or (happyType.issequence(unit) and all([happyType.isstring(u) for u in unit]))
+        except AssertionError:
+            raise happyError('wrong format/value for %s argument' % _Decorator.KW_UNIT.upper())        
         else:
-            d = self.read_response(resp, fmt='jsonstr')
-            info = list(d.keys())
-            #if unit is None and level is None:
-            #    return info
             if unit is not None:
                 if not happyType.issequence(unit):
                     unit = [unit,]
-                info = [u for u in info if any([u.startswith(p) for p in unit])]
+                unit = [u.upper() for u in unit]
+        caching = kwargs.pop(_Decorator.KW_CACHING, False)
+        force_download = kwargs.pop(_Decorator.KW_FORCE, False)
+        try:
+            assert isinstance(caching, bool) and isinstance(force_download, bool)
+        except AssertionError:
+            raise happyError('wrong format/value for %s/%s arguments' % (_Decorator.KW_CACHING.upper(),_Decorator.KW_FORCE.upper()))        
+        if info in ('NAMES', 'BULK'):
+            source = 'BULK'
+        else:
+            source = 'INFO'
+        kwargs.update({_Decorator.KW_SOURCE: source,
+                       _Decorator.KW_CACHING: caching})                 
+        if info in ('NAMES','UNITS'):            
+            level = kwargs.pop(_Decorator.KW_LEVEL, None) # settings.GISCO_NUTSLEVELS
             if level is not None:
-                if not happyType.issequence(level):
+                if level == 'ALL' or set(level) == set(settings.GISCO_NUTSLEVELS):
+                    level = None # settings.GISCO_NUTSLEVELS
+                elif not happyType.issequence(level):
                     level = [level,]
-                info = [u for u in info if any([sum(c.isdigit() for c in u)==l for l in level])]
-        return info
+        if info == 'NAMES':
+            scale = sorted(list(settings.GISCO_SCALES.keys()))[-1]
+            year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
+            kwargs.update({_Decorator.KW_SCALE: scale,
+                           _Decorator.KW_FORMAT: 'shp', # instead of settings.DEF_GISCO_FORMAT since 'shp' is lighter
+                           _Decorator.KW_YEAR: year})
+            base = settings.GISCO_PATTERNS['nutsid']['info'].format(year=year)
+            # ok, now let's cheat a bit: we are actually going to store this 
+            # table with the service, so as to avoid loading it everytime...
+            if caching is True and force_download is False:
+                try:
+                    # note that because we use the prefix '__', this is actually
+                    # unaccesible to the user
+                    data = getattr(self, base)   
+                except:
+                    pass
+            fmt = settings.GISCO_PATTERNS['nutsid']['fmt']
+        try:
+            assert data is None
+            resp = self.nuts_response(**kwargs)
+        except AssertionError:
+            pass
+        except:
+            raise happyError('error loading NUTS response')
+        if info == 'BULK':
+            try:
+                data = self.read_response(resp, fmt='zip', namelist=True)
+            except:
+                raise happyError('error zip NUTS file reading')
+        elif info == 'NAMES':
+            try:
+                assert data is None
+                data = self.read_response(resp, fmt='zip', read = '%s.%s' % (base,fmt))
+            except AssertionError:
+                pass
+            except:
+                raise happyError('error zip NUTS file reading')
+            else:
+                data = pd.read_csv(io.BytesIO(data))
+            if caching is True:
+                try:
+                    setattr(self, base, data)   
+                except:
+                    pass
+            if unit is not None:
+                data = pd.concat(data[data['NUTS_ID'].str.startswith(u)] for u in unit) 
+            if level is not None:
+                data = pd.concat(data[data['NUTS_ID'].apply(lambda x: sum(c.isdigit() for c in x)==l)] for l in level)
+        else:
+            try:
+                data = self.read_response(resp, fmt='jsonstr')
+            except:
+                raise happyError('error info NUTS file reading')
+            else:
+                data = list(data.keys())
+            if unit is not None:
+                data = [d for d in data if any([d.startswith(u) for u in unit])]
+            if level is not None:
+                data = [d for d in data if any([sum(c.isdigit() for c in d)==l for l in level])]
+        return data
 
     #/************************************************************************/
-    def country_info(self, arg='codes'):
+    def country_info(self, **kwargs):
         """Returns the list of ISO-codes of countries available in |GISCO| database.
             
-            >>> countries = serv.country_info('codes')
+            >>> countries = serv.country_info(**kwargs)
+            
+        Keyword arguments
+        -----------------
+        info : str
+            defines the nature of the information about countries that will be 
+            retrieved; currently, it supports only :literal:`CODES`, *i.e.* country
+            ISO-codes are returned.
             
         Returns
         -------
@@ -1918,78 +2089,65 @@ class GISCOService(OSMService):
         -------
         One single command used to return all availble countries:
             
-            >>> serv.country_info('codes')
+            >>> serv.country_info(info = 'CODES')
                 ['AD', 'AE', 'AF', 'AG', 'AI', 'AL', 'AM', 'AO', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AW',
                  ...
                  'XF', 'XG', 'XH', 'XI', 'XL', 'XM', 'XN', 'XO', 'XU', 'XV', 'YE', 'ZA', 'ZM', 'ZW']        
         
+        Note
+        ----
+        Actually, the command :data:`serv.country_info()` alone (*i.e.* without 
+        arguments) also returns the expected result.
+        
         See also
         --------
-        :meth:`~GISCOService.nuts_units`, :meth:`~GISCOService.resp_country`, 
+        :meth:`~GISCOService.nuts_units`, :meth:`~GISCOService.country_response`, 
         :meth:`~GISCOService.url_country`, :meth:`base._Service.read_response`.
         """
-        arg = None #analysis:ignore ...
-        resp = self.resp_country(source='info')
-        return list(self.read_response(resp, fmt='jsonstr').keys())
-        # or:   return list(json.loads(resp.text).keys())
-    
+        info = kwargs.pop(_Decorator.KW_INFO, None)
+        try:
+            assert info is None or happyType.isstring(info)
+        except AssertionError:
+            raise happyError('wrong format for %s argument' % _Decorator.KW_INFO.upper())        
+        else:
+            if info is None:
+                info = 'CODES'
+            info = info.upper()            
+        try:
+            assert info in ('CODES',)
+        except AssertionError:
+            raise happyError('wrong value for %s argument' % _Decorator.KW_INFO.upper())  
+        else:
+            source = 'INFO'
+        kwargs.update({_Decorator.KW_SOURCE: source,
+                       _Decorator.KW_CACHING: kwargs.pop(_Decorator.KW_CACHING, False)})                 
+        try:
+            resp = self.country_response(**kwargs)
+        except:
+            raise happyError('error loading country response')
+        try:
+            data = self.read_response(resp, fmt='jsonstr')
+        except:
+            raise happyError('error info country file reading')
+        else:
+            data = list(data.keys())
+        return data
+        
     #/************************************************************************/
-    def data_idname(self, **kwargs):
+    def nutsid2name(self, **kwargs):
         """
             
-            >>> fref  = serv.data_idname(nuts, **kwargs)
+            >>> id = serv.nutsid2name(name=name, **kwargs)
+            >>> name = serv.nutsid2name(id=id, **kwargs)
             
         Returns
         -------
         
-        Example
-        -------
-            
-            >>> serv = services.GISCOService()
-            >>> f = serv.data_idname()
-            >>> import pandas
-            >>> t = pandas.read_csv(f)
-            >>> t.head()
-                  CNTR_CODE NUTS_ID         NUTS_NAME
-                0        AT     AT1     OSTÖSTERREICH
-                1        AT    AT11   Burgenland (AT)
-                2        AT   AT111  Mittelburgenland
-                3        AT   AT112    Nordburgenland
-                4        AT   AT113     Südburgenland
-            >>> t[t['NUTS_ID']=='AT112']['NUTS_NAME']
-                3    Nordburgenland
+        See also
+        --------
+        :meth:`~GISCOService.nuts_info`.
         """
-        # retrieve the largest scale, i.e. the lowest resolution so as to download
-        # the smallest file
-        scale = sorted(list(settings.GISCO_SCALES.keys()))[-1]
-        year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
-        fmt = 'shp' # instead of settings.DEF_GISCO_FORMAT since 'shp' is lighter
-        kwargs.update({_Decorator.KW_SOURCE: 'BULK', 
-                       _Decorator.KW_SCALE: scale,
-                       _Decorator.KW_FORMAT: fmt,
-                       _Decorator.KW_YEAR: year})
-        try:
-            url = self.url_nuts(**kwargs)
-        except:
-            raise happyError('error NUTS URL formatting')
-        base = settings.GISCO_PATTERNS['nutsid']['base'].format(year=year)
-        fmt = settings.GISCO_PATTERNS['nutsid']['fmt']
-        try:
-            data = self.read_zipurl(url, read = '%s.%s' % (base,fmt))
-        except:
-            raise happyError('error zip NUTS loading')
-        else:
-        #   return pd.read_csv(io.BytesIO(data))
-            return io.BytesIO(data)
-        
-    #/************************************************************************/
-    def _nutsid2name(self, **kwargs):
-        """Generic version of methods :meth:`~GISCOService.nutsname2id` and
-        :meth:`~GISCOService.nutsid2name` used when linking NUTS identifiers with 
-        unit names.
-        """
-        name = kwargs.pop(_Decorator.KW_NAME,None)
-        _id = kwargs.pop(_Decorator.KW_ID,None)
+        name, _id = kwargs.pop(_Decorator.KW_NAME,None), kwargs.pop(_Decorator.KW_ID,None)
         try:
             assert (name is None or _id is None)
         except:
@@ -1998,85 +2156,53 @@ class GISCOService(OSMService):
             assert not(name is None and _id is None)
         except:
             raise happyError('missing arguments %s and %s' % (_Decorator.KW_NAME.upper(),_Decorator.KW_ID.upper()))
-        unit = name or _id
-        if not happyType.issequence(unit):
-            unit = [unit,]
+        source = name or _id
+        if not happyType.issequence(source):
+            source = [source,]
         try:
-            assert all([happyType.isstring(u) for u in unit])
+            assert all([happyType.isstring(s) for s in source])
         except:
-            raise happyError('wrong type for %s argument' % _Decorator.KW_NAME.upper() if name is not None else _Decorator.KW_ID.upper())        
+            raise happyError('wrong type for %s argument' % _Decorator.KW_NAME.upper() if name else _Decorator.KW_ID.upper())        
         else:
-            unit = [u.upper() for u in unit]
+            source = [s.upper() for s in source]
         group = kwargs.pop('group', False)
-        lut = kwargs.pop(_Decorator.KW_FILE, None)
-        if lut is None:
-            lut = self.data_idname(**kwargs)
-            try:
-                assert PANDAS_INSTALLED is True
-                lut = pd.read_csv(lut)
-            except:
-                raise happyError('impossible to load correspondance table')
-        if name is not None:
+        info = kwargs.pop(_Decorator.KW_INFO, None)
+        try:
+            assert info is None or isinstance(info, pd.DataFrame)
+        except:
+            raise happyError('wrong type for %s argument' % _Decorator.KW_INFO.upper())  
+        else: # load the data!
+            if info is None:
+                info = self.nuts_info(info='NAMES', **kwargs)
+        if name is not None and LEVENSHTEIN_INSTALLED is True:
             distance = kwargs.pop('dist', False)
-            if distance is True:
-                distance = 'jaro_winkler'
-            if happyType.isstring(distance):
-                try:
-                    distance = getattr(Levenshtein,distance)
-                except AttributeError:
-                    raise happyError('Levenshtein distance %s not recognised' % distance)
-            thres = kwargs.pop('thres', 0.9)
+            if distance is True:    distance = 'jaro_winkler'
+            try:
+                distance = getattr(Levenshtein,distance)
+            except AttributeError:
+                raise happyError('Levenshtein distance %s not recognised' % distance)
+            else: 
+                distance = lambda c1, c2: distance(c1.str.upper().str, c2) < 0.9
         else:
-            distance, thres = None, None
+            # distance = lambda c1, c2: c1.str.upper().str.find(c2) > 0 
+            # distance = lambda c1, c2: c1.str.upper().str == c2
+            distance = lambda c1, c2: c1.str.upper().str.contains(c2) 
         # the dim/cols of LUT are: 'CNTR_CODE', 'NUTS_ID', 'NUTS_NAME'
         if name is not None:
             dim1, dim2 = 'NUTS_NAME', 'NUTS_ID'
         else:            
             dim1, dim2 = 'NUTS_ID', 'NUTS_NAME'
-        if group is True:
-            yield lut[lut[dim1].str.upper().isin(unit)][dim2].tolist()
+        try:
+            if group is True:
+                dest = info[info[dim1].str.isin(source)][dim2].tolist()
+            else:
+                dest = [info[distance(info[dim1],s)][dim2].values.tolist() for s in source]
+        except:
+            dest = None
         else:
-            for u in unit:       
-                if LEVENSHTEIN_INSTALLED is True and distance not in (False,None):
-                    yield lut[distance(lut[dim1].str.upper(),u)<thres][dim2].values
-                else:
-                    yield lut[lut[dim1].str.upper() == u][dim2].values
-        
-    #/************************************************************************/
-    def nutsname2id(self, name, **kwargs):
-        """
-            
-            >>> id = serv.nutsname2id(name, **kwargs)
-            
-        Returns
-        -------
-        
-        See also
-        --------
-        :meth:`~GISCOService.data_idname`, :meth:`~GISCOService.nutsid2name`.
-        """
-        _id = []        
-        kwargs.update({_Decorator.KW_NAME: name})
-        [_id.append(data if len(data)>1 else data[0]) for data in self._nutsid2name(**kwargs)]
-        return _id
-        
-    #/************************************************************************/
-    def nutsid2name(self, _id, **kwargs):
-        """
-            
-            >>> name = serv.nutsid2name(id, **kwargs)
-            
-        Returns
-        -------
-        
-        See also
-        --------
-        :meth:`~GISCOService.data_idname`, :meth:`~GISCOService.nutsname2id`.
-        """
-        name = []        
-        kwargs.update({_Decorator.KW_ID: _id})
-        [name.append(data if len(data)>1 else data[0]) for data in self._nutsid2name(**kwargs)]
-        return name
+            if dest not in ([],[[]],[None]):
+                dest = [d if d is None or len(d)>1 else d[0] for d in dest]
+        return dest if dest is None or len(dest)>1 else dest[0]
         
     #/************************************************************************/
     def url2nutsid(self, url):
