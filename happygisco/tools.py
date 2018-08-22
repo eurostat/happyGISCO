@@ -32,9 +32,9 @@ so as to represent equivalently and (almost...) uniquely locations.
 
 **Dependencies**
 
-*require*:      :mod:`os`, :mod:`sys`, :mod:`math`
+*require*:      :mod:`os`, :mod:`math`, :mod:`functools`, :mod:`inspect`
 
-*optional*:     :mod:`osgeo`, :mod:`numpy`, :mod:`multiprocessing`
+*optional*:     :mod:`osgeo`, :mod:`numpy`, :mod:`multiprocessing`, :mod:`ipyleaflet`, :mod:`folium`
 
 *call*:         :mod:`settings`, :mod:`base`        
 
@@ -48,7 +48,7 @@ __all__         = ['GeoLocation', 'GeoDistance', 'GeoAngle', 'GeoCoordinate',
                    'GDALTransform', 'LeafMap'] # '_Pools'
 
 # generic import
-import os, sys#analysis:ignore
+import os
 import math
 
 import functools

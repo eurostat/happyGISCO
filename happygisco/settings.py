@@ -58,7 +58,7 @@ They are provided here for the sake of an exhaustive documentation.
     
 **Dependencies**
 
-*require*:      :mod:`os`, :mod:`sys`, :mod:`warnings`, :mod:`collection`, :mod:`itertools`, :mod:`functools`, :mod:`six`, :mod:`copy`, :mod:`inspect`
+*require*:      :mod:`sys`, :mod:`warnings`, :mod:`six`, :mod:`inspect`, :mod:`collection`, :mod:`itertools`, :mod:`functools`
 
 **Contents**
 """
@@ -66,8 +66,8 @@ They are provided here for the sake of an exhaustive documentation.
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
 # *since*:        Sat Mar 31 21:54:08 2018
 
-import os, sys, warnings#analysis:ignore
-import copy, inspect#analysis:ignore
+import sys, warnings
+import inspect
 import collections, itertools, functools
 import six
 

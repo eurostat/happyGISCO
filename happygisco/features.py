@@ -32,9 +32,11 @@ the definition of dedicated methods.
     
 **Dependencies**
 
-*require*      :mod:`os`, :mod:`sys`
+*require*      :mod:`os`, :mod:`sys`, :mod:`functools`
 
-*call*         :mod:`settings`, :mod:`base`, :mod:`services`, :mod:`tools`         
+*optional*:     :mod:`json`, :mod:`osgeo`
+
+*call*         :mod:`settings`, :mod:`base`, :mod:`tools`, :mod:`services`         
 
 **Contents**
 """
@@ -998,36 +1000,13 @@ class NUTS(_Feature):
             geom = [json.loads(v.ExportToJson()) for v in feature]
         except:
             try:
-                geom = [self.load_url(u, fmt='JSON') for u in url]
+                geom = [self.read_url(u, fmt='JSON') for u in url]
             except: 
                 try:
-                    geom = [self.load_url(u, fmt='bytes') for u in url]
+                    geom = [self.read_url(u, fmt='bytes') for u in url]
                 except: 
                     raise happyError('impossible to extract vector geometries from data') 
         return geom
-    
-#        if _Decorator.parse_nuts.KW_ATTRIBUTES in geom[0]:
-#            try:
-#                kwargs.update({_AttrDict.KW_ATTR: [_Decorator.parse_nuts.KW_ATTRIBUTES, _Decorator.parse_nuts.KW_NUTS_ID]})
-#                return _AttrDict(geom, **kwargs)
-#            except:
-#                raise happyError('impossible to build feature dictionary') 
-#        else: # if _Decorator.parse_nuts.KW_PROPERTIES in feature[0]:
-#            try:
-#                kwargs.update({_AttrDict.KW_ATTR: [_Decorator.parse_nuts.KW_PROPERTIES, _Decorator.parse_nuts.KW_NUTS_ID]})
-#                return _AttrDict(geom, **kwargs)
-#            except:
-#                pass
-#            try:
-#                kwargs.update({_AttrDict.KW_ATTR: [_Decorator.parse_nuts.KW_PROPERTIES, _Decorator.parse_nuts.KW_FID]})
-#                return _AttrDict(geom, **kwargs)
-#            except:
-#                pass
-#            try:
-#                kwargs.update({_AttrDict.KW_ATTR: True})
-#                return _AttrDict(geom, **kwargs)
-#            except:
-#                raise happyError('impossible to build feature dictionary') 
 
     #/************************************************************************/    
     def _get_level(self):

@@ -48,9 +48,9 @@ Perform operations using online web-services, *e.g.*:
     
 **Dependencies**
 
-*require*:      :mod:`os`, :mod:`sys`, :mod:`functools`, :mod:`json`
+*require*:      :mod:`io`, :mod:`io`, :mod:`collections`, :mod:`itertools`, :mod:`json`
 
-*optional*:     :mod:`geopy`, :mod:`googlemaps`, :mod:`googleplaces`
+*optional*:     :mod:`geopy`, :mod:`googlemaps`, :mod:`googleplaces`, :mod:`pandas`, :mod:`Levenshtein`
 
 *call*:         :mod:`settings`, :mod:`base`         
 
@@ -64,11 +64,8 @@ __all__         = ['OSMService', 'GISCOService', 'APIService',
                    '_googleMapsAPI', '_googlePlacesAPI', '_geoCoderAPI']
 
 # generic import
-import os, sys#analysis:ignore
-import io, re#analysis:ignore
-
-import collections
-import functools, itertools#analysis:ignore
+import io
+import collections, itertools
 
 # local imports
 from happygisco import settings

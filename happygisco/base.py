@@ -47,9 +47,9 @@ They are provided here for the sake of an exhaustive documentation.
 
 **Dependencies**
 
-*require*:      :mod:`os`, :mod:`sys`, :mod:`itertools`, :mod:`functools`, :mod:`collections`
+*require*:      :mod:`os`, :mod:`sys`, :mod:`io`, :mod:`itertools`, :mod:`functools`, :mod:`collections`, :mod:`time`, :mod:`hashlib`, :mod:`zipfile`, :mod:`copy`, :mod:`json`
 
-*optional*:     :mod:`requests`
+*optional*:     :mod:`datetime`, :mod:`requests`, :mod:`requests_cache`, :mod:`cachecontrol`, :mod:`chardet`
 
 *call*:         :mod:`settings`         
 
@@ -67,9 +67,9 @@ __all__         = ['_Service', '_Feature', '_Tool', '_Decorator', '_NestedDict']
 #==============================================================================
 
 # standard import
-import io, os, sys#analysis:ignore
+import os, sys, io
 import itertools, functools
-import collections#analysis:ignore
+import collections
 
 import time
 import hashlib, zipfile
@@ -1963,7 +1963,7 @@ class _Service(object):
     @property
     def session(self):
         """Session property (:data:`getter`/:data:`setter`) of an instance of
-        a class :class:`_Service`. `session` is actually an instance of a
+        a class :class:`_Service`. :data:`session` is itself an instance of a
         :class:`requests.session.Session` class.
         """ # A session type is :class:`requests.session.Session`.
         return self.__session
@@ -1976,7 +1976,10 @@ class _Service(object):
     #/************************************************************************/
     @property
     def cache_store(self):
-        """
+        """Cache property (:data:`getter`/:data:`setter`) of an instance of
+        a class :class:`_Service`. :data:`cache_store` is set to the physical 
+        location (*i.e.* on the drive) of the repository used to cache the 
+        downloaded datasets/responses.
         """
         return self.__cache_store
     @cache_store.setter
@@ -1998,7 +2001,10 @@ class _Service(object):
     #/************************************************************************/
     @property
     def expire_after(self):
-        """
+        """Expiration property (:data:`getter`/:data:`setter`) of an instance of
+        a class :class:`_Service`. :data:`expire_after` represents the time after
+        which datasets downloaded and cached through this instance shall be 
+        downloaded again.
         """
         return self.__expire_after
     @expire_after.setter
@@ -2140,8 +2146,8 @@ class _Service(object):
         <cache>/file.
         If <cache>/file already exists, it returns content from disk.
         
-            >>> page = S.__get_response(url, cache_store=False, 
-                                        _force_download_=False, _expire_after_=-1)
+            >>> page = serv.__get_response(url, cache_store=False, 
+                                           _force_download_=False, _expire_after_=-1)
         """
         # create cache directory only the fist time it is needed
         # note: html must be a str type not byte type
@@ -2193,17 +2199,27 @@ class _Service(object):
         Keyword arguments
         -----------------
         cache_store : str
+            physical location (*i.e.* on the drive) of the repository used to 
+            cache the datasets/responses to be downloaded; when not set, the
+            internal :data:`~_Service.cache_store` location already set for the 
+            service is used.
         _expire_after_ : int,datetime
+            time after which the already cached datasets shall be downloaded again; 
+            when not set, the internal :data:`~_Service.expire_after` value already 
+            set for the service is used.
         _force_download_ : bool
+            flag set to force the downloading of the datasets/responses even if
+            those are already cached, and independently of the value of the
+            :data:`_expire_after_` argument above; default: :data:`_force_download_=False`.
         _caching_ : bool
             flag set to actually use caching when fetching the response; default: 
-            :data:`_caching_=False`, the cache (even if it exists is not used) and
-            nothing is written on the disk.
+            :data:`_caching_=True`, the cache is used and downloaded datasets/responses
+            are stored on the disk.
             
         Returns
         -------
         response : :class:`requests.models.Response`
-            response retrieved from the URL.
+            response retrieved from the input :data:`url` location.
             
         Raises
         ------
@@ -2211,7 +2227,7 @@ class _Service(object):
             error is raised in the cases:
             
                 * the request is wrongly formulated,
-                * a wrong response is retrieved.
+                * a bad response is retrieved.
             
         Examples
         --------
@@ -2303,9 +2319,37 @@ class _Service(object):
         
             >>> data = serv.read_response(response, **kwargs)
             
+        Arguments
+        ---------
+        response : :class:`requests.models.Response`
+            response from an online request.
+            
+        Keyword arguments
+        -----------------
+        fmt : str
+        kwargs :
+            
+        Returns
+        -------
+        data : 
+            data associated to the input argument :data:`response`, formatted 
+            according to what is parsed through the keyword arguments.
+            
+        Raises
+        ------
+         ~settings.happyError
+            error is raised in the cases:
+            
+                * the input keyword parameters are wrongly set,
+                * there is an error in reading the response,
+                * there is an error in encoding the response.
+             
         Examples
+        --------      
+
+        See also
         --------
-        
+        :meth:`~_Service.read_url`.
         """
         fmt = kwargs.pop('fmt', None)
         if fmt in (None,'resp'):
@@ -2419,6 +2463,38 @@ class _Service(object):
         """Returns the (possibly formatted) response of a given URL.
         
             >>> data = serv.read_url(url, **kwargs)
+            
+        Arguments
+        ---------
+        url : str
+            complete URL name from which data will be fetched.
+            
+        Keyword arguments
+        -----------------
+        kwargs :
+            see keyword arguments of :meth:`~_Service.read_response` method.
+            
+        Returns
+        -------
+        data : 
+            data fetched from the input :data:`url`, formatted according to what 
+            is parsed through the keyword arguments.
+            
+        Raises
+        ------
+         ~settings.happyError
+            error is raised in the cases:
+            
+                * there is a wrong URL status,
+                * data cannot be loaded.
+             
+        Examples
+        --------
+
+        See also
+        --------
+        :meth:`~_Service.get_status`, :meth:`~_Service.get_response`, 
+        :meth:`~_Service.read_response`.
         """
         try:
             assert self.get_status(url) is not None
