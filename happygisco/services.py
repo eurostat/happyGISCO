@@ -817,7 +817,7 @@ class GISCOService(OSMService):
                 for year in settings.GISCO_YEARS for entity in ('country','nuts','nutsid')]
             # 'countries-{year}-units',  'nuts-{year}-units',  'NUTS_AT_{year}',
             return getattr(self, '__' + attr)
-        except AssertionError:
+        except (AttributeError,AssertionError):
             # raise happyError('attribute %s not recognised' % attr)
             raise AttributeError('attribute %s not recognised' % attr)
         # ok, we are being naughty here, hiding this from the user...
@@ -1826,8 +1826,10 @@ class GISCOService(OSMService):
             :data:`level='ALL'`, *i.e.* all NUTS levels are considered.
         _caching_ : bool
             flag set to actually download the files when retrieving the information; 
-            default: :data:`_caching_=False`, *i.e.* the file(s) is (are) not written
-            on the disk; see also :meth:`base._Service.get_service`.
+            default: :data:`_caching_=False` when :data:`info=BULK`, *i.e.* the file(s) 
+            is (are) not written on the disk and :data:`_caching_=True` in all other
+            cases (:data:`info in ('UNITS','NAMES')`); see also 
+            :meth:`base._Service.get_service`.
             
         Returns
         -------
@@ -1983,7 +1985,7 @@ class GISCOService(OSMService):
                 if not happyType.issequence(unit):
                     unit = [unit,]
                 unit = [u.upper() for u in unit]
-        caching = kwargs.pop(_Decorator.KW_CACHING, False)
+        caching = kwargs.pop(_Decorator.KW_CACHING, True if info in ('NAMES', 'UNITS') else False)
         force_download = kwargs.pop(_Decorator.KW_FORCE, False)
         try:
             assert isinstance(caching, bool) and isinstance(force_download, bool)
@@ -2015,7 +2017,7 @@ class GISCOService(OSMService):
                 try:
                     # note that because we use the prefix '__', this is actually
                     # unaccesible to the user
-                    data = getattr(self, base)   
+                    data = getattr(self, '__' + base)   
                 except:
                     pass
             fmt = settings.GISCO_PATTERNS['nutsid']['fmt']
@@ -2043,7 +2045,7 @@ class GISCOService(OSMService):
                 data = pd.read_csv(io.BytesIO(data))
             if caching is True:
                 try:
-                    setattr(self, base, data)   
+                    setattr(self, '__' + base, data)   
                 except:
                     pass
             if unit is not None:
@@ -2137,8 +2139,49 @@ class GISCOService(OSMService):
             >>> id = serv.nutsid2name(name=name, **kwargs)
             >>> name = serv.nutsid2name(id=id, **kwargs)
             
+        Arguments
+        ---------
+        id : str
+        name : str
+            
+        Keyword arguments
+        -----------------
+        info : :class:`pandas.DataFrame`
+        group : bool
+        dist : bool,str
+        kwargs :
+            see :meth:`nuts_info` method.
+            
         Returns
         -------
+        
+        Examples
+        --------
+        
+            >>> print(serv.nutsid2name(id='AT'))
+                None
+            >>> serv.nutsid2name(id='AT', dist='contains')
+                ['OSTÖSTERREICH',
+                 'Burgenland (AT)', 'Mittelburgenland', 'Nordburgenland', 'Südburgenland', 'Niederösterreich', 'Mostviertel-Eisenwurzen',
+                 'Niederösterreich-Süd', 'Sankt Pölten', 'Waldviertel', 'Weinviertel', 'Wiener Umland/Nordteil', 'Wiener Umland/Südteil', 'Wien', 'Wien',
+                 'SÜDÖSTERREICH',
+                 'Kärnten', 'Klagenfurt-Villach', 'Oberkärnten', 'Unterkärnten', 'Graz', 'Liezen', 'Östliche Obersteiermark', 'West- und Südsteiermark',
+                 'Westliche Obersteiermark', 'Oberösterreich', 'Innviertel', 'Linz-Wels', 'Mühlviertel', 'Steyr-Kirchdorf', 'Salzburg', 'Lungau', 'Pinzgau-Pongau', 
+                 'Salzburg und Umgebung', 'Tirol', 'Innsbruck', 'Osttirol', 'Tiroler Oberland', 'Tiroler Unterland', 'Vorarlberg', 'Rheintal-Bodenseegebiet',
+                 'ÖSTERREICH',
+                 'Steiermark', 'Oststeiermark',
+                 'WESTÖSTERREICH',
+                 'Traunviertel', 'Außerfern', 'Bludenz-Bregenzer Wald']        
+            >>> serv.nutsid2name(name='Gwent Valley')
+                'UKL16'
+            >>> serv.nutsid2name(name='ЦРНА ГОРА')
+                ['ME0', 'ME00', 'ME000', 'ME']
+            >>> serv.nutsid2name(name='Caithness')
+                'UKM61'
+            >>> serv.nutsid2name(name='France', dist='contains')
+                ['FR1', 'FR10', 'FR']
+            >>> serv.nutsid2name(id=['FR1', 'FR10', 'FR'])
+                ['ÎLE DE FRANCE', 'Île de France', 'FRANCE']
         
         See also
         --------
@@ -2162,8 +2205,9 @@ class GISCOService(OSMService):
             raise happyError('wrong type for %s argument' % _Decorator.KW_NAME.upper() if name else _Decorator.KW_ID.upper())        
         else:
             source = [s.upper() for s in source]
-        group = kwargs.pop('group', False)
         info = kwargs.pop(_Decorator.KW_INFO, None)
+        group = kwargs.pop('group', False)
+        dist = kwargs.pop('dist', False)
         try:
             assert info is None or isinstance(info, pd.DataFrame)
         except:
@@ -2172,18 +2216,21 @@ class GISCOService(OSMService):
             if info is None:
                 info = self.nuts_info(info='NAMES', **kwargs)
         if name is not None and LEVENSHTEIN_INSTALLED is True:
-            distance = kwargs.pop('dist', False)
-            if distance is True:    distance = 'jaro_winkler'
-            try:
-                distance = getattr(Levenshtein,distance)
-            except AttributeError:
-                raise happyError('Levenshtein distance %s not recognised' % distance)
-            else: 
-                distance = lambda c1, c2: distance(c1.str.upper().str, c2) < 0.9
+                dist = dist and 'jaro_winkler'
+                try:
+                    distance = getattr(Levenshtein,dist)
+                except AttributeError:
+                    raise happyError('Levenshtein distance %s not recognised' % distance)
+                else: 
+                    distance = lambda c1, c2: dist(c1.str.upper().str, c2) < 0.9
         else:
-            # distance = lambda c1, c2: c1.str.upper().str.find(c2) > 0 
-            # distance = lambda c1, c2: c1.str.upper().str == c2
-            distance = lambda c1, c2: c1.str.upper().str.contains(c2) 
+            dist = dist or 'exact'
+            if dist == 'exact':         
+                distance = lambda c1, c2: c1.str.upper() == c2
+            elif dist in ('match', 'contains', 'startswith', 'endswith'): 
+                distance = lambda c1, c2: getattr(c1.str.upper().str, dist)(c2) # does not work :(
+            elif dist == 'find':         
+                distance = lambda c1, c2: c1.str.upper().str.find(c2) > 0
         # the dim/cols of LUT are: 'CNTR_CODE', 'NUTS_ID', 'NUTS_NAME'
         if name is not None:
             dim1, dim2 = 'NUTS_NAME', 'NUTS_ID'
