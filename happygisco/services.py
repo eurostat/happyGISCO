@@ -68,8 +68,8 @@ import io
 import collections, itertools
 
 # local imports
+from . import happyVerbose, happyWarning, happyError, happyType
 from happygisco import settings
-from happygisco.settings import happyVerbose, happyWarning, happyError, happyType
 from happygisco.base import _Decorator, _Service, _NestedDict#analysis:ignore
 
 # requirements

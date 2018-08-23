@@ -60,8 +60,8 @@ except ImportError:
     pass
 
 # local imports
+from . import happyVerbose, happyWarning, happyError, happyType
 from happygisco import settings
-from happygisco.settings import happyVerbose, happyWarning, happyError, happyType
 from happygisco.base import _Decorator, _Tool
  
 try:                            
@@ -102,7 +102,6 @@ else:
     LEAFLET_TOOL = True
     FOLIUM_TOOL = False
     happyVerbose('ipyleaflet help: https://ipyleaflet.readthedocs.io/en/latest/index.html')
-
 
 #%%
 #==============================================================================

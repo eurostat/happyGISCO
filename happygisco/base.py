@@ -77,8 +77,8 @@ import copy
 #import abc
 
 # local imports
+from . import happyVerbose, happyWarning, happyError, happyType, happyDeprecated
 from happygisco import settings
-from happygisco.settings import happyVerbose, happyWarning, happyError, happyType, happyDeprecated
 
 # another standard import
 try:                                
