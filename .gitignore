@@ -4,6 +4,8 @@ __pycache__
 .DS_Store
 */.DS_Store
 */__pycache__
+*.pyc
+*/*.pyc
 *.bak
 docs/html
 notebooks/.ipynb_checkpoints
