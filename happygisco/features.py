@@ -57,7 +57,7 @@ import functools#analysis:ignore
 from happygisco import settings
 from happygisco.settings import happyWarning, happyVerbose, happyError, happyType#analysis:ignore
 #from happygisco import base
-from happygisco.base import SERVICE_AVAILABLE, REQUESTS_CACHE_INSTALLED
+from happygisco.base import SERVICE_AVAILABLE
 from happygisco.base import _Feature, _CachedResponse, _Decorator, _NestedDict
 from happygisco import tools     
 from happygisco.tools import GDAL_TOOL, FOLIUM_TOOL, LEAFLET_TOOL#analysis:ignore
@@ -76,15 +76,6 @@ except AssertionError:
             pass
 else:
     import requests 
-
-try:                
-    assert REQUESTS_CACHE_INSTALLED                    
-except AssertionError:
-    class requests_cache():
-        class Response():
-            pass
-else:
-    import requests_cache 
 
 try:                                
     import simplejson as json
@@ -877,6 +868,9 @@ class NUTS(_Feature):
         nuts = kwargs.pop(_Decorator.KW_NUTS, None)
         geom = kwargs.pop(_Decorator.KW_GEOMETRY, None)
         url = kwargs.pop(_Decorator.KW_URL, None)
+                
+        year = [n[_Decorator.parse_nuts.KW_LAYERNAME] for n in self.__nuts]
+        level = [n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL] for n in self.__nuts]
 
     #/************************************************************************/    
     @_Decorator.parse_url
@@ -981,7 +975,7 @@ class NUTS(_Feature):
         return url
 
     #/************************************************************************/    
-    @_Decorator._parse_class((_CachedResponse, requests.Response, requests_cache.Response), _Decorator.KW_RESPONSE)
+    @_Decorator._parse_class((_CachedResponse, requests.Response), _Decorator.KW_RESPONSE)
     @_Decorator.parse_url
     def _get_file(self, **kwargs):
         resp = kwargs.pop(_Decorator.KW_RESPONSE, None)
@@ -1191,9 +1185,6 @@ class NUTS(_Feature):
             nuts = [happyType.jsonstringify(n) for n in nuts]
         func = lambda *a, **kw: kw.get(_Decorator.KW_NUTS)
         self.__nuts = [_Decorator.parse_nuts(func)(nuts=json.loads(n)) for n in nuts]
-                
-        year = [n[_Decorator.parse_nuts.KW_LAYERNAME] for n in self.__nuts]
-        level = [n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL] for n in self.__nuts]
 
     #/************************************************************************/
     @property
@@ -1208,7 +1199,7 @@ class NUTS(_Feature):
         elif not happyType.issequence(resp):
             resp = [resp,]
         try:
-            assert all([isinstance(r,(_CachedResponse, requests.Response, requests_cache.Response)) for r in resp])
+            assert all([isinstance(r,(_CachedResponse, requests.Response)) for r in resp])
         except:
             raise happyError('wrong format/value for %s argument' % _Decorator.KW_RESPONSE.upper())
         else:
@@ -1411,23 +1402,6 @@ class NUTS(_Feature):
             fid = None
         else:
             return fid if len(fid)>1 else fid[0]
-    
-    #/************************************************************************/    
-    @property
-    def id(self):
-        """NUTS identity property.
-        """
-        try:
-            nid = [f[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_ID]     \
-                   for f in self.feature]
-        except:
-            try:
-                nid = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_NUTS_ID] \
-                       for f in self.feature]
-            except:
-                nid = None
-        else:
-            return nid if len(nid)>1 else nid[0]
     
     #/************************************************************************/    
     @property

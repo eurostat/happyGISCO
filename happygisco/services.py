@@ -1533,10 +1533,13 @@ class GISCOService(OSMService):
         """Generic version of methods :meth:`~GISCOService.country_response` and
         :meth:`~GISCOService.nuts_response`.
         """
-        dic = _NestedDict([(getattr(_Decorator,'KW_' + k), v) for k,v in dimensions.items()],
+        __del_source = True
+        source = dimensions.get('SOURCE')
+        if len(source) == 1: source = source[0]
+        dic = _NestedDict([(getattr(_Decorator,'KW_' + k), v) for k,v in dimensions.items() \
+                               if __del_source is False or source not in ('NUTS2JSON','BULK','INFO') or k!='SOURCE'],
                            **{_Decorator.KW_ORDER: True}) # [getattr(_Decorator,'KW_' + k) for k in dimensions.keys()]
         dim = {}
-        source = dimensions.get('SOURCE')
         for prod in itertools.product(*list(dimensions.values())):
             dim.update(dict(zip([getattr(_Decorator,'KW_' + attr) for attr in dimensions.keys()], prod)))
             try:
@@ -1550,12 +1553,8 @@ class GISCOService(OSMService):
             except:
                 raise happyError('file for %s data not loaded' % data)
             else:
-                if happyType.isstring(source) and source in ('NUTS2JSON','NUTS','BULK','INFO'):
-
-                    # check : kwargs or dim !!!!                    
-                    dim.pop('SOURCE')
-# check : kwargs or dim !!!!                    
-                    
+                if __del_source is True and source in ('NUTS2JSON','BULK','INFO'):
+                    dim.pop(_Decorator.KW_SOURCE)
                 dic.xupdate(response, **dim)
                 response = None
         return dic 
@@ -1655,12 +1654,13 @@ class GISCOService(OSMService):
             >>> print(r.url)
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_RG_60M_2010_4326_LEVL_0.geojson'
             >>> print(r.dimensions)
-                OrderedDict([('year', [2010]),
-                             ('projection', [4326]),
+                OrderedDict([(source, 'NUTS'),
+                             ('year', [2010]),
+                             ('proj', [4326]),
                              ('scale', ['60m']),
                              ('vector', ['RG']),
                              ('level', [0]),
-                             ('format', ['geojson'])])
+                             ('fmt', ['geojson'])])
             >>> r= serv.nuts_response(unit='AT1', year=[2013,2016], scale=['20m','60m'], vector='region')
             >>> print(r)
                  {2013: {4326: {'20m': {'RG': {'geojson': <Response [200]>}},
@@ -1673,7 +1673,7 @@ class GISCOService(OSMService):
             >>> print(r.dimensions)
                 OrderedDict([('year', [2016]),
                              ('scale', ['60m']),
-                             ('format', ['geojson'])])
+                             ('fmt', ['geojson'])])
             >>> print(r.url)
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-60m.geojson.zip'
                 
@@ -1692,10 +1692,10 @@ class GISCOService(OSMService):
             >>> print(r.dimensions)
                 OrderedDict([('source', ['BE1', 'AT1']),
                              ('year', [2013, 2016]),
-                             ('projection', [4326]),
+                             ('proj', [4326]),
                              ('scale', ['20m', '60m']),
                              ('vector', ['RG']),
-                             ('format', ['geojson'])])
+                             ('fmt', ['geojson'])])
             >>> print(r.url)
                 ['http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE1-region-20m-4326-2013.geojson',
                  'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE1-region-60m-4326-2013.geojson',
@@ -2285,57 +2285,57 @@ class GISCOService(OSMService):
             >>> print(url)
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-60m.geojson.zip'
             >>> serv.url2nutsid(url)
-                OrderedDict([('YEAR', 2013), 
-                             ('SCALE', '60m'), 
-                             ('FORMAT', 'geojson')])
+                OrderedDict([('year', 2013), 
+                             ('scale', '60m'), 
+                             ('fmt', 'geojson')])
             >>> url = serv.url_nuts('BE100', year = 2016, vector = 'label')
             >>> print(url)
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-label-3035-2016.geojson'
             >>> serv.url2nutsid(url)
-                OrderedDict([('SOURCE', 'BE100'),
-                             ('YEAR', 2016),
-                             ('PROJECTION', 3035),
-                             ('VECTOR', 'LB'),
-                             ('FORMAT', 'geojson')])
+                OrderedDict([('source', 'BE100'),
+                             ('year', 2016),
+                             ('proj', 3035),
+                             ('vector', 'LB'),
+                             ('fmt', 'geojson')])
             >>> url = serv.url_nuts('AT', year = 2010, scale = 1, proj = 'Mercator')
             >>> print(url)
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AT-region-01m-3857-2010.geojson'
             >>> serv.url2nutsid(url)
-                OrderedDict([('SOURCE', 'AT'),
-                             ('YEAR', 2010),
-                             ('PROJECTION', 3857),
-                             ('SCALE', '01m'),
-                             ('VECTOR', 'RG'),
-                             ('FORMAT', 'geojson')])
+                OrderedDict([('source', 'AT'),
+                             ('year', 2010),
+                             ('proj', 3857),
+                             ('scale', '01m'),
+                             ('vector', 'RG'),
+                             ('fmt', 'geojson')])
             >>> url = serv.url_nuts(source='NUTS', level=3, fmt='shp')
             >>> print(url)
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_RG_60M_2013_4326_LEVL_3.shx'
             >>> serv.url2nutsid(url)
-                OrderedDict([('YEAR', 2013),
-                             ('PROJECTION', 4326),
-                             ('SCALE', '60M'),
-                             ('VECTOR', 'RG'),
-                             ('LEVEL', 3),
-                             ('FORMAT', 'shp')])
+                OrderedDict([('year', 2013),
+                             ('proj', 4326),
+                             ('scale', '60M'),
+                             ('vector', 'RG'),
+                             ('level', 3),
+                             ('fmt', 'shp')])
             >>> url = serv.url_nuts(source='NUTS', level='ALL', vector='label', fmt='geojson')
             >>> print(url)
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_LB_2013_4326.geojson'
             >>> serv.url2nutsid(url)
-                OrderedDict([('YEAR', 2013),
-                             ('PROJECTION', 4326),
-                             ('VECTOR', 'LB'),
-                             ('LEVEL', 'ALL'),
-                             ('FORMAT', 'geojson')])
+                OrderedDict([('year', 2013),
+                             ('proj', 4326),
+                             ('vector', 'LB'),
+                             ('level', 'ALL'),
+                             ('fmt', 'geojson')])
             >>> url = serv.url_nuts(source='NUTS2JSON',  fmt='geojson')
             >>> print(url)
                 'https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/2013/3857/60M/nutsrg_0.json'
             >>> serv.url2nutsid(url)
-                OrderedDict([('YEAR', 2013),
-                             ('PROJECTION', 3857),
-                             ('SCALE', '60M'),
-                             ('VECTOR', 'RG'),
-                             ('LEVEL', 0),
-                             ('FORMAT', 'geojson')])
+                OrderedDict([('year', 2013),
+                             ('proj', 3857),
+                             ('scale', '60M'),
+                             ('vector', 'RG'),
+                             ('level', 0),
+                             ('fmt', 'geojson')])
                 
         See also
         --------
@@ -2405,9 +2405,11 @@ class GISCOService(OSMService):
             kwargs.update({'LEVEL': int(level) if level!='ALL' else level})
         if fmt is not None:
             kwargs.update({'FORMAT': fmt})  
-        dimensions = collections.OrderedDict(zip(settings.GISCO_DATA_DIMENSIONS,[None]*len(settings.GISCO_DATA_DIMENSIONS)))
+        dimensions = collections.OrderedDict(zip(settings.GISCO_DATA_DIMENSIONS,
+                                                 [None]*len(settings.GISCO_DATA_DIMENSIONS)))
         keys = list(dimensions.keys())
-        [dimensions.update({k: kwargs.get(k)}) if k in kwargs else dimensions.pop(k) for k in keys]
+        [dimensions.update({getattr(_Decorator, 'KW_' + k): kwargs.get(k)})  \
+             or dimensions.pop(k) if k in kwargs else dimensions.pop(k) for k in keys]
         return dimensions
         
     #/************************************************************************/

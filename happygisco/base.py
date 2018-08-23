@@ -2960,11 +2960,14 @@ class _NestedDict(dict):
 
     #/************************************************************************/
     def __repr__(self):
-        # return super(_NestedDict, self).__repr__()
+        return super(_NestedDict, self).__repr__()
+
+    #/************************************************************************/
+    def __str__(self):
         if self.xlen() == 1:
             val = self.values(**self.dimensions)
         if self.xlen() > 1 or val in (None,[],{},''):
-            return super(_NestedDict, self).__repr__()
+            return super(_NestedDict, self).__str__()
         else:
             return "%s" % val
 
@@ -2996,7 +2999,8 @@ class _NestedDict(dict):
 
     @property
     def dimensions(self):
-        return self.__dimensions
+        # return self.__dimensions
+        return collections.OrderedDict({k : v[0] if len(v)==1 else v for k,v in self.__dimensions.items()})
 
     @property
     def depth(self):
