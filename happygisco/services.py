@@ -1614,7 +1614,7 @@ class GISCOService(OSMService):
             [dimensions.remove(attr) for attr in ('VECTOR', 'LEVEL')] 
         else:
             # ['SOURCE', 'YEAR', 'PROJECTION', 'SCALE', 'FORMAT']
-            [dimensions.remove(attr) for attr in ('LEVEL')] 
+            [dimensions.remove(attr) for attr in ('LEVEL',)] 
         dimensions = collections.OrderedDict(zip(dimensions,[None]*len(dimensions)))        
         for attr in dimensions.keys():
             val = kwargs.pop(getattr(_Decorator,'KW_' + attr), None)
