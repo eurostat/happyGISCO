@@ -57,13 +57,35 @@ import functools#analysis:ignore
 from happygisco import settings
 from happygisco.settings import happyWarning, happyVerbose, happyError, happyType#analysis:ignore
 #from happygisco import base
-from happygisco.base import _Feature, _Decorator, _NestedDict#analysis:ignore
+from happygisco.base import SERVICE_AVAILABLE, REQUESTS_CACHE_INSTALLED
+from happygisco.base import _Feature, _CachedResponse, _Decorator, _NestedDict
 from happygisco import tools     
-from happygisco.tools import GDAL_TOOL, FOLIUM_TOOL, LEAFLET_TOOL
+from happygisco.tools import GDAL_TOOL, FOLIUM_TOOL, LEAFLET_TOOL#analysis:ignore
+#from happygisco.tools import GDALTransform, LeafMap
 from happygisco import services     
 from happygisco.services import GISCO_SERVICE, API_SERVICE
-    
+#from happygisco.services import GISCOService, APIService
+   
 # requirements
+
+try:                
+    assert SERVICE_AVAILABLE                    
+except AssertionError:
+    class requests():
+        class Response():
+            pass
+else:
+    import requests 
+
+try:                
+    assert REQUESTS_CACHE_INSTALLED                    
+except AssertionError:
+    class requests_cache():
+        class Response():
+            pass
+else:
+    import requests_cache 
+
 try:                                
     import simplejson as json
 except ImportError:
@@ -790,20 +812,28 @@ class NUTS(_Feature):
     def __init__(self, *args, **kwargs):
         self.__unit = ''
         self.__file, self.__url = '', ''
-        self.__resp = None
-        self.__layer = None
-        self.__feature = None
+        self.__layer, self.__feature = None, None
         self.__geometry = None
+        # not accessible by users
+        self.__resp = None
+        self.__nuts = None
         super(NUTS,self).__init__(**kwargs)
+        # dump whatever is in args into kwargs so as to simplify the process
+        if args not in ((),(None,)):
+            kwargs.update({_Decorator.KW_NUTS: args[0] if len(args)==0 and happyType.issequence(args) else args}) 
+            args = ()
         items = []
         # get/set the attributes of the NUTS feature 
-        for kw in ['FILE', 'URL', 'RESPONSE', 'LAYER', 'FEATURE', 'GEOMETRY', 'UNIT']:
+        for kw in ['UNIT', 'FILE', 'URL', 'LAYER', 'FEATURE', 'GEOMETRY',   \
+                   'RESPONSE', 'NUTS']:
             attr = kwargs.pop(getattr(_Decorator, 'KW_' + kw), None)
             try:
                 assert attr not in (None,[],{},'')
             except: pass
             else:
-                setattr(self, getattr(_Decorator, 'KW_' + kw), attr) # may raise an Error
+                key = getattr(_Decorator, 'KW_' + kw)
+                if kw in ('RESPONSE','NUTS'):   key = '_' + key
+                setattr(self, key, attr) # may raise an Error
                 items.append(attr)
         # check that one at least is parsed
         try:
@@ -820,6 +850,7 @@ class NUTS(_Feature):
         # e.g., ['SOURCE', 'YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT']
         defkw = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)(lambda **kw: kw)()
         for key in defkw.keys(): 
+            print(key)
             attr = kwargs.pop(key, defkw.get(key))
             try:
                 assert attr not in (None,[],{},'')
@@ -829,6 +860,7 @@ class NUTS(_Feature):
                     
     #/************************************************************************/
     def __getattr__(self, attr_name): 
+        # ignore-doc
         try:
             return super(NUTS,self).__getattribute__(attr_name) 
         except AttributeError:
@@ -841,23 +873,92 @@ class NUTS(_Feature):
                 return attr if attr is None or len(attr)>1 else attr[0]
 
     #/************************************************************************/    
+    def _get_dimensions(self, **kwargs): 
+        nuts = kwargs.pop(_Decorator.KW_NUTS, None)
+        geom = kwargs.pop(_Decorator.KW_GEOMETRY, None)
+        url = kwargs.pop(_Decorator.KW_URL, None)
+
+    #/************************************************************************/    
+    @_Decorator.parse_url
+    @_Decorator.parse_geometry
+    @_Decorator.parse_nuts
+    @_Decorator._parse_class(ogr.Feature, _Decorator.KW_FEATURE)
+    def _get_unit(self, **kwargs): 
+        """Retrieve NUTS identifier.
+        """
+        nuts = kwargs.pop(_Decorator.KW_NUTS, None)
+        geom = kwargs.pop(_Decorator.KW_GEOMETRY, None)
+        url = kwargs.pop(_Decorator.KW_URL, None)
+        _argsTrue = [1 for arg in (nuts, url, geom) if arg in ('',None)]
+        try:
+            assert sum(_argsTrue) >= 2
+        except:
+            raise happyError('incompatible arguments %s, %s and %s - parse one only' % \
+                             (_Decorator.KW_NUTS.upper(),_Decorator.KW_GEOMETRY.upper(),_Decorator.KW_URL.upper()))
+        if sum(_argsTrue) == 3: # all None
+            try:
+                assert self.__geom 
+            except AssertionError:
+                try:
+                    assert self.__nuts
+                except AssertionError:
+                    try:
+                        assert self.__url
+                    except AssertionError:
+                        try:
+                            url = self._get_url(**kwargs) 
+                            assert url not in  ('',[],None)
+                        except:
+                            raise happyError('incompatible arguments %s, %s and %s - parse one at least' % \
+                                             (_Decorator.KW_NUTS.upper(),_Decorator.KW_GEOMETRY.upper(),_Decorator.KW_URL.upper()))
+                    else:
+                        url = self.url
+                else:
+                    nuts = self._nuts
+            else:
+                geom = self.geom
+        try:
+            if not happyType.issequence(geom): 
+                geom = [geom,]  
+            unit = [g[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_NUTS_ID] \
+                    for g in geom]
+        except:
+            try:
+                if not happyType.issequence(nuts): 
+                    nuts = [nuts,]  
+                unit = [n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_ID]     \
+                        for n in nuts]
+            except:
+                try:
+                    if not happyType.issequence(url): 
+                        url = [url,]  
+                    unit = [self.serv.url2nutsid(u)[_Decorator.KW_UNIT] for u in url]             
+                except:
+                    raise happyError('impossible to extract NUTS unit from input data')
+        return unit if unit is None or len(unit)>1 else unit[0]       
+
+    #/************************************************************************/    
+    @_Decorator._parse_class(str, _Decorator.KW_SOURCE)
+    @_Decorator._parse_class(str, _Decorator.KW_UNIT)
     def _get_url(self, **kwargs):
         source = kwargs.pop(_Decorator.KW_SOURCE, None)
         unit = kwargs.pop(_Decorator.KW_UNIT, None)
-        try:
-            assert (source is None or happyType.isstring(source))           \
-                and (unit is None or happyType.isstring(unit))
-        except:
-            raise happyError('wrong format for SOURCE/UNIT arguments')
+        #try:
+        #    assert (source is None or happyType.isstring(source))           \
+        #        and (unit is None or happyType.isstring(unit))
+        #except:
+        #    raise happyError('wrong format for SOURCE/UNIT arguments')
         try:
             assert source in ('',None) or unit in ('',None)
         except:
-            raise happyError('incompatible arguments SOURCE and UNIT - parse one only')
+            raise happyError('incompatible arguments %s and %s - parse one only' % \
+                             (_Decorator.KW_SOURCE.upper(),_Decorator.KW_UNIT.upper()))
         if source in ('',None) and unit in ('',None):
             try:
                 assert self.__unit
             except AssertionError:
-                raise happyError('missing arguments SOURCE and UNIT - parse one at least')  
+                raise happyError('missing arguments %s and  %s - parse one at least' % \
+                                 (_Decorator.KW_SOURCE.upper(),_Decorator.KW_UNIT.upper()))
             else:
                 unit = self.unit
         source = source or unit
@@ -880,21 +981,44 @@ class NUTS(_Feature):
         return url
 
     #/************************************************************************/    
+    @_Decorator._parse_class((_CachedResponse, requests.Response, requests_cache.Response), _Decorator.KW_RESPONSE)
     @_Decorator.parse_url
-    @_Decorator.parse_geometry
-    def _get_unit(self):
-        if self.feature in ([],None):
-            self.feature = self.get_vector()
+    def _get_file(self, **kwargs):
+        resp = kwargs.pop(_Decorator.KW_RESPONSE, None)
+        url = kwargs.pop(_Decorator.KW_URL, None)
         try:
-            unit = 0
+            assert resp in ([],None) or url in ('',[''],None)
         except:
+            raise happyError('incompatible arguments %s and %s - parse one only' % \
+                             (_Decorator.KW_RESPONSE.upper(),_Decorator.KW_URL.upper()))
+        if resp in ('',None) and url in ('',None):
             try:
-                unit = 0
-            except:
-                unit = None
-        else:
-            return unit if unit is None or len(unit)>1 else unit[0]
-
+                assert self.__resp
+            except AssertionError:
+                try:
+                    assert self.__url
+                except AssertionError:
+                    try:
+                        url = self._get_url(**kwargs) 
+                        assert url not in  ('',[],None)
+                    except:
+                        raise happyError('missing arguments %s and  %s - parse one at least' % \
+                                         (_Decorator.KW_RESPONSE.upper(),_Decorator.KW_URL.upper())) 
+                else:
+                    url = self.url
+            else:
+                resp = self.__resp
+        try:
+            assert resp is not None
+        except:
+            resp = self.serv.get_response(url, **{_Decorator.KW_CACHING: True}) 
+        if not happyType.issequence(resp):
+            resp = [resp,]
+        try:
+            return [r._cache_path for r in resp]
+        except:
+            return None
+        
     #/************************************************************************/    
     @_Decorator.parse_file
     @_Decorator.parse_url
@@ -904,19 +1028,25 @@ class NUTS(_Feature):
         try:
             assert file in ('',None) or url in ('',None)
         except:
-            raise happyError('incompatible arguments FILE and URL - parse one only')
+            raise happyError('incompatible arguments %s and %s - parse one only' % \
+                             (_Decorator.KW_FILE.upper(),_Decorator.KW_URL.upper()))
         if file in ('',None) and url in ('',None):
             try:
-                assert self.__url
+                assert self.__file
             except AssertionError:
                 try:
-                    assert self.__file
+                    assert self.__url
                 except AssertionError:
-                    raise happyError('missing arguments FILE and URL - parse one at least')  
+                    try:
+                        url = self._get_url(**kwargs) 
+                        assert url not in  ('',[],None)
+                    except:
+                        raise happyError('missing arguments %s and  %s - parse one at least' % \
+                                         (_Decorator.KW_FILE.upper(),_Decorator.KW_URL.upper())) 
                 else:
-                    file = self.file
+                    url = self.url                    
             else:
-                url = self.url
+                file = self.file
         try:
             layer = self.transform.url2layer(url)            
         except:
@@ -934,35 +1064,47 @@ class NUTS(_Feature):
         file = kwargs.pop(_Decorator.KW_FILE, None)
         layer = kwargs.pop(_Decorator.KW_LAYER, None)
         url = kwargs.pop(_Decorator.KW_URL, None)
-        _argsTrue = [pred is True for pred in (file in ('',None), url in ('',None), layer in None)]
+        _argsTrue = [1 for arg in (file, url, layer) if arg in ('',None)]
         try:
             assert sum(_argsTrue) >= 2
         except:
-            raise happyError('incompatible arguments FILE, URL and LAYER - parse one only')
-        if sum(_argsTrue) == 3:
+            raise happyError('incompatible arguments %s, %s and %s - parse one only' % \
+                             (_Decorator.KW_FILE.upper(),_Decorator.KW_LAYER.upper(),_Decorator.KW_URL.upper()))
+        if sum(_argsTrue) == 3: # all None
             try:
-                assert self.__url
+                assert self.__layer 
             except AssertionError:
                 try:
-                    assert self.__layer
+                    assert self.__file 
                 except AssertionError:
                     try:
-                        assert self.__file
+                        assert self.__url
                     except AssertionError:
-                        raise happyError('missing arguments FILE, URL and LAYER - parse one at least')  
+                        try:
+                            url = self._get_url(**kwargs) 
+                            assert url not in  ('',[],None)
+                        except:
+                            raise happyError('missing arguments %s, %s and %s - parse one at least' % \
+                                             (_Decorator.KW_FILE.upper(),_Decorator.KW_LAYER.upper(),_Decorator.KW_URL.upper())) 
                     else:
-                        file = self.file
+                        url = self.url
                 else:
-                    layer = self.layer
+                    file = self.file
             else:
-                url = self.url
+                layer = self.layer
         try:
+            if not happyType.issequence(url): 
+                url = [url,]                   
             feature = self.transform.url2feat(url)            
         except:
             try:
+                if not happyType.issequence(layer): 
+                    layer = [layer,]                   
                 feature = self.transform.layer2feat(layer)
             except:
                 try:
+                    if not happyType.issequence(feature): 
+                        feature = [feature,]                   
                     feature = self.transform.file2feat(file)
                 except:
                     raise happyError('impossible to extract vector features from input data')
@@ -971,7 +1113,6 @@ class NUTS(_Feature):
     #/************************************************************************/    
     #@_Decorator.parse_file
     @_Decorator.parse_url
-    #@_Decorator._parse_class(ogr.Layer, _Decorator.KW_LAYER)
     @_Decorator._parse_class(ogr.Feature, _Decorator.KW_FEATURE)
     def _get_geometry(self, **kwargs):
         feature = kwargs.pop(_Decorator.KW_FEATURE, None)
@@ -979,26 +1120,32 @@ class NUTS(_Feature):
         try:
             assert feature is None or url in ('',None)
         except:
-            raise happyError('incompatible arguments FILE and URL - parse one only')
+            raise happyError('incompatible arguments %s and %s - parse one only' % \
+                             (_Decorator.KW_FEATURE.upper(),_Decorator.KW_URL.upper()))
         if feature in ('',None) and url in ('',None):
             try:
-                assert self.__url
+                assert self.__feature
             except AssertionError:
                 try:
-                    assert self.__feature
+                    assert self.__url
                 except AssertionError:
-                    raise happyError('missing arguments FEATURE and URL - parse one at least')  
+                    try:
+                        url = self._get_url(**kwargs) 
+                        assert url not in  ('',[],None)
+                    except:
+                        raise happyError('incompatible arguments %s and %s - parse one at least' % \
+                                         (_Decorator.KW_FEATURE.upper(),_Decorator.KW_URL.upper()))
                 else:
-                    feature = self.feature
-                    if not happyType.issequence(feature): 
-                        feature = [feature,]
+                    url = self.url
             else:
-                url = self.url
-                if not happyType.issequence(url): 
-                    url = [url,]                   
+                feature = self.feature
         try:
+            if not happyType.issequence(feature): 
+                feature = [feature,]
             geom = [json.loads(v.ExportToJson()) for v in feature]
         except:
+            if not happyType.issequence(url): 
+                url = [url,]                   
             try:
                 geom = [self.read_url(u, fmt='JSON') for u in url]
             except: 
@@ -1026,6 +1173,49 @@ class NUTS(_Feature):
                 
     #/************************************************************************/
     @property
+    def _nuts(self):
+        #ignore-doc
+        return self.__nuts if self.__nuts is None or len(self.__nuts)>1     \
+            else self.__nuts[0]
+    @_nuts.setter
+    def _nuts(self, nuts):
+        if nuts is None:
+            return
+        elif not happyType.issequence(nuts):
+            nuts = [nuts,]
+        try:
+            assert all([happyType.isstring(n) or happyType.ismapping(n) for n in nuts])
+        except:
+            raise happyError('wrong format/value for %s argument' % _Decorator.KW_NUTS.upper())
+        if all([happyType.ismapping(n) for n in nuts]):
+            nuts = [happyType.jsonstringify(n) for n in nuts]
+        func = lambda *a, **kw: kw.get(_Decorator.KW_NUTS)
+        self.__nuts = [_Decorator.parse_nuts(func)(nuts=json.loads(n)) for n in nuts]
+                
+        year = [n[_Decorator.parse_nuts.KW_LAYERNAME] for n in self.__nuts]
+        level = [n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL] for n in self.__nuts]
+
+    #/************************************************************************/
+    @property
+    def _resp(self):
+        #ignore-doc
+        return self.__resp if self.__resp is None or len(self.__resp)>1     \
+            else self.__resp[0]
+    @_resp.setter
+    def _resp(self, resp):
+        if resp is None:
+            return
+        elif not happyType.issequence(resp):
+            resp = [resp,]
+        try:
+            assert all([isinstance(r,(_CachedResponse, requests.Response, requests_cache.Response)) for r in resp])
+        except:
+            raise happyError('wrong format/value for %s argument' % _Decorator.KW_RESPONSE.upper())
+        else:
+            self.__resp = resp
+        
+    #/************************************************************************/
+    @property
     def unit(self):
         """Unit property (:data:`setter`/:data:`getter`) of a :class:`NUTS` 
         instance, if any.
@@ -1045,15 +1235,12 @@ class NUTS(_Feature):
             assert unit is None or happyType.isstring(unit) or              \
                 (happyType.issequence(unit) and all([happyType.isstring(u) for u in unit]))
         except:
-            raise happyError('wrong format for UNIT parameter')
+            raise happyError('wrong format for %s argument' % _Decorator.KW_UNIT.upper())
         else:
             if not happyType.issequence(unit):
                 unit = [unit,]
             self.__unit = unit
                 
-            
-            
-            
     #/************************************************************************/
     @property
     def url(self):
@@ -1068,7 +1255,7 @@ class NUTS(_Feature):
             assert url is None or happyType.isstring(url) or                \
                 (happyType.issequence(url) and all([happyType.isstring(u) for u in url]))
         except:
-            raise happyError('wrong format for URL parameter')
+            raise happyError('wrong format for %s argument' % _Decorator.KW_URL.upper())
         else:
             if not happyType.issequence(url):
                 url = [url,]
@@ -1094,7 +1281,7 @@ class NUTS(_Feature):
             assert file is None or happyType.isstring(file) or              \
                 (happyType.issequence(file) and all([happyType.isstring(f) for f in file]))
         except:
-            raise happyError('wrong format for FILE parameter')
+            raise happyError('wrong format for %s argument' % _Decorator.KW_FILE.upper())
         else:
             if not happyType.issequence(file):
                 file = [file,]
@@ -1124,7 +1311,7 @@ class NUTS(_Feature):
         except AssertionError:
             pass
         except:
-            raise happyError('wrong %s argument' % _Decorator.KW_LAYER) 
+            raise happyError('wrong format for %s argument' % _Decorator.KW_LAYER.upper())
         else:
             self.__layer = layer 
 
@@ -1143,7 +1330,7 @@ class NUTS(_Feature):
                 self.__feature = feature
         return self.__feature    
     @feature.setter
-    def  feature(self, feature):
+    def feature(self, feature):
         try:
             assert GDAL_TOOL is True
             decorator = _Decorator._parse_class([ogr.Feature,list], _Decorator.KW_FEATURE)
@@ -1152,7 +1339,7 @@ class NUTS(_Feature):
         except AssertionError:
             pass
         except:
-            raise happyError('wrong %s argument' % _Decorator.KW_FEATURE) 
+            raise happyError('wrong format for %s argument' % _Decorator.KW_FEATURE.upper()) 
         else:
             self.__feature = feature
 

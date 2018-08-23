@@ -2183,7 +2183,7 @@ class _Service(object):
             with open(pathname, 'rb') as f:
                 content = f.read()
                 f.close()
-        return pathname, content
+        return content, pathname
     
     #/************************************************************************/
     def get_response(self, url, **kwargs):
@@ -2301,7 +2301,7 @@ class _Service(object):
                     kwargs.update({_Decorator.KW_FORCE: force_download,
                                    _Decorator.KW_CACHE: cache_store,
                                    _Decorator.KW_EXPIRE: expire_after})
-                    pathname, response = self.__get_response(url, **kwargs)
+                    response, pathname = self.__get_response(url, **kwargs)
             except:
                 raise happyError('wrong request formulated')  
             else:
@@ -2960,10 +2960,13 @@ class _NestedDict(dict):
 
     #/************************************************************************/
     def __repr__(self):
-        if self.xlen() > 1:
+        # return super(_NestedDict, self).__repr__()
+        if self.xlen() == 1:
+            val = self.values(**self.dimensions)
+        if self.xlen() > 1 or val in (None,[],{},''):
             return super(_NestedDict, self).__repr__()
         else:
-            return "%s" % self.values(**self.dimensions)
+            return "%s" % val
 
     #/************************************************************************/
     def __iter__(self):
