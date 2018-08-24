@@ -49,12 +49,14 @@ They are provided here for the sake of an exhaustive documentation.
 
 *require*:      :mod:`os`, :mod:`sys`, :mod:`io`, :mod:`itertools`, :mod:`functools`, :mod:`collections`, :mod:`time`, :mod:`hashlib`, :mod:`zipfile`, :mod:`copy`, :mod:`json`
 
-*optional*:     :mod:`datetime`, :mod:`requests`, :mod:`requests_cache`, :mod:`cachecontrol`, :mod:`chardet`
+*optional*:     :mod:`datetime`, :mod:`requests`, <a class="reference external" href="http://requests-cache.readthedocs.io/en/latest/" title="requests_cache"><code class="xref py py-mod docutils literal notranslate"><span class="pre">requests_cache</span></code></a>, `cachecontrol <https://cachecontrol.readthedocs.io/en/latest/>`_, :mod:`chardet`
 
 *call*:         :mod:`settings`         
 
 **Contents**
 """
+
+
 
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
 # *since*:        Sat May  5 00:09:56 2018
