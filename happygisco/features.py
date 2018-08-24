@@ -53,8 +53,8 @@ import functools#analysis:ignore
 
 # from typing import Dict, Tuple, List
 
-# local imports
-from . import happyWarning, happyVerbose, happyError, happyType#analysis:ignore
+# local (absolute) imports
+from happygisco import happyWarning, happyError, happyType
 from happygisco import settings
 #from happygisco import base
 from happygisco.base import SERVICE_AVAILABLE

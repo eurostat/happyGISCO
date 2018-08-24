@@ -59,8 +59,8 @@ try:
 except ImportError:
     pass
 
-# local imports
-from . import happyVerbose, happyWarning, happyError, happyType
+# local (absolute) imports
+from happygisco import happyVerbose, happyWarning, happyError, happyType
 from happygisco import settings
 from happygisco.base import _Decorator, _Tool
  
@@ -339,7 +339,7 @@ class GeoDistance(object):
             
         Raises
         ------
-        ~settings.happyError
+        happyError
             when unable to recognize any of the distance units in :data:`kwargs`.
 
         Examples
@@ -374,7 +374,7 @@ class GeoDistance(object):
             
         Raises
         ------
-        ~settings.happyError 
+        happyError 
             when unable to recognize the distance unit.
             
         Example
@@ -613,7 +613,7 @@ class GeoAngle(object):
             
         Raises
         ------
-        ~settings.happyError 
+        happyError 
             when unable to recognize the distance unit :data:`to_`.
             
         Note
@@ -832,6 +832,7 @@ class GeoCoordinate(GeoLocation):
     args : tuple[float]
         arguments in :data:`args` define uniquely an instance of this class; it
         can be either:     
+            
             * a pair of :literal:`(lat,Lon)` expressed in radians,
             * a pair of :literal:`(lat,Lon)` expressed in degrees,
             * a pair of :literal:`(lat,Lon)` expressed in DPS format 
@@ -1409,7 +1410,7 @@ class GeoCoordinate(GeoLocation):
         
         Raises
         ------
-        ~settings.happyError
+        happyError
             an error is raised in cases of:
                 
                 * unexpected variable for lat/long,
@@ -1613,7 +1614,7 @@ class GeoCoordinate(GeoLocation):
         
         Raises
         ------
-        ~settings.happyError 
+        happyError 
             an error is raised when unrecognized order argument.
             
         Example
@@ -1658,7 +1659,7 @@ class GeoCoordinate(GeoLocation):
         
         Raises
         ------
-        ~settings.happyError 
+        happyError 
             an error is raised in case of unrecognized :data:`order` argument.
 
         Example
@@ -1803,9 +1804,8 @@ class GDALTransform(_Tool):
         
     Note
     ----
-    Considering the variety of vector formats available for |GISCO| datasets, it 
-    is actually preferable to let the driver 'unnamed' and let :data:`ogr` guess
-    the type of the datasets.
+    Considering the variety of vector formats available, it is actually preferable 
+    to let the driver 'unnamed' and let :data:`ogr` guess the type of the datasets.
     """
     
     #/************************************************************************/

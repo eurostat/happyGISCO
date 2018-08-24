@@ -49,12 +49,15 @@ using common online web-based geoservices (with or without authentication reques
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
 # *since*:        Thu Apr  5 16:40:31 2018
 
-import sys, warnings
+import os, sys, warnings#analysis:ignore
 import inspect
 import collections, itertools, functools
 import six
 
 __all__ = ['settings', 'base', 'tools', 'services', 'features']#analysis:ignore
+
+
+# sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 #==============================================================================
 # PROGRAM METADATA

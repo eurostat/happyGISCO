@@ -84,10 +84,12 @@ except KeyError:
 package = "".join(package.split())
 
 # at this stage, we can simplofy the search exercise...
-#sys.path.insert(0, '.')
 sys.path.insert(0, DIRHAPPYGISCO)
+#https://stackoverflow.com/questions/20251007/sphinx-and-relative-imports-in-python-3
 sys.path.insert(0, os.path.join(DIRHAPPYGISCO,package))
-# sys.path.insert(0, os.path.abspath(os.path.join(DIRHAPPYGISCO,'../',project)))
+
+#sys.path.insert(0, os.path.abspath(os.path.join(DIRHAPPYGISCO,'../')))
+
 
 # further integration with ReadTheDocs
 # https://media.readthedocs.org/pdf/docs-python2readthedocs/master/docs-python2readthedocs.pdf
@@ -295,7 +297,7 @@ else:
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path    = ['_static']
+#html_static_path    = ['_static']
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied

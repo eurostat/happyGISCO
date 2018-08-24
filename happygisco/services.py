@@ -67,8 +67,8 @@ __all__         = ['OSMService', 'GISCOService', 'APIService',
 import io
 import collections, itertools
 
-# local imports
-from . import happyVerbose, happyWarning, happyError, happyType
+# local (absolute) imports
+from happygisco import happyVerbose, happyWarning, happyError, happyType
 from happygisco import settings
 from happygisco.base import _Decorator, _Service, _NestedDict#analysis:ignore
 
@@ -393,7 +393,7 @@ class OSMService(_Service):
                   
         Raises
         ------
-        ~settings.happyError
+        happyError
             error is raised in the cases:
             
                 * the geolocation request is wrongly formulated,
@@ -563,7 +563,7 @@ class OSMService(_Service):
         
         Raises
         ------
-        ~settings.happyError
+        happyError
             error is raised in the cases:
             
                 * the geolocation request is wrongly formulated,
@@ -2448,7 +2448,7 @@ class GISCOService(OSMService):
                   
         Raises
         ------
-        ~settings.happyError
+        happyError
             error is raised in the cases:
             
                 * the geolocation request is wrongly formulated,
@@ -2608,7 +2608,7 @@ class GISCOService(OSMService):
         
         Raises
         ------
-        ~settings.happyError
+        happyError
             error is raised in the cases:
             
                 * the geolocation request is wrongly formulated,
@@ -2703,7 +2703,7 @@ class GISCOService(OSMService):
         
         Raises
         ------
-        ~settings.happyError
+        happyError
             error is raised in the cases:
             
                 * the geolocation request is wrongly formulated,
@@ -2822,7 +2822,7 @@ class GISCOService(OSMService):
         
         Raises
         ------
-        ~settings.happyError
+        happyError
             error is raised in the case the NUTS request is wrongly formulated.
             
         Examples
@@ -3005,7 +3005,7 @@ class GISCOService(OSMService):
         
         Raises
         ------
-        ~settings.happyError
+        happyError
             error is raised in the cases:
             
                 * the route request is wrongly formulated,
@@ -3090,7 +3090,7 @@ class GISCOService(OSMService):
         
         Raises
         ------
-        ~settings.happyError
+        happyError
             see :meth:`~GISCOService.coord2route` method.
 
         Example

@@ -76,8 +76,8 @@ import hashlib, zipfile
 import copy
 #import abc
 
-# local imports
-from . import happyVerbose, happyWarning, happyError, happyType, happyDeprecated
+# local (absolute) imports
+from happygisco import happyVerbose, happyWarning, happyError, happyType, happyDeprecated
 from happygisco import settings
 
 # another standard import
@@ -2051,7 +2051,7 @@ class _Service(object):
             
         Raises
         ------
-        ~settings.happyError
+        happyError
             error is raised in the cases:
                 
                 * the request is wrongly formulated,
@@ -2223,7 +2223,7 @@ class _Service(object):
             
         Raises
         ------
-        ~settings.happyError
+        happyError
             error is raised in the cases:
             
                 * the request is wrongly formulated,
@@ -2337,7 +2337,7 @@ class _Service(object):
             
         Raises
         ------
-         ~settings.happyError
+        happyError
             error is raised in the cases:
             
                 * the input keyword parameters are wrongly set,
@@ -2482,7 +2482,7 @@ class _Service(object):
             
         Raises
         ------
-         ~settings.happyError
+        happyError
             error is raised in the cases:
             
                 * there is a wrong URL status,
@@ -2827,7 +2827,7 @@ class _NestedDict(dict):
     
     See also
     --------
-    :meth:`settings.happyType.ismapping`, :meth:`settings.happyType.mapdeepmerge`.
+    :meth:`happyType.ismapping`.
     """
 
     #/************************************************************************/
