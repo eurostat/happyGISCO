@@ -78,6 +78,7 @@ import copy
 
 # local (absolute) imports
 from happygisco import happyVerbose, happyWarning, happyError, happyType, happyDeprecated
+from happygisco import REDUCE_ANSWER, EXCLUSIVE_ARGUMENTS
 from happygisco import settings
 
 # another standard import
@@ -479,7 +480,7 @@ class _Decorator(object):
             if coord in ([],None):
                 raise happyError('wrong geographic coordinates')
             if order != 'lL':                   coord = [_[::-1] for _ in coord] # order = 'Ll'
-            if settings.REDUCE_ANSWER and len(coord)==1:    coord = coord[0]
+            if REDUCE_ANSWER and len(coord)==1:    coord = coord[0]
             return self.func(coord, **kwargs)
 
     #/************************************************************************/
@@ -610,7 +611,7 @@ class _Decorator(object):
                     place = [', '.join(_) for _ in zip(place, itertools.cycle(country))]
             if place in (None,[],''):
                 raise happyError('no input arguments passed')
-            if settings.REDUCE_ANSWER and len(place)==1:    place = place[0]
+            if REDUCE_ANSWER and len(place)==1:    place = place[0]
             if not all([happyType.isstring(p) for p in place]):
                 raise happyError('wrong format for input place')
             return self.func(place, **kwargs)
@@ -682,7 +683,7 @@ class _Decorator(object):
                 assert not(place in ('',None) and coord in ([],None))
             except:
                 raise happyError('no geographic entity parsed to define the place')
-            if settings.EXCLUSIVE_ARGUMENTS is True:
+            if EXCLUSIVE_ARGUMENTS is True:
                 try:
                     assert place in ('',None) or coord in ([],None)
                 except:
@@ -934,7 +935,7 @@ class _Decorator(object):
                                         p.get(_Decorator.parse_geometry.KW_COUNTRY) or ''])) \
                             or p.get(_Decorator.parse_geometry.KW_NAME) or '' for p in place] 
                 if unique:          place = [place[0],]
-                if settings.REDUCE_ANSWER and len(place)==1:    place=place[0]
+                if REDUCE_ANSWER and len(place)==1:    place=place[0]
                 kwargs.update({_Decorator.KW_PLACE: place}) 
             return self.func(**kwargs)
         
@@ -1042,6 +1043,7 @@ class _Decorator(object):
         # GDAL like dictionaries
         KW_PROPERTIES   = 'properties'
         KW_GEOMETRY     = 'geometry'
+        KW_FEATURES     = 'features'
         KW_TYPE         = 'type' 
         KW_CRS          = 'crs' 
         KW_NAME         = 'name'
@@ -1130,7 +1132,7 @@ class _Decorator(object):
                                 if n[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_LEVEL] == str(level)]                    
                     except:
                         nuts = {}
-            if settings.REDUCE_ANSWER and len(nuts)==1:    nuts=nuts[0]
+            if REDUCE_ANSWER and len(nuts)==1:    nuts=nuts[0]
             kwargs.update({_Decorator.KW_NUTS: nuts}) 
             return self.func(**kwargs)
   
@@ -2107,7 +2109,6 @@ class _Service(object):
             raise happyError('connection failed')  
         else:
             happyVerbose('response status from web-service: %s' % response.status_code)
-        response.raise_for_status()
         try:
             response.raise_for_status()
         except:
@@ -2984,6 +2985,36 @@ class _NestedDict(dict):
             return res if res in ([],[None],None) or len(res)>1 else res[0]
 
     #/************************************************************************/
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+        return result
+
+    #/************************************************************************/
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        # return cls(copy.deepcopy(dict(self)), order=self.order)
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, copy.deepcopy(v, memo))
+        return result
+     
+    #/************************************************************************/
+    def __iter__(self):
+        return self
+    
+    #/************************************************************************/
+    def __next__(self):
+        if self.__cursor >= self.xlen():
+            self.__cursor = 0
+            raise StopIteration
+        _next = list(self.xvalues())[self.__cursor]
+        self.__cursor += 1
+        return _next
+
+    #/************************************************************************/
     def __repr__(self):
         rep = super(_NestedDict, self).__repr__()
         try:
@@ -3000,19 +3031,6 @@ class _NestedDict(dict):
             return super(_NestedDict, self).__str__()
         else:
             return "%s" % val
-
-    #/************************************************************************/
-    def __iter__(self):
-        return self
-    
-    #/************************************************************************/
-    def __next__(self):
-        if self.__cursor >= self.xlen():
-            self.__cursor = 0
-            raise StopIteration
-        _next = list(self.xvalues())[self.__cursor]
-        self.__cursor += 1
-        return _next
 
     #/************************************************************************/
     @property

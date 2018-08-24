@@ -902,12 +902,12 @@ class NUTS(_Feature):
             try:
                 if not happyType.issequence(content): 
                     content = [content,]  
-                dimensions = [self.serv.geom2nutsinfo(c) for c in content]             
+                dimensions = [self.serv.geom2nutsid(c) for c in content]             
             except:
                 try:
                     if not happyType.issequence(url): 
                         url = [url,]  
-                    dimensions = [self.serv.url2nutsinfo(u) for u in url]             
+                    dimensions = [self.serv.url2nutsid(u) for u in url]             
                 except:
                     raise happyError('impossible to extract NUTS dimensions from input data')
 

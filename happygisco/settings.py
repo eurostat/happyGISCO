@@ -76,7 +76,7 @@ PACKAGE             = "happygisco"
 PROTOCOLS           = ('http', 'https', 'ftp')
 """Recognised protocols (APIs, bulk downloads,...).
 """
-DEF_PROTOCOL        = 'http'
+DEF_PROTOCOL        = 'https' # 'http'
 """Default protocol used by the APIs.
 """
 PROTOCOL            = DEF_PROTOCOL
