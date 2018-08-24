@@ -959,7 +959,7 @@ class GISCOService(OSMService):
         See also
         --------
         :meth:`~GISCOService.nuts_response`, :meth:`~GISCOService.url_country`,
-        :meth:`~GISCOService.url2nutsid`.        
+        :meth:`~GISCOService.url2nutsinfo`.        
         """
         # check whether a specific unit is looked for
         # btw, do we want to download GISCO data?
@@ -998,7 +998,7 @@ class GISCOService(OSMService):
             vec = settings.GISCO_VECTORS[vec]
         level = kwargs.pop(_Decorator.KW_LEVEL, settings.GISCO_NUTSLEVELS[0])        
         ## retrieve the default parameters values    
-        #defkw = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)(lambda **kw: kw)
+        #defkw = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS, _force_list_=True)(lambda **kw: kw)
         #defkw = defkw()
         # set the compression format
         theme = settings.GISCO_NUTSTHEME 
@@ -2065,7 +2065,7 @@ class GISCOService(OSMService):
                 data = pd.concat(data[data['NUTS_ID'].apply(lambda x: sum(c.isdigit() for c in x)==l)] for l in level)
         else:
             try:
-                data = self.read_response(resp, fmt='jsonstr')
+                data = self.read_response(resp, fmt='jsontext')
             except:
                 raise happyError('error info NUTS file reading')
             else:
@@ -2136,7 +2136,7 @@ class GISCOService(OSMService):
         except:
             raise happyError('error loading country response')
         try:
-            data = self.read_response(resp, fmt='jsonstr')
+            data = self.read_response(resp, fmt='jsontext')
         except:
             raise happyError('error info country file reading')
         else:
@@ -2260,21 +2260,19 @@ class GISCOService(OSMService):
         return dest if dest is None or len(dest)>1 else dest[0]
         
     #/************************************************************************/
-    def url2nutsid(self, url):
+    def url2nutsinfo(self, url):
         """Check whether a given URL represents a |NUTS| dataset disseminated though
-        |GISCO| Rest API.
+        |GISCO| Rest API and return information about it.
             
-            >>> keys = serv.url2nutsid(url)
-            
-            
+            >>> dimensions = serv.url2nutsinfo(url)
+                        
         Arguments
         ---------
         url : str
         
         Returns
         -------
-        keys : dict
-        
+        dimensions : dict        
         
         Examples
         --------
@@ -2284,14 +2282,14 @@ class GISCOService(OSMService):
             >>> url = serv.url_nuts(source='BULK', fmt='geojson')
             >>> print(url)
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-60m.geojson.zip'
-            >>> serv.url2nutsid(url)
+            >>> serv.url2nutsinfo(url)
                 OrderedDict([('year', 2013), 
                              ('scale', '60m'), 
                              ('fmt', 'geojson')])
             >>> url = serv.url_nuts('BE100', year = 2016, vector = 'label')
             >>> print(url)
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-label-3035-2016.geojson'
-            >>> serv.url2nutsid(url)
+            >>> serv.url2nutsinfo(url)
                 OrderedDict([('source', 'BE100'),
                              ('year', 2016),
                              ('proj', 3035),
@@ -2300,7 +2298,7 @@ class GISCOService(OSMService):
             >>> url = serv.url_nuts('AT', year = 2010, scale = 1, proj = 'Mercator')
             >>> print(url)
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AT-region-01m-3857-2010.geojson'
-            >>> serv.url2nutsid(url)
+            >>> serv.url2nutsinfo(url)
                 OrderedDict([('source', 'AT'),
                              ('year', 2010),
                              ('proj', 3857),
@@ -2310,7 +2308,7 @@ class GISCOService(OSMService):
             >>> url = serv.url_nuts(source='NUTS', level=3, fmt='shp')
             >>> print(url)
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_RG_60M_2013_4326_LEVL_3.shx'
-            >>> serv.url2nutsid(url)
+            >>> serv.url2nutsinfo(url)
                 OrderedDict([('year', 2013),
                              ('proj', 4326),
                              ('scale', '60M'),
@@ -2320,7 +2318,7 @@ class GISCOService(OSMService):
             >>> url = serv.url_nuts(source='NUTS', level='ALL', vector='label', fmt='geojson')
             >>> print(url)
                 'http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_LB_2013_4326.geojson'
-            >>> serv.url2nutsid(url)
+            >>> serv.url2nutsinfo(url)
                 OrderedDict([('year', 2013),
                              ('proj', 4326),
                              ('vector', 'LB'),
@@ -2329,7 +2327,7 @@ class GISCOService(OSMService):
             >>> url = serv.url_nuts(source='NUTS2JSON',  fmt='geojson')
             >>> print(url)
                 'https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/2013/3857/60M/nutsrg_0.json'
-            >>> serv.url2nutsid(url)
+            >>> serv.url2nutsinfo(url)
                 OrderedDict([('year', 2013),
                              ('proj', 3857),
                              ('scale', '60M'),
@@ -2339,7 +2337,7 @@ class GISCOService(OSMService):
                 
         See also
         --------
-        :meth:`~GISCOService.url_nuts`.
+        :meth:`~GISCOService.url_nuts`, :meth:`~GISCOService.geom2nutsinfo`.
         """
         unit, year, scale, fmt, proj, vec, level =                         \
             None, None, None, None, None, None, None
@@ -2411,7 +2409,59 @@ class GISCOService(OSMService):
         [dimensions.update({getattr(_Decorator, 'KW_' + k): kwargs.get(k)})  \
              or dimensions.pop(k) if k in kwargs else dimensions.pop(k) for k in keys]
         return dimensions
+
+
+    #/************************************************************************/
+    def geom2nutsinfo(self, geom):
+        """Check whether a given URL represents a |NUTS| dataset disseminated though
+        |GISCO| Rest API and return information about it.
+            
+            >>> dimensions = serv.geom2nutsinfo(geom)
+                        
+        Arguments
+        ---------
+        geom : str
         
+        Returns
+        -------
+        dimensions : dict        
+        
+        Examples
+        --------
+        
+        See also
+        --------
+        :meth:`~GISCOService.url2nutsinfo`.
+        """
+        dimensions = collections.OrderedDict(zip([getattr(_Decorator, 'KW_' + k) for k in settings.GISCO_DATA_DIMENSIONS],
+                                                 [None]*len(settings.GISCO_DATA_DIMENSIONS)))
+        dimensions.pop(_Decorator.KW_FORMAT)        
+        if hasattr(geom,_Decorator.parse_nuts.KW_ATTRIBUTES):
+            [dimensions.pop(k) for k in (_Decorator.KW_SCALE,_Decorator.KW_PROJECTION,_Decorator.KW_VECTOR)]
+            dimensions.update({_Decorator.KW_SOURCE:                \
+                                   geom[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_ID],
+                               _Decorator.KW_LEVEL:                  \
+                                   geom[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL],
+                               _Decorator.KW_YEAR:                 \
+                                   geom[_Decorator.parse_nuts.KW_LAYERNAME].split('NUTS_')[-1]
+                               })
+        else: #if hasattr(geom,_Decorator.parse_nuts.KW_PROPERTIES):
+            [dimensions.pop(k) for k in (_Decorator.KW_SCALE,_Decorator.KW_YEAR)]
+            dimensions.update({_Decorator.KW_PROJECTION:
+                                geom[_Decorator.parse_nuts.KW_CRS][_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_NAME].split(':EPSG::')[-1]})
+            features = geom[_Decorator.KW_FEATURES]
+            dimensions = [dimensions.copy() for f in features]
+            [dimensions[i].update({_Decorator.KW_SOURCE:                \
+                                       f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_NUTS_ID],
+                                   _Decorator.KW_LEVEL:                  \
+                                       f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_LEVEL],
+                                   _Decorator.KW_VECTOR:                 \
+                                       {"Polygon": 'RG', "MultiPolygon": 'RG', "LineString": 'BN', "Point": 'LB'}   \
+                                       [f[_Decorator.parse_nuts.KW_FEATURES][0][_Decorator.parse_nuts.KW_GEOMETRY][_Decorator.parse_nuts.KW_TYPE]]
+                                    })
+                    for i, f in enumerate(features)]
+        return dimensions
+      
     #/************************************************************************/
     def _place2geom(self, place, **kwargs): 
         """Iterable version of :meth:`~GISCOService.place2geom`.

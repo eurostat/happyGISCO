@@ -49,14 +49,12 @@ They are provided here for the sake of an exhaustive documentation.
 
 *require*:      :mod:`os`, :mod:`sys`, :mod:`io`, :mod:`itertools`, :mod:`functools`, :mod:`collections`, :mod:`time`, :mod:`hashlib`, :mod:`zipfile`, :mod:`copy`, :mod:`json`
 
-*optional*:     :mod:`datetime`, :mod:`requests`, <a class="reference external" href="http://requests-cache.readthedocs.io/en/latest/" title="requests_cache"><code class="xref py py-mod docutils literal notranslate"><span class="pre">requests_cache</span></code></a>, `cachecontrol <https://cachecontrol.readthedocs.io/en/latest/>`_, :mod:`chardet`
+*optional*:     :mod:`datetime`, :mod:`requests`,  :mod:`requests_cache`,  :mod:`cachecontrol`, :mod:`chardet`
 
 *call*:         :mod:`settings`         
 
 **Contents**
 """
-
-
 
 # *credits*:      `gjacopo <jacopo.grazzini@ec.europa.eu>`_ 
 # *since*:        Sat May  5 00:09:56 2018
@@ -167,6 +165,8 @@ class _Decorator(object):
     KW_CACHE_URL    = 'cache_url'
     KW_MAP_URL      = 'map_url'
     KW_ARCGIS       = 'arcgis'
+    
+    KW_CONTENT      = 'content'
     
     KW_PLACE        = 'place'
     KW_ADDRESS      = 'address'
@@ -940,9 +940,9 @@ class _Decorator(object):
         
     #/************************************************************************/
     class parse_nuts(__base):
-        """Class decorator of functions and methods used to parse NUTS information 
-        from JSON-like dictionary parameters formated according to |GISCO| |NUTS| 
-        responses (see |GISCOWIKI|).
+        """Class decorator of functions and methods used to parse information content
+        from JSON-like dictionary parameters (*e.g.*, formated according to |GISCO| 
+        |NUTS| responses: see |GISCOWIKI|).
         
             >>> new_func = _Decorator.parse_nuts(func)
         
@@ -960,7 +960,7 @@ class _Decorator(object):
         Returns
         -------
         new_func : callable
-            the decorated function that now accepts a NUTS entry as a positional
+            the decorated function that now accepts a JSON-like entry as a positional
             argument (see  *Notes* below).             
         
         Examples
@@ -1043,6 +1043,8 @@ class _Decorator(object):
         KW_PROPERTIES   = 'properties'
         KW_GEOMETRY     = 'geometry'
         KW_TYPE         = 'type' 
+        KW_CRS          = 'crs' 
+        KW_NAME         = 'name'
         # GISCO-like dictionaries
         KW_RESULTS      = 'results'
         KW_ATTRIBUTES   = 'attributes'
@@ -1733,10 +1735,10 @@ class _Decorator(object):
     
     #/************************************************************************/
     @classmethod
-    def parse_default(cls, dimensions):
+    def parse_default(cls, dimensions, **kwargs):
         """Class method decorator defining default parsing arguments.
         
-            >>> decorator = parse_default(dimensions)
+            >>> decorator = parse_default(dimensions, **kwargs)
             >>> new_func = decorator(func)
             
         Arguments
@@ -1745,6 +1747,12 @@ class _Decorator(object):
             a list of dimensions defining parsing parameters for which default
             values have been set; see for instance the dimensions provided in the
             variable :data:`settings.GISCO_DATA_DIMENSIONS`.
+            
+        Keyword arguments
+        -----------------
+        _force_list_ : bool
+            flag set to :literal:`True` so as to force the output default value(s) 
+            to be of the type :obj:`list`; default: :data:`_force_list_=False`.
             
         Returns
         -------
@@ -1779,13 +1787,17 @@ class _Decorator(object):
             ... def func(*args,**kwargs):
             ...     print(kwargs)
             >>> func(key = 'dumb')
-                {key = 'dumb', 'proj': [4326]}    
+                {key = 'dumb', 'proj': 4326}    
             >>> @_Decorator.parse_def_kwargs(['LEVEL','SCALE'])
             ... def func(*args,**kwargs):
             ...     print(kwargs)
             >>> func(key = 0, level = -1, scale = 'dumb')
-                {'key': 0, 'level': [0], 'scale': ['60m']}
-            >>> @_Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)
+                {'key': 0, 'level': 0, 'scale': '60m'}
+                
+        The use of the :data:`_force_list_` keyword argument can help reformat the 
+        output default values into list:
+            
+            >>> @_Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS, _force_list_=True)
             ... def func(*args,**kwargs):
             ...     print(kwargs)
             >>> func()
@@ -1796,7 +1808,7 @@ class _Decorator(object):
             
             >>> defkw = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)(lambda **kw: kw)
             >>> defkw()
-                {'fmt': ['geojson'], 'level': [0], 'proj': [4326], 'scale': ['60m'], 'vector': ['RG'], 'year': [2013]}                
+                {'fmt': 'geojson', 'level': 0, 'proj': 4326, 'scale': '60m', 'vector': 'RG', 'year': 2013}                
         
         Note
         ----
@@ -1813,6 +1825,7 @@ class _Decorator(object):
         :meth:`~_Decorator.parse_scale`, :meth:`~_Decorator.parse_level`, 
         :meth:`~_Decorator.parse_projection`. 
         """
+        __force_list = kwargs.pop(_Decorator.KW_FORCE_LIST, False)
         try:
             assert happyType.isstring(dimensions) or happyType.issequence(dimensions)
         except:
@@ -1835,14 +1848,19 @@ class _Decorator(object):
                 continue # pass 
             try:
                 func = lambda *a, **kw: [kw.get(key)]
-                def_kwargs.update({key: parse(func)()})
+                if __force_list is True:
+                    def_kwargs.update({key: parse(func)()})
+                else:
+                    val = parse(func)()
+                    def_kwargs.update({key: val[0] if val is not None and happyType.issequence(val) and len(val)==1 \
+                                            else val})
             except:
                 raise happyError('error while parsing dimension %s' % dim)
         # return def_kwargs
         class decorator(cls.__base):
-            def __call__(self, *args, **kwargs):  
-                kwargs.update(def_kwargs)
-                return self.func(*args, **kwargs)
+            def __call__(self, *args, **_kwargs):  
+                _kwargs.update(def_kwargs)
+                return self.func(*args, **_kwargs)
         return decorator
          
 #_Decorator.parse_year =                         \
@@ -1919,7 +1937,7 @@ class _Service(object):
        >>> serv = base._Service()        
     """
     
-    RESPONSE_FORMATS = ['resp', 'zip', 'str', 'stringio', 'bytes', 'bytesio', 'json']
+    RESPONSE_FORMATS = ['resp', 'zip', 'raw', 'text', 'stringio', 'bytes', 'bytesio', 'json']
     ZIP_OPERATIONS  = ['extract', 'extractall', 'getinfo', 'namelist', 'read', 'infolist']
     
     #/************************************************************************/
@@ -2363,12 +2381,12 @@ class _Service(object):
         else:
             fmt = fmt.lower()
         try:
-            assert fmt in ['jsonstr', 'jsonbytes'] + self.RESPONSE_FORMATS # only for developers
+            assert fmt in ['jsontext', 'jsonbytes'] + self.RESPONSE_FORMATS # only for developers
         except:
             raise happyError('wrong value for FMT parameter - must be in %s' % self.RESPONSE_FORMATS) 
         if fmt.startswith('json'):
             try:
-                assert fmt not in ('jsonstr', 'jsonbytes')
+                assert fmt not in ('jsontext', 'jsonbytes')
                 data = response.json()
             except:
                 try:
@@ -2382,10 +2400,15 @@ class _Service(object):
                     else:
                         fmt = 'jsonbytes' # force
                 else:
-                    fmt = 'jsonstr' # force
+                    fmt = 'jsontext' # force
             else:
                 return data
-        elif fmt in ('str', 'stringio'):
+        elif fmt == 'raw':
+            try:
+                data = response.raw
+            except:
+                raise happyError('error accessing ''raw'' attribute of response')
+        elif fmt in ('text', 'stringio'):
             try:
                 data = response.text
             except:
@@ -2405,7 +2428,7 @@ class _Service(object):
                 data = io.BytesIO(data)
             except:
                 raise happyError('error loading BytesIO data')
-        elif fmt == 'jsonstr':
+        elif fmt == 'jsontext':
             try:
                 data = json.loads(data)
             except:
@@ -2962,8 +2985,13 @@ class _NestedDict(dict):
 
     #/************************************************************************/
     def __repr__(self):
-        return super(_NestedDict, self).__repr__()
-
+        rep = super(_NestedDict, self).__repr__()
+        try:
+            assert False
+            return rep.replace("'","\"") # does actually make no sense
+        except:
+            return rep
+        
     #/************************************************************************/
     def __str__(self):
         if self.xlen() == 1:

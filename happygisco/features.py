@@ -807,23 +807,23 @@ class NUTS(_Feature):
         self.__geometry = None
         # not accessible by users
         self.__resp = None
-        self.__nuts = None
+        self.__content = None
         super(NUTS,self).__init__(**kwargs)
         # dump whatever is in args into kwargs so as to simplify the process
         if args not in ((),(None,)):
-            kwargs.update({_Decorator.KW_NUTS: args[0] if len(args)==0 and happyType.issequence(args) else args}) 
+            kwargs.update({_Decorator.KW_CONTENT: args[0] if len(args)==0 and happyType.issequence(args) else args}) 
             args = ()
         items = []
         # get/set the attributes of the NUTS feature 
         for kw in ['UNIT', 'FILE', 'URL', 'LAYER', 'FEATURE', 'GEOMETRY',   \
-                   'RESPONSE', 'NUTS']:
+                   'RESPONSE', 'CONTENT']:
             attr = kwargs.pop(getattr(_Decorator, 'KW_' + kw), None)
             try:
                 assert attr not in (None,[],{},'')
             except: pass
             else:
                 key = getattr(_Decorator, 'KW_' + kw)
-                if kw in ('RESPONSE','NUTS'):   key = '_' + key
+                if kw in ('RESPONSE','CONTENT'):   key = '_' + key
                 setattr(self, key, attr) # may raise an Error
                 items.append(attr)
         # check that one at least is parsed
@@ -837,17 +837,6 @@ class NUTS(_Feature):
         else:
             if self.__unit is None:
                 return
-        # set default GISCO parameters (those in settings.GISCO_DATA_DIMENSIONS)
-        # e.g., ['SOURCE', 'YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT']
-        defkw = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)(lambda **kw: kw)()
-        for key in defkw.keys(): 
-            print(key)
-            attr = kwargs.pop(key, defkw.get(key))
-            try:
-                assert attr not in (None,[],{},'')
-            except: pass
-            else:
-                setattr(self, key, attr) # may raise an Error
                     
     #/************************************************************************/
     def __getattr__(self, attr_name): 
@@ -864,13 +853,76 @@ class NUTS(_Feature):
                 return attr if attr is None or len(attr)>1 else attr[0]
 
     #/************************************************************************/    
+    @_Decorator.parse_url
+    @_Decorator.parse_geometry
+    @_Decorator._parse_class((str,dict), _Decorator.KW_CONTENT)
+    @_Decorator.parse_year
+    @_Decorator.parse_projection
+    @_Decorator.parse_scale
+    @_Decorator.parse_vector
+    @_Decorator.parse_level
     def _get_dimensions(self, **kwargs): 
-        nuts = kwargs.pop(_Decorator.KW_NUTS, None)
+        content = kwargs.pop(_Decorator.KW_CONTENT, None)
         geom = kwargs.pop(_Decorator.KW_GEOMETRY, None)
         url = kwargs.pop(_Decorator.KW_URL, None)
-                
-        year = [n[_Decorator.parse_nuts.KW_LAYERNAME] for n in self.__nuts]
-        level = [n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL] for n in self.__nuts]
+        _argsTrue = [1 for arg in (content, url, geom) if arg in ('',None)]
+        try:
+            assert sum(_argsTrue) >= 2
+        except:
+            raise happyError('incompatible arguments %s, %s and %s - parse one only' % \
+                             (_Decorator.KW_CONTENT.upper(),_Decorator.KW_GEOMETRY.upper(),_Decorator.KW_URL.upper()))        
+        if sum(_argsTrue) == 3: # all None
+            try:
+                assert self.__geom 
+            except AssertionError:
+                try:
+                    assert self.__content
+                except AssertionError:
+                    try:
+                        assert self.__url
+                    except AssertionError:
+                        pass
+                    else:
+                        url = self.url
+                else:
+                    content = self._content
+            else:
+                geom = self.geom
+        dimensions = {}
+        [dimensions.update({k:v for k,v in kwargs.items() if k in settings.GISCO_DATA_DIMENSIONS})]
+        [dimensions.pop(k) for k in ('SOURCE', 'FORMAT')]
+        try:
+            try:
+                if not happyType.issequence(geom): 
+                    geom = [geom,]  
+                dimensions = [self.serv.geom2nutsinfo(g) for g in geom]             
+            except:
+                raise happyError('impossible to extract NUTS dimensions from input data')
+        except:
+            try:
+                if not happyType.issequence(content): 
+                    content = [content,]  
+                dimensions = [self.serv.geom2nutsinfo(c) for c in content]             
+            except:
+                try:
+                    if not happyType.issequence(url): 
+                        url = [url,]  
+                    dimensions = [self.serv.url2nutsinfo(u) for u in url]             
+                except:
+                    raise happyError('impossible to extract NUTS dimensions from input data')
+
+        # let us define the default dimensions (those in settings.GISCO_DATA_DIMENSIONS)
+        # e.g., [YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT']
+        defdim = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)(lambda **kw: kw)()
+
+        
+        for key in settings.GISCO_DATA_DIMENSIONS.keys(): 
+            attr = kwargs.pop(key, defkw.get(key))
+            try:
+                assert attr not in (None,[],{},'')
+            except: pass
+            else:
+                setattr(self, key, attr) # may raise an Error
 
     #/************************************************************************/    
     @_Decorator.parse_url
@@ -880,7 +932,7 @@ class NUTS(_Feature):
     def _get_unit(self, **kwargs): 
         """Retrieve NUTS identifier.
         """
-        nuts = kwargs.pop(_Decorator.KW_NUTS, None)
+        content = kwargs.pop(_Decorator.KW_CONTENT, None)
         geom = kwargs.pop(_Decorator.KW_GEOMETRY, None)
         url = kwargs.pop(_Decorator.KW_URL, None)
         _argsTrue = [1 for arg in (nuts, url, geom) if arg in ('',None)]
@@ -888,13 +940,13 @@ class NUTS(_Feature):
             assert sum(_argsTrue) >= 2
         except:
             raise happyError('incompatible arguments %s, %s and %s - parse one only' % \
-                             (_Decorator.KW_NUTS.upper(),_Decorator.KW_GEOMETRY.upper(),_Decorator.KW_URL.upper()))
+                             (_Decorator.KW_CONTENT.upper(),_Decorator.KW_GEOMETRY.upper(),_Decorator.KW_URL.upper()))
         if sum(_argsTrue) == 3: # all None
             try:
                 assert self.__geom 
             except AssertionError:
                 try:
-                    assert self.__nuts
+                    assert self.__content
                 except AssertionError:
                     try:
                         assert self.__url
@@ -904,11 +956,11 @@ class NUTS(_Feature):
                             assert url not in  ('',[],None)
                         except:
                             raise happyError('incompatible arguments %s, %s and %s - parse one at least' % \
-                                             (_Decorator.KW_NUTS.upper(),_Decorator.KW_GEOMETRY.upper(),_Decorator.KW_URL.upper()))
+                                             (_Decorator.KW_CONTENT.upper(),_Decorator.KW_GEOMETRY.upper(),_Decorator.KW_URL.upper()))
                     else:
                         url = self.url
                 else:
-                    nuts = self._nuts
+                    nuts = self._content
             else:
                 geom = self.geom
         try:
@@ -1148,43 +1200,27 @@ class NUTS(_Feature):
                 except: 
                     raise happyError('impossible to extract vector geometries from data') 
         return geom
-
-    #/************************************************************************/    
-    def _get_level(self):
-        if self.feature in ([],None):
-            self.feature = self.get_vector()
-        try:
-            level = [int(f[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL])    \
-                    for f in self.feature]
-        except:
-            try:
-                level = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_LEVEL]     \
-                         for f in self.feature]
-            except:
-                level = None
-        else:
-            return level if level is None or len(level)>1 else level[0]
                 
     #/************************************************************************/
     @property
-    def _nuts(self):
+    def _content(self):
         #ignore-doc
-        return self.__nuts if self.__nuts is None or len(self.__nuts)>1     \
-            else self.__nuts[0]
-    @_nuts.setter
-    def _nuts(self, nuts):
-        if nuts is None:
+        return self.__content if self.__content is None or len(self.__content)>1     \
+            else self.__content[0]
+    @_content.setter
+    def _content(self, content):
+        if content is None:
             return
-        elif not happyType.issequence(nuts):
-            nuts = [nuts,]
+        elif not happyType.issequence(content):
+            content = [content,]
         try:
-            assert all([happyType.isstring(n) or happyType.ismapping(n) for n in nuts])
+            assert all([happyType.isstring(c) or happyType.ismapping(c) for c in content])
         except:
-            raise happyError('wrong format/value for %s argument' % _Decorator.KW_NUTS.upper())
-        if all([happyType.ismapping(n) for n in nuts]):
-            nuts = [happyType.jsonstringify(n) for n in nuts]
-        func = lambda *a, **kw: kw.get(_Decorator.KW_NUTS)
-        self.__nuts = [_Decorator.parse_nuts(func)(nuts=json.loads(n)) for n in nuts]
+            raise happyError('wrong format/value for %s argument' % _Decorator.KW_CONTENT.upper())
+        if all([happyType.ismapping(c) for c in content]):
+            content = [happyType.jsonstringify(c) for c in content]
+        func = lambda *a, **kw: kw.get(_Decorator.KW_CONTENT)
+        self.__content = [_Decorator.parse_nuts(func)(nuts=json.loads(c)) for c in content]
 
     #/************************************************************************/
     @property
