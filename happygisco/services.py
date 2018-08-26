@@ -1794,12 +1794,13 @@ class GISCOService(OSMService):
 
     #/************************************************************************/
     def nuts_content(self, response, **kwargs):
-        if isinstance(response,(_CachedResponse, requests.Response)):
-            return self.read_response(response, **kwargs)
-        else:
-            content = copy.deecopy(response)
-            content.xupdate()
-            self.read_response(v, **kwargs) for k, v in response.xvalues()
+        pass
+#        if isinstance(response,(_CachedResponse, requests.Response)):
+#            return self.read_response(response, **kwargs)
+#        else:
+#            content = copy.deecopy(response)
+#            content.xupdate()
+#            self.read_response(v, **kwargs) for k, v in response.xvalues()
 
         
     #/************************************************************************/

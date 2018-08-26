@@ -2780,17 +2780,13 @@ class _Feature(object):
 #==============================================================================
 
 class _NestedDict(dict):
-    """A dictionary that allows nested indexing of the dictionary contents and merging
-    of multiple dictionaries.
+    """A dictionary-like structure that enables nested indexing of the dictionary 
+    contents and merging of multiply nested dictionaries along given dimensions. 
     
-        >>> d = _NestedDict(_order_=None, _values_=None, **kwargs)
-        >>> d = _NestedDict(*mappings, _order_=None, _values_=None)
-        >>> d = _NestedDict(*iterables, _order_=None, _values_=None)
+        >>> dnest = _NestedDict(*args, **kwargs)
 
     Arguments
     ---------
-    kwargs : 
-        keyword arguments; optional.
     mappings :
         (an)other dictionar(y)ies; optional.
     iterables :
@@ -2799,15 +2795,28 @@ class _NestedDict(dict):
 
     Keyword arguments
     -----------------
-    _order_ : bool, list
-        either a list of keys (that must exist in the input dictionary) or a boolean 
-        flag, it is used to set additional keys in the dictionary:
+    order : list
+        provides the depth order of the dimensions in the output dictionary;
+        default: :data:`order` is :data:`None` and is ignored and the order
+        of the dimensions in the output dictionary depends on their extraction
+        as (key,value) items; unless the input :data:`dict` is an instance of 
+        the :class:`collections.OrderedDict` class, it is highly recommended 
+        to use this keyword argument.
+    values : list,tuple
+    _nested_ : dict
+    
+    Returns
+    -------
+    dnest : dict
+        a empty nested dictionary whose (key,value) pairs are defined and
+        ordered according to the arguments :data:`dic` and :data:`order`; say
+        for instance that :data:`dic = {'dim1': 0, 'dim2': [1, 2]}, then:
             
-            * when :data:`_attr_` contains keys, the values accessed through these
-              (chained) keys are used as supplementary keys in the returned dictionary,
-            * when :data:`_attr_` is boolean, numeric ordered keys are used;
-            
-        default: :data:`_attr_` is :data:`False`.
+            * :data:`happyType.mapnest(dic)` returns :data:`nestdic={0: {1: {}, 2: {}}}`. 
+            * :data:`happyType.mapnest(dic, order=['dim2', 'dim1'])` returns :data:`nestdic={1: {0: {}}, 2: {0: {}}}`. 
+    
+    Examples
+    --------
     
     Examples
     --------
@@ -2815,36 +2824,36 @@ class _NestedDict(dict):
     data structure:
         
         >>> dic = _NestedDict({'a': 1, 'b': 2})
-        >>> print(dic)
+        >>> dic
             {1: {2: {}}}
-        >>> print(dic.order)
+        >>> dic.order
             ['a', 'b']
+        >>> dic.dimensions
+            OrderedDict([('a', [1]), ('b', [2])])
         >>> dic = base._NestedDict([('a',1),('b',2)])
-        >>> print(dic)
+        >>> dic
             {'a': {'b': {}, 2: {}}, 1: {'b': {}, 2: {}}}
-        >>> print(dic.order)
+        >>> dic.order
             [0, 1]
+        >>> dic.dimensions
         
         >>> _NestedDict(a=1, b=2)
             {'a': 1, 'b': 2}
         
-    However, in addition the keyword parameter :data:`_attr_` allows for key 
-    settings, like adding a numeric key:
+    However, in addition the data structure enables nested key settings, like adding a numeric key:
         
-        >>> _NestedDict({'a': 1, 'b': 2}, _attr_=True)
-            {0: {'a': 1, 'b': 2}}
-    
-    like merging two dictionaries into the same one by adding a new key as a new 
-    identifier of the dictionaries:
-        
-        >>> _NestedDict([{'a': {'b': 1}, 'c': 2}, {'a': {'b': -1}, 'c': -2}], _attr_=True)
-            {0: {'a': {'b': 1}, 'c': 2}, 1: {'a': {'b': -1}, 'c': -2}}
-            
-    or like merging those dictionaries again, this time using the (common) values 
-    stored along the `'a','b'` keys as new identifiers:
-        
-        >>> _NestedDict([{'a': {'b': 1}, 'c': 2}, {'a': {'b': -1}, 'c': -2}], _attr_=['a','b'])
-            {1: {'a': {'b': 1}, 'c': 2}, -1: {'a': {'b': -1}, 'c': -2}}
+        >>> dic = {'a': [1,2], 'b': [3,4]}
+        >>> _NestedDict(dic)
+            {1: {3: {}, 4: {}}, 2: {3: {}, 4: {}}}
+        >>> _NestedDict(dic, order = ['b', 'a'])
+            {3: {1: {}, 2: {}}, 4: {1: {}, 2: {}}}
+        >>> dic = collections.OrderedDict({'b': [3,4], 'a': [1,2]})
+        >>> base._NestedDict(dic)
+            {3: {1: {}, 2: {}}, 4: {1: {}, 2: {}}}
+        >>> base._NestedDict(dic, values=[None])
+            {3: {1: None, 2: None}, 4: {1: None, 2: None}}
+        >>> base._NestedDict(dic, values=[10,20,30,40])
+            {3: {1: 10, 2: 20}, 4: {1: 30, 2: 40}}
                 
     Note
     ----
@@ -2858,119 +2867,41 @@ class _NestedDict(dict):
 
     #/************************************************************************/
     def __init__(self, *args, **kwargs):
-        """Create a nested dictionary from a list of keys along given dimensions. 
-        
-            >>> nestdic = happyType.mapnest(dic, order=None)
-            
-        Arguments
-        ---------
-        dic : dict
-            dictionary of dimensions and keys along these dimensions.
-        
-        Keyword arguments
-        -----------------
-        order : list
-            provides the depth order of the dimensions in the output dictionary;
-            default: :data:`order` is :data:`None` and is ignored and the order
-            of the dimensions in the output dictionary depends on their extraction
-            as (key,value) items; unless the input :data:`dict` is an instance of 
-            the :class:`collections.OrderedDict` class, it is highly recommended 
-            to use this keyword argument.
-        
-        Returns
-        -------
-        nestdic : dict
-            a empty nested dictionary whose (key,value) pairs are defined and
-            ordered according to the arguments :data:`dic` and :data:`order`; say
-            for instance that :data:`dic = {'dim1': 0, 'dim2': [1, 2]}, then:
-                
-                * :data:`happyType.mapnest(dic)` returns :data:`nestdic={0: {1: {}, 2: {}}}`. 
-                * :data:`happyType.mapnest(dic, order=['dim2', 'dim1'])` returns :data:`nestdic={1: {0: {}}, 2: {0: {}}}`. 
-        
-        Examples
-        --------
-        
-            >>> dic = {'a': [1,2], 'b': [3,4]}
-            >>> base._NestedDict(dic)
-                {1: {3: {}, 4: {}}, 2: {3: {}, 4: {}}}
-            >>> base._NestedDict(dic, order = ['b', 'a'])
-                {3: {1: {}, 2: {}}, 4: {1: {}, 2: {}}}
-            >>> dic = collections.OrderedDict({'b': [3,4], 'a': [1,2]})
-            >>> base._NestedDict(dic)
-                {3: {1: {}, 2: {}}, 4: {1: {}, 2: {}}}
-            >>> base._NestedDict(dic, values=[None])
-                {3: {1: None, 2: None}, 4: {1: None, 2: None}}
-            >>> base._NestedDict(dic, values=[10,20,30,40])
-                {3: {1: 10, 2: 20}, 4: {1: 30, 2: 40}}
-        """
-        order = kwargs.pop(_Decorator.KW_ORDER,None)
-        values = kwargs.pop(_Decorator.KW_VALUES,None)
-        try:
-            assert order is None or isinstance(order,bool) or happyType.issequence(order)
-        except:
-            raise happyError('wrong type/value for keyword argument ORDER')
         self.__order = None
         self.__xlen = {}
-        self.__dimensions = {}
+        # self.__dimensions = {}
         self.__cursor = 0
-        if args != ():
-            if len(args) > 1:
-                raise happyError('%s expected at most 1 argument' % _NestedDict.__name__)
-            else:
-                args = args[0]
+        order = kwargs.pop(_Decorator.KW_ORDER,None)
+        values = kwargs.pop(_Decorator.KW_VALUES,None)
+        dic = kwargs.pop('_nested_', {})
+        if dic in (None,{}):
             try:
-                assert happyType.ismapping(args) or happyType.issequence(args)
+                dic, dimensions = self._deepcreate(*args, **kwargs)
             except:
-                raise happyError('wrong format for %s input arguments' % _NestedDict.__name__)
-            if not (order is None or isinstance(order,bool) or len(order)==len(args)):
-                raise happyError('incompatible input arguments and keyword argument ORDER for %s' % _NestedDict.__name__)                
-            if happyType.ismapping(args):
-                if order is True:
-                    order =  list(args.keys())
-                if order is not None:
-                    try:
-                        assert set(order) == set(args.keys())
-                    except:
-                        raise happyError('dimensions parsed as arguments and dimensions in ORDER do not match')             
-                    args = sorted(args.items(), key = lambda t: order.index(t[0]))
-            elif all([len(a)==2 and happyType.issequence(a[1]) for a in args]):
-                if order is True:
-                    order =  [a[0] for a in args]
-                if order is not None:
-                    try:
-                        assert set(order) == set([a[0] for a in args])
-                    except:
-                        raise happyError('dimensions parsed as arguments and dimensions in ORDER do not match')             
-                    args = sorted(args, key = lambda t: order.index(t[0]))
-            #elif not all([happyType.issequence(a) for a in args]):
-            #   raise happyError('wrong format for %s input arguments' % _NestedDict.__name__)
-            else:
-                args = list(enumerate(args))
-            if not happyType.ismapping(args):
-                args = collections.OrderedDict(args)
-            if order is None and order is not False: # that should actually never happen at this stage
-                order =  list(args.keys())
-        [args.update({k: [v,] for k,v in args.items() if not happyType.issequence(v)})]
-        self.__dimensions = args
-        value = {} # None
-        for attr in order[::-1]:
-            dic = {a: copy.deepcopy(value) for a in args[attr]} 
-            # why not?
-            #   dic = dict.fromkeys(args[attr], copy.deepcopy(value))
-            # we avoid each element to be assigned a reference to the same object
-            # the other way: self.__dimensions.update({attr: args[attr]})
-            value = dic
-        self.__xlen = {k: len(v) for k,v in self.__dimensions.items()}
-        #dic = {}; _dic = [dic]
-        #for i, attr in enumerate(order or args.keys()):
-        #    [r.update({k: {} for k in args[attr]}) for r in _dic]
-        #    #[r.update({k: {} if values is None or i<len(order)-1 else values[(j-1)*len(_ref)+l]     \
-        #    #           for l, k in enumerate(dic[attr])}) for j, r in enumerate(_ref)]
-        #    _dic = [r[k] for r in _dic for k in args[attr]]           
+                raise happyError('error creating nested dictionary')
+        else:
+            try:
+                depth = max(list(self.__depth(dic).values()))
+                ndim = len(order) if order is not None else depth
+                dimensions = dict(zip(list(range(ndim)), [[]]*len(range(ndim))))
+            except:
+                raise happyError('error setting nested dictionary')
         super(_NestedDict, self).__init__(dic)
-        self.order = order
+        # self.__dimensions = dimensions
+        self.__order = order or list(dimensions.keys())
+        self.__xlen = {k: len(v) if happyType.issequence(v) else 1 for k,v in dimensions.items()}
         if values is not None:
-            self.set(values)
+            if not happyType.issequence(values):    values= [values,]
+            try: 
+                assert len(values)==1 or len(values) == self.xlen()
+            except:
+                raise happyError('wrong format for input values')
+            else:
+                if len(values)==1:      values = values * self.xlen()
+            try:
+                self.xupdate(*zip(self.xkeys(),values))
+            except:
+                raise happyError('error loading dictionary values')
             
     #/************************************************************************/
     def __getattr__(self, attr): 
@@ -3035,40 +2966,499 @@ class _NestedDict(dict):
     #/************************************************************************/
     @property
     def order(self):
+        # return list(self.__dimensions.keys())
         return self.__order
-    @order.setter
-    def order(self, order):
+
+    #/************************************************************************/
+    def reorder(self, order):
+        """Reorder the nested structure of a nested dictionary.
+        
+        Example
+        -------
+        
+            >>> d = {'a': [1,2], 'b': [3,4,5]}
+            >>> r=base._NestedDict(d, values = list(range(6)))
+            >>> r.order
+                ['a', 'b']
+            >>> print(r)
+                {1: {3: 0, 4: 1, 5: 2}, 2: {3: 3, 4: 4, 5: 5}}
+            >>> r.reorder(['b', 'a'])
+            >>> print(r)
+                {3: {1: 0, 2: 3}, 4: {1: 1, 2: 4}, 5: {1: 2, 2: 5}}
+            >>> r.order
+                ['b', 'a']
+        """
         try:
             assert order is None or happyType.issequence(order)
         except:
-            raise happyError('wrong argument for ORDER attribute')
-        else:
-            self.__order = order
+            raise happyError('wrong argument for %s attribute' % _Decorator.KW_ORDER)
+        # reassign self.__dimensions
+        if self.order not in (None,[],()) and self.order != order:
+            self._deepreorder(self, order=order, in_place=True)
 
     @property
     def dimensions(self):
-        # return self.__dimensions
-        return collections.OrderedDict({k : v[0] if len(v)==1 else v for k,v in self.__dimensions.items()})
+        """Dimensions property calculated on the fly.
+        """
+        # return collections.OrderedDict({k : v[0] if len(v)==1 else v for k,v in self.__dimensions.items()})
+        ndim = len(self.order)
+        dic = dict(zip(range(ndim),[[]]*ndim))
+        def recurse(items, depth):
+            for k, v in items:
+                if dic[depth] in ([],None):     dic[depth] = [k,]
+                else:                           dic[depth].append(k)
+                dic[depth] = list(set(dic[depth]))
+                if happyType.ismapping(v):
+                    recurse(v.items(), depth+1)
+        recurse(self.items(), 0)
+        return collections.OrderedDict((self.order[k],v) for k,v in list(dic.items()))
+
+    @classmethod
+    @happyDeprecated('use depth property instead', run=True)
+    def __depth(self, dic):
+        depth = {}
+        def recurse(v, i):
+            if happyType.ismapping(v):
+                yield from recurse(v.values(), i+1)
+            else:
+                yield i
+        depth.update({k: list(recurse(v, 1))[0] for k,v in dic.items()})
+        return depth
 
     @property
     def depth(self):
-        #return list(recurse(list(self.values())[0], 1))[0]
-        #depth = {}
-        #def recurse(v, i):
-        #    if happyType.ismapping(v):
-        #        yield from recurse(v.values(), i+1)
-        #    else:
-        #        yield i
-        #depth.update({k: list(recurse(v, 1))[0] for k,v in self.items()})
-        #return depth
+        # return len(self.dimensions) #-1
         return len(self.order) #-1
+
+    #/************************************************************************/
+    @classmethod
+    def _deepcreate(cls, *args, **kwargs):
+        """Initialise a deeply nested dictionary from input (dimension,key) pairs
+        parsed as dictionary or list, or (key,value) pairs parsed as a list of 
+        items.
+        
+            >>> new_dnest, dimensions = _NestedDict._deepcreate(*args, **kwargs)
+            
+        Arguments
+        ---------
+        
+        Keyword arguments
+        -----------------
+        
+        Returns
+        -------
+        new_dnest : dict
+        dim : collections.OrderedDict
+        
+        Examples
+        --------
+        it is useful to initialise a data structure as an empty nested dictionary:
+        
+            >>> d = {'a': [1,2], 'b': [3,4,5]}
+            >>> _NestedDict._deepcreate(d)
+                ({1: {3: {}, 4: {}, 5: {}}, 2: {3: {}, 4: {}, 5: {}}},
+                 OrderedDict([('a', [1, 2]), ('b', [3, 4, 5])]))
+            >>> _NestedDict._deepcreate(d, order=['b','a'])
+                ({3: {1: {}, 2: {}}, 4: {1: {}, 2: {}}, 5: {1: {}, 2: {}}},
+                 OrderedDict([('b', [3, 4, 5]), ('a', [1, 2])]))
+            >>> l1 = (('a',[1,2]), ('b',[3,4,5]))
+            >>> _NestedDict._deepcreate(l1)
+                ({1: {3: {}, 4: {}, 5: {}}, 2: {3: {}, 4: {}, 5: {}}},
+                 OrderedDict([('a', [1, 2]), ('b', [3, 4, 5])]))
+            >>> _NestedDict._deepcreate(l1, order=['b','a'])
+                ({3: {1: {}, 2: {}}, 4: {1: {}, 2: {}}, 5: {1: {}, 2: {}}},
+                 OrderedDict([('b', [3, 4, 5]), ('a', [1, 2])]))
+            >>> l2 = ([1,2], [3,4,5])
+            >>> _NestedDict._deepcreate(l2)
+                ({1: {3: {}, 4: {}, 5: {}}, 2: {3: {}, 4: {}, 5: {}}},
+                 OrderedDict([(0, [1, 2]), (1, [3, 4, 5])])) 
+                
+        while it is also possible to fill it in with values:
+            
+            >>> items = [(('a',1,'x'), 1), (('a',2,'y'), 2),
+                         (('b',1,'y'), 3), (('b',2,'z'), 4),
+                         (('b',1,'x'), 5)]
+            >>> _NestedDict._deepcreate(items)
+                ({'a': {1: {'x': 1}, 2: {'y': 2}}, 'b': {1: {'x': 5, 'y': 3}, 2: {'z': 4}}},
+                 OrderedDict([(0, ['a', 'b']), (1, [1, 2]), (2, ['y', 'z', 'x'])])
+        
+        See also
+        --------
+        :meth:`~_NestedDict._deepmerge`, :meth:`~_NestedDict._deepinsert`.
+        """
+        if args in ((),(None,)):
+            return collections.OrderedDict()
+        try:
+            assert (len(args)==1 and happyType.ismapping(args[0]))          \
+                or all([happyType.issequence(a) for a in args])
+        except:
+            raise happyError('wrong format for input arguments')
+        else:
+            if len(args)==1: # and, obviously: happyType.ismapping(args[0])) 
+                args = args[0]
+        try:
+            assert not happyType.ismapping(args) or all([happyType.issequence(v) for v in args.values()])
+        except:
+            raise happyError('wrong format for input nesting dictionary')
+        order = kwargs.pop(_Decorator.KW_ORDER, None)
+        try:
+            assert order is None or happyType.issequence(order)
+        except:
+            raise happyError('wrong type/value for %s keyword argument' % _Decorator.KW_ORDER.upper())
+        #if happyType.ismapping(args):
+        #    if order is True:
+        #        order =  list(args.keys())
+        #    if order is not None:
+        #        args = sorted(args.items(), key = lambda t: order.index(t[0]))
+        #    args = collections.OrderedDict(args)
+        #    if order is None and order is not False: # that should actually never happen at this stage
+        #        order =  list(args.keys())
+        #    [args.update({k: [v,] for k,v in args.items() if not happyType.issequence(v)})]            
+        #    value = {} # None
+        #    dimensions = collections.OrderedDict(dict(zip(order,[None]*len(order))))
+        #    try:
+        #        for attr in order[::-1]:
+        #            argattr = args[attr]
+        #            if type(argattr)==tuple:    argattr = list(argattr)
+        #            dic = {a: copy.deepcopy(value) for a in argattr} 
+        #            dimensions.update({attr: argattr.copy()})
+        #            value = dic
+        #    except TypeError:
+        #        raise happyError('input dictionary argument not supported')
+        #elif all([happyType.issequence(a[0]) for a in args]):  
+        #    if order is None or isinstance(order,bool):
+        #        order = list(range(len(args[0][0])))
+        #    attrs = [list(set(a[0][i] for a in args)) for i in range(len(order))]
+        #    dimensions = dict(zip(order, attrs))
+        #    if order is not False:
+        #        dimensions = collections.OrderedDict(dimensions)
+        #    dic = {}
+        #    try:
+        #        for item in args:
+        #            d = {item[0][-1]: item[1]}
+        #            for key in item[0][:-1][::-1]:
+        #                d = {key: d.copy()}
+        #            cls._deepmerge(dic, d, in_place=True)
+        #    except TypeError:
+        #        raise happyError('input item arguments not supported')
+        #try:
+        #    assert dic
+        #except:
+        #    dic, dimensions = {}, {}
+        #return dic, dimensions            
+        if happyType.ismapping(args):
+            args = list(args.items())
+        if happyType.issequence(args):
+            if not all([len(a)==2 for a in args]):
+                args = list(enumerate(args))
+            if all([happyType.issequence(a[0]) for a in args]):
+                if order is None:
+                    order = list(range(len(args[0])))
+                dimensions = collections.OrderedDict(zip(order, 
+                                  [list(set(v)) for v in zip(*[item[0] for item in args])]))
+            else: 
+                dimensions = collections.OrderedDict(args)
+                if order is None:
+                    order = [a[0] for a in args]
+                try:
+                    keys = list(itertools.product(*[item[1] for item in args]))
+                except:
+                    keys = list(itertools.product(*[[item[1]] for item in args]))
+                args = list(zip(keys, [{}] * len(keys)))
+        return cls._deepinsert({},args), dimensions
+        
+    #/************************************************************************/
+    @classmethod
+    def _deepmerge(cls, *dics, **kwargs):
+        """Deep merge (recursively) an arbitrary number of (nested or not) dictionaries.
+    
+            >>> new_dnest = _NestedDict._deepmerge(*dics, **kwargs)
+            
+        Arguments
+        ---------
+        dics : dict
+            an arbitrary number of (possibly nested) dictionaries.
+            
+        Keyword arguments
+        -----------------
+        in_place : bool
+            flag set to update the first dictionary from the input list :data:`dicts`
+            of dictionaries; default: :data:`in_place=False`.
+
+        Returns
+        -------
+        new_dnest : dict
+            say that only two dictionaries are parsed, :data:`d1` and :data:`d2`
+            through :data:`dics` (in this order); first, :data:`d1` is "deep"-copied 
+            into :data:`new_dnest` (we consider the default case :data:`in_place=False`), 
+            then for each :data:`k,v` in :data:`d2`: 
+                
+                * if :data:`k` doesn't exist in :data:`new_dnest`, it is deep copied 
+                  from :data:`d2` into :data:`new_dic`;
+            
+            otherwise: 
+                
+                * if :data:`v` is a list, :data:`new_dnest[k]` is extended with :data:`d2[k]`,
+                * if :data:`v` is a set, :data:`new_dnest[k]` is updated with :data:`v`,
+                * if :data:`v` is a dict, it is recursively "deep"-updated,
+    
+        Examples
+        --------
+        The method can be used to deep-merge dictionaries storing many different
+        data structures:
+
+            >>> d1 = {1: 2, 3: 4, 10: 11}
+            >>> d2 = {1: 6, 3: 7}
+            >>> _NestedDict._deepmerge(d1, d2)
+                {1: [2, 6], 3: [4, 7], 10: 11}
+            >>> d1 = {1: 2, 3: {4: {5:6, 7:8}, 9:10}, 11: 12}
+            >>> d2 = {1: -2, 3: {4: {-5:{-6:-7}}}, 8:-9}
+            >>> _NestedDict._deepmerge(d1, d2)
+                {1: [2, -2], 3: {4: {-5: {-6: -7}, 5: 6, 7: 8}, 9: 10}, 8: -9, 11: 12}
+            >>> d1 = {'a': {'b': {'x': '1', 'y': '2'}}}
+            >>> d2 = {'a': {'c': {'gg': {'m': '3'},'xx': '4'}}}
+            >>> _NestedDict._deepmerge(d1, d2, in_place = True)
+            >>> print(d1)
+                {'a': {'b': {'x': '1','y': '2'}, 'c': {'gg': {'m': '3'}, 'xx': '4'}}}
+                
+        Note
+        ----
+        This code is adapted from F.Boender's original source code available at
+        `this address <https://www.electricmonk.nl/log/2017/05/07/merging-two-python-dictionaries-by-deep-updating/>`_
+        under a *MIT* license.
+        
+        See also
+        --------
+        :meth:`~_NestedDict._deepcreate`, :meth:`~_NestedDict._deepinsert`,
+        :meth:`~_NestedDict.xupdate`.
+        """ 
+        in_place = kwargs.pop('in_place', False)
+        try:
+            assert isinstance(in_place, bool)
+        except:
+            raise happyError('wrong format/value for IN_PLACE keyword argument')
+        try:
+            assert all([happyType.ismapping(dic) for dic in dics])
+        except:
+            raise happyError('wrong format/value for input arguments')
+        def recurse(target, src):
+            for k, v in src.items():
+                #if happyType.issequence(v):  
+                #    if k in target:         target[k].extend(v)
+                #    else:                   target[k] = copy.deepcopy(v)
+                #elif happyType.ismapping(v):  
+                #    if k in target:         recurse(target[k], v)
+                #    else:                   target[k] = copy.deepcopy(v)
+                #elif type(v) == set:
+                #    if k in target:         target[k].update(v.copy())
+                #    else:                   target[k] = v.copy()
+                #else:
+                #    if k in target:     
+                #        if type(target[k]) == tuple:        target.update({k: list(target[k])})
+                #        elif not type(target[k]) == list:   target[k] = [target[k],]
+                #        target[k].append(v)
+                #    else:
+                #        target[k] = copy.copy(v)
+                if k in target:     
+                    if type(v)!=type(target[k]):
+                        if type(target[k]) == tuple:        
+                            target.update({k: list(target[k])})
+                        elif type(target[k]) != list:   
+                            target[k] = [target[k],]    
+                    elif not(happyType.ismapping(target[k]) or happyType.issequence(target[k])):
+                        target[k] = [target[k],]                        
+                #elif type(v)!=type(target[k]):              target[k] = []
+                if happyType.issequence(v): 
+                    if k in target:                         
+                        try:
+                            target[k].extend(v)
+                        except:
+                            target[k] = target[k] + v
+                    else:                                   
+                        target[k] = copy.deepcopy(v)
+                elif happyType.ismapping(v):  
+                    if k in target:         
+                        recurse(target[k], v)
+                    else:                   
+                        target[k] = copy.deepcopy(v)
+                elif type(v) == set:
+                    if k in target:                         
+                        try:
+                            target[k].update(v.copy())
+                        except:
+                            target[k].append(v)
+                    else:                                   
+                        target[k] = v.copy()
+                else:
+                    if k in target:                         
+                        target[k].append(v)
+                    else:
+                        try:
+                           target[k] = copy.copy(v)   
+                        except:
+                            target[k] = v
+        def reduce(*dics):
+            if in_place is False:
+                dd = copy.deepcopy(dics[0])
+                functools.reduce(recurse, (dd,) + dics[1:])
+            else:
+                dd = None
+                functools.reduce(recurse, dics)
+            return dd # or dicts[0]
+        return reduce(*dics)
+
+    #/************************************************************************/
+    @classmethod
+    def _deepinsert(cls, dic, *items, **kwargs):
+        """Deep merge (recursively) a (nested or not) dictionary with items.
+    
+            >>> new_dnest = _NestedDict._deepinsert(dic, *items, **kwargs)
+            
+        Arguments
+        ---------
+        dic : dict
+            a (possibly nested) dictionary.
+        items : tuple,list
+            items of the form :literal:`(key,value)` pairs
+            
+        Keyword arguments
+        -----------------
+        in_place : bool
+            flag set to update the first dictionary from the input list :data:`dicts`
+            of dictionaries; default: :data:`in_place=False`.
+
+        Returns
+        -------
+        new_dnest : dict
+            
+        Examples
+        --------
+        First simple examples:
+            
+            >>> _NestedDict._deepinsert({}, (1,2))
+                {1: 2}
+            >>> _NestedDict._deepinsert({}, (1,2), (3,4))
+                {1: 2, 3: 4}
+            >>> _NestedDict._deepinsert({}, ((1,2),(3,4)))
+                {1: {2: (3, 4)}}                
+            >>> _NestedDict._deepinsert({}, ((1, 2), 3), ((4, 5), 6))
+                {1: {2: 3}, 4: {5: 6}}
+        
+        Note the various way/syntax to parse items, and the different possible 
+        outputs:
+            
+            >>> _NestedDict._deepinsert({}, (1,2), (1,3) )
+                {1: 3} # the last inserted
+            >>> _NestedDict._deepinsert({}, (1,2), (3,(4,5)) )
+                {1: 2, 3: (4, 5)}
+            >>> _NestedDict._deepinsert({}, (1,2), ((3,4),5) )
+                {1: 2, 3: {4: 5}}
+            >>> _NestedDict._deepinsert({}, ((1,2)), (3,(4,5)) )
+                {1: 2, 3: (4, 5)}
+            >>> _NestedDict._deepinsert({}, (((1,2)), (3,(4,5))) )
+                {1: {2: (3, (4, 5))}}
+            >>> _NestedDict._deepinsert({}, (((1,2)), (3,4)), (5,6))
+                {1: {2: (3, 4)}, 5: 6}
+            >>> _NestedDict._deepinsert({}, (1,(2,(3,4),(5,6),7)) )
+                {1: (2, (3, 4), (5, 6), 7)}
+
+        The method can be used to deep-insert items into a (possibly nested) dictionary
+        data structure:
+
+            >>> d = {1: 6, 3: 7, 10: 11}
+            >>> items = ((1,2), (3,4))
+            >>> _NestedDict._deepinsert(d, items)
+                {1: {2: (3, 4)}, 3: 7, 10: 11}
+            >>> _NestedDict._deepinsert(d, *items)
+                1: 2, 3: 4, 10: 11}
+            >>> items = ((1,2), ((3,4,5),6), ((3,4,7),8), ((3,4,9),10), (11,12))
+            >>> d2 = {1: -2, 3: {4: {-5:{-6:-7}}}, 8:-9}
+            >>> _NestedDict._deepinsert(d2, *items)
+                {1: 2, 3: {4: {-5: {-6: -7}, 5: 6, 7: 8, 9: 10}}, 8: -9, 11: 12}
+        
+        The keyword argument :data:`in_place` can be used for in-place update:
+            
+            >>> d = {}
+            >>> items = ((1,2), \(3,(4,5)))
+            >>> _NestedDict._deepinsert(d, items, in_place=True)
+            >>> print(d)
+                {1: 2, 3: (4, 5)}
+            >>> items = [(('a',1,'x'), 1), (('a',2,'y'), 2),
+                         (('b',1,'y'), 3), (('b',2,'z'), 4),
+                         (('b',1,'x'), 5)]
+            >>> d = {}
+            >>> _NestedDict._deepinsert(d, items, in_place=True)
+            >>> print(d)
+                {'a': {1: {'x': 1}, 2: {'y': 2}}, 'b': {1: {'x': 5, 'y': 3}, 2: {'z': 4}}}
+        
+        See also
+        --------
+        :meth:`~_NestedDict._deepcreate`, :meth:`~_NestedDict._deepmerge`, 
+        :meth:`~_NestedDict.xupdate`.
+        """
+        in_place = kwargs.pop('in_place', False)
+        try:
+            assert isinstance(in_place, bool)
+        except:
+            raise happyError('wrong format/value for IN_PLACE keyword argument')
+        try:
+            assert happyType.ismapping(dic) and all([happyType.issequence(item) for item in items])
+        except:
+            raise happyError('wrong format/value for input arguments')
+        if len(items)==1 and not(happyType.issequence(items[0]) and len(items[0])==2): 
+            items = items[0]
+        try:
+            assert len(items)==2 or all([len(item)==2 for item in items])
+        except:
+            raise happyError('wrong format/value for item arguments')
+        def recurse(target, src):
+            key, v = src
+            k = key[0] if happyType.issequence(key) else key
+            if happyType.issequence(key) and len(key)>1: 
+                if k not in target:         
+                    target[k] = None
+                if not happyType.ismapping(target[k]):
+                    #if type(target[k]) == tuple:        target.update({k: list(target[k])})
+                    #elif not type(target[k]) == list:   target[k] = [target[k],]
+                    temp = {}
+                    recurse(temp, (key[1:],v))
+                    target[k] = temp                    
+                else:    
+                    recurse(target[k], (key[1:],v))
+            else:
+                #if k in target:     
+                #    if type(v)!=type(target[k]):
+                #        if type(target[k]) == tuple:        
+                #            target.update({k: list(target[k])})
+                #        elif not type(target[k]) == list:   
+                #            target[k] = [target[k],]    
+                #    elif not(happyType.ismapping(target[k]) or happyType.issequence(target[k])):
+                #        target[k] = [target[k],]                        
+                ##elif type(v)!=type(target[k]):              target[k] = []
+                if happyType.issequence(v): 
+                    target[k] = copy.deepcopy(v)
+                elif happyType.ismapping(v):  
+                    target[k] = copy.deepcopy(v)
+                elif type(v) == set:
+                    target[k] = v.copy()
+                else:
+                    try:
+                       target[k] = copy.copy(v)   
+                    except:
+                        target[k] = v
+        dd = None
+        if in_place is False:
+            dd = copy.deepcopy(dic)
+        for item in items:
+            recurse(dd if dd is not None else dic, item)
+        return dd 
 
     #/************************************************************************/
     def _deepsearch(self, attr, *arg, **kwargs):
         """
         """
         try:
-            assert attr in ('get', 'keys', 'values')
+            assert attr in ('get', 'keys', 'dimensions', 'values')
         except:
             raise happyError('wrong parsed attribute')
         try:
@@ -3083,17 +3473,11 @@ class _NestedDict(dict):
         if attr == 'keys':
             if arg not in ((),([],),(None,)):
                 dic = dict(self.items())
-                for dim in self.order:
+                for dim in order:
                     if dim!=arg[0]:        dic = list(dic.values())[0]
                     else:                   break
                 return list(dic.keys())
             else:
-                #dim = order[-1]
-                #if dim in kwargs:
-                #    happyVerbose('dimension %s cannot be parsed as key - %s ignored' % (dim,kwargs.get(dim)))
-                #    kwargs.pop(dim)
-                #if kwargs == {}: 
-                #    return
                 pass
         elif attr == 'get':
             while True:
@@ -3116,93 +3500,6 @@ class _NestedDict(dict):
             else:
                 val = [v[1] for v in val]
         return val[0] if happyType.issequence(val) and len(val)==1 else val
-
-    #/************************************************************************/
-    @classmethod
-    def _deepmerge(cls, *dicts, in_place=False):
-        """Deep merge (recursively) an arbitrary number of (nested or not) dictionaries.
-    
-            >>> new_dict = _NestedDict._deepmerge(*dicts)
-            
-        Arguments
-        ---------
-        dicts : dict
-            an arbitrary number of (possibly nested) dictionaries.
-            
-        Keyword arguments
-        -----------------
-        in_place : bool
-            flag set to update the first dictionary from the input list :data:`dicts`
-            of dictionaries.
-
-        Returns
-        -------
-        new_dict : dict
-            say that only two dictionaries are parsed, :data:`d1` and :data:`d2`
-            (in this order); first, :data:`d1` is "deep"-copied into :data:`new_dict`,
-            then for each :data:`k,v` in :data:`d2`: 
-                
-                * if :data:`k` doesn't exist in :data:`new_dict`, it is deep copied 
-                  from :data:`d2` into :data:`new_dict`;
-            
-            otherwise: 
-                
-                * if :data:`v` is a list, :data:`new_dict[k]` is extended with :data:`d2[k]`,
-                * if :data:`v` is a set, :data:`new_dict[k]` is updated with :data:`v`,
-                * if :data:`v` is a dict, it is recursively "deep"-updated,
-    
-        Examples
-        --------
-        The method can be used to deep-merge dictionaries storing many different
-        data structures:
-
-            >>> d1 = {1: 2, 3: 4, 10: 11}
-            >>> d2 = {1: 6, 3: 7}
-            >>> _NestedDict._deepmerge(d1, d2)
-                {1: [2, 6], 3: [4, 7], 10: 11}
-            >>> d1 = {1: 2, 3: {4: {5:6, 7:8}, 9:10}, 11: 12}
-            >>> d2 = {1: -2, 3: {4: {-5:{-6:-7}}}, 8:-9}
-            >>> _NestedDict._deepmerge(d1, d2)
-                {1: -2, 3: {4: {-5: {-6: -7}, 5: 6, 7: 8}, 9: 10}, 8: -9, 11: 12}
-            >>> d1 = {'a': {'b': {'x': '1', 'y': '2'}}}
-            >>> d2 = {'a': {'c': {'gg': {'m': '3'},'xx': '4'}}}
-            >>> _NestedDict._deepmerge(d1, d2, in_place = True)
-            >>> print(d1)
-                {'a': {'b': {'x': '1','y': '2'}, 'c': {'gg': {'m': '3'}, 'xx': '4'}}}
-                
-        Note
-        ----
-        This code is adapted from F.Boender's original source code available at
-        `this address <https://www.electricmonk.nl/log/2017/05/07/merging-two-python-dictionaries-by-deep-updating/>`_
-        under a *MIT* license.
-        """ 
-        def recurse(target, src):
-            for k, v in src.items():
-                if happyType.issequence(v):  # type(v) == list:
-                    if k in target:         target[k].extend(v)
-                    else:                   target[k] = copy.deepcopy(v)
-                elif happyType.ismapping(v):  # type(v) == dict:
-                    if k in target:         recurse(target[k], v)
-                    else:                   target[k] = copy.deepcopy(v)
-                elif type(v) == set:
-                    if k in target:         target[k].update(v.copy())
-                    else:                   target[k] = v.copy()
-                else:
-                    if k in target:     
-                        if type(target[k]) == tuple:        target[k] = list(target[k])
-                        elif not type(target[k]) == list:   target[k] = [target[k],]
-                        target[k].append(v)
-                    else:
-                        target[k] = copy.copy(v)
-        def reduce(*dicts):
-            if in_place is False:
-                dd = copy.deepcopy(dicts[0])
-                functools.reduce(recurse, (dd,) + dicts[1:])
-            else:
-                dd = None
-                functools.reduce(recurse, dicts)
-            return dd # or dicts[0]
-        return reduce(*dicts)
     
     #/************************************************************************/
     @classmethod
@@ -3211,7 +3508,7 @@ class _NestedDict(dict):
         #ignore-doc
         """Recursively merge an arbitrary number of nested dictionaries.
     
-            >>> new_dict = happyType.__mapnestmerge(*dicts)
+            >>> new_dnest = happyType.__nestmerge(*dicts)
             
         Arguments
         ---------
@@ -3223,7 +3520,7 @@ class _NestedDict(dict):
 
             >>> d1 = {'a': {'b': {'x': '1', 'y': '2'}}}
             >>> d2 = {'a': {'c': {'gg': {'m': '3'},'xx': '4'}}}
-            >>> happyType.__mapnestmerge(d1, d2)
+            >>> happyType.__nestmerge(d1, d2)
                 {'a': {'b': {'x': '1','y': '2'}, 'c': {'gg': {'m': '3'}, 'xx': '4'}}}
         """    
         keys = set(k for d in dicts for k in d)    
@@ -3232,12 +3529,83 @@ class _NestedDict(dict):
             return [d[key] for d in withkey]    
         def recurse(*values):
             if isinstance(values[0], dict):
-                return cls.__mapnestmerge(*values)
+                return cls.__nestmerge(*values)
             if len(values) == 1:
                 return values[0]
             raise happyError("Multiple non-dictionary values for a key.")    
         return dict((key, recurse(*vals(key))) for key in keys)  
             
+
+    #/************************************************************************/
+    @classmethod
+    def _deepreorder(cls, dic, **kwargs):
+        """Reorder a deeply nested dictionary.
+        
+            >>> new_dnest = _NestedDict._deepreorder(dic, **kwargs)
+            
+        Example
+        -------
+        
+            >>> d = {'a': [1,2], 'b': [3,4,5]}
+            >>> r = base._NestedDict(d, values = list(range(6)))
+            >>> print(r)
+                {1: {3: 0, 4: 1, 5: 2}, 2: {3: 3, 4: 4, 5: 5}}
+            >>> _NestedDict._deepreorder(r, order= ['b', 'a'])
+                {3: {1: 0, 2: 3}, 4: {1: 1, 2: 4}, 5: {1: 2, 2: 5}}
+            >>> _NestedDict._deepreorder(r, order= ['b', 'a'], in_place=True)
+            >>> print(r)
+                {3: {1: 0, 2: 3}, 4: {1: 1, 2: 4}, 5: {1: 2, 2: 5}}
+        """
+        in_place = kwargs.pop('in_place', False)
+        try:
+            assert isinstance(in_place, bool)
+        except:
+            raise happyError('wrong format/value for IN_PLACE keyword argument')
+        try:
+            assert happyType.ismapping(dic)
+        except:
+            raise happyError('wrong type/value for input argument')
+        order = kwargs.pop(_Decorator.KW_ORDER, None)
+        try:
+            assert order is None or isinstance(order,bool) or happyType.issequence(order)
+        except:
+            raise happyError('wrong type/value for %s keyword argument' % _Decorator.KW_ORDER.upper())
+        else:
+            if order is None:
+                happyVerbose('nothing to do')
+                return dic
+        try:
+            inorder = getattr(dic, _Decorator.KW_ORDER)
+        except AttributeError:
+            inorder = list(dic.keys())
+        try:
+            assert set(order).difference(set(inorder)) == set()
+        except:
+            raise happyError('keys parsed as %s keyword argument not present in input dictionary' % _Decorator.KW_ORDER.upper())
+        else:
+            if order == inorder:
+                happyVerbose('new order key equal to the original one')
+                return dic
+        xkeys, xvalues = dic.xkeys(), dic.xvalues()
+        newxkeys = [sorted(key, key=lambda x: order.index(inorder[key.index(x)])) for key in xkeys]
+        # new_xitems = [(sorted(item[0], key=lambda t: order.index(inorder[item[0].index(t)])), item[1]) for item in xitems]
+        newxitems = list(zip(newxkeys, xvalues))
+        if in_place is True:
+            # dic = _NestedDict(newxitems, order = order) 
+            [dic.pop(k) for k in list(dic.keys())]
+            # [dic.xpop(k) for k in xkeys]
+            dic.xupdate(newxitems)
+            try:
+                dic.order = order # let's make sure this works with any derived class
+            except:
+                try:
+                    setattr(dic, '_NestedDict__order', order) # let's make sure this works with any derived class
+                except:
+                    pass
+            return
+        else:
+            return _NestedDict(newxitems, order = order)   
+
     #/************************************************************************/
     @classmethod
     def _deepest(cls, dic, item='values'):
@@ -3276,6 +3644,10 @@ class _NestedDict(dict):
                 [(4, 1), (6, 2), (8, 3), (9, 4), (10, 5), (2, 6), (2, 7), (1, 8)]
         """
         try:
+            assert happyType.ismapping(dic) 
+        except:
+            raise happyError('wrong format/value for input argument')
+        try:
             assert item in (None,'') or item in ('items','keys','values')
         except:
             raise happyError('wrong format/value for ITEM argument')
@@ -3291,7 +3663,12 @@ class _NestedDict(dict):
     
     #/************************************************************************/
     def xget(self, *args, **kwargs):
-        """Retrieval of deep nested dictionary.
+        """Retrieve value from deep nested dictionary.
+        
+            >>> val = dnest.xget(*args, **kwargs)
+        
+        Examples
+        --------
         """
         __force_list = kwargs.pop(_Decorator.KW_FORCE_LIST, False)
         if args in ((),(None,)) and kwargs=={}:
@@ -3313,44 +3690,128 @@ class _NestedDict(dict):
             return rdic
         res = self._deepsearch('get', *args, **kwargs)
         return res if __force_list is True or res is None or xlen>1 else deep_get(res)
+        
+    #/************************************************************************/
+    def xpop(self, *arg):
+        """Pop values out of deep nested dictionary.
+        
+            >>> dnest.xpop(*arg)
+        
+        Examples
+        --------
+        
+            >>> d = {'a': [1,2], 'b': [3,4,5]}
+            >>> r = _NestedDict(d)
+            >>> print(r)
+                {1: {3: {}, 4: {}, 5: {}}, 2: {3: {}, 4: {}, 5: {}}}
+            >>> r.xpop([1,3])
+                {}
+            >>> print(r)
+                {1: {4: {}, 5: {}}, 2: {3: {}, 4: {}, 5: {}}}
+        """
+        try:
+            assert len(arg)==1 and (happyType.isnumeric(arg[0]) or happyType.issequence(arg[0]))
+        except:
+            raise happyError('wrong format/value for ITEM to delete')
+        else:
+            arg = arg[0]
+            if not happyType.issequence(arg):
+                arg = [arg,]
+        d = self
+        try:
+            for i, item in enumerate(arg):
+                if i<len(arg)-1:     d = d[item]
+        except KeyError:
+            raise happyError('deep keys not known')
+        return d.pop(item)
 
     #/************************************************************************/
     def xupdate(self, *arg, **kwargs):
-        """Update of deep nested dictionary.
+        """Update a deep nested dictionary.
+        
+            >>> dnest.xupdate(*arg, **kwargs)
+        
+        Examples
+        --------
+        
+            >>> d = {'a': [1,2], 'b': [3,4,5]}
+            >>> r = _NestedDict(d)
+            >>> print(r)
+                {1: {3: {}, 4: {}, 5: {}}, 2: {3: {}, 4: {}, 5: {}}}
+            >>> r.xupdate(((1,3),5))
+            >>> print(r)
+                {1: {3: 5, 4: {}, 5: {}}, 2: {3: {}, 4: {}, 5: {}}}
+            >>> r.xupdate(((1,4),10), ((2,4),15))
+            >>> print(r)
+                {1: {3: 5, 4: 10, 5: {}}, 2: {3: {}, 4: 15, 5: {}}}
+            >>> r.xupdate(20, a=2, b=3)
+            >>> print(r)
+                {1: {3: 5, 4: 10, 5: {}}, 2: {3: 20, 4: 15, 5: {}}}
         """
+        if arg in((),(None,)) and kwargs == {}:
+            return 
         try:
-            assert len(arg) == 1
-            #   or (happyType.issequence(arg[0]) or happyType.ismapping(arg[0]))
+            len(arg) == 1 or len(arg)==2
         except:
             raise happyError('wrong type/value for input argument')
         try:
-             assert not happyType.ismapping(arg[0]) or kwargs == {}
+            assert kwargs == {} or not happyType.ismapping(arg) 
         except:
             raise happyError('no keyword argument requested with input dictionary argument')
-        else:
-            values = arg[0] if happyType.issequence(arg[0]) or happyType.ismapping(arg[0]) \
-                else arg
-        if happyType.ismapping(values):
-            self._deepmerge(self, values, in_place=True)
-        else:
+        try:
+            assert kwargs != {} or happyType.issequence(arg) 
+        except:
+            raise happyError('items and keyword arguments incompatible when updating')                    
+        #if kwargs == {}:
+        #    try:
+        #        xkeys = [a[0] for a in arg]
+        #        xvalues = [a[1] for a in arg]
+        #    except:
+        #        xkeys, xvalues = arg  
+        #    else:
+        #        if len(xkeys)==1:
+        #            xkeys, xvalues = xkeys[0], xvalues[0]
+        #else:
+        #    kwargs.update({_Decorator.KW_FORCE_LIST: True})
+        #    xkeys = self.xkeys(**kwargs)
+        #    xvalues = arg
+        #if not happyType.issequence(xvalues):
+        #    xkeys, xvalues = [xkeys,], [xvalues,] 
+        #try:
+        #    assert (len(xvalues)==1 or len(xvalues)==len(xkeys))            \
+        #        and all([len(k)==len(self.order) for k in xkeys])
+        #except:
+        #    raise happyError('wrong number of assignments in dictionary')
+        #else:
+        #    if len(xvalues)==1 and len(xkeys)>1:
+        #        xvalues = xvalues * len(xkeys)
+        #for i, xk in enumerate(xkeys):
+        #    rdic = self
+        #    try:    
+        #        for j, x in enumerate(xk):
+        #            if j<len(xk)-1:     rdic = rdic[x]
+        #    except:
+        #        raise happyError('key %s not found' % x)
+        #    else:
+        #        rdic.update({x: xvalues[i]})
+        if kwargs != {}:
             kwargs.update({_Decorator.KW_FORCE_LIST: True})
-            xkeys = self.xkeys(**kwargs)
-            try:
-                assert len(values) == 1 or len(values) == len(xkeys)
-            except:
-                raise happyError('wrong number of assignments in dictionary')
-            else:
-                if len(values)==1 and len(xkeys)>1:
-                    values = values * len(xkeys)
-            for i, xk in enumerate(xkeys):
-                rdic = self
-                for j, x in enumerate(xk):
-                    if j<len(xk)-1:     rdic = rdic[x]
-                rdic.update({x: values[i]})
+            arg = list(zip(self.xkeys(**kwargs),arg)) 
+        if happyType.issequence(arg): 
+            #if len(arg)==1:
+            #    arg = arg[0]
+            #else:
+            #    arg = (arg,)
+            self._deepinsert(self, *arg, in_place=True)
+        elif happyType.ismapping(arg):
+            self._deepmerge(self, arg, in_place=True)        
+        return
 
     #/************************************************************************/
     def keys(self, *arg, **kwargs):
-        """Retrieve deepest keys from a nested dictionary.
+        """Retrieve deepest (outmost) keys from a nested dictionary.
+        
+            >>> keys = dnest.keys(**kwargs)
         """
         try:
             assert arg in ((),([],),(None,)) or kwargs == {}
@@ -3363,7 +3824,10 @@ class _NestedDict(dict):
 
     #/************************************************************************/
     def xkeys(self, **kwargs):
-        """
+        """Retrieve composed nested keys from a nested dictionary.
+        
+            >>> keys = dnest.xkeys(**kwargs)
+            
         Examples
         --------
         
@@ -3385,7 +3849,9 @@ class _NestedDict(dict):
             assert set(kwargs.keys()).difference(set(self.order)) == set()
         except:
             raise happyError('parsed dimensions are not recognised')  
-        xkeys = list(itertools.product(*[self.__dimensions[k] for k in self.order]))
+        xkeys = list(itertools.product(*[self.dimensions[k] for k in self.order]))
+        if xkeys in ([],[None,]):
+            return []
         if kwargs != {}:
             for i, dim in enumerate(self.order):
                 if dim in kwargs.keys():
@@ -3393,11 +3859,13 @@ class _NestedDict(dict):
                     if not happyType.issequence(keys):
                         keys = [keys,]
                     [xkeys.remove(k) for k in list(xkeys) if k[i] not in keys]
-        return xkeys if __force_list is True or xkeys is None or len(xkeys)>1 else xkeys[0]
+        return xkeys if __force_list is True or xkeys in ([],None) or len(xkeys)>1 else xkeys[0]
     
     #/************************************************************************/
     def values(self, *arg, **kwargs):
-        """Retrieve deepest end-values of nested dictionary.
+        """Retrieve (outmost) end-values of nested dictionary.
+        
+            >>> values = dnest.values(*arg, **kwargs)
         """
         try:
             assert arg in ((),([],),(None,)) or kwargs == {}
@@ -3415,7 +3883,9 @@ class _NestedDict(dict):
     
     #/************************************************************************/
     def xvalues(self, **kwargs):
-        """
+        """Retrieve nested values of nested dictionary.
+        
+            >>> values = dnest.xvalues(*arg, **kwargs)
         """
         __force_list = kwargs.pop(_Decorator.KW_FORCE_LIST, False)
         if kwargs=={}:
@@ -3435,7 +3905,10 @@ class _NestedDict(dict):
 
     #/************************************************************************/
     def items(self, **kwargs):
-        """Retrieve deepest items of nested dictionary.
+        """Retrieve items of nested dictionary.
+        
+            >>> items = dnest.items(**kwargs)
+
         """
         if kwargs == {}:
             return super(_NestedDict, self).items()
@@ -3444,7 +3917,10 @@ class _NestedDict(dict):
     
     #/************************************************************************/
     def xitems(self, **kwargs):
-        """
+        """Retrieve nested items of nested dictionary.
+        
+            >>> items = dnest.xitems(**kwargs)
+
         Examples
         --------
         
@@ -3465,7 +3941,11 @@ class _NestedDict(dict):
     
     #/************************************************************************/
     def xlen(self, *arg):
-        """
+        """Retrieve depth lenght of the various dimensions of a nested dictionary.
+        
+            >>> len = dnest.xlen(*arg)
+
+        
         Examples
         --------
         
