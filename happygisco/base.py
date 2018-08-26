@@ -2784,10 +2784,12 @@ class _NestedDict(dict):
     contents and merging of multiply nested dictionaries along given dimensions. 
     
         >>> dnest = _NestedDict(*args, **kwargs)
+        >>> dnest = _NestedDict(mapping, **kwargs)
+        >>> dnest = _NestedDict(iterables, **kwargs)
 
     Arguments
     ---------
-    mappings :
+    mapping :
         (an)other dictionar(y)ies; optional.
     iterables :
         (an)other iterable object(s) in a form of key-value pair(s) where keys should 
@@ -2872,8 +2874,15 @@ class _NestedDict(dict):
         # self.__dimensions = {}
         self.__cursor = 0
         order = kwargs.pop(_Decorator.KW_ORDER,None)
-        values = kwargs.pop(_Decorator.KW_VALUES,None)
+        try:
+            assert order is None or isinstance(order,bool) or happyType.issequence(order)
+        except:
+            raise happyError('wrong format/value for %s argument' % _Decorator.KW_ORDER.upper())            
         dic = kwargs.pop('_nested_', {})
+        try:
+            assert dic is None or args in ((),(None,))
+        except:
+            raise happyError('incompatible positional arguments with _NESTED_ keyword argument')            
         if dic in (None,{}):
             try:
                 dic, dimensions = self._deepcreate(*args, **kwargs)
@@ -2890,18 +2899,22 @@ class _NestedDict(dict):
         # self.__dimensions = dimensions
         self.__order = order or list(dimensions.keys())
         self.__xlen = {k: len(v) if happyType.issequence(v) else 1 for k,v in dimensions.items()}
-        if values is not None:
-            if not happyType.issequence(values):    values= [values,]
-            try: 
-                assert len(values)==1 or len(values) == self.xlen()
-            except:
-                raise happyError('wrong format for input values')
-            else:
-                if len(values)==1:      values = values * self.xlen()
-            try:
-                self.xupdate(*zip(self.xkeys(),values))
-            except:
-                raise happyError('error loading dictionary values')
+        values = kwargs.pop(_Decorator.KW_VALUES, None)
+        if values is None:
+            return
+        elif not happyType.issequence(values):    
+            values= [values,]
+        try:
+            assert len(values)==1 or len(values) == self.xlen()
+        except:
+            raise happyError('wrong format/value for %s argument' % _Decorator.KW_VALUES.upper())            
+        else:
+            if len(values)==1:      
+                values = values * self.xlen()
+        try:
+            self.xupdate(*zip(self.xkeys(),values))
+        except:
+            raise happyError('error loading dictionary values')
             
     #/************************************************************************/
     def __getattr__(self, attr): 
