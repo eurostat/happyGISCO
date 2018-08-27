@@ -306,7 +306,7 @@ class Location(_Feature):
 
     #/************************************************************************/
     @property
-    def NUTS(self):
+    def nuts(self):
         """NUTS property (:data:`getter`) of a :class:`Location` instance.
         This is the identifier of the NUTS actually containing this instance.
         """ 
@@ -326,7 +326,7 @@ class Location(_Feature):
 
     #/************************************************************************/
     @property
-    def LAU(self):
+    def lau(self):
         """LAU property (:data:`getter`) of a :class:`Location` instance.
         This is the identifier of the LAU actually containing this instance.
         """ 
