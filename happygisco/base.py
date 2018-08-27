@@ -167,7 +167,17 @@ class _Decorator(object):
     KW_MAP_URL      = 'map_url'
     KW_ARCGIS       = 'arcgis'
     
+    KW_DATA         = 'data'
     KW_CONTENT      = 'content'
+    KW_RESPONSE     = 'resp'
+    KW_INFO         = 'info'
+    
+    KW_CODER        = 'coder'
+    
+    KW_PROJECTION   = 'proj' 
+    KW_LAT          = 'lat'
+    KW_LON          = 'Lon' 
+    KW_COORD        = 'coord'
     
     KW_PLACE        = 'place'
     KW_ADDRESS      = 'address'
@@ -175,34 +185,24 @@ class _Decorator(object):
     KW_COUNTRY      = 'country'
     KW_ZIPCODE      = 'zip'
     
-    KW_CODER        = 'coder'
-    
-    KW_LAT          = 'lat'
-    KW_LON          = 'Lon' 
-    KW_COORD        = 'coord'
-    
     KW_LOCATION     = 'location' 
     KW_NUTS         = 'nuts' 
     KW_AREA         = 'area'
-    
-    KW_PROJECTION   = 'proj' 
-    
+        
     KW_YEAR         = 'year'
-    KW_FEATURE      = 'feat' # 'feature' 
-    KW_FORMAT       = 'fmt'
+    KW_IFORMAT      = 'ifmt'
+    KW_OFORMAT      = 'iofmt'
     KW_SCALE        = 'scale'
     KW_GEOMETRY     = 'geom' # 'geometry' 
+    KW_LEVEL        = 'level'
+    KW_SIZE         = 'size'
+    KW_VECTOR       = 'vector' 
     
     KW_LAYER        = 'layer'
     KW_FILE         = 'file'
     KW_URL          = 'url'
-    KW_RESPONSE     = 'resp'
+    KW_FEATURE      = 'feat' # 'feature' 
     
-    KW_VECTOR       = 'vector' 
-    KW_LEVEL        = 'level'
-    KW_SIZE         = 'size'
-
-    KW_DATA         = 'data'
     KW_SOURCE       = 'source'
     KW_CODE         = 'code'
     KW_UNIT         = 'unit' 
@@ -211,11 +211,9 @@ class _Decorator(object):
     KW_ID           = 'id'
     KW_TILE         = 'tile'
     KW_ATTR         = 'attr'
-    KW_VALUES       = 'values'
-    
-    KW_INFO         = 'info'
-            
+              
     KW_ORDER        = 'order'
+    KW_KEYS         = 'keys'
     KW_VALUES       = 'values'
     KW_FORCE_LIST   = '_force_list_'
 
@@ -1420,7 +1418,7 @@ class _Decorator(object):
         See also
         --------
         :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_scale`,
-        :meth:`~geoDecorators.parse_format`, :meth:`~geoDecorators.parse_vector`,
+        :meth:`~geoDecorators.parse_iformat`, :meth:`~geoDecorators.parse_vector`,
         :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_level`.
         """
         def __init__(self, *args, **kwargs):
@@ -1485,7 +1483,7 @@ class _Decorator(object):
         --------
         :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_year`,
         :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_vector`,
-        :meth:`~geoDecorators.parse_format`, :meth:`~geoDecorators.parse_level`.
+        :meth:`~geoDecorators.parse_iformat`, :meth:`~geoDecorators.parse_level`.
         """
         ## PROJECTION      = dict(happyType.seqflatten([[(k,v), (v,v)] for k,v in settings.GISCO_PROJECTIONS.items()]))
         def __init__(self, *args, **kwargs):
@@ -1497,10 +1495,10 @@ class _Decorator(object):
         #pass
        
     #/************************************************************************/
-    class parse_format(__base):
+    class parse_iformat(__base):
         """Class decorator of functions and methods used to parse a vector format.
         
-            >>> new_func = _Decorator.parse_format(func)
+            >>> new_func = _Decorator.parse_iformat(func)
         
         Arguments
         ---------
@@ -1528,20 +1526,20 @@ class _Decorator(object):
         this class:
 
             >>> func = lambda *args, **kwargs: kwargs.get('fmt')
-            >>> _Decorator.parse_format(func)(fmt='1)
+            >>> _Decorator.parse_iformat(func)(fmt='1)
                 happyError: !!! wrong format for FMT argument !!!
-            >>> _Decorator.parse_format(func)(fmt='csv')
+            >>> _Decorator.parse_iformat(func)(fmt='csv')
                 happyError: !!! wrong value for FMT argument - vector format 'csv' not supported !!!
-            >>> _Decorator.parse_format(func)(fmt='geojson')
+            >>> _Decorator.parse_iformat(func)(fmt='geojson')
                 'geojson'
-            >>> _Decorator.parse_format(func)(fmt='topojson')
+            >>> _Decorator.parse_iformat(func)(fmt='topojson')
                 'json'          
-            >>> _Decorator.parse_format(func)(fmt='shapefile')
+            >>> _Decorator.parse_iformat(func)(fmt='shapefile')
                 'shx'
                 
         A default format shall be parsed as well:
             
-            >>> _Decorator.parse_format(func)()
+            >>> _Decorator.parse_iformat(func)()
                 'geojson'
             
         See also
@@ -1552,12 +1550,12 @@ class _Decorator(object):
         """
         def __init__(self, *args, **kwargs):
             _kwargs = {'shapefile': 'shx'} # we cheat...
-            _kwargs.update(settings.GISCO_FORMATS) 
+            _kwargs.update(settings.GISCO_FORMATS.copy()) 
             kwargs.update({'_parse_cls_':   [str, list], 
-                           '_key_':         _Decorator.KW_FORMAT, 
+                           '_key_':         _Decorator.KW_IFORMAT, 
                            '_values_':      _kwargs,
                            '_key_default_': settings.DEF_GISCO_FORMAT})
-            super(_Decorator.parse_format,self).__init__(*args, **kwargs)
+            super(_Decorator.parse_iformat,self).__init__(*args, **kwargs)
        
     #/************************************************************************/
     class parse_vector(__base):
@@ -1604,7 +1602,7 @@ class _Decorator(object):
         See also
         --------
         :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_year`,
-        :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_format`,
+        :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_iformat`,
         :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_level`.
         """
         def __init__(self, *args, **kwargs):
@@ -1664,7 +1662,7 @@ class _Decorator(object):
         See also
         --------
         :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_year`,
-        :meth:`~geoDecorators.parse_level`, :meth:`~geoDecorators.parse_format`,
+        :meth:`~geoDecorators.parse_level`, :meth:`~geoDecorators.parse_iformat`,
         :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_vector`.
         """
         def __init__(self, *args, **kwargs_):
@@ -1724,7 +1722,7 @@ class _Decorator(object):
         See also
         --------
         :meth:`~geoDecorators.parse_coordinate`, :meth:`~geoDecorators.parse_year`,
-        :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_format`,
+        :meth:`~geoDecorators.parse_scale`, :meth:`~geoDecorators.parse_iformat`,
         :meth:`~geoDecorators.parse_projection`, :meth:`~geoDecorators.parse_vector`.
         """
         def __init__(self, *args, **kwargs):
@@ -1823,7 +1821,7 @@ class _Decorator(object):
         See also
         --------
         :meth:`~_Decorator.parse_year`, :meth:`~_Decorator.parse_projection`, 
-        :meth:`~_Decorator.parse_format`, :meth:`~_Decorator.parse_vector`, 
+        :meth:`~_Decorator.parse_iformat`, :meth:`~_Decorator.parse_vector`, 
         :meth:`~_Decorator.parse_scale`, :meth:`~_Decorator.parse_level`, 
         :meth:`~_Decorator.parse_projection`. 
         """
@@ -1871,7 +1869,7 @@ class _Decorator(object):
 #_Decorator.parse_projection =                   \
 #    _Decorator._parse_class([int,str], _Decorator.KW_PROJECTION, 
 #                            _values_=settings.GISCO_PROJECTIONS, _key_default_=settings.DEF_GISCO_PROJECTION)
-#_Decorator.parse_format =                       \
+#_Decorator.parse_iformat =                       \
 #    _Decorator._parse_class(str, _Decorator.KW_FORMAT, _values_=settings.GISCO_FORMATS)
 #_Decorator.parse_vector =                      \
 #    _Decorator._parse_class(str, _Decorator.KW_GEOMETRY, 
@@ -1939,7 +1937,7 @@ class _Service(object):
        >>> serv = base._Service()        
     """
     
-    RESPONSE_FORMATS = ['resp', 'zip', 'raw', 'text', 'stringio', 'bytes', 'bytesio', 'json']
+    RESPONSE_FORMATS = ['resp', 'zip', 'raw', 'text', 'stringio', 'content', 'bytes', 'bytesio', 'json']
     ZIP_OPERATIONS  = ['extract', 'extractall', 'getinfo', 'namelist', 'read', 'infolist']
     
     #/************************************************************************/
@@ -2347,7 +2345,7 @@ class _Service(object):
             
         Keyword arguments
         -----------------
-        fmt : str
+        ofmt : str
         kwargs :
             
         Returns
@@ -2372,19 +2370,22 @@ class _Service(object):
         --------
         :meth:`~_Service.read_url`.
         """
-        fmt = kwargs.pop('fmt', None)
+        fmt = kwargs.pop(_Decorator.KW_OFORMAT, None)
         if fmt in (None,'resp'):
             return response
         try:
             assert fmt is None or happyType.isstring(fmt)
         except:
-            raise happyError('wrong format for FMT parameter') 
+            raise happyError('wrong format for %s parameter' % _Decorator.KW_OFORMAT.upper()) 
         else:
             fmt = fmt.lower()
         try:
             assert fmt in ['jsontext', 'jsonbytes'] + self.RESPONSE_FORMATS # only for developers
         except:
             raise happyError('wrong value for FMT parameter - must be in %s' % self.RESPONSE_FORMATS) 
+        else:
+            if fmt == 'content':
+                fmt = 'bytes'
         if fmt.startswith('json'):
             try:
                 assert fmt not in ('jsontext', 'jsonbytes')
@@ -2483,6 +2484,51 @@ class _Service(object):
                 return data if data in ([],[None]) or len(data)>1 else data[0]
             elif operator == 'extractall':
                 return zf.extractall(path=path)    
+
+    #/************************************************************************/
+    def load_content(self, response, **kwargs):
+        """Retrieve the content of any given response
+        
+            >>> content = serv.load_content(response, **kwargs)
+            
+        Arguments
+        ---------
+        response : :class:`base._CachedResponse`, :class:`requests.Response`, :class:`base._NestedDict`
+            response returned from URL fetching.
+            
+        Returns
+        -------
+        content : :class:`base._NestedDict`
+            
+        Keyword arguments
+        -----------------
+        fmt : str
+            default: :data:`fmt=content`.
+        kwargs : dict
+            for other keyword arguments, see method :meth:`~base._Service.read_response`.
+
+        See also
+        --------
+        :meth:`~base._Service.read_response`.
+        """
+        # we use a default output format here!
+        kwargs.update({_Decorator.KW_OFORMAT: kwargs.pop(_Decorator.KW_OFORMAT, 'content')}) 
+        if isinstance(response,(_CachedResponse, requests.Response)):
+            try:
+                return self.read_response(response, **kwargs)
+            except:
+                raise happyError('error reading content from response')
+        elif isinstance(response, _NestedDict):
+            try:
+                xitems = zip(response.xkeys(**{_Decorator.KW_FORCE_LIST: True}), 
+                             [self.read_response(v, **kwargs) for v in response.xvalues(**{_Decorator.KW_FORCE_LIST: True})])
+                # content = copy.deecopy(response)
+                # content.xupdate(xitems)
+                return _NestedDict(list(xitems), order = response.order) 
+            except:
+                raise happyError('error reading content from nested dictionary of responses')            
+        else:
+            raise happyError('wrong value/format for input response')            
             
     #/************************************************************************/
     def read_url(self, url, **kwargs):
@@ -2832,7 +2878,7 @@ class _NestedDict(dict):
             ['a', 'b']
         >>> dic.dimensions
             OrderedDict([('a', [1]), ('b', [2])])
-        >>> dic = base._NestedDict([('a',1),('b',2)])
+        >>> dic = _NestedDict([('a',1),('b',2)])
         >>> dic
             {'a': {'b': {}, 2: {}}, 1: {'b': {}, 2: {}}}
         >>> dic.order
@@ -2850,11 +2896,11 @@ class _NestedDict(dict):
         >>> _NestedDict(dic, order = ['b', 'a'])
             {3: {1: {}, 2: {}}, 4: {1: {}, 2: {}}}
         >>> dic = collections.OrderedDict({'b': [3,4], 'a': [1,2]})
-        >>> base._NestedDict(dic)
+        >>> _NestedDict(dic)
             {3: {1: {}, 2: {}}, 4: {1: {}, 2: {}}}
-        >>> base._NestedDict(dic, values=[None])
+        >>> _NestedDict(dic, values=[None])
             {3: {1: None, 2: None}, 4: {1: None, 2: None}}
-        >>> base._NestedDict(dic, values=[10,20,30,40])
+        >>> _NestedDict(dic, values=[10,20,30,40])
             {3: {1: 10, 2: 20}, 4: {1: 30, 2: 40}}
                 
     Note
@@ -2873,14 +2919,14 @@ class _NestedDict(dict):
         self.__xlen = {}
         # self.__dimensions = {}
         self.__cursor = 0
-        order = kwargs.pop(_Decorator.KW_ORDER,None)
+        order = kwargs.get(_Decorator.KW_ORDER) or True
         try:
             assert order is None or isinstance(order,bool) or happyType.issequence(order)
         except:
             raise happyError('wrong format/value for %s argument' % _Decorator.KW_ORDER.upper())            
         dic = kwargs.pop('_nested_', {})
         try:
-            assert dic is None or args in ((),(None,))
+            assert dic in (None,{}) or args in ((),(None,))
         except:
             raise happyError('incompatible positional arguments with _NESTED_ keyword argument')            
         if dic in (None,{}):
@@ -2897,7 +2943,10 @@ class _NestedDict(dict):
                 raise happyError('error setting nested dictionary')
         super(_NestedDict, self).__init__(dic)
         # self.__dimensions = dimensions
-        self.__order = order or list(dimensions.keys())
+        if order is not False:
+            self.__order = order if order is not True else list(dimensions.keys())
+        else:
+            self.__order = range(len(list(dimensions)))
         self.__xlen = {k: len(v) if happyType.issequence(v) else 1 for k,v in dimensions.items()}
         values = kwargs.pop(_Decorator.KW_VALUES, None)
         if values is None:
@@ -2921,12 +2970,21 @@ class _NestedDict(dict):
         #if attr in inspect.getmembers(base._NestedDict, predicate=inspect.ismethod):
         #   return object.__getattribute__(self, attr)
         try:
-            res = [getattr(v, attr) for v in self.xvalues(**{_Decorator.KW_FORCE_LIST: True})]
+            xkeys = self.xkeys(**{_Decorator.KW_FORCE_LIST: True})
+            xvalues = [getattr(v, attr) for v in self.xvalues(**{_Decorator.KW_FORCE_LIST: True})]
+            # res = [getattr(v, attr) for v in self.xvalues(**{_Decorator.KW_FORCE_LIST: True})]
         except:
             raise AttributeError('attribute %s not recognised' % attr)
-            # raise happyError('attribute %s not recognised' % attr)
         else:
-            return res if res in ([],[None],None) or len(res)>1 else res[0]
+            xitems = zip(xkeys, xvalues)
+        try:
+            cls = self.__class__
+            res = cls(list(xitems))
+        except:
+            raise AttributeError('wrong nested data structure' % attr)
+        else:
+            #print(res)
+            return res # if res in ([],[None],None) or res.xlen()>1 else res[0]
 
     #/************************************************************************/
     def __copy__(self):
@@ -2944,7 +3002,22 @@ class _NestedDict(dict):
         for k, v in self.__dict__.items():
             setattr(result, k, copy.deepcopy(v, memo))
         return result
-     
+    
+    #/************************************************************************/
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            try:
+                assert self.order == other.order
+                #assert self.xkeys() == other.xkeys()
+                #assert self.xvalues() == other.xvalues()
+                assert self.__dict__ == other.__dict__
+            except:
+                return False
+            else:
+                return True
+        else:
+            return False
+
     #/************************************************************************/
     def __iter__(self):
         return self
@@ -2986,11 +3059,13 @@ class _NestedDict(dict):
     def reorder(self, order):
         """Reorder the nested structure of a nested dictionary.
         
+            >>> dnest.reorder(order)
+        
         Example
         -------
         
             >>> d = {'a': [1,2], 'b': [3,4,5]}
-            >>> r=base._NestedDict(d, values = list(range(6)))
+            >>> r = _NestedDict(d, values = list(range(6)))
             >>> r.order
                 ['a', 'b']
             >>> print(r)
@@ -3115,7 +3190,7 @@ class _NestedDict(dict):
             raise happyError('wrong format for input nesting dictionary')
         order = kwargs.pop(_Decorator.KW_ORDER, None)
         try:
-            assert order is None or happyType.issequence(order)
+            assert order is None or isinstance(order, bool) or happyType.issequence(order)
         except:
             raise happyError('wrong type/value for %s keyword argument' % _Decorator.KW_ORDER.upper())
         #if happyType.ismapping(args):
@@ -3158,27 +3233,27 @@ class _NestedDict(dict):
         #    assert dic
         #except:
         #    dic, dimensions = {}, {}
-        #return dic, dimensions            
+        #return dic, dimensions        
         if happyType.ismapping(args):
             args = list(args.items())
-        if happyType.issequence(args):
-            if not all([len(a)==2 for a in args]):
-                args = list(enumerate(args))
-            if all([happyType.issequence(a[0]) for a in args]):
-                if order is None:
-                    order = list(range(len(args[0])))
-                dimensions = collections.OrderedDict(zip(order, 
-                                  [list(set(v)) for v in zip(*[item[0] for item in args])]))
-            else: 
-                dimensions = collections.OrderedDict(args)
-                if order is None:
-                    order = [a[0] for a in args]
-                try:
-                    keys = list(itertools.product(*[item[1] for item in args]))
-                except:
-                    keys = list(itertools.product(*[[item[1]] for item in args]))
-                args = list(zip(keys, [{}] * len(keys)))
-        return cls._deepinsert({},args), dimensions
+        #if happyType.issequence(args):
+        if not all([len(a)==2 for a in args]):
+            args = list(enumerate(args))
+        if all([happyType.issequence(a[0]) for a in args]):
+            if order is None or isinstance(order,bool):
+                order = list(range(len(args[0][0])))
+            dimensions = collections.OrderedDict(zip(order, 
+                              [list(set(v)) for v in zip(*[a[0] for a in args])]))
+        else: 
+            dimensions = collections.OrderedDict(args)
+            if order is None:
+                order = [a[0] for a in args]
+            try:
+                keys = list(itertools.product(*[item[1] for item in args]))
+            except:
+                keys = list(itertools.product(*[[item[1]] for item in args]))
+            args = list(zip(keys, [{}] * len(keys)))
+        return cls._deepinsert({}, args), dimensions
         
     #/************************************************************************/
     @classmethod
@@ -3500,7 +3575,7 @@ class _NestedDict(dict):
                     break
         else:
             pass
-        val = [self]
+        val = [self.__dict__]
         for i, dim in enumerate(order):
             val = happyType.seqflatten([list(v.items()) for v in val])
             if dim in kwargs.keys():
@@ -3560,7 +3635,7 @@ class _NestedDict(dict):
         -------
         
             >>> d = {'a': [1,2], 'b': [3,4,5]}
-            >>> r = base._NestedDict(d, values = list(range(6)))
+            >>> r = _NestedDict(d, values = list(range(6)))
             >>> print(r)
                 {1: {3: 0, 4: 1, 5: 2}, 2: {3: 3, 4: 4, 5: 5}}
             >>> _NestedDict._deepreorder(r, order= ['b', 'a'])
@@ -3592,7 +3667,7 @@ class _NestedDict(dict):
         except AttributeError:
             inorder = list(dic.keys())
         try:
-            assert set(order).difference(set(inorder)) == set()
+            assert set(order) == set(inorder) # assert set(order).difference(set(inorder)) == set()
         except:
             raise happyError('keys parsed as %s keyword argument not present in input dictionary' % _Decorator.KW_ORDER.upper())
         else:
@@ -3602,12 +3677,12 @@ class _NestedDict(dict):
         xkeys, xvalues = dic.xkeys(), dic.xvalues()
         newxkeys = [sorted(key, key=lambda x: order.index(inorder[key.index(x)])) for key in xkeys]
         # new_xitems = [(sorted(item[0], key=lambda t: order.index(inorder[item[0].index(t)])), item[1]) for item in xitems]
-        newxitems = list(zip(newxkeys, xvalues))
+        newxitems = zip(newxkeys, xvalues)
         if in_place is True:
             # dic = _NestedDict(newxitems, order = order) 
             [dic.pop(k) for k in list(dic.keys())]
             # [dic.xpop(k) for k in xkeys]
-            dic.xupdate(newxitems)
+            dic.xupdate(list(newxitems))
             try:
                 dic.order = order # let's make sure this works with any derived class
             except:
@@ -3617,7 +3692,7 @@ class _NestedDict(dict):
                     pass
             return
         else:
-            return _NestedDict(newxitems, order = order)   
+            return cls(list(newxitems), order = order)   
 
     #/************************************************************************/
     @classmethod
@@ -3921,7 +3996,6 @@ class _NestedDict(dict):
         """Retrieve items of nested dictionary.
         
             >>> items = dnest.items(**kwargs)
-
         """
         if kwargs == {}:
             return super(_NestedDict, self).items()
@@ -3938,15 +4012,15 @@ class _NestedDict(dict):
         --------
         
             >>> dic = {'a': [1,2], 'b': [3,4,5], 'c': [6,7,8,9]}
-            >>> res = _NestedDict(dic, order = ['b', 'c', 'a'])
-            >>> print(res)
+            >>> r = _NestedDict(dic, order = ['b', 'c', 'a'])
+            >>> print(r)
                 {3: {6: {1: {}, 2: {}}, 7: {1: {}, 2: {}}, 8: {1: {}, 2: {}}, 9: {1: {}, 2: {}}},
                  4: {6: {1: {}, 2: {}}, 7: {1: {}, 2: {}}, 8: {1: {}, 2: {}}, 9: {1: {}, 2: {}}},
                  5: {6: {1: {}, 2: {}}, 7: {1: {}, 2: {}}, 8: {1: {}, 2: {}}, 9: {1: {}, 2: {}}}}
-            >>> res.xitems(b=4)
+            >>> r.xitems(b=4)
                 [((4, 6, 1), {}), ((4, 6, 2), {}), ((4, 7, 1), {}), ((4, 7, 2), {}),
                  ((4, 8, 1), {}), ((4, 8, 2), {}), ((4, 9, 1), {}), ((4, 9, 2), {})]
-            >>> res.xitems(c=6, a=2)
+            >>> r.xitems(c=6, a=2)
                 [((3, 6, 2), {}), ((4, 6, 2), {}), ((5, 6, 2), {})]        
         """
         kwargs.update({_Decorator.KW_FORCE_LIST: True})
@@ -3963,16 +4037,16 @@ class _NestedDict(dict):
         --------
         
             >>> dic = {'a': [1,2], 'b': [3,4,5], 'c': [6,7,8,9]}
-            >>> res = _NestedDict(dic, order = ['b', 'c', 'a'])
-            >>> print(res)
+            >>> r = _NestedDict(dic, order = ['b', 'c', 'a'])
+            >>> print(r)
                 {3: {6: {1: {}, 2: {}}, 7: {1: {}, 2: {}}, 8: {1: {}, 2: {}}, 9: {1: {}, 2: {}}},
                  4: {6: {1: {}, 2: {}}, 7: {1: {}, 2: {}}, 8: {1: {}, 2: {}}, 9: {1: {}, 2: {}}},
                  5: {6: {1: {}, 2: {}}, 7: {1: {}, 2: {}}, 8: {1: {}, 2: {}}, 9: {1: {}, 2: {}}}}
-            >>> res.xlen('a')
+            >>> r.xlen('a')
                 2
-            >>> res.xlen('a','b','c')
+            >>> r.xlen('a','b','c')
                 {'a': 2, 'b': 3, 'c': 4}
-            >>> res.xlen()
+            >>> r.xlen()
                 24
         """
         if arg in ((),([],),(None,)):
@@ -3989,7 +4063,7 @@ class _NestedDict(dict):
             xlen = {k: v for k,v in self.__xlen.items() if k in dimensions}
         except:
             xlen = {}
-            dic = [self]
+            dic = [self.__dict__]
             for i, dim in enumerate(self.order):
                 if dim in dimensions:
                     xlen.update({dim: len(dic[0].keys())})
