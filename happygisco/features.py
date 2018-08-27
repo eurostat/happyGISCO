@@ -890,24 +890,24 @@ class NUTS(_Feature):
                 geom = self.geom
         dimensions = {}
         [dimensions.update({k:v for k,v in kwargs.items() if k in settings.GISCO_DATA_DIMENSIONS})]
-        [dimensions.pop(k) for k in ('SOURCE', 'FORMAT')]
+        #[dimensions.pop(k) for k in ('FORMAT',)]
         try:
             try:
                 if not happyType.issequence(geom): 
                     geom = [geom,]  
-                dimensions = [self.serv.geom2nutsinfo(g) for g in geom]             
+                dimensions = [self.serv.geom2nutsdim(g, _force_list_=True) for g in geom]             
             except:
                 raise happyError('impossible to extract NUTS dimensions from input data')
         except:
             try:
                 if not happyType.issequence(content): 
                     content = [content,]  
-                dimensions = [self.serv.geom2nutsid(c) for c in content]             
+                dimensions = [self.serv.geom2nutsdim(c, _force_list_=True) for c in content]             
             except:
                 try:
                     if not happyType.issequence(url): 
                         url = [url,]  
-                    dimensions = [self.serv.url2nutsid(u) for u in url]             
+                    dimensions = [self.serv.url2nutsdim(u, _force_list_=True) for u in url]             
                 except:
                     raise happyError('impossible to extract NUTS dimensions from input data')
 
@@ -935,7 +935,7 @@ class NUTS(_Feature):
         content = kwargs.pop(_Decorator.KW_CONTENT, None)
         geom = kwargs.pop(_Decorator.KW_GEOMETRY, None)
         url = kwargs.pop(_Decorator.KW_URL, None)
-        _argsTrue = [1 for arg in (nuts, url, geom) if arg in ('',None)]
+        _argsTrue = [1 for arg in (content, url, geom) if arg in ('',None)]
         try:
             assert sum(_argsTrue) >= 2
         except:
