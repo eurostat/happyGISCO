@@ -198,7 +198,7 @@ GISCO_CTRYURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_CTRYDOMAIN)
 """Complete URL of countries download/distribution services.
 """
 
-GISCO_DATA_DIMENSIONS = ['SOURCE', 'YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT'
+GISCO_DATA_DIMENSIONS = ['SOURCE', 'YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'IFORMAT'
                          ]
 """Descriptors/parameters used to define a given |GISCO| dataset, *e.g.* a NUTS
 or a country file.
