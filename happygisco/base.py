@@ -68,12 +68,11 @@ __all__         = ['_Service', '_Feature', '_Tool', '_Decorator', '_NestedDict']
 
 # standard import
 import os, sys, io
-import itertools, functools
-import collections
+import itertools, functools, collections
 
 import time
-import hashlib, zipfile
-import copy
+import math, hashlib
+import copy, zipfile
 #import abc
 
 # local (absolute) imports
@@ -2930,6 +2929,7 @@ class _NestedDict(dict):
         except:
             raise happyError('incompatible positional arguments with _NESTED_ keyword argument')            
         if dic in (None,{}):
+            dic, dimensions = self._deepcreate(*args, **kwargs)
             try:
                 dic, dimensions = self._deepcreate(*args, **kwargs)
             except:
@@ -3055,35 +3055,6 @@ class _NestedDict(dict):
         # return list(self.__dimensions.keys())
         return self.__order
 
-    #/************************************************************************/
-    def reorder(self, order):
-        """Reorder the nested structure of a nested dictionary.
-        
-            >>> dnest.reorder(order)
-        
-        Example
-        -------
-        
-            >>> d = {'a': [1,2], 'b': [3,4,5]}
-            >>> r = _NestedDict(d, values = list(range(6)))
-            >>> r.order
-                ['a', 'b']
-            >>> print(r)
-                {1: {3: 0, 4: 1, 5: 2}, 2: {3: 3, 4: 4, 5: 5}}
-            >>> r.reorder(['b', 'a'])
-            >>> print(r)
-                {3: {1: 0, 2: 3}, 4: {1: 1, 2: 4}, 5: {1: 2, 2: 5}}
-            >>> r.order
-                ['b', 'a']
-        """
-        try:
-            assert order is None or happyType.issequence(order)
-        except:
-            raise happyError('wrong argument for %s attribute' % _Decorator.KW_ORDER)
-        # reassign self.__dimensions
-        if self.order not in (None,[],()) and self.order != order:
-            self._deepreorder(self, order=order, in_place=True)
-
     @property
     def dimensions(self):
         """Dimensions property calculated on the fly.
@@ -3142,6 +3113,9 @@ class _NestedDict(dict):
         --------
         it is useful to initialise a data structure as an empty nested dictionary:
         
+            >>> _NestedDict._deepcreate(a=1, b=2)
+                ({1: {2: {}}}, 
+                OrderedDict([('a', 1), ('b', 2)]))
             >>> d = {'a': [1,2], 'b': [3,4,5]}
             >>> _NestedDict._deepcreate(d)
                 ({1: {3: {}, 4: {}, 5: {}}, 2: {3: {}, 4: {}, 5: {}}},
@@ -3174,8 +3148,16 @@ class _NestedDict(dict):
         --------
         :meth:`~_NestedDict._deepmerge`, :meth:`~_NestedDict._deepinsert`.
         """
+        order = kwargs.pop(_Decorator.KW_ORDER, None)
+        try:
+            assert order is None or isinstance(order, bool) or happyType.issequence(order)
+        except:
+            raise happyError('wrong type/value for %s keyword argument' % _Decorator.KW_ORDER.upper())
         if args in ((),(None,)):
-            return collections.OrderedDict()
+            if kwargs == {}:
+                return collections.OrderedDict()
+            else:
+                args = kwargs.items()
         try:
             assert (len(args)==1 and happyType.ismapping(args[0]))          \
                 or all([happyType.issequence(a) for a in args])
@@ -3187,12 +3169,7 @@ class _NestedDict(dict):
         try:
             assert not happyType.ismapping(args) or all([happyType.issequence(v) for v in args.values()])
         except:
-            raise happyError('wrong format for input nesting dictionary')
-        order = kwargs.pop(_Decorator.KW_ORDER, None)
-        try:
-            assert order is None or isinstance(order, bool) or happyType.issequence(order)
-        except:
-            raise happyError('wrong type/value for %s keyword argument' % _Decorator.KW_ORDER.upper())
+            raise happyError('wrong format for input nesting dictionary - impossible to resolve dimension ambiguity without []')
         #if happyType.ismapping(args):
         #    if order is True:
         #        order =  list(args.keys())
@@ -4073,6 +4050,52 @@ class _NestedDict(dict):
         else:
             return xlen if len(xlen)>1 else list(xlen.values())[0]
 
+    #/************************************************************************/
+    def reorder(self, order):
+        """Reorder the nested structure of a nested dictionary.
+        
+            >>> dnest.reorder(order)
+        
+        Example
+        -------
+        
+            >>> d = {'a': [1,2], 'b': [3,4,5]}
+            >>> r = _NestedDict(d, values = list(range(6)))
+            >>> r.order
+                ['a', 'b']
+            >>> print(r)
+                {1: {3: 0, 4: 1, 5: 2}, 2: {3: 3, 4: 4, 5: 5}}
+            >>> r.reorder(['b', 'a'])
+            >>> print(r)
+                {3: {1: 0, 2: 3}, 4: {1: 1, 2: 4}, 5: {1: 2, 2: 5}}
+            >>> r.order
+                ['b', 'a']
+        """
+        try:
+            assert order is None or happyType.issequence(order)
+        except:
+            raise happyError('wrong argument for %s attribute' % _Decorator.KW_ORDER)
+        # reassign self.__dimensions
+        if self.order not in (None,[],()) and self.order != order:
+            self._deepreorder(self, order=order, in_place=True)
+
+    #/************************************************************************/
+    def merge(self, *dics, **kwargs):
+        order = self.order
+        def umerge(dic):
+            try:
+                dorder = dic.order
+                assert order not in (False,None)
+            except:
+                pass
+            else:
+                ndic = None
+                norder = sorted([o for o in dorder if o in order], key=lambda x: order.index(x))     \
+                    + [o for o in dorder if o not in order]
+                if norder != dorder:
+                    ndic = dic._deepreorder(norder)
+                self._deepmerge(self.__dict__, ndic or dic, in_place=True)
+        functools.reduce(umerge, dics) 
     
 #%%
 #==============================================================================
