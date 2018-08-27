@@ -2472,11 +2472,11 @@ class GISCOService(OSMService):
         return dest if dest is None or len(dest)>1 else dest[0]
         
     #/************************************************************************/
-    def url2nutsid(self, url):
+    def url2nutsdim(self, url, **kwargs):
         """Check whether a given URL represents a |NUTS| dataset disseminated though
         |GISCO| Rest API and return information about it.
             
-            >>> dimensions = serv.url2nutsid(url)
+            >>> dimensions = serv.url2nutsdim(url, **kwargs)
                         
         Arguments
         ---------
@@ -2494,14 +2494,14 @@ class GISCOService(OSMService):
             >>> url = serv.url_nuts(source='BULK', ifmt='geojson')
             >>> print(url)
                 'https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-60m.geojson.zip'
-            >>> serv.url2nutsid(url)
+            >>> serv.url2nutsdim(url)
                 OrderedDict([('year', 2013), 
                              ('scale', '60m'), 
                              ('ifmt', 'geojson')])
             >>> url = serv.url_nuts('BE100', year = 2016, vector = 'label')
             >>> print(url)
                 'https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-label-3035-2016.geojson'
-            >>> serv.url2nutsid(url)
+            >>> serv.url2nutsdim(url)
                 OrderedDict([('source', 'BE100'),
                              ('year', 2016),
                              ('proj', 3035),
@@ -2510,7 +2510,7 @@ class GISCOService(OSMService):
             >>> url = serv.url_nuts('AT', year = 2010, scale = 1, proj = 'Mercator')
             >>> print(url)
                 'https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AT-region-01m-3857-2010.geojson'
-            >>> serv.url2nutsid(url)
+            >>> serv.url2nutsdim(url)
                 OrderedDict([('source', 'AT'),
                              ('year', 2010),
                              ('proj', 3857),
@@ -2520,8 +2520,9 @@ class GISCOService(OSMService):
             >>> url = serv.url_nuts(source='NUTS', level=3, ifmt='shp')
             >>> print(url)
                 'https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_RG_60M_2013_4326_LEVL_3.shx'
-            >>> serv.url2nutsid(url)
-                OrderedDict([('year', 2013),
+            >>> serv.url2nutsdim(url)
+                OrderedDict([('source', 'NUTS'),
+                             ('year', 2013),
                              ('proj', 4326),
                              ('scale', '60M'),
                              ('vector', 'RG'),
@@ -2530,8 +2531,9 @@ class GISCOService(OSMService):
             >>> url = serv.url_nuts(source='NUTS', level='ALL', vector='label', ifmt='geojson')
             >>> print(url)
                 'https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_LB_2013_4326.geojson'
-            >>> serv.url2nutsid(url)
-                OrderedDict([('year', 2013),
+            >>> serv.url2nutsdim(url)
+                OrderedDict([('source', 'NUTS'),
+                             ('year', 2013),
                              ('proj', 4326),
                              ('vector', 'LB'),
                              ('level', 'ALL'),
@@ -2539,20 +2541,33 @@ class GISCOService(OSMService):
             >>> url = serv.url_nuts(source='NUTS2JSON', ifmt='geojson')
             >>> print(url)
                 'https://raw.githubusercontent.com/eurostat/Nuts2json/gh-pages/2013/3857/60M/nutsrg_0.json'
-            >>> serv.url2nutsid(url)
+            >>> serv.url2nutsdim(url)
                 OrderedDict([('year', 2013),
                              ('proj', 3857),
                              ('scale', '60M'),
                              ('vector', 'RG'),
                              ('level', 0),
                              ('ifmt', 'geojson')])
+        
+        Note the usage of the keyword argument :data:`_force_list_` to format the
+        output:
                 
+            >>> url = serv.url_nuts(source='NUTS2JSON', ifmt='geojson')
+            >>> serv.url2nutsdim(url, _force_list_=True)
+                OrderedDict([('year', [2013]),
+                             ('proj', [3857]),
+                             ('scale', ['60M']),
+                             ('vector', ['RG']),
+                             ('level', [0]),
+                             ('ifmt', ['geojson'])])
+            
         See also
         --------
-        :meth:`~GISCOService.url_nuts`, :meth:`~GISCOService.geom2nutsid`.
+        :meth:`~GISCOService.url_nuts`, :meth:`~GISCOService.geom2nutsdim`.
         """
-        unit, year, scale, fmt, proj, vec, level =                         \
-            None, None, None, None, None, None, None
+        source, unit, year, scale, fmt, proj, vec, level =                         \
+            None, None, None, None, None, None, None, None
+        __force_list = kwargs.pop(_Decorator.KW_FORCE_LIST, False)
         isgisco, isnuts2json = url.find(self.cache_url), url.find(settings.NUTS2JSON_DOMAIN)
         if isgisco < 0 and isnuts2json < 0:
             happyVerbose('URL not recognised as GISCO/NUTS2JSON URL')
@@ -2573,18 +2588,21 @@ class GISCOService(OSMService):
             fmt = {v:k for k,v in settings.GISCO_FORMATS.items()}[fmt]
             if turl.find(settings.GISCO_PATTERNS['bulk']['domain']) >= 0    \
                     and turl.find(settings.GISCO_PATTERNS['bulk']['base']) > 0:
+                # source = 'BULK'
                 sub = sub[0].replace(settings.GISCO_PATTERNS['bulk']['base'],'').split('-')
                 year, scale = sub
             elif turl.find(settings.GISCO_PATTERNS['nuts']['fmt']) >= 0     \
                     and turl.find(settings.GISCO_PATTERNS['nuts']['info']) > 0:
+                # source = 'INFO'
                 year = sub[0].split('-')[1]
             elif turl.find(settings.GISCO_PATTERNS['nuts']['base']) >= 0:
+                source = 'NUTS'
                 sub = sub[0].replace(settings.GISCO_PATTERNS['nuts']['base'],'').split('_')
                 vec = sub[0]
                 if vec == 'LB':         year, proj = sub[1:3]
                 else:                   scale, year, proj = sub[1:4]
                 if 'LEVL' in sub:       level = sub[-1]
-                else:                   level = 'ALL'
+                else:                   level = settings.GISCO_NUTSLEVELS # 'ALL'
             elif turl.find(settings.GISCO_PATTERNS['nuts']['domain']) >= 0:
                 sub = sub[0].split('-')
                 unit, vec = sub[0:2]
@@ -2592,6 +2610,7 @@ class GISCOService(OSMService):
                 else:                   scale, proj, year = sub[2:]
                 vec = settings.GISCO_VECTORS[vec]
         elif isnuts2json > 0:
+            # source = 'NUTS2JSON'
             sub = url.split(settings.NUTS2JSON_DOMAIN)[-1].split('.')[0]
             if sub.startswith('/'):     sub = sub[1:]
             year, proj, scale, data = sub.split('/')
@@ -2601,8 +2620,8 @@ class GISCOService(OSMService):
             vec = 'RG' if vec=='nutsrg' else ('LB' if vec=='nutsbn' else vec)
         # ['UNIT', 'YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'IFORMAT']
         kwargs = {}
-        if unit is not None:
-            kwargs.update({'SOURCE': unit})
+        if not(source is None and unit is None):
+            kwargs.update({'SOURCE': source or unit})
         if year is not None:
             kwargs.update({'YEAR': int(year)})
         if proj is not None:
@@ -2612,22 +2631,23 @@ class GISCOService(OSMService):
         if vec is not None:
             kwargs.update({'VECTOR': vec})
         if level is not None:
-            kwargs.update({'LEVEL': int(level) if level!='ALL' else level})
+            kwargs.update({'LEVEL': int(level) if happyType.isnumeric(level) else level})
         if fmt is not None:
             kwargs.update({'IFORMAT': fmt})  
         dimensions = collections.OrderedDict(zip(settings.GISCO_DATA_DIMENSIONS,
                                                  [None]*len(settings.GISCO_DATA_DIMENSIONS)))
-        keys = list(dimensions.keys())
         [dimensions.update({getattr(_Decorator, 'KW_' + k): kwargs.get(k)})  \
-             or dimensions.pop(k) if k in kwargs else dimensions.pop(k) for k in keys]
+             or dimensions.pop(k) if k in kwargs else dimensions.pop(k) for k in list(dimensions.keys())]
+        if __force_list is True:
+            [dimensions.update({k: v if happyType.issequence(v) else [v]}) for k,v in list(dimensions.items())]
         return dimensions
 
     #/************************************************************************/
-    def geom2nutsid(self, geom):
+    def geom2nutsdim(self, geom, **kwargs):
         """Check whether a given URL represents a |NUTS| dataset disseminated though
         |GISCO| Rest API and return information about it.
             
-            >>> dimensions = serv.geom2nutsid(geom)
+            >>> dimensions = serv.geom2nutsdim(geom)
                         
         Arguments
         ---------
@@ -2653,7 +2673,7 @@ class GISCOService(OSMService):
                                                "LEVL_CODE": 3, "FID": "BE100", "NUTS_ID": "BE100"}, 
                                 "id": "BE100"}]
                  }'
-            >>> serv.geom2nutsid(geom)
+            >>> serv.geom2nutsdim(geom)
                 OrderedDict([('source', 'BE100'),
                              ('proj', '3035'),
                              ('vector', 'LB'),
@@ -2673,7 +2693,7 @@ class GISCOService(OSMService):
                                                "LEVL_CODE": 0, "FID": "AT", "NUTS_ID": "AT"}, 
                                 "id": "AT"}]
                  }                                                                                      
-            >>> serv.geom2nutsid(geom)
+            >>> serv.geom2nutsdim(geom)
                 OrderedDict([('source', 'AT'),
                              ('proj', '3857'),
                              ('vector', 'RG'),
@@ -2687,15 +2707,25 @@ class GISCOService(OSMService):
                  'displayFieldName': 'NUTS_ID',
                  'layerId': 2, 'layerName': 'NUTS_2013',
                  'value': 'ITI4'}
-             >>> serv.geom2nutsid(geom)
+             >>> serv.geom2nutsdim(geom)
                  OrderedDict([('source', 'ITI4'), 
                               ('year', '2013'), 
                               ('level', '2')])
+        
+        Note the usage of the keyword argument :data:`_force_list_` to format the
+        output:
+            
+            >>> geom = serv.coord2nuts([41.8933203,12.4829321], level=2)  
+            >>> serv.geom2nutsdim(geom, _force_list_=True)
+                OrderedDict([('source', ['ITI4']), 
+                             ('year', ['2013']), 
+                             ('level', ['2'])])
                   
         See also
         --------
-        :meth:`~GISCOService.url2nutsid`.
+        :meth:`~GISCOService.url2nutsdim`.
         """
+        __force_list = kwargs.pop(_Decorator.KW_FORCE_LIST, False)
         try:
             assert happyType.isstring(geom) or happyType.ismapping(geom)
         except:
@@ -2717,6 +2747,8 @@ class GISCOService(OSMService):
                                _Decorator.KW_YEAR:                 \
                                    geom[_Decorator.parse_nuts.KW_LAYERNAME].split('NUTS_')[-1]
                                })
+            if __force_list is True:
+                [dimensions.update({k: v if happyType.issequence(v) else [v]}) for k,v in list(dimensions.items())]
         else: #if _Decorator.parse_nuts.KW_PROPERTIES in geom.keys():
             [dimensions.pop(k) for k in (_Decorator.KW_SCALE,_Decorator.KW_YEAR)]
             dimensions.update({_Decorator.KW_PROJECTION:
@@ -2732,6 +2764,9 @@ class GISCOService(OSMService):
                                        [f[_Decorator.parse_nuts.KW_GEOMETRY][_Decorator.parse_nuts.KW_TYPE]]
                                     })
                     for i, f in enumerate(features)]
+            if __force_list is True:
+                [dimensions[i].update({k: v if happyType.issequence(v) else [v]})  \
+                     for k,v in list(dimensions.items()) for i in range(len(features))]
         return dimensions if dimensions in ([],[None]) or len(dimensions)>1 else dimensions[0]
       
     #/************************************************************************/
