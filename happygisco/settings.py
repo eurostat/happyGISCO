@@ -128,7 +128,6 @@ GISCO_CACHEURL      = 'ec.%s/%s' % (EC_DOMAIN, GISCO_CACHEDOMAIN)
 """
 GISCO_PATTERNS      = {'bulk': 
                             {'domain':      'download', 
-                             'base':        'ref-nuts-',
                              'compress':    'zip'
                              },
                        'distribution': 
@@ -139,12 +138,14 @@ GISCO_PATTERNS      = {'bulk':
                             {'domain':      'distribution', 
                              'base':        'CNTR_',
                              'info':        'countries-{year}-units', 
+                             'bulk':        'ref-countries-',
                              'fmt':         'json'
                              },
                        'nuts':
                             {'domain':      'distribution', 
                              'base':        'NUTS_',
                              'info':        'nuts-{year}-units', 
+                             'bulk':        'ref-nuts-',
                              'fmt':         'json'
                              },
                         'nutsid':
