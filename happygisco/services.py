@@ -1028,7 +1028,7 @@ class GISCOService(OSMService):
         elif source == 'BULK': # zipped files
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2016-10m.shp.zip
             domain = settings.GISCO_PATTERNS['bulk']['domain']
-            basename = settings.GISCO_PATTERNS['bulk']['base']
+            basename = settings.GISCO_PATTERNS['nuts']['bulk']
             fmt = 'shp' if fmt=='shx' else fmt 
             fmt += '.' + settings.GISCO_PATTERNS['bulk']['compress']
             url = '{a}://{b}/{c}/{d}/{e}{f}-{g}.{h}'.format                           \
@@ -1085,24 +1085,12 @@ class GISCOService(OSMService):
                  j=fmt)
             # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AT-region-01m-3035-2016.geojson
         return url if url is None or len(url)>1 else url[0]          
-    
-    #/************************************************************************/
-    def url_lau(self, source=None, **kwargs):
-        """Generate the URL of the |GISCO| LAU data files.
-            
-            >>> url = serv.url_lau(source=None, **kwargs)
-           
-        Keyword arguments
-        -----------------
-        """
-        pass
 
     #/************************************************************************/
     def url_country(self, source=None, **kwargs):
         """Generate the URL (or name) of the |GISCO| countries vector datasets.
             
             >>> url = serv.url_country(source=None, **kwargs)
-            
             
         Examples
         --------
@@ -1112,6 +1100,8 @@ class GISCOService(OSMService):
                 'https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/countries/countries-2013-units.json'
             >>> serv.url_country(unit='AT')
                 'https://europa.eu/ec.eurostat/cache/GISCO/distribution/v2/countries/distribution/AT-region-01m-4326-2013.geojson'
+            >>> serv.url_country(source='BULK')
+                'https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/countries/download/ref-countries-2013-60m.geojson.zip'
 
         Note
         ----
@@ -1169,6 +1159,15 @@ class GISCOService(OSMService):
                 (a=protocol, b=domain, c=year, d=proj, e=scale.upper(), 
                  f='' if fmt!= 'geojson' else ('cntrg' if vec == 'RG' else 'cntbn'), 
                  g='json')
+        elif source == 'BULK': # zipped files
+            # example: http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/countries/download/ref-countries-2013-10m.shp.zip
+            domain = settings.GISCO_PATTERNS['bulk']['domain']
+            basename = settings.GISCO_PATTERNS['country']['bulk']
+            fmt = 'shp' if fmt=='shx' else fmt 
+            fmt += '.' + settings.GISCO_PATTERNS['bulk']['compress']
+            url = '{a}://{b}/{c}/{d}/{e}{f}-{g}.{h}'.format                           \
+                (a=protocol, b=self.cache_url, c=theme, d=domain,
+                 e=basename, f=year, g=scale.lower(), h=fmt)
         elif source == 'INFO':
             domain = ''
             fmt = settings.GISCO_PATTERNS['country']['fmt']
@@ -1183,6 +1182,17 @@ class GISCOService(OSMService):
                 (a=protocol, b=self.cache_url, c=theme, d=domain,
                  e=source, f=space, g=scale.lower(), h=proj, i=year, j=fmt)             
         return url            
+    
+    #/************************************************************************/
+    def url_lau(self, source=None, **kwargs):
+        """Generate the URL of the |GISCO| LAU data files.
+            
+            >>> url = serv.url_lau(source=None, **kwargs)
+           
+        Keyword arguments
+        -----------------
+        """
+        pass
         
     #/************************************************************************/
     def url_tile(self, tiles=None, **kwargs):
@@ -1552,6 +1562,7 @@ class GISCOService(OSMService):
                 raise happyError('argument DATA not recognised - must be ''nuts'' or ''country''')
             else:
                 url = build_url(**dim)
+            response = self.read_url(url, **kwargs)
             try:
                 response = self.read_url(url, **kwargs) # fmt = 'resp'
             except:
@@ -1900,6 +1911,13 @@ class GISCOService(OSMService):
             >>> newdata == data
                 True
         
+        Resources
+        ---------
+        * List of all `NUTS datasets <https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/datasets.json>`_.
+        * `Bulk NUTS download files <http://ec.europa.eu/eurostat/web/gisco/geodata/reference-data/administrative-units-statistical-units/nuts>`_.
+        * List of available NUTS units per country and per reference year: see for instance the
+        `2016 classification <https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2016-units.json>`_.
+        
         See also
         --------
         :meth:`~GISCOService.nuts_response`, :meth:`~GISCOService.nuts_info`, 
@@ -1918,7 +1936,8 @@ class GISCOService(OSMService):
         info : str
             defines the nature of the information about countries that will be 
             retrieved; currently, it supports only :literal:`CODES`, *i.e.* country
-            ISO-codes are returned.
+            ISO-codes are returned, and :literal:`BULK` so as to retrieve information
+            regarding the content of compressed datasets; default: :data:`info=INFO`.
             
         Returns
         -------
@@ -1933,12 +1952,80 @@ class GISCOService(OSMService):
             >>> serv.country_info(info = 'CODES')
                 ['AD', 'AE', 'AF', 'AG', 'AI', 'AL', 'AM', 'AO', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AW',
                  ...
-                 'XF', 'XG', 'XH', 'XI', 'XL', 'XM', 'XN', 'XO', 'XU', 'XV', 'YE', 'ZA', 'ZM', 'ZW']        
-        
+                 'XF', 'XG', 'XH', 'XI', 'XL', 'XM', 'XN', 'XO', 'XU', 'XV', 'YE', 'ZA', 'ZM', 'ZW']   
+                
+        but it is also possible to get the list of all data available for each country:
+            
+            >>> f = serv.country_info(info = 'FILES')
+            >>> f['AT']
+                ['AT-region-01m-3035-2013.geojson',
+                 'AT-region-01m-3857-2013.geojson',
+                 'AT-region-01m-4258-2013.geojson',
+                 'AT-region-01m-4326-2013.geojson',
+                 'AT-region-03m-3035-2013.geojson',
+                 'AT-region-03m-3857-2013.geojson',
+                 'AT-region-03m-4258-2013.geojson',
+                 'AT-region-03m-4326-2013.geojson',
+                 'AT-region-10m-3035-2013.geojson',
+                 'AT-region-10m-3857-2013.geojson',
+                 'AT-region-10m-4258-2013.geojson',
+                 'AT-region-10m-4326-2013.geojson',
+                 'AT-region-20m-3035-2013.geojson',
+                 'AT-region-20m-3857-2013.geojson',
+                 'AT-region-20m-4258-2013.geojson',
+                 'AT-region-20m-4326-2013.geojson',
+                 'AT-region-60m-3035-2013.geojson',
+                 'AT-region-60m-3857-2013.geojson',
+                 'AT-region-60m-4258-2013.geojson',
+                 'AT-region-60m-4326-2013.geojson',
+                 'AT-label-3035-2013.geojson',
+                 'AT-label-3857-2013.geojson',
+                 'AT-label-4258-2013.geojson',
+                 'AT-label-4326-2013.geojson']
+            >>> serv.country_info(info = 'CODES') == list(f.keys())
+                True
+                                
+        One can also retrieve some information regarding the list of files available
+        in one of the bulk country download files:
+            
+            >>> serv.country_info(info='BULK', year=2010, scale='20m')
+                ['CNTR_RG_20M_2010_3035.geojson',
+                 'CNTR_RG_20M_2010_3857.geojson',
+                 'CNTR_RG_20M_2010_4258.geojson',
+                 'CNTR_RG_20M_2010_4326.geojson',
+                 'CNTR_LB_2010_3035.geojson',
+                 'CNTR_LB_2010_3857.geojson',
+                 'CNTR_LB_2010_4258.geojson',
+                 'CNTR_LB_2010_4326.geojson',
+                 'CNTR_BN_20M_2010_3035.geojson',
+                 'CNTR_BN_20M_2010_3035_COASTL.geojson',
+                 'CNTR_BN_20M_2010_3035_INLAND.geojson',
+                 'CNTR_BN_20M_2010_3857.geojson',
+                 'CNTR_BN_20M_2010_3857_COASTL.geojson',
+                 'CNTR_BN_20M_2010_3857_INLAND.geojson',
+                 'CNTR_BN_20M_2010_4258.geojson',
+                 'CNTR_BN_20M_2010_4258_COASTL.geojson',
+                 'CNTR_BN_20M_2010_4258_INLAND.geojson',
+                 'CNTR_BN_20M_2010_4326.geojson',
+                 'CNTR_BN_20M_2010_4326_COASTL.geojson',
+                 'CNTR_BN_20M_2010_4326_INLAND.geojson',
+                 'CNTR_MULT_LING_AT_2013.csv',
+                 'CNTR_RG_BN_20M_2010.csv',
+                 'metadata.pdf',
+                 'metadata.xml',
+                 'release-notes.txt']
+
         Note
         ----
         Actually, the command :data:`serv.country_info()` alone (*i.e.* without 
         arguments) also returns the expected result.
+        
+        Resources
+        ---------
+        * List of all `country datasets <https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/countries/datasets.json>`_.
+        * `Bulk county download files <https://ec.europa.eu/eurostat/web/gisco/geodata/reference-data/administrative-units-statistical-units/countries>`_.
+        
+        https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/countries/countries-2016-files.json
         
         See also
         --------
@@ -1955,23 +2042,37 @@ class GISCOService(OSMService):
                 info = 'CODES'
             info = info.upper()            
         try:
-            assert info in ('CODES',)
+            assert info in ('CODES', 'FILES', 'BULK')
         except AssertionError:
             raise happyError('wrong value for %s argument' % _Decorator.KW_INFO.upper())  
         else:
-            source = 'INFO'
+            source = 'INFO' if info in ('FILES','CODES') else info           
+        caching = kwargs.pop(_Decorator.KW_CACHING, False)
+        force_download = kwargs.pop(_Decorator.KW_FORCE, False)
+        try:
+            assert isinstance(caching, bool) and isinstance(force_download, bool)
+        except AssertionError:
+            raise happyError('wrong format/value for %s/%s arguments' % (_Decorator.KW_CACHING.upper(),_Decorator.KW_FORCE.upper()))        
         kwargs.update({_Decorator.KW_SOURCE: source,
-                       _Decorator.KW_CACHING: kwargs.pop(_Decorator.KW_CACHING, False)})                 
+                       _Decorator.KW_CACHING: caching})
         try:
             resp = self.country_response(**kwargs)
+            resp = resp.xvalues()
         except:
-            raise happyError('error loading country response')
-        try:
-            data = self.read_response(resp, **{_Decorator.KW_OFORMAT: 'jsontext'})
-        except:
-            raise happyError('error info country file reading')
+            raise happyError('error loading country response')                
+        if info == 'BULK':
+            try:
+                data = self.read_response(resp, namelist=True, **{_Decorator.KW_OFORMAT: 'zip'})
+            except:
+                raise happyError('error zip NUTS file reading')
         else:
-            data = list(data.keys())
+            try:
+                data = self.read_response(resp, **{_Decorator.KW_OFORMAT: 'jsontext'})
+            except:
+                raise happyError('error info country file reading')
+            else:
+                if info == 'CODES':
+                    data = list(data.keys())
         return data
         
     #/************************************************************************/
@@ -2212,6 +2313,7 @@ class GISCOService(OSMService):
         try:
             assert data is None
             resp = self.nuts_response(**kwargs)
+            resp = resp.xvalues() # actually the response is unique
         except AssertionError:
             pass
         except:
@@ -2240,7 +2342,7 @@ class GISCOService(OSMService):
                 data = pd.concat(data[data['NUTS_ID'].str.startswith(u)] for u in unit) 
             if level is not None:
                 data = pd.concat(data[data['NUTS_ID'].apply(lambda x: sum(c.isdigit() for c in x)==l)] for l in level)
-        else:
+        else: # if info == 'INFO':
             try:
                 data = self.read_response(resp, **{_Decorator.KW_OFORMAT: 'jsontext'})
             except:
