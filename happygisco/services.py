@@ -1555,6 +1555,8 @@ class GISCOService(OSMService):
                            **{_Decorator.KW_ORDER: True}) # [getattr(_Decorator,'KW_' + k) for k in dimensions.keys()]
         dim = {}
         for prod in itertools.product(*list(dimensions.values())):
+            print('------')
+            print (dic)
             dim.update(dict(zip([getattr(_Decorator,'KW_' + attr) for attr in dimensions.keys()], prod)))
             try:
                 build_url = getattr(self, 'url_' + data.lower())
@@ -1562,9 +1564,10 @@ class GISCOService(OSMService):
                 raise happyError('argument DATA not recognised - must be ''nuts'' or ''country''')
             else:
                 url = build_url(**dim)
-            response = self.read_url(url, **kwargs)
             try:
-                response = self.read_url(url, **kwargs) # fmt = 'resp'
+                print(url)
+                response = self.read_url(url, **kwargs) 
+                print(response)
             except:
                 raise happyError('file for %s data not loaded' % data)
             else:
@@ -1589,18 +1592,26 @@ class GISCOService(OSMService):
                 read_response = getattr(self, data.lower() + '_response')
             except AttributeError:
                 raise happyError('argument DATA not recognised - must be ''NUTS'' or ''country''')
-            response = read_response(**kwargs)
             try:
                 response = read_response(**kwargs)
             except:
                 raise happyError('error reading %s response' % data.upper())
-        content = self.load_content(response, **kwargs)
-        try:
-            content = self.load_content(response, **kwargs)
-        except:
-            raise happyError('error loading %s content' % data.upper())
-        else:
-            return content
+        # we use a default output format here!
+        kwargs.update({_Decorator.KW_OFORMAT: kwargs.pop(_Decorator.KW_OFORMAT, 'content')}) 
+        if isinstance(response,(_CachedResponse, requests.Response)):
+            try:
+                return self.read_response(response, **kwargs)
+            except:
+                raise happyError('error reading content from response')
+        elif isinstance(response, _NestedDict):
+            try:
+                xitems = zip(response.xkeys(**{_Decorator.KW_FORCE_LIST: True}), 
+                             [self.read_response(v, **kwargs) for v in response.xvalues(**{_Decorator.KW_FORCE_LIST: True})])
+                # content = copy.deecopy(response)
+                # content.xupdate(xitems)
+                return _NestedDict(list(xitems), order = response.order) 
+            except:
+                raise happyError('error reading content from nested dictionary of responses')            
     
     #/************************************************************************/
     @_Decorator.parse_year
@@ -1665,6 +1676,7 @@ class GISCOService(OSMService):
             if not happyType.issequence(val):      val = [val,]
             dimensions.update({attr: val})
         dimensions.update({'SOURCE': [source,] if source is not None else code})
+        kwargs.update({_Decorator.KW_OFORMAT: 'resp'})
         return self._data_response('country', dimensions, **kwargs)
 
     #/************************************************************************/
@@ -1840,6 +1852,7 @@ class GISCOService(OSMService):
             if 'SCALE' in dimensions and _alllabels:
                 dimensions.pop('SCALE')
         dimensions.update({'SOURCE': [source,] if source is not None else unit})
+        # kwargs.update({_Decorator.KW_OFORMAT: 'resp'})
         return self._data_response('NUTS', dimensions, **kwargs)
                 
     #/************************************************************************/

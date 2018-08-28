@@ -190,7 +190,7 @@ class _Decorator(object):
         
     KW_YEAR         = 'year'
     KW_IFORMAT      = 'ifmt'
-    KW_OFORMAT      = 'iofmt'
+    KW_OFORMAT      = 'ofmt'
     KW_SCALE        = 'scale'
     KW_GEOMETRY     = 'geom' # 'geometry' 
     KW_LEVEL        = 'level'
@@ -2369,7 +2369,11 @@ class _Service(object):
         --------
         :meth:`~_Service.read_url`.
         """
+        print('in read_response')
+        print(kwargs)
+        print(_Decorator.KW_OFORMAT)
         fmt = kwargs.pop(_Decorator.KW_OFORMAT, None)
+        print(fmt)
         if fmt in (None,'resp'):
             return response
         try:
@@ -2483,51 +2487,6 @@ class _Service(object):
                 return data if data in ([],[None]) or len(data)>1 else data[0]
             elif operator == 'extractall':
                 return zf.extractall(path=path)    
-
-    #/************************************************************************/
-    def load_content(self, response, **kwargs):
-        """Retrieve the content of any given response
-        
-            >>> content = serv.load_content(response, **kwargs)
-            
-        Arguments
-        ---------
-        response : :class:`base._CachedResponse`, :class:`requests.Response`, :class:`base._NestedDict`
-            response returned from URL fetching.
-            
-        Returns
-        -------
-        content : :class:`base._NestedDict`
-            
-        Keyword arguments
-        -----------------
-        fmt : str
-            default: :data:`fmt=content`.
-        kwargs : dict
-            for other keyword arguments, see method :meth:`~base._Service.read_response`.
-
-        See also
-        --------
-        :meth:`~base._Service.read_response`.
-        """
-        # we use a default output format here!
-        kwargs.update({_Decorator.KW_OFORMAT: kwargs.pop(_Decorator.KW_OFORMAT, 'content')}) 
-        if isinstance(response,(_CachedResponse, requests.Response)):
-            try:
-                return self.read_response(response, **kwargs)
-            except:
-                raise happyError('error reading content from response')
-        elif isinstance(response, _NestedDict):
-            try:
-                xitems = zip(response.xkeys(**{_Decorator.KW_FORCE_LIST: True}), 
-                             [self.read_response(v, **kwargs) for v in response.xvalues(**{_Decorator.KW_FORCE_LIST: True})])
-                # content = copy.deecopy(response)
-                # content.xupdate(xitems)
-                return _NestedDict(list(xitems), order = response.order) 
-            except:
-                raise happyError('error reading content from nested dictionary of responses')            
-        else:
-            raise happyError('wrong value/format for input response')            
             
     #/************************************************************************/
     def read_url(self, url, **kwargs):
@@ -2575,6 +2534,8 @@ class _Service(object):
             response = self.get_response(url, **kwargs)
         except:
             raise happyError('URL data for %s not loaded' % url)
+        print ('read_url')
+        print(kwargs)
         return self.read_response(response, **kwargs)
             
     #/************************************************************************/
@@ -2914,10 +2875,14 @@ class _NestedDict(dict):
 
     #/************************************************************************/
     def __init__(self, *args, **kwargs):
-        self.__order = None
+        self.__order = []
         self.__xlen = {}
         # self.__dimensions = {}
         self.__cursor = 0
+        self.__dimensions = {}
+        if args in ((),({},),(None,)) and kwargs == {}:
+            super(_NestedDict, self).__init__({})
+            return
         order = kwargs.get(_Decorator.KW_ORDER) or True
         try:
             assert order is None or isinstance(order,bool) or happyType.issequence(order)
@@ -3444,7 +3409,7 @@ class _NestedDict(dict):
         The keyword argument :data:`in_place` can be used for in-place update:
             
             >>> d = {}
-            >>> items = ((1,2), \(3,(4,5)))
+            >>> items = ((1,2), (3,(4,5)))
             >>> _NestedDict._deepinsert(d, items, in_place=True)
             >>> print(d)
                 {1: 2, 3: (4, 5)}
@@ -3812,6 +3777,20 @@ class _NestedDict(dict):
             >>> r.xupdate(20, a=2, b=3)
             >>> print(r)
                 {1: {3: 5, 4: 10, 5: {}}, 2: {3: 20, 4: 15, 5: {}}}
+                
+            >>> d = _NestedDict()
+            >>> items = ((1,2), (3,(4,5)))
+            >>> d.xupdate(items)
+            >>> print(d)
+                {1: 2, 3: (4, 5)}
+            >>> d = _NestedDict()
+            >>> items = (('a',1,'x'), 1), (('a',2,'y'), 2),
+                        (('b',1,'y'), 3), (('b',2,'z'), 4),
+                        (('b',1,'x'), 5)
+            >>> d.xupdate(*items)
+            >>> print(d)
+                {'a': {1: {'x': 1}, 2: {'y': 2}}, 'b': {1: {'x': 5, 'y': 3}, 2: {'z': 4}}}
+            
         """
         if arg in((),(None,)) and kwargs == {}:
             return 
@@ -3859,17 +3838,31 @@ class _NestedDict(dict):
         #        raise happyError('key %s not found' % x)
         #    else:
         #        rdic.update({x: xvalues[i]})
+        dimensions = self.dimensions.copy()
+        print(dimensions)
         if kwargs != {}:
             kwargs.update({_Decorator.KW_FORCE_LIST: True})
             arg = list(zip(self.xkeys(**kwargs),arg)) 
         if happyType.issequence(arg): 
-            #if len(arg)==1:
-            #    arg = arg[0]
-            #else:
-            #    arg = (arg,)
-            self._deepinsert(self, *arg, in_place=True)
+            
+            if len(arg)==1:
+                arg = arg[0]
+            dimensions = [list(set(v)) for v in zip(*[a[0] for a in arg])]
+            print(dimensions)
+            dimensions = collections.OrderedDict(zip(self.order, 
+                              [list(set(v)) for v in zip(*[a[0] for a in arg])]))
+            print(dimensions)
+#            else:
+#                arg = (arg,)
+            # self._deepinsert(self, *arg, in_place=True)
+            self._deepinsert(self, arg, in_place=True)
+            # self.__dimensions = dimensions
         elif happyType.ismapping(arg):
+            if isinstance(arg,self.__class__):
+                [dimensions.update({k: dimensions.get(k,[])+v}) for k,v in arg.items()]
+            # elif isinstance(arg,(dict,collections.OrderedDict)): pass
             self._deepmerge(self, arg, in_place=True)        
+        #self.__dimensions = dimensions
         return
 
     #/************************************************************************/

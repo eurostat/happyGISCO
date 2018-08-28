@@ -925,63 +925,18 @@ class NUTS(_Feature):
                 setattr(self, key, attr) # may raise an Error
 
     #/************************************************************************/    
-    @_Decorator.parse_url
-    @_Decorator.parse_geometry
-    @_Decorator.parse_nuts
-    @_Decorator._parse_class(ogr.Feature, _Decorator.KW_FEATURE)
     def _get_unit(self, **kwargs): 
         """Retrieve NUTS identifier.
         """
-        content = kwargs.pop(_Decorator.KW_CONTENT, None)
-        geom = kwargs.pop(_Decorator.KW_GEOMETRY, None)
-        url = kwargs.pop(_Decorator.KW_URL, None)
-        _argsTrue = [1 for arg in (content, url, geom) if arg in ('',None)]
-        try:
-            assert sum(_argsTrue) >= 2
-        except:
-            raise happyError('incompatible arguments %s, %s and %s - parse one only' % \
-                             (_Decorator.KW_CONTENT.upper(),_Decorator.KW_GEOMETRY.upper(),_Decorator.KW_URL.upper()))
-        if sum(_argsTrue) == 3: # all None
-            try:
-                assert self.__geom 
-            except AssertionError:
-                try:
-                    assert self.__content
-                except AssertionError:
-                    try:
-                        assert self.__url
-                    except AssertionError:
-                        try:
-                            url = self._get_url(**kwargs) 
-                            assert url not in  ('',[],None)
-                        except:
-                            raise happyError('incompatible arguments %s, %s and %s - parse one at least' % \
-                                             (_Decorator.KW_CONTENT.upper(),_Decorator.KW_GEOMETRY.upper(),_Decorator.KW_URL.upper()))
-                    else:
-                        url = self.url
-                else:
-                    nuts = self._content
-            else:
-                geom = self.geom
-        try:
-            if not happyType.issequence(geom): 
-                geom = [geom,]  
-            unit = [g[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_NUTS_ID] \
-                    for g in geom]
-        except:
-            try:
-                if not happyType.issequence(nuts): 
-                    nuts = [nuts,]  
-                unit = [n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_ID]     \
-                        for n in nuts]
-            except:
-                try:
-                    if not happyType.issequence(url): 
-                        url = [url,]  
-                    unit = [self.serv.url2nutsid(u)[_Decorator.KW_UNIT] for u in url]             
-                except:
-                    raise happyError('impossible to extract NUTS unit from input data')
-        return unit if unit is None or len(unit)>1 else unit[0]       
+        dimensions = self._get_dimensions(**kwargs)
+        return [d.get(_Decorator.KW_SOURCE) for d in dimensions]
+    
+    #/************************************************************************/    
+    def _get_level(self, **kwargs): 
+        """Retrieve NUTS level.
+        """
+        dimensions = self._get_dimensions(**kwargs)
+        return [d.get(_Decorator.KW_LEVEL) for d in dimensions]
 
     #/************************************************************************/    
     @_Decorator._parse_class(str, _Decorator.KW_SOURCE)
