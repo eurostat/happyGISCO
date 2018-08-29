@@ -160,8 +160,8 @@ One can for instance declare a specific location, and run any of the methods sup
        'location': [33.024974, 34.563786], 'name': ''}])
 >>> location.findnuts(level=3)
     {'CNTR_CODE': 'PT', 'LEVL_CODE': '3',
-     'NAME_LATN': 'çrea Metropolitana de Lisboa', 'NUTS_ID': 'PT170',
-     'NUTS_NAME': 'çrea Metropolitana de Lisboa', 'OBJECTID': '1233',
+     'NAME_LATN': 'Ã§rea Metropolitana de Lisboa', 'NUTS_ID': 'PT170',
+     'NUTS_NAME': 'Ã§rea Metropolitana de Lisboa', 'OBJECTID': '1233',
      'SHRT_ENGL': 'Portugal'}
 >>> location.distance('Paris, France')
     1455.7107037157618
@@ -206,3 +206,4 @@ In the associated classes `GeoAngle` and `GeoCoordinate`, you will find also som
 
 * Grazzini J., Museux J.-M. and Hahn M. (2018): [**Empowering and interacting with statistical produsers: A practical example with Eurostat data as a service**](https://www.researchgate.net/publication/325973362_Empowering_and_interacting_with_statistical_produsers_a_practical_example_with_Eurostat_data_as_a_service), in Proc. _Conference of European Statistics Stakeholders_.
 * Grazzini J., Lamarche P., Gaffuri J. and Museux J.-M. (2018): [**"Show me your code, and then I will trust your figures": Towards software-agnostic open algorithms in statistical production**](https://www.researchgate.net/publication/325320551_Show_me_your_code_and_then_I_will_trust_your_figures_Towards_software-agnostic_open_algorithms_in_statistical_production), in Proc.  _Quality Conference_.
+* Downey. A (2012): [Think `Python`](http://www.greenteapress.com/thinkpython/thinkpython.pdf), Green Tea Press.
