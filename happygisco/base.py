@@ -2907,7 +2907,7 @@ class _NestedDict(dict):
             except:
                 raise happyError('error setting nested dictionary')
         super(_NestedDict, self).__init__(dic)
-        # self.__dimensions = dimensions
+        self.__dimensions = dimensions
         if order is not False:
             self.__order = order if order is not True else list(dimensions.keys())
         else:
@@ -3022,21 +3022,27 @@ class _NestedDict(dict):
 
     @property
     def dimensions(self):
-        """Dimensions property calculated on the fly.
+        """Dimensions property (:data:`getter`/:data:`setter`) of a :class:`_NestedDict`
+        instance.
         """
-        # return collections.OrderedDict({k : v[0] if len(v)==1 else v for k,v in self.__dimensions.items()})
-        ndim = len(self.order)
-        dic = dict(zip(range(ndim),[[]]*ndim))
-        def recurse(items, depth):
-            for k, v in items:
-                if dic[depth] in ([],None):     dic[depth] = [k,]
-                else:                           dic[depth].append(k)
-                dic[depth] = list(set(dic[depth]))
-                if happyType.ismapping(v):
-                    recurse(v.items(), depth+1)
-        recurse(self.items(), 0)
-        return collections.OrderedDict((self.order[k],v) for k,v in list(dic.items()))
-
+        #ndim = len(self.order)
+        #dic = dict(zip(range(ndim),[[]]*ndim))
+        #def recurse(items, depth):
+        #    for k, v in items:
+        #        if dic[depth] in ([],None):     dic[depth] = [k,]
+        #        else:                           dic[depth].append(k)
+        #        dic[depth] = list(set(dic[depth]))
+        #        if happyType.ismapping(v):
+        #            recurse(v.items(), depth+1)
+        #recurse(self.items(), 0)
+        #return collections.OrderedDict((self.order[k],v) for k,v in list(dic.items()))
+        return collections.OrderedDict({k : v[0] if len(v)==1 else v for k,v in self.__dimensions.items()})
+    @dimensions.setter
+    def dimensions(self, dimensions):
+        if not (dimensions is None or happyType.ismapping(dimensions)):
+            raise happyError('wrong type for DIMENSIONS parameter')
+        self.__dimensions = dimensions
+        
     @classmethod
     @happyDeprecated('use depth property instead', run=True)
     def __depth(self, dic):
@@ -3720,6 +3726,24 @@ class _NestedDict(dict):
             return rdic
         res = self._deepsearch('get', *args, **kwargs)
         return res if __force_list is True or res is None or xlen>1 else deep_get(res)
+
+    #/************************************************************************/
+    def pop(self, *args):
+        """
+        """
+        if args in ((),(None,)):
+            raise TypeError('pop expected at least 1 arguments, got 0')
+        key = args[0]
+        dimensions, order = self.dimensions, self.order
+        order = order or range(len(dimensions))
+        try:
+            dimensions[order[0]].remove(key)
+        except:
+            dimensions[order[0]] = set([dimensions[order[0]]]).difference(set([key]))
+        #.update({order[0]: list(dimensions[order[0]]).remove(key)})
+        if dimensions[order[0]] == []:
+            dimensions = collections.OrderedDict()
+        super(_NestedDict,self).pop(*args)
         
     #/************************************************************************/
     def xpop(self, *arg):
@@ -3753,7 +3777,31 @@ class _NestedDict(dict):
                 if i<len(arg)-1:     d = d[item]
         except KeyError:
             raise happyError('deep keys not known')
+        dimensions, order = self.dimensions, self.order
+        if dimensions != {}:
+            order = order or range(len(dimensions))
+            for i, item in enumerate(arg[::-1]):
+                if dimensions[order[i]] == [arg]:
+                    dimensions.pop(arg)
+                    order.remove(arg)
+                else:
+                    break
         return d.pop(item)
+
+    #/************************************************************************/
+    def update(self, *arg, **kwargs):
+        newkeys = []
+        if arg not in ((),(None,)):
+            newkeys += list(arg[0].keys())
+        if kwargs != {}:
+            newkeys += list(kwargs.keys())
+        dimensions, order = self.dimensions, self.order
+        order = order or range(len(dimensions))
+        try:
+            assert set(newkeys).difference(set(dimensions[order[0]])) == set()
+        except:
+            self.dimensions.update({order[0]: list(set(dimensions[order[0]] + newkeys))})
+        super(_NestedDict,self).update(*arg, **kwargs)
 
     #/************************************************************************/
     def xupdate(self, *arg, **kwargs):
@@ -3784,10 +3832,10 @@ class _NestedDict(dict):
             >>> print(d)
                 {1: 2, 3: (4, 5)}
             >>> d = _NestedDict()
-            >>> items = (('a',1,'x'), 1), (('a',2,'y'), 2),
+            >>> items = [(('a',1,'x'), 1), (('a',2,'y'), 2),
                         (('b',1,'y'), 3), (('b',2,'z'), 4),
-                        (('b',1,'x'), 5)
-            >>> d.xupdate(*items)
+                        (('b',1,'x'), 5)]
+            >>> d.xupdate(items)
             >>> print(d)
                 {'a': {1: {'x': 1}, 2: {'y': 2}}, 'b': {1: {'x': 5, 'y': 3}, 2: {'z': 4}}}
             
@@ -3838,31 +3886,31 @@ class _NestedDict(dict):
         #        raise happyError('key %s not found' % x)
         #    else:
         #        rdic.update({x: xvalues[i]})
-        dimensions = self.dimensions.copy()
-        print(dimensions)
+        dimensions, order= self.dimensions.copy(), self.order
         if kwargs != {}:
             kwargs.update({_Decorator.KW_FORCE_LIST: True})
             arg = list(zip(self.xkeys(**kwargs),arg)) 
         if happyType.issequence(arg): 
-            
             if len(arg)==1:
                 arg = arg[0]
-            dimensions = [list(set(v)) for v in zip(*[a[0] for a in arg])]
-            print(dimensions)
-            dimensions = collections.OrderedDict(zip(self.order, 
-                              [list(set(v)) for v in zip(*[a[0] for a in arg])]))
-            print(dimensions)
-#            else:
-#                arg = (arg,)
-            # self._deepinsert(self, *arg, in_place=True)
+            try:
+                keys = zip(*[a[0] for a in arg])
+            except: 
+                keys = [[a[0]] for a in arg]
+            else:
+                keys = [list(set(k)) for k in keys]
+            if order is None or dimensions == {}:
+                dimensions = collections.OrderedDict(enumerate(keys))
+            else:
+                dimensions = collections.OrderedDict(zip(dimensions.keys(),
+                                                         list(dimensions.values()) + keys))
             self._deepinsert(self, arg, in_place=True)
-            # self.__dimensions = dimensions
         elif happyType.ismapping(arg):
             if isinstance(arg,self.__class__):
                 [dimensions.update({k: dimensions.get(k,[])+v}) for k,v in arg.items()]
             # elif isinstance(arg,(dict,collections.OrderedDict)): pass
             self._deepmerge(self, arg, in_place=True)        
-        #self.__dimensions = dimensions
+        self.dimensions = dimensions
         return
 
     #/************************************************************************/
