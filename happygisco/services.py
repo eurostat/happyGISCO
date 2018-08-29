@@ -1555,8 +1555,6 @@ class GISCOService(OSMService):
                            **{_Decorator.KW_ORDER: True}) # [getattr(_Decorator,'KW_' + k) for k in dimensions.keys()]
         dim = {}
         for prod in itertools.product(*list(dimensions.values())):
-            print('------')
-            print (dic)
             dim.update(dict(zip([getattr(_Decorator,'KW_' + attr) for attr in dimensions.keys()], prod)))
             try:
                 build_url = getattr(self, 'url_' + data.lower())
@@ -1565,9 +1563,7 @@ class GISCOService(OSMService):
             else:
                 url = build_url(**dim)
             try:
-                print(url)
                 response = self.read_url(url, **kwargs) 
-                print(response)
             except:
                 raise happyError('file for %s data not loaded' % data)
             else:
