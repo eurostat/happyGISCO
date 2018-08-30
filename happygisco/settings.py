@@ -126,23 +126,40 @@ for download/distribution.
 GISCO_CACHEURL      = 'ec.%s/%s' % (EC_DOMAIN, GISCO_CACHEDOMAIN) 
 """Complete URL of |GISCO| cache database.
 """
+
+GISCO_NUTSDOMAIN    = 'nuts'
+"""Subdomain of |NUTS|.
+"""
+GISCO_NUTSURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_NUTSDOMAIN) 
+"""Complete URL of |NUTS| download/distribution services.
+"""
+GISCO_NUTSTHEME     = 'nuts'
+"""NUTS theme used for URL naming.
+"""
+GISCO_CTRYDOMAIN    = 'countries'
+"""Subdomain of countries.
+"""
+GISCO_CTRYURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_CTRYDOMAIN) 
+"""Complete URL of countries download/distribution services.
+"""
+
 GISCO_PATTERNS      = {'bulk': 
                             {'domain':      'download', 
                              'compress':    'zip'
                              },
                        'distribution': 
-                            {'domain':      'distribution', 
+                            {'domain':      GISCO_CACHEDOMAIN, #'distribution', 
                              'base':        ''
                              },                             
                        'country':
-                            {'domain':      'distribution', 
+                            {'domain':      GISCO_CTRYURL, #'distribution', 
                              'base':        'CNTR_',
                              'info':        'countries-{year}-units', 
                              'bulk':        'ref-countries-',
                              'fmt':         'json'
                              },
                        'nuts':
-                            {'domain':      'distribution', 
+                            {'domain':      GISCO_NUTSURL, # 'distribution', 
                              'base':        'NUTS_',
                              'info':        'nuts-{year}-units', 
                              'bulk':        'ref-nuts-',
@@ -182,22 +199,6 @@ and |GDAL| accepted formats.
 DEF_DRIVER_NAME         = 'ESRI Shapefile'
 """|GDAL| driver name.
 """             
-
-GISCO_NUTSDOMAIN    = 'nuts'
-"""Subdomain of |NUTS|.
-"""
-GISCO_NUTSURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_NUTSDOMAIN) 
-"""Complete URL of |NUTS| download/distribution services.
-"""
-GISCO_NUTSTHEME     = 'nuts'
-"""NUTS theme used for URL naming.
-"""
-GISCO_CTRYDOMAIN    = 'countries'
-"""Subdomain of countries.
-"""
-GISCO_CTRYURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_CTRYDOMAIN) 
-"""Complete URL of countries download/distribution services.
-"""
 
 GISCO_DATA_DIMENSIONS = ['SOURCE', 'YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'IFORMAT'
                          ]

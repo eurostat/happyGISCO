@@ -895,19 +895,19 @@ class NUTS(_Feature):
             try:
                 if not happyType.issequence(geom): 
                     geom = [geom,]  
-                dimensions = [self.serv.geom2nutsdim(g, _force_list_=True) for g in geom]             
+                dimensions = [self.serv.geom2dimension(g, _force_list_=True) for g in geom]             
             except:
                 raise happyError('impossible to extract NUTS dimensions from input data')
         except:
             try:
                 if not happyType.issequence(content): 
                     content = [content,]  
-                dimensions = [self.serv.geom2nutsdim(c, _force_list_=True) for c in content]             
+                dimensions = [self.serv.geom2dimension(c, _force_list_=True) for c in content]             
             except:
                 try:
                     if not happyType.issequence(url): 
                         url = [url,]  
-                    dimensions = [self.serv.url2nutsdim(u, _force_list_=True) for u in url]             
+                    dimensions = [self.serv.url2dimension(u, _force_list_=True) for u in url]             
                 except:
                     raise happyError('impossible to extract NUTS dimensions from input data')
 
