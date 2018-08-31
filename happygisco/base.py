@@ -454,7 +454,8 @@ class _Decorator(object):
             try:
                 assert not(coord is None and lat is None and lon is None and poly in (False,None)) 
             except AssertionError:
-                raise happyError('no input coordinate arguments passed')
+                # return self.func(*args, **kwargs)
+                raise ValueError('no input coordinate arguments passed')
             try:
                 assert coord is None or (lat is None and lon is None)
             except AssertionError:
@@ -574,7 +575,8 @@ class _Decorator(object):
             try:
                 assert not(place in ('',None) and country in ('',None) and city in ('',None)) 
             except AssertionError:
-                raise happyError('no input place arguments passed')
+                # return self.func(*args, **kwargs)
+                raise ValueError('no input place arguments passed')
             try:
                 assert place in ('',None) or address in ('',None)
             except AssertionError:
@@ -679,7 +681,8 @@ class _Decorator(object):
             try:
                 assert not(place in ('',None) and coord in ([],None))
             except:
-                raise happyError('no geographic entity parsed to define the place')
+                # return self.func(*args, **kwargs)
+                raise ValueError('no geographic entity parsed to define the place')
             if EXCLUSIVE_ARGUMENTS is True:
                 try:
                     assert place in ('',None) or coord in ([],None)
@@ -883,6 +886,7 @@ class _Decorator(object):
             elif not kwargs.get(_Decorator.KW_GEOMETRY) is None:
                 raise happyError('don''t mess up with me - duplicated geometry argument parsed')
             if geom is None:
+                # raise ValueError('not input geometry parsed')              
                 return self.func(*args, **kwargs)
             if happyType.ismapping(geom): 
                 geom = [geom,]
@@ -1073,7 +1077,10 @@ class _Decorator(object):
                 items = { # GDAL like dictionaries
                         _Decorator.parse_nuts.KW_PROPERTIES:    kwargs.pop(_Decorator.parse_nuts.KW_PROPERTIES, None),
                          _Decorator.parse_nuts.KW_GEOMETRY:     kwargs.pop(_Decorator.parse_nuts.KW_GEOMETRY, None),
+                         _Decorator.parse_nuts.KW_FEATURES:     kwargs.pop(_Decorator.parse_nuts.KW_FEATURES, None),
                          _Decorator.parse_nuts.KW_TYPE:         kwargs.pop(_Decorator.parse_nuts.KW_TYPE, None),
+                         _Decorator.parse_nuts.KW_CRS:          kwargs.pop(_Decorator.parse_nuts.KW_CRS, None),
+                         _Decorator.parse_nuts.KW_NAME:         kwargs.pop(_Decorator.parse_nuts.KW_NAME, None),
                          # GISCO-like dictionaries
                          _Decorator.parse_nuts.KW_ATTRIBUTES:   kwargs.pop(_Decorator.parse_nuts.KW_ATTRIBUTES, None),
                          _Decorator.parse_nuts.KW_FIELDNAME:    kwargs.pop(_Decorator.parse_nuts.KW_FIELDNAME, None),
@@ -1095,7 +1102,7 @@ class _Decorator(object):
             try:
                 assert not(nuts in ({},None) and all([v in ([],None) for v in items.values()]))
             except AssertionError:
-                # raise happyError('no input NUTS parsed')
+                # raise ValueError('no input NUTS parsed')
                 return self.func(*args, **kwargs)
             try:
                 assert nuts in ({},None) or all([v in ([],None) for v in items.values()])
@@ -1213,7 +1220,8 @@ class _Decorator(object):
             try:
                 assert not(filename in ('',None) and basename in ('',None))
             except AssertionError:
-                raise happyError('no input file arguments passed')
+                # raise ValueError('no input file arguments passed')
+                return self.func(*args, **kwargs)
             try:
                 assert filename in ('',None) or basename in ('',None)
             except AssertionError:
@@ -1290,8 +1298,8 @@ class _Decorator(object):
             try:
                 assert url not in ('',None,[])
             except AssertionError:
-                raise happyError('no input URL argument passed')
-                # return self.func(*args, **kwargs)
+                # raise ValueError('no input URL argument passed')
+                return self.func(*args, **kwargs)
             if not happyType.issequence(url):
                 url = [url,]
             try:

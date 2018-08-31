@@ -63,6 +63,17 @@ except ImportError:
 from happygisco import happyVerbose, happyWarning, happyError, happyType
 from happygisco import settings
 from happygisco.base import _Decorator, _Tool
+
+try:                                
+    import simplejson as json
+except ImportError:
+    happyWarning("missing SIMPLEJSON package (https://pypi.python.org/pypi/simplejson/)", ImportWarning)
+    try:                                
+        import json
+    except ImportError: 
+        happyWarning("JSON module missing in Python Standard Library", ImportWarning)
+        class json:
+            def loads(arg):  return '%s' % arg
  
 try:                            
     import multiprocessing 
@@ -1848,50 +1859,60 @@ class GDALTransform(_Tool):
     #/************************************************************************/
     # why this implementation? issue detected with GetLayer when returning it
     # as output ... 
-    def _file2data(self, fname):
-        """Iterable data loader.
-        
-        Note
-        ----
-        This method is introduced since there seems to be an (unexplained) issue
-        when combining the output of :meth:`~tools.GDALTransform.file2layer` 
-        with the :meth:`osgeo.ogr.Layer.GetFeature` method.
+    def get_dataset(self, file):
         """
-        if not happyType.issequence(fname): 
-            fname = [fname,]
-        if not all([happyType.isstring(f) for f in fname]):
-            raise happyError('wrong type for file name(s)')            
-        for file in fname:
+        """
+        if not happyType.issequence(file): 
+            file = [file,]
+        if not all([happyType.isstring(f) for f in file]):
+            raise happyError('wrong type for file name(s)')      
+        data = []
+        for f in file:
             try:
                 # assert fname not in ('', None) 
-                assert os.path.exists(file)
+                assert os.path.exists(f)
             except:
-                raise happyError('input file %s not found' % file)
+                raise happyError('input file %s not found' % f)
             try:
                 assert self.driver is not None
             except:
                 raise happyError('offline driver not available')
             try:
-                data = self.driver.Open(file, 0) # 0 means read-only
-                # assert data is not None
+                assert False
+                ds = self.driver.Open(f, 0) # 0 means read-only
+                assert ds is not None
+            except AssertionError:
+                try:
+                    ds = ogr.Open(f, 0)
+                    assert ds is not None
+                except :
+                    raise happyError('data not retrieved from file %s' % f)
             except:
-                raise happyError('file %s not open' % file)
-            else:
-                if settings.VERBOSE: print('file %s opened' % file)
-            yield data
-
+                raise happyError('file %s not open' % f)
+            data.append(ds)
+            return data
+    
     #/************************************************************************/
-    #@_Decorator.parse_file
-    def file2layer(self, fname):
-        """Load a vector file using internally defined driver and returns the 
-        corresponding vector layer.
+    def get_layer(self, **kwargs):
+        """Load a vector file, a URL or a geometry and returns the corresponding 
+        vector layer.
             
-            >>> layer = tool.file2layer(fname)
+            >>> layer = tool.get_layer(file = fname)
+            >>> layer = tool.get_layer(url = url)
+            >>> layer = tool.get_layer(geom = geom)
             
-        Arguments
-        ---------
-        fname : str
-            name of the input file; should be supported by the predefined driver.
+        Keyword arguments
+        -----------------
+        file : str
+            name of the input file to load (it should preferably be supported by the 
+            predefined driver, but that's not mandatory); incompatible with the argument 
+            :data:`url` and :data:`geom` below.
+        url : str
+            URL of online dataset to load; incompatible with the argument :data:`file` 
+            above and :data:`geom` below.
+        geom : dict
+            string representing a JSON geometry; incompatible with the arguments 
+            :data:`file` and :data:`url` above.
             
         Returns
         -------
@@ -1900,8 +1921,8 @@ class GDALTransform(_Tool):
             
         Examples
         --------
-        Let us consider the NUTS data at level 2 imported within the happyGISCO 
-        project, that is:
+        Let us consider the NUTS data at level 2 imported within the happyGISCO project
+        as a dataset file, that is:
             
             >>> import os
             >>> dirname = './data/ref-nuts-2013-01m/'
@@ -1914,7 +1935,7 @@ class GDALTransform(_Tool):
         the *shapefile* driver available in |GDAL| (note that's actually the 
         default implemented in :class:`GDALTransform` class):
             
-            >>> layer = tool.file2layer(myfile)
+            >>> layer = tool._get_layer(file = myfile)
             >>> layer.GetName()
                 'NUTS_RG_01M_2013_4326_LEVL_2'
             >>> layer.GetMetadata()
@@ -1924,143 +1945,132 @@ class GDALTransform(_Tool):
             
         See also
         --------
-        :meth:`~tools.GDALTransform.file2feat`, :meth:`~tools.GDALTransform.layer2feat`,
-        :meth:`~tools.GDALTransform.url2layer`, :meth:`osgeo.ogr.DataSource.GetLayer`.
+        :meth:`~GDALTransform.get_feature`, :meth:`osgeo.ogr.DataSource.GetLayer`,
+        :meth:`happyType.jsonstringify`.
         """
-        data = list(self._file2data(fname))
+        file, url, geom = None, None, None
+        try:
+            func = lambda **kw: kw.get(_Decorator.KW_FILE)
+            file = _Decorator.parse_file(func)(**{_Decorator.KW_FILE: kwargs.pop(_Decorator.KW_FILE, None)})
+        except:
+            raise happyError('wrong format for %s argument' % _Decorator.KW_FILE.upper()) 
+        try:
+            func = lambda **kw: kw.get(_Decorator.KW_URL)
+            url = _Decorator.parse_url(func)(**{_Decorator.KW_URL: kwargs.pop(_Decorator.KW_URL, None)})
+        except:
+            raise happyError('wrong format for %s argument' % _Decorator.KW_URL.upper()) 
+        try:
+            func = lambda **kw: kw.get(_Decorator.KW_GEOMETRY)
+            geom = _Decorator.parse_geometry(func)(**{_Decorator.KW_GEOMETRY: kwargs.pop(_Decorator.KW_GEOMETRY, None)})
+        except:
+            raise happyError('wrong format for %s argument' % _Decorator.KW_GEOMETRY.upper()) 
+        _argsTrue = [1 for arg in (file, url, geom) if arg in ('',None)]
+        try:
+            assert sum(_argsTrue) >= 2
+        except:
+            raise happyError('incompatible arguments %s, %s and %s - parse one only' % \
+                             (_Decorator.KW_FILE.upper(),_Decorator.KW_VECTOR.upper(),_Decorator.KW_URL.upper()))
+        try:
+            assert sum(_argsTrue) < 3
+        except:
+            raise happyError('at least on argument among %s, %s and %s needs to be parsed' % \
+                             (_Decorator.KW_FILE.upper(),_Decorator.KW_VECTOR.upper(),_Decorator.KW_URL.upper()))
+        # specific keyword arguments
+        vsi = kwargs.pop('vsi', True)
+        try:
+            assert vsi is None or isinstance(vsi,bool)
+        except:
+            raise happyError('wrong format for VSI parameter')
+        if not file in ('',None):
+            if not happyType.issequence(file):
+                file = [file,]
+            data = self.get_dataset(file)
+        elif not url in ('',None):
+            if not happyType.issequence(url):
+                url = [url,]
+            server, port = kwargs.pop('server', ''), kwargs.pop('port', '')
+            try:
+                assert (server in ('',None) or happyType.isstring(server))    \
+                    and (port in ('',None) or happyType.isstring(port)) 
+            except:
+                raise happyError('wrong format for PORT/SERVER parameter(s)')
+            #fmt = kwargs.pop(_Decorator.KW_FORMAT, settings.DEF_GISCO_FORMAT)
+            # specify proxy server
+            gdal.SetConfigOption('GDAL_HTTP_PROXY', server + ':' + port if server or port else '')       
+            # setup proxy authentication option for NTLM with no username or password so single sign-on works
+            gdal.SetConfigOption('GDAL_PROXY_AUTH', 'NTLM')
+            gdal.SetConfigOption('GDAL_HTTP_PROXYUSERPWD', ' : ')
+            # now fetch a HTTP datasource and do something...
+            pref = '/vsicurl/' if vsi is True else ''
+            try:         
+                data = [ogr.Open('%s%s' % (pref, u)) for u in url]
+                assert data not in ([],None)
+            except:
+                raise happyError('URL %s not open' % url)
+        else:
+            if not happyType.issequence(geom):
+                geom = [geom,]
+            if not all([happyType.istring(g) for g in geom]):
+                try:
+                    geom = [happyType.jsonstringify(g) if not happyType.istring(g) else g   \
+                                for g in geom]
+                except:
+                    raise happyError('GEOMETRY argument not recognised')
+            basename = kwargs.pop('base', None)
+            try:
+                assert basename is None or happyType.isstring(basename)
+            except:
+                raise happyError('wrong format for BASE parameter')
+            else:
+                if basename is None:
+                    basename = 'out'
+            try:
+                fmt = kwargs.pop(_Decorator.KW_FORMAT, 'geojson')
+                assert fmt in happyType.seqflatten([(k,v['driver']) for k,v in settings.GISCO2GDAL_DRIVERS.items()])
+            except:
+                raise happyError('wrong format for %s parameter' % _Decorator.KW_FORMAT.upper())
+            else:
+                if fmt in settings.GISCO2GDAL_DRIVERS.keys():
+                    fmt = settings.GISCO2GDAL_DRIVERS[fmt]['driver']
+                    ext = settings.GISCO_FORMATS[fmt]
+                else:
+                    ext = settings.GISCO_FORMATS[[k for k,v in settings.GISCO2GDAL_DRIVERS.items() if v['driver']==fmt][0]]
+                kwargs.update({_Decorator.KW_FORMAT: fmt})
+                options = [v['options'] for k,v in settings.GISCO2GDAL_DRIVERS.items() if v['driver']==fmt][0] # unique
+                if options is not None:
+                    kwargs.update({'layerCreationOptions': options})
+            pref = '/vsimem/' if vsi is True else ''  
+            try:
+                data = [gdal.VectorTranslate('%s%s_%s.%s' % (pref, basename, i, ext), v, **kwargs)     \
+                      for i, v in enumerate(geom)]
+                assert not all([d is None for d in data])
+            except:
+                raise happyError('impossible to retrieve dataset layer from input vector')
+            else:
+                data = [d for d in data if d is not None]
+        #try:
+        #    layer = [d.GetLayer('OGRGeoJSON') for d in data]
+        #    assert layer is not None
+        #except:
         try:
             layer = [d.GetLayer() for d in data]
-        except:
+        except: 
             raise happyError('could not get vector layer')
         return layer if layer in ([],None) or len(layer)>1 else layer[0]
-    
+                
     #/************************************************************************/
-    #@_Decorator.parse_url
-    def url2layer(self, url, **kwargs):
-        """Load an online URL and returns the corresponding vector layer.
+    @_Decorator._parse_class(ogr.Layer, _Decorator.KW_LAYER)
+    def get_feature(self, **kwargs):
+        """Load a vector file, a URL or a layer and returns the corresponding list 
+        of features.
             
-            >>> layer = tool.url2layer(url)
+            >>> feat = tool.get_feature(layer)
             
-        Arguments
-        ---------
-        url : str
-            URL of online dataset.
-            
-        Returns
-        -------
-        layer : :class:`osgeo.ogr.Layer`
-            output single vector layer loaded from the online :data:`URL`.
-            
-        See also
-        --------
-        :meth:`~tools.GDALTransform.file2layer`, :meth:`osgeo.ogr.Open`,
-        :meth:`osgeo.ogr.DataSource.GetLayer`.
-        """
-        server, port = kwargs.pop('server', ''), kwargs.pop('port', '')
-        try:
-            assert (server is None or happyType.isstring(server))    \
-                and (port is None or happyType.isstring(port)) 
-        except:
-            raise happyError('wrong format for PORT/SERVER parameter(s)')
-        vsi = kwargs.pop('vsi', True)
-        try:
-            assert isinstance(vsi,bool)
-        except:
-            raise happyError('wrong format for VSI parameter')
-        #fmt = kwargs.pop(_Decorator.KW_FORMAT, settings.DEF_GISCO_FORMAT)
-        # specify proxy server
-        gdal.SetConfigOption('GDAL_HTTP_PROXY', server + ':' + port if server or port else '')       
-        # setup proxy authentication option for NTLM with no username or password so single sign-on works
-        gdal.SetConfigOption('GDAL_PROXY_AUTH', 'NTLM')
-        gdal.SetConfigOption('GDAL_HTTP_PROXYUSERPWD', ' : ')
-        # now fetch a HTTP datasource and do something...
-        pref = '/vsicurl/' if vsi is True else ''
-        if not happyType.issequence(url):
-            url = [url,]
-        try:         
-            ds = [ogr.Open('%s%s' % (pref, u)) for u in url]
-            assert ds is not None
-        except:
-            raise happyError('URL not open')
-        try:
-            layer = [d.GetLayer('OGRGeoJSON') for d in ds]
-            assert layer is not None
-        except:
-            try:
-                layer = [d.GetLayer() for d in ds]
-            except: 
-                raise happyError('could not get vector layer')
-        return layer if layer in ([],None) or len(layer)>1 else layer[0]
-    
-    #/************************************************************************/
-    def vector2layer(self, vector, **kwargs):
-        vsi = kwargs.pop('vsi', True)
-        try:
-            assert isinstance(vsi,bool)
-        except:
-            raise happyError('wrong format for VSI parameter')
-        basename = kwargs.pop('base', None)
-        try:
-            assert basename is None or happyType.isstring(basename)
-        except:
-            raise happyError('wrong format for BASE parameter')
-        else:
-            if basename is None:
-                basename = 'out'
-        try:
-            fmt = kwargs.pop(_Decorator.KW_FORMAT, 'geojson')
-            assert fmt in happyType.seqflatten([(k,v['driver']) for k,v in settings.GISCO2GDAL_DRIVERS.items()])
-        except:
-            raise happyError('wrong format for %s parameter' % _Decorator.KW_FORMAT.upper())
-        else:
-            if fmt in settings.GISCO2GDAL_DRIVERS.keys():
-                fmt = settings.GISCO2GDAL_DRIVERS[fmt]['driver']
-                ext = settings.GISCO_FORMATS[fmt]
-            else:
-                ext = settings.GISCO_FORMATS[[k for k,v in settings.GISCO2GDAL_DRIVERS.items() if v['driver']==fmt][0]]
-            kwargs.update({_Decorator.KW_FORMAT: fmt})
-            options = [v['options'] for k,v in settings.GISCO2GDAL_DRIVERS.items() if v['driver']==fmt][0] # unique
-            if options is not None:
-                kwargs.update({'layerCreationOptions': options})
-        pref = '/vsimem/' if vsi is True else ''  
-        try:
-            ds = [gdal.VectorTranslate('%s%s_%s.%s' % (pref, basename, i, ext), v, **kwargs)     \
-                  for i, v in enumerate(vector)]
-            assert not all([d is None for d in ds])
-        except:
-            raise happyError('impossible to retrieve dataset layer from input vector')
-        else:
-            ds = [d for d in ds if d is not None]
-        #def read_file(fname):
-        #    # https://www.gdal.org/gdal_virtual_file_systems.html#gdal_virtual_file_systems_intro
-        #    vsifile = gdal.VSIFOpenL(fname,'r')
-        #    gdal.VSIFSeekL(vsifile, 0, 2) # seek to end
-        #    vsileng = gdal.VSIFTellL(vsifile)
-        #    gdal.VSIFSeekL(vsifile, 0, 0) # seek to beginning
-        #    data = gdal.VSIFReadL(1, vsileng, vsifile)
-        #    # gdal.VSIFCloseL(vsifile)
-        #    return data
-        ## see https://gis.stackexchange.com/questions/241410/is-it-possible-to-wrap-date-line-with-gdal-vectortranslate/242561#242561
-        #got = [read_file('%s%s_%s.%s' % (pref, basename, i, ext)) for i in range(len(vector))]
-        #[gdal.Unlink('%s%s_%s.%s' % (pref, basename, i, ext)) for i in range(len(vector))]
-        #return got
-        try:
-            layer = [d.GetLayer() for d in ds]
-        except:
-            raise happyError('could not get vegdal.UseExceptions()ctor layer') 
-        else:
-            return layer
-        
-    #/************************************************************************/
-    def layer2feat(self, layer):
-        """Load a vector file using internally defined driver and returns the 
-        corresponding list of features.
-            
-            >>> feat = tool.layer2feat(layer)
-            
-        Arguments
-        ---------
-        feat : :class:`osgeo.ogr.Layer`,list[:class:`osgeo.ogr.Layer`]
+        Keyword arguments
+        -----------------
+        url, file :
+            see method :meth:`~GDALTransform.get_layer`.
+        layer : :class:`osgeo.ogr.Layer`,list[:class:`osgeo.ogr.Layer`]
             input ingle (or multiple) vector layer(s).
             
         Returns
@@ -2074,15 +2084,15 @@ class GDALTransform(_Tool):
         project, that is:
             
             >>> myfile = './data/ref-nuts-2013-01m/NUTS_RG_01M_2013_4326_LEVL_2.shp'
-            >>> layer = tool.file2layer(myfile)
+            >>> layer = tool.get_layer(file = myfile)
             >>> layer.GetDescription()
                 'NUTS_RG_01M_2013_4326_LEVL_2'
             
         We can then retrieve all the vector features represented in the vector 
         layer:
             
-            >>> vector = tool.layer2feat(layer)
-            >>> vector
+            >>> feature = tool.get_feature(layer)
+            >>> feature
                 [<osgeo.ogr.Feature; proxy of <Swig Object of type 'OGRFeatureShadow *' at 0x115155ae0> >,
                  <osgeo.ogr.Feature; proxy of <Swig Object of type 'OGRFeatureShadow *' at 0x115155b10> >,
                  <osgeo.ogr.Feature; proxy of <Swig Object of type 'OGRFeatureShadow *' at 0x115155a20> >,
@@ -2093,9 +2103,25 @@ class GDALTransform(_Tool):
             
         See also
         --------
-        :meth:`~tools.GDALTransform.file2feat`, :meth:`~tools.GDALTransform.file2layer`,
-        :meth:`osgeo.ogr.Layer.GetFeature`.
+        :meth:`~GDALTransform.get_layer`, :meth:`osgeo.ogr.Layer.GetFeature`.
         """
+        layer = kwargs.pop(_Decorator.KW_LAYER, None)
+        try:
+            assert layer is None or isinstance(layer,ogr.Layer) or          \
+                (happyType.issequence(layer) and all([isinstance(l,ogr.Layer) for l in layer]))
+        except:
+            raise happyError('wrong fomat/value for %s argument' % _Decorator.KW_LAYER.upper())
+        if layer is None:
+            # layer = self.get_layer(**kwargs) if everything was going well...
+            if _Decorator.KW_FILE in kwargs:
+                data = self.get_dataset(kwargs.get(_Decorator.KW_FILE))
+                layer = [d.GetLayer() for d in data]
+            else:
+                layer = self.get_layer(**kwargs)
+        try:         
+            assert layer not in ([],None)
+        except:
+            raise happyError('could not get vector layer') 
         if not happyType.issequence(layer): 
             layer = [layer,]
         if not all([isinstance(l, ogr.Layer) for l in layer]):
@@ -2107,67 +2133,74 @@ class GDALTransform(_Tool):
         return feat if feat in ([],None) or len(feat)>1 else feat[0]
 
     #/************************************************************************/
-    #@_Decorator.parse_file
-    def file2feat(self, fname):
-        """Load a vector file using the internally defined driver and returns the 
-        corresponding list of features.
-            
-            >>> feat = tool.file2feat(fname)
-            
-        Arguments
-        ---------
-        fname : str
-            name of the input file; should be supported by the predefined driver.
-            
-        Returns
-        -------
-        feat : :class:`osgeo.ogr.Feature`,list[:class:`osgeo.ogr.Feature`]
-            output (list of) vector feature(s) stored in the input :data:`file`.
-            
-        See also
-        --------
-        :meth:`~tools.GDALTransform.file2layer`, :meth:`~tools.GDALTransform.layer2feat`, 
-        :meth:`~tools.GDALTransform.url2feat`, :meth:`osgeo.ogr.DataSource.GetLayer`.
+    def get_projection(self, **kwargs):
         """
-        # method 1
-        # return self.layer2feat(self.file2layer(fname))
-        # method 2
-        # try:
-        #      layer = [d.GetLayer() for d in self._file2data(fname)]
-        # except:
-        #     raise happyError('could not get vector layer')
-        # both crash... 
-        data = list(self._file2data(fname))
+        
+        Examples
+        --------
+        
+            >>> myfile = './data/ref-nuts-2013-01m/NUTS_RG_01M_2013_4326_LEVL_2.shp'
+            >>> layer = ogr.Open(myfile).GetLayer()
+        """
+        feature = kwargs.pop(_Decorator.KW_FEATURE, None)
+        layer = kwargs.pop(_Decorator.KW_LAYER, None)
         try:
-            layer = [d.GetLayer() for d in data]
+            assert layer is None or isinstance(layer,ogr.Layer)
         except:
-            raise happyError('could not get vector layer') 
-        return self.layer2feat(layer)
-
-    #/************************************************************************/
-    #@_Decorator.parse_url
-    def url2feat(self, url, **kwargs):
-        """Load an online URL and and returns the corresponding list of features.
-            
-            >>> feat = tool.url2feat(url, **kwargs)
-            
-        Arguments
-        ---------
-        url : str
-            URL of online dataset.
-            
-        Returns
-        -------
-        feat : :class:`osgeo.ogr.Feature`,list[:class:`osgeo.ogr.Feature`]
-            output (list of) vector feature(s) loaded from the online :data:`URL`.            
-            
-        See also
-        --------
-        :meth:`~tools.GDALTransform.url2layer`, :meth:`~tools.GDALTransform.layer2feat`, 
-        :meth:`~tools.GDALTransform.file2feat`.
-        """
-        return self.layer2feat(self.url2layer(url, **kwargs))
-
+            raise happyError('wrong fomat/value for %s argument' % _Decorator.KW_LAYER.upper())
+        try:
+            assert feature is None or isinstance(feature,ogr.Feature)
+        except:
+            raise happyError('wrong fomat/value for %s argument' % _Decorator.KW_FEATURE.upper())
+        try:
+            func = lambda **kw: kw.get(_Decorator.KW_GEOMETRY)
+            geom = _Decorator.parse_geometry(func)(**{_Decorator.KW_GEOMETRY: kwargs.pop(_Decorator.KW_GEOMETRY, None)})
+        except:
+            raise happyError('wrong format for %s argument' % _Decorator.KW_GEOMETRY.upper()) 
+        _argsTrue = [1 for arg in (layer, feature, geom) if arg in ('',None)]
+        try:
+            assert sum(_argsTrue) >= 2
+        except:
+            raise happyError('incompatible arguments %s, %s and %s - parse one only' % \
+                             (_Decorator.KW_LAYER.upper(),_Decorator.KW_FEATURE.upper(),_Decorator.KW_GEOMETRY.upper()))
+        try:
+            assert sum(_argsTrue) < 3
+        except:
+            raise happyError('at least on argument among %s, %s and %s needs to be parsed' % \
+                             (_Decorator.KW_LAYER.upper(),_Decorator.KW_FEATURE.upper(),_Decorator.KW_GEOMETRY.upper()))
+        if feature is not None or layer is not None:
+            if feature is not None and not happyType.issequence(feature):
+                feature = [feature,]
+            elif not happyType.issequence(layer):
+                layer = [layer,]
+            try:
+                if feature is not None:
+                    sref = [f.GetGeometryRef().GetSpatialReference() for f in feature]
+                else:   
+                    sref = [l.GetSpatialRef() for l in layer]
+            except:
+                raise happyError('incompatible arguments %s, %s and %s - parse one only')
+            else:
+                proj = [sr.ExportToProj4() for sr in sref]
+            proj = [p.split('+datum=')[-1].split(' ')[0] if p.find('datum')>=0
+                    else p.split('+proj=')[-1].split(' ')[0] for p in proj]
+            try:
+                proj = [settings.GISCO_PROJECTIONS[p] for p in proj]
+            except:
+                raise happyError('projection not supported by GISCO services')                
+        elif geom is not None:
+            if not happyType.issequence(geom):
+                geom = [geom,]
+            if not all([happyType.ismapping(g) for g in geom]):
+                try:
+                    geom = [json.loads(g) if not happyType.ismapping(g) else g   \
+                                for g in geom]
+                except:
+                    raise happyError('GEOMETRY argument not recognised')
+            proj = [g[_Decorator.parse_nuts.KW_CRS][_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_NAME].split(':EPSG::')[-1]
+                        for g in geom]
+        return proj if proj in ([],None) or len(proj)>1 else proj[0]
+    
     #/************************************************************************/
     @_Decorator.parse_coordinate
     def coord2geom(self, coord, **kwargs):
@@ -2394,7 +2427,7 @@ class GDALTransform(_Tool):
                 raise happyError('input vector data file not found')
             try:
                 # layer = self.file2layer(**kwargs)
-                data = self._file2data(fname)
+                data = self.get_dataset(fname)
             except:
                 raise happyError('could not load vector data')
         try:

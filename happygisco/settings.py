@@ -214,12 +214,16 @@ DEF_GISCO_YEAR      = 2013
 """
 GISCO_PROJECTIONS   = {'WGS84':             4326,
                        'EPSG4326':          4326, 
+                       # 'longlat':           4326,
                        'ETRS89':            4258,
                        'EPSG4258':          4258, 
+                       'longlat':           4258,
                        'Mercator':          3857,
+                       'merc':              3857,
                        'EPSG3857':          3857, 
                        'LAEA':              3035,
-                       'EPSG3035':          3035
+                       'EPSG3035':          3035,
+                       'laea':              3035
                        }
 """Projections and EPSG codes currently supported by |GISCO| services. 
 See http://spatialreference.org for the list of all EPSG codes and corresponding 
