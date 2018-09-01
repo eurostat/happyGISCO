@@ -838,6 +838,17 @@ class NUTS(_Feature):
             if self.__unit is None:
                 return
                     
+        
+        
+        for key in settings.GISCO_DATA_DIMENSIONS.keys(): 
+            attr = kwargs.pop(key, defkw.get(key))
+            try:
+                assert attr not in (None,[],{},'')
+            except: pass
+            else:
+                setattr(self, key, attr) # may raise an Error
+            
+    
     #/************************************************************************/
     def __getattr__(self, attr_name): 
         # ignore-doc
@@ -862,6 +873,10 @@ class NUTS(_Feature):
     @_Decorator.parse_vector
     @_Decorator.parse_level
     def _get_dimensions(self, **kwargs): 
+        # let us define the default dimensions (those in settings.GISCO_DATA_DIMENSIONS)
+        # e.g., [YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT']
+        defkw = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)(lambda **kw: kw)()
+        [defkw.pop(k,None) for k in ('FORMAT','SOURCE')]
         content = kwargs.pop(_Decorator.KW_CONTENT, None)
         geom = kwargs.pop(_Decorator.KW_GEOMETRY, None)
         url = kwargs.pop(_Decorator.KW_URL, None)
@@ -888,41 +903,46 @@ class NUTS(_Feature):
                     content = self._content
             else:
                 geom = self.geom
-        dimensions = {}
-        [dimensions.update({k:v for k,v in kwargs.items() if k in settings.GISCO_DATA_DIMENSIONS})]
-        #[dimensions.pop(k) for k in ('FORMAT',)]
-        try:
+        if geom in ([],{},None) and content in ([],'',None) and url in ([],'',None):
+            dimensions = {}
+            for kw in settings.GISCO_DATA_DIMENSIONS:
+                if kw not in defkw.keys(): # kw in ('FORMAT','SOURCE'):      
+                    continue
+                else:                   
+                    key = getattr(_Decorator, 'KW_' + kw)
+                try:
+                    defval = getattr(self, key)
+                except:
+                    defval = None
+                dimensions.update({key: kwargs.get(key) or defval or defkw[key]})
+            return dimensions
+        else:
+            dimensions = []
+        if geom not in ([],None):
+            if not happyType.issequence(geom): 
+                geom = [geom,]  
             try:
-                if not happyType.issequence(geom): 
-                    geom = [geom,]  
                 dimensions = [self.serv.geom2dimension(g, _force_list_=True) for g in geom]             
             except:
-                raise happyError('impossible to extract NUTS dimensions from input data')
-        except:
+                raise happyError('impossible to extract NUTS dimensions from input geometry')
+        elif content not in ([],None):
+            if not happyType.issequence(content): 
+                content = [content,]  
             try:
-                if not happyType.issequence(content): 
-                    content = [content,]  
                 dimensions = [self.serv.geom2dimension(c, _force_list_=True) for c in content]             
             except:
-                try:
-                    if not happyType.issequence(url): 
-                        url = [url,]  
-                    dimensions = [self.serv.url2dimension(u, _force_list_=True) for u in url]             
-                except:
-                    raise happyError('impossible to extract NUTS dimensions from input data')
-
-        # let us define the default dimensions (those in settings.GISCO_DATA_DIMENSIONS)
-        # e.g., [YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT']
-        defdim = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)(lambda **kw: kw)()
-
-        
-        for key in settings.GISCO_DATA_DIMENSIONS.keys(): 
-            attr = kwargs.pop(key, defkw.get(key))
+                raise happyError('impossible to extract NUTS dimensions from input content')
+        elif url not in ([],'',None):
+            if not happyType.issequence(url): 
+                url = [url,]  
             try:
-                assert attr not in (None,[],{},'')
-            except: pass
-            else:
-                setattr(self, key, attr) # may raise an Error
+                dimensions = [self.serv.url2dimension(u, _force_list_=True) for u in url]             
+            except:
+                raise happyError('impossible to extract NUTS dimensions from input URL')
+        [d.pop(k,None) for k in ('FORMAT',) for d in dimensions]
+        [d.update({kw: d.get(kw) or defkw[kw]}) for kw in defkw.keys() for d in dimensions]
+        # dimensions = _NestedDict([d.items() for d in dimensions])
+        return dimensions if len(dimensions)>1 else dimensions[0]
 
     #/************************************************************************/    
     def _get_unit(self, **kwargs): 
@@ -963,19 +983,8 @@ class NUTS(_Feature):
             else:
                 unit = self.unit
         source = source or unit
-        defkw = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)(lambda **kw: kw)()
-        for kw in settings.GISCO_DATA_DIMENSIONS:
-            if kw == 'SOURCE':      
-                continue
-            else:                   
-                key = getattr(_Decorator, 'KW_' + kw)
-            try:
-                defval = getattr(self, key)
-            except:
-                pass
-            else:
-                kwargs.update({key: kwargs.pop(key, defval or defkw[key])})
         try:
+            kwargs.update(self._get_dimensions(**kwargs))
             url = self.service.url_nuts(source, **kwargs)            
         except:
             raise happyError('impossible to define URL from input data') 
@@ -1024,8 +1033,8 @@ class NUTS(_Feature):
     @_Decorator.parse_file
     @_Decorator.parse_url
     def _get_layer(self, **kwargs):
-        file = kwargs.pop(_Decorator.KW_FILE, None)
-        url = kwargs.pop(_Decorator.KW_URL, None)
+        file, url =                         \
+            kwargs.get(_Decorator.KW_FILE), kwargs.get(_Decorator.KW_URL)
         try:
             assert file in ('',None) or url in ('',None)
         except:
@@ -1045,16 +1054,13 @@ class NUTS(_Feature):
                         raise happyError('missing arguments %s and  %s - parse one at least' % \
                                          (_Decorator.KW_FILE.upper(),_Decorator.KW_URL.upper())) 
                 else:
-                    url = self.url                    
+                    kwargs.update({_Decorator.KW_URL: self.url})
             else:
-                file = self.file
+                kwargs.update({_Decorator.KW_FILE: self.file})
         try:
-            layer = self.transform.url2layer(url)            
+            layer = self.transform.get_layer(**kwargs)           
         except:
-            try:
-                layer = self.transform.file2layer(file)    
-            except:
-                raise happyError('impossible to extract layer from input data') 
+            raise happyError('impossible to extract layer from input data')
         return layer
         
     #/************************************************************************/  
@@ -1062,9 +1068,8 @@ class NUTS(_Feature):
     @_Decorator.parse_url
     @_Decorator._parse_class(ogr.Layer, _Decorator.KW_LAYER)
     def _get_feature(self, **kwargs):
-        file = kwargs.pop(_Decorator.KW_FILE, None)
-        layer = kwargs.pop(_Decorator.KW_LAYER, None)
-        url = kwargs.pop(_Decorator.KW_URL, None)
+        file, layer, url =                  \
+            kwargs.get(_Decorator.KW_FILE), kwargs.get(_Decorator.KW_LAYER), kwargs.get(_Decorator.KW_URL)
         _argsTrue = [1 for arg in (file, url, layer) if arg in ('',None)]
         try:
             assert sum(_argsTrue) >= 2
@@ -1088,27 +1093,15 @@ class NUTS(_Feature):
                             raise happyError('missing arguments %s, %s and %s - parse one at least' % \
                                              (_Decorator.KW_FILE.upper(),_Decorator.KW_LAYER.upper(),_Decorator.KW_URL.upper())) 
                     else:
-                        url = self.url
+                        kwargs.update({_Decorator.KW_URL: self.url})
                 else:
-                    file = self.file
+                    kwargs.update({_Decorator.KW_FILE: self.file})
             else:
-                layer = self.layer
+                kwargs.update({_Decorator.KW_LAYER: self.layer})
         try:
-            if not happyType.issequence(url): 
-                url = [url,]                   
-            feature = self.transform.url2feat(url)            
+            feature = self.transform.get_feature(**kwargs)           
         except:
-            try:
-                if not happyType.issequence(layer): 
-                    layer = [layer,]                   
-                feature = self.transform.layer2feat(layer)
-            except:
-                try:
-                    if not happyType.issequence(feature): 
-                        feature = [feature,]                   
-                    feature = self.transform.file2feat(file)
-                except:
-                    raise happyError('impossible to extract vector features from input data')
+            raise happyError('impossible to extract vector features from input data')
         return feature
 
     #/************************************************************************/    
@@ -1116,8 +1109,8 @@ class NUTS(_Feature):
     @_Decorator.parse_url
     @_Decorator._parse_class(ogr.Feature, _Decorator.KW_FEATURE)
     def _get_geometry(self, **kwargs):
-        feature = kwargs.pop(_Decorator.KW_FEATURE, None)
-        url = kwargs.pop(_Decorator.KW_URL, None)
+        feature, url =                      \
+            kwargs.get(_Decorator.KW_FEATURE), kwargs.get(_Decorator.KW_URL)
         try:
             assert feature is None or url in ('',None)
         except:
@@ -1137,23 +1130,13 @@ class NUTS(_Feature):
                         raise happyError('incompatible arguments %s and %s - parse one at least' % \
                                          (_Decorator.KW_FEATURE.upper(),_Decorator.KW_URL.upper()))
                 else:
-                    url = self.url
+                    kwargs.update({_Decorator.KW_URL: self.url})
             else:
-                feature = self.feature
+                kwargs.update({_Decorator.KW_FEATURE: self.feature})
         try:
-            if not happyType.issequence(feature): 
-                feature = [feature,]
-            geom = [json.loads(v.ExportToJson()) for v in feature]
+            geom = self.transform.get_geometry(**kwargs)           
         except:
-            if not happyType.issequence(url): 
-                url = [url,]                   
-            try:
-                geom = [self.read_url(u, fmt='JSON') for u in url]
-            except: 
-                try:
-                    geom = [self.read_url(u, fmt='bytes') for u in url]
-                except: 
-                    raise happyError('impossible to extract vector geometries from data') 
+            raise happyError('impossible to extract vector geometries from input data')
         return geom
                 
     #/************************************************************************/
