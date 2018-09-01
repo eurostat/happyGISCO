@@ -1809,14 +1809,16 @@ except (NameError,AssertionError):
     class _Feature(object):     
         pass
 else:   
+    # why this?
+    # check https://lists.osgeo.org/pipermail/gdal-dev/2010-September/026027.html and
+    # https://trac.osgeo.org/gdal/wiki/PythonGotchas#Pythoncrashesifyouuseanobjectafterdeletinganobjectithasarelationshipwith
     class _Layer(ogr.Layer):
-        # see https://trac.osgeo.org/gdal/wiki/PythonGotchas#Pythoncrashesifyouuseanobjectafterdeletinganobjectithasarelationshipwith
-        def __init__(self, data):
+        def __init__(self, data, keep_reference=True):
             self.__layer = data.GetLayer()
-            self.__data_reference = data
+            self.__data_reference = data if keep_reference else None
             # self.please_keep_alive_object_after_equal_sign = data
         def __getattribute__(self, attr): 
-            if attr in ('__init__', '__getattribute__'): 
+            if attr in ('__init__', '__getattribute__'): # '__getattr__'
                 return object.__getattribute__(self, attr)
             try:
                 return getattr(self.__layer, attr)
@@ -1825,16 +1827,20 @@ else:
                     return object.__getattribute__(self, attr)
                 except:
                     pass
+        #def __getattr__(self,attr):
+        #    return getattr(self.__layer, attr)
         @property
         def layer(self):
             return self.__layer
-        #def __getattr__(self,attr):
-        #    return getattr(self.__layer, attr)
-    class _Feature(ogr.Feature):
-        # see https://trac.osgeo.org/gdal/wiki/PythonGotchas#Pythoncrashesifyouuseanobjectafterdeletinganobjectithasarelationshipwith
-        def __init__(self, layer):
-            self.__feature = [layer.GetFeature(i) for i in range(0,layer.GetFeatureCount())]
-            self.__layer_reference = layer
+    class _Feature(ogr.Feature): 
+        def __init__(self, layer, i=0, keep_reference=False):
+            self.__feature = layer.GetFeature(i)
+            self.__layer_reference = layer if keep_reference else None
+        def __setattr__(self, key, value): # some issue with ogr.Feature inheritance...
+            if key in ( '__feature',  '__layer_reference'):
+                self.__dict__[key] = value
+            else:
+                super(ogr.Feature,self).__setattr__(key, value)
         def __getattribute__(self, attr): 
             if attr in ('__init__', '__getattribute__'): 
                 return object.__getattribute__(self, attr)
@@ -1845,6 +1851,9 @@ else:
                     return object.__getattribute__(self, attr)
                 except:
                     pass
+        @property
+        def feature(self):
+            return self.__feature
  
 
 #%%
@@ -1939,6 +1948,10 @@ class GDALTransform(_Tool):
         -------
         data : :obj:`osgeo.ogr.DataSource`
             output vector dataset.
+            
+        Examples
+        --------
+        
         """
         file, url, geom = None, None, None
         data = []
@@ -2210,12 +2223,50 @@ class GDALTransform(_Tool):
         else:
             if not happyType.issequence(layer): 
                 layer = [layer,]
-        try:
-            feat = [l.layer.GetFeature(i) for l in layer for i in range(0,l.GetFeatureCount())]
-            # feat = [_Feature(l.layer) for l in layer]
+        try: 
+            # feat = [l.layer.GetFeature(i) for l in layer for i in range(l.GetFeatureCount())]
+            feat = [_Feature(l.layer,i) for l in layer for i in range(l.GetFeatureCount())]
         except:
             raise happyError('could not get features')
         return feat if feat in ([],None) or len(feat)>1 else feat[0]
+
+    #/************************************************************************/
+    def get_geometry(self, **kwargs):
+        """
+        """
+        feature = kwargs.pop(_Decorator.KW_FEATURE, None)
+        try:
+            assert feature is None or isinstance(feature,ogr.Feature)
+        except:
+            raise happyError('wrong fomat/value for %s argument' % _Decorator.KW_FEATURE.upper())
+        else:
+            if feature is not None and not happyType.issequence(feature): 
+                feature = [feature,]
+        url = kwargs.pop(_Decorator.KW_URL, None)
+        try:
+            func = lambda **kw: kw.get(_Decorator.KW_URL)
+            url = _Decorator.parse_url(func)(**{_Decorator.KW_URL: kwargs.pop(_Decorator.KW_URL, None)})
+        except:
+            raise happyError('wrong format for %s argument' % _Decorator.KW_URL.upper()) 
+        else:
+            if url is not None and not happyType.issequence(url):
+                url = [url,]
+        if url not in ([],None):
+            try:
+                geom = [self.read_url(u, fmt='JSON') for u in url]
+            except: 
+                try:
+                    geom = [self.read_url(u, fmt='bytes') for u in url]
+                except: 
+                    raise happyError('impossible to extract vector geometries from data') 
+        else:
+            if feature is None:
+                feature = self.get_feature(**kwargs)
+            try:
+                geom = [json.loads(v.ExportToJson()) for v in feature]
+            except: 
+                raise happyError('impossible to extract vector geometries from data') 
+        return geom
 
     #/************************************************************************/
     def get_projection(self, **kwargs):
@@ -2227,21 +2278,30 @@ class GDALTransform(_Tool):
             >>> myfile = './data/ref-nuts-2013-01m/NUTS_RG_01M_2013_4326_LEVL_2.shp'
             >>> layer = ogr.Open(myfile).GetLayer()
         """
-        feature = kwargs.pop(_Decorator.KW_FEATURE, None)
         layer = kwargs.pop(_Decorator.KW_LAYER, None)
         try:
             assert layer is None or isinstance(layer,ogr.Layer)
         except:
             raise happyError('wrong fomat/value for %s argument' % _Decorator.KW_LAYER.upper())
+        else:
+            if layer is not None and not happyType.issequence(layer):
+                layer = [layer,]
+        feature = kwargs.pop(_Decorator.KW_FEATURE, None)
         try:
             assert feature is None or isinstance(feature,ogr.Feature)
         except:
             raise happyError('wrong fomat/value for %s argument' % _Decorator.KW_FEATURE.upper())
+        else:
+            if feature is not None and not happyType.issequence(feature):
+                feature = [feature,]
         try:
             func = lambda **kw: kw.get(_Decorator.KW_GEOMETRY)
             geom = _Decorator.parse_geometry(func)(**{_Decorator.KW_GEOMETRY: kwargs.pop(_Decorator.KW_GEOMETRY, None)})
         except:
             raise happyError('wrong format for %s argument' % _Decorator.KW_GEOMETRY.upper()) 
+        else:
+            if geom is not None and not happyType.issequence(geom):
+                geom = [geom,]
         _argsTrue = [1 for arg in (layer, feature, geom) if arg in ('',None)]
         try:
             assert sum(_argsTrue) >= 2
@@ -2254,10 +2314,6 @@ class GDALTransform(_Tool):
             raise happyError('at least on argument among %s, %s and %s needs to be parsed' % \
                              (_Decorator.KW_LAYER.upper(),_Decorator.KW_FEATURE.upper(),_Decorator.KW_GEOMETRY.upper()))
         if feature is not None or layer is not None:
-            if feature is not None and not happyType.issequence(feature):
-                feature = [feature,]
-            elif not happyType.issequence(layer):
-                layer = [layer,]
             try:
                 if feature is not None:
                     sref = [f.GetGeometryRef().GetSpatialReference() for f in feature]
@@ -2274,8 +2330,6 @@ class GDALTransform(_Tool):
             except:
                 raise happyError('projection not supported by GISCO services')                
         elif geom is not None:
-            if not happyType.issequence(geom):
-                geom = [geom,]
             if not all([happyType.ismapping(g) for g in geom]):
                 try:
                     geom = [json.loads(g) if not happyType.ismapping(g) else g   \
