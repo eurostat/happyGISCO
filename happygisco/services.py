@@ -3534,6 +3534,7 @@ class GISCOService(OSMService):
 # Class emulating :mod:`geopy` API.
 # Available when module :mod:`geopy` is installed.
 #/****************************************************************************/
+
 try:    
     assert API_SERVICE and geopy
 except (NameError,AssertionError): 
