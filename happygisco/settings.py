@@ -465,7 +465,18 @@ for discussions on the topic. For the determination of the actual geographical
 coordinates (50°02′N 10°21′E), see also 
 `this page <https://tools.wmflabs.org/geohack/geohack.php?pagename=Gädheim&params=50_02_N_10_21_E_type:city(1272)_region:DE-BY>`_.
 """
-
+EU_AGGREGATES       = { 'EU28':             ['BE', 'BG', 'CZ', 'DK', 'DE', 'EE', 'IE', 'EL', 'ES', 'FR', 
+                                             'HR', 'IT', 'CY', 'LV', 'LT', 'LU', 'HU', 'MT', 'NL', 'AT', 
+                                             'PL', 'PT', 'RO', 'SI', 'SK', 'FI', 'SE', 'UK'],
+                        'EU27':             ['BE', 'BG', 'CZ', 'DK', 'DE', 'EE', 'IE', 'EL', 'ES', 'FR', 
+                                             'HR', 'IT', 'CY', 'LV', 'LT', 'LU', 'HU', 'MT', 'NL', 'AT', 
+                                             'PL', 'PT', 'RO', 'SI', 'SK', 'FI', 'SE'],
+                        'EFTA':             ['IS', 'LI', 'NO', 'CH'],
+                        'CACO':             ['ME', 'MK', 'AL', 'RS', 'TR']
+                        }
+"""ISO-codes of countries (Member States) in the EU and other euro area aggregates;
+see `this page <https://ec.europa.eu/eurostat/statistics-explained/index.php/Tutorial:Country_codes_and_protocol_order>`_.
+"""
 
 POLYLINE            = False
 """
