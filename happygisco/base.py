@@ -71,7 +71,7 @@ import os, sys, io
 import itertools, functools, collections
 
 import time
-import math, hashlib
+import hashlib
 import copy, zipfile
 #import abc
 
@@ -173,7 +173,7 @@ class _Decorator(object):
     
     KW_CODER        = 'coder'
     
-    KW_PROJECTION   = 'proj' 
+    KW_PROJECTION   = 'proj'  # 'projection'
     KW_LAT          = 'lat'
     KW_LON          = 'Lon' 
     KW_COORD        = 'coord'
