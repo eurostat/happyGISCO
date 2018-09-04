@@ -4,7 +4,7 @@
 .. automodule:: base
     :members:
     :inherited-members:
-    :exclude-members: _Decorator, _Service, _Feature, _Tool
+    :exclude-members: _Decorator, _Service, _Feature, _Tool, _NestedDict
 
 .. autoclass:: base._Tool
    :members:
@@ -16,4 +16,7 @@
    :members:
 
 .. autoclass:: base._Decorator
+   :members:
+
+.. autoclass:: base._NestedDict
    :members:
