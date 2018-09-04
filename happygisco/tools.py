@@ -2239,33 +2239,30 @@ class GDALTransform(_Tool):
             assert feature is None or isinstance(feature,ogr.Feature)
         except:
             raise happyError('wrong fomat/value for %s argument' % _Decorator.KW_FEATURE.upper())
-        else:
-            if feature is not None and not happyType.issequence(feature): 
-                feature = [feature,]
-        url = kwargs.pop(_Decorator.KW_URL, None)
+        if feature is None:
+            feature = self.get_feature(**kwargs)
+        if feature is not None and not happyType.issequence(feature): 
+            feature = [feature,]
+        #try:
+        #    func = lambda **kw: kw.get(_Decorator.KW_URL)
+        #    url = _Decorator.parse_url(func)(**{_Decorator.KW_URL: kwargs.pop(_Decorator.KW_URL, None)})
+        #except:
+        #    raise happyError('wrong format for %s argument' % _Decorator.KW_URL.upper()) 
+        #else:
+        #    if url is not None and not happyType.issequence(url):
+        #        url = [url,]
+        #if url not in ([],None):
+        #    try:
+        #        geom = [self.read_url(u, **{_Decorator.KW_OFORMAT: 'JSON'}) for u in url]
+        #    except: 
+        #        try:
+        #            geom = [self.read_url(u, **{_Decorator.KW_OFORMAT: 'bytes'}) for u in url]
+        #        except: 
+        #            raise happyError('impossible to extract vector geometries from data') 
         try:
-            func = lambda **kw: kw.get(_Decorator.KW_URL)
-            url = _Decorator.parse_url(func)(**{_Decorator.KW_URL: kwargs.pop(_Decorator.KW_URL, None)})
-        except:
-            raise happyError('wrong format for %s argument' % _Decorator.KW_URL.upper()) 
-        else:
-            if url is not None and not happyType.issequence(url):
-                url = [url,]
-        if url not in ([],None):
-            try:
-                geom = [self.read_url(u, fmt='JSON') for u in url]
-            except: 
-                try:
-                    geom = [self.read_url(u, fmt='bytes') for u in url]
-                except: 
-                    raise happyError('impossible to extract vector geometries from data') 
-        else:
-            if feature is None:
-                feature = self.get_feature(**kwargs)
-            try:
-                geom = [json.loads(v.ExportToJson()) for v in feature]
-            except: 
-                raise happyError('impossible to extract vector geometries from data') 
+            geom = [json.loads(v.ExportToJson()) for v in feature]
+        except: 
+            raise happyError('impossible to extract vector geometries from data') 
         return geom
 
     #/************************************************************************/

@@ -889,11 +889,12 @@ class GISCOService(OSMService):
         self.__arcgis = arcgis or ''
     
     #/************************************************************************/
+    #@classmethod
     def url_nuts(self, source=None, **kwargs):
         """Generate the URL in the |GISCO| domain for the (bulk or not) download 
         of NUTS data (in vector format).
             
-            >>> url = serv.url_nuts(source, **kwargs)
+            >>> url = GISCOService.url_nuts(source, **kwargs)
            
         Keyword arguments
         -----------------
@@ -931,7 +932,7 @@ class GISCOService(OSMService):
             >>> serv.url_nuts('BULK')
                 'https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/download/ref-nuts-2013-01m.geojson.zip'
             >>> serv.url_nuts('AD')
-                'https://europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AD-region-01m-4326-2013.geojson'
+                'https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/AD-region-01m-4326-2013.geojson'
                 
             >>> serv.url_nuts('NUTS', year = 2016, scale = 10, vector = 'boundary')
                 'https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_BN_10M_2016_4326_LEVL_0.geojson'
@@ -984,7 +985,7 @@ class GISCOService(OSMService):
         year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
         scale = kwargs.pop(_Decorator.KW_SCALE, 
                            settings.DEF_NUTS2JSON_SCALE if source == 'NUTS2JSON' else   \
-                           settings.DEF_GISCO_SCALE if source in ('BULK','NUTS','INFO') else None)
+                           settings.DEF_GISCO_SCALE) # if source in ('BULK','NUTS','INFO') else None)
         if source != 'NUTS2JSON' and scale in settings.GISCO_SCALES.keys():
             scale = settings.GISCO_SCALES[scale]
         fmt = kwargs.pop(_Decorator.KW_IFORMAT, 
@@ -996,7 +997,7 @@ class GISCOService(OSMService):
         #    fmt = settings.DEF_NUTS2JSON_FORMAT[fmt]
         proj = kwargs.pop(_Decorator.KW_PROJECTION, 
                           settings.DEF_NUTS2JSON_PROJECTION if source == 'NUTS2JSON' else   \
-                          settings.DEF_GISCO_PROJECTION if source in ('BULK','NUTS','INFO') else None)
+                          settings.DEF_GISCO_PROJECTION) # if source in ('BULK','NUTS','INFO') else None)
         if source != 'NUTS2JSON' and proj in settings.GISCO_PROJECTIONS.keys():
             proj = settings.GISCO_PROJECTIONS[proj]
         elif proj in settings.NUTS2JSON_PROJECTIONS.keys():
@@ -1008,8 +1009,7 @@ class GISCOService(OSMService):
         ## retrieve the default parameters values    
         #defkw = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS, _force_list_=True)(lambda **kw: kw)
         #defkw = defkw()
-        # set the compression format
-        theme = settings.GISCO_NUTSTHEME 
+        theme = settings.GISCO_PATTERNS['nuts']['theme']
         # start...
         url = {}
         protocol = settings.PROTOCOL # 'https'
@@ -1145,7 +1145,7 @@ class GISCOService(OSMService):
         vec = kwargs.pop(_Decorator.KW_VECTOR, settings.DEF_GISCO_VECTOR) 
         if vec in settings.GISCO_VECTORS.keys():
             vec = settings.GISCO_VECTORS[vec]
-        theme = 'countries'
+        theme = settings.GISCO_PATTERNS['country']['theme']
         protocol = settings.PROTOCOL # 'https'
         if source == 'NUTS2JSON':
             # the files can be retrieved on-the-fly from the base URL 
@@ -1155,7 +1155,7 @@ class GISCOService(OSMService):
             #   * for geojson:  /<YEAR>/<PROJECTION>/<SIZE>/<TYPE>_<NUTS_LEVEL>.json
             # where <TYPE> depends on geom variable
             domain = settings.NUTS2JSON_DOMAIN
-            url = '{a}://{b}/{c}/{d}/{e}/{f}.{g}'.format                 \
+            url = '{a}://{b}/{c}/{d}/{e}/{f}.{g}'.format                    \
                 (a=protocol, b=domain, c=year, d=proj, e=scale.upper(), 
                  f='' if fmt!= 'geojson' else ('cntrg' if vec == 'RG' else 'cntbn'), 
                  g='json')
@@ -1165,7 +1165,7 @@ class GISCOService(OSMService):
             basename = settings.GISCO_PATTERNS['country']['bulk']
             fmt = 'shp' if fmt=='shx' else fmt 
             fmt += '.' + settings.GISCO_PATTERNS['bulk']['compress']
-            url = '{a}://{b}/{c}/{d}/{e}{f}-{g}.{h}'.format                           \
+            url = '{a}://{b}/{c}/{d}/{e}{f}-{g}.{h}'.format                 \
                 (a=protocol, b=self.cache_url, c=theme, d=domain,
                  e=basename, f=year, g=scale.lower(), h=fmt)
         elif source == 'INFO':
@@ -1184,7 +1184,8 @@ class GISCOService(OSMService):
         return url            
     
     #/************************************************************************/
-    def url_lau(self, source=None, **kwargs):
+    
+    def url_lau(source=None, **kwargs):
         """Generate the URL of the |GISCO| LAU data files.
             
             >>> url = serv.url_lau(source=None, **kwargs)

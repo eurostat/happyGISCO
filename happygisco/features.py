@@ -54,7 +54,7 @@ import functools#analysis:ignore
 # from typing import Dict, Tuple, List
 
 # local (absolute) imports
-from happygisco import happyWarning, happyError, happyType
+from happygisco import happyWarning, happyVerbose, happyError, happyType
 from happygisco import settings
 #from happygisco import base
 from happygisco.base import SERVICE_AVAILABLE
@@ -820,19 +820,22 @@ class NUTS(_Feature):
             try:
                 assert attr not in (None,[],{},'')
             except AssertionError: # note: force mangling
-                setattr(self, '_%s__%s' % (self.__class__.__name__, kw), None)                
+                setattr(self, self.__mangled_attr(kw), None)                
             else:
                 items.append(key)
                 # kw = '_' + kw if kw in ('RESPONSE','CONTENT') else '__' + kw   
-                setattr(self, '_%s__%s' % (self.__class__.__name__, kw), attr) # may raise an Error
+                setattr(self, self.__mangled_attr(kw), attr) # may raise an Error
         # check that one at least is parsed
         try:
             assert len(items) == 1
         except AssertionError:
-            if len(items)>1:
+            try:
+                assert items == [] 
+            except AssertionError:
                 raise happyError('incompatible keyword arguments parsed')
-            else:
-                raise happyError('missing keyword arguments - NUTS cannot be defined') 
+            else:   
+                happyVerbose('no arguments parsed - NUTS initialised but not defined') 
+                return
         else:
             items = items[0]
         if items in ('UNIT', 'CONTENT'):                 
@@ -844,23 +847,28 @@ class NUTS(_Feature):
                 except AssertionError:
                     pass # setattr(self, '__' + kw, None)                
                 else:
-                    setattr(self, '_%s__%s' % (self.__class__.__name__, key), attr) 
+                    setattr(self, self.__mangled_attr(key), attr) 
         if items == 'UNIT':
-            self.__url = self.service.url_nuts(source=self.unit, **dimensions)                 
+            self.url = self.service.url_nuts(source=self.unit, **dimensions)                 
+    
     
     #/************************************************************************/
-    def __getattr__(self, attr_name): 
-        # ignore-doc
-        try:
-            return super(NUTS,self).__getattribute__(attr_name) 
-        except AttributeError:
-            try:
-                attr = [n[attr_name] for n in getattr(self, '__' + _Decorator.KW_GEOMETRY)]
-                assert not attr in ([],[None])
-            except:
-                raise happyError('attribute %s not known' % attr_name)
-            else:
-                return attr if attr is None or len(attr)>1 else attr[0]
+    def __mangled_attr(self, attr):
+        return '_%s__%s' % (self.__class__.__name__, attr)
+    
+#    #/************************************************************************/
+#    def __getattr__(self, attr_name): 
+#        # ignore-doc
+#        try:
+#            return super(NUTS,self).__getattribute__(attr_name) 
+#        except AttributeError:
+#            try:
+#                attr = [n[attr_name] for n in getattr(self, '__' + _Decorator.KW_GEOMETRY)]
+#                assert not attr in ([],[None])
+#            except:
+#                raise AttributeError('attribute %s not known' % attr_name)
+#            else:
+#                return attr if attr is None or len(attr)>1 else attr[0]
 
     #/************************************************************************/    
     @_Decorator.parse_url
@@ -872,12 +880,10 @@ class NUTS(_Feature):
     @_Decorator.parse_vector
     @_Decorator.parse_level
     def __get_dimensions(self, **kwargs): 
-        print('in get_dimensions')
         default = kwargs.pop('_default_', False) # blind...
         # let us define the default dimensions (those in settings.GISCO_DATA_DIMENSIONS)
         # e.g., [YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT']
         defkw = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)(lambda **kw: kw)()
-        print(defkw)
         [defkw.pop(k,None) for k in ('SOURCE',)] # ('FORMAT','SOURCE')
         content = kwargs.pop(_Decorator.KW_CONTENT, None)
         geom = kwargs.pop(_Decorator.KW_GEOMETRY, None)
@@ -890,13 +896,13 @@ class NUTS(_Feature):
                              (_Decorator.KW_CONTENT.upper(),_Decorator.KW_GEOMETRY.upper(),_Decorator.KW_URL.upper()))        
         if sum(_argsTrue) == 3: # all None
             try:
-                assert getattr(self, '_%s__%s' % (self.__class__.__name__,_Decorator.KW_GEOMETRY))
-            except AssertionError:
+                assert self.__geom # getattr(self, self.__mangled_attr(_Decorator.KW_GEOMETRY))
+            except (AssertionError,AttributeError):
                 try:
-                    assert getattr(self, '_%s__%s' % (self.__class__.__name__,_Decorator.KW_CONTENT))
+                    assert self.__content # getattr(self, self.__mangled_attr(_Decorator.KW_CONTENT))
                 except AssertionError:
                     try:
-                        assert getattr(self, '_%s__%s' % (self.__class__.__name__,_Decorator.KW_URL))
+                        assert self.__url # getattr(self, self.__mangled_attr(_Decorator.KW_URL))
                     except AssertionError:
                         pass
                     else:
@@ -905,15 +911,11 @@ class NUTS(_Feature):
                     content = self._content
             else:
                 geom = self.geometry
-        print('default=%s' % default)
         if default is True                                                  \
                 or (geom in ([],{},None) and content in ([],'',None) and url in ([],'',None)):
             dimensions = {}
-            print(settings.GISCO_DATA_DIMENSIONS)
-            print(defkw.keys())
             for key in defkw.keys():
                 try:
-                    print('key=%s' % key)
                     defval = getattr(self, key)
                 except:
                     defval = None
@@ -979,7 +981,7 @@ class NUTS(_Feature):
                              (_Decorator.KW_SOURCE.upper(),_Decorator.KW_UNIT.upper()))
         if source in ('',None) and unit in ('',None):
             try:
-                assert getattr(self,'__' + _Decorator.KW_UNIT)
+                assert self.__unit # getattr(self, self.__mangled_attr(_Decorator.KW_UNIT))
             except AssertionError:
                 raise happyError('missing arguments %s and  %s - parse one at least' % \
                                  (_Decorator.KW_SOURCE.upper(),_Decorator.KW_UNIT.upper()))
@@ -1007,10 +1009,10 @@ class NUTS(_Feature):
                              (_Decorator.KW_RESPONSE.upper(),_Decorator.KW_URL.upper()))
         if resp in ('',None) and url in ('',None):
             try:
-                assert getattr(self,'__' + _Decorator.KW_RESPONSE) 
+                assert self.__resp # getattr(self, self.__mangled_attr(_Decorator.KW_RESPONSE))
             except AssertionError:
                 try:
-                    assert getattr(self,'__' + _Decorator.KW_URL) 
+                    assert self.__url # getattr(self, self.__mangled_attr(_Decorator.KW_URL))
                 except AssertionError:
                     try:
                         url = self.__get_url(**kwargs) 
@@ -1046,10 +1048,10 @@ class NUTS(_Feature):
                              (_Decorator.KW_FILE.upper(),_Decorator.KW_URL.upper()))
         if file in ('',None) and url in ('',None):
             try:
-                assert getattr(self,'__' + _Decorator.KW_FILE)
+                assert self.__file # getattr(self, self.__mangled_attr(_Decorator.KW_FILE))
             except AssertionError:
                 try:
-                    assert getattr(self,'__' + _Decorator.KW_URL)
+                    assert self.__url # getattr(self, self.__mangled_attr(_Decorator.KW_URL))
                 except AssertionError:
                     try:
                         url = self.__get_url(**kwargs) 
@@ -1082,13 +1084,13 @@ class NUTS(_Feature):
                              (_Decorator.KW_FILE.upper(),_Decorator.KW_LAYER.upper(),_Decorator.KW_URL.upper()))
         if sum(_argsTrue) == 3: # all None
             try:
-                assert getattr(self,'__' + _Decorator.KW_LAYER) 
+                assert self.__layer # getattr(self, self.__mangled_attr(_Decorator.KW_LAYER)) 
             except AssertionError:
                 try:
-                    assert getattr(self,'__' + _Decorator.KW_FILE)  
+                    assert self.__file # getattr(self, self.__mangled_attr(_Decorator.KW_FILE))  
                 except AssertionError:
                     try:
-                        assert getattr(self,'__' + _Decorator.KW_URL) 
+                        assert self.__url # getattr(self, self.__mangled_attr(_Decorator.KW_URL))
                     except AssertionError:
                         try:
                             url = self.__get_url(**kwargs) 
@@ -1113,6 +1115,7 @@ class NUTS(_Feature):
     @_Decorator.parse_url
     @_Decorator._parse_class(ogr.Feature, _Decorator.KW_FEATURE)
     def __get_geometry(self, **kwargs):
+        print('in __get_geometry')
         feature, url =                      \
             kwargs.get(_Decorator.KW_FEATURE), kwargs.get(_Decorator.KW_URL)
         try:
@@ -1122,11 +1125,11 @@ class NUTS(_Feature):
                              (_Decorator.KW_FEATURE.upper(),_Decorator.KW_URL.upper()))
         if feature in ('',None) and url in ('',None):
             try:
-                assert getattr(self,'__' + _Decorator.KW_FEATURE)
-            except AssertionError:
+                assert self.__feat # getattr(self, self.__mangled_attr(_Decorator.KW_FEATURE))
+            except (AssertionError,AttributeError):
                 try:
-                    assert getattr(self,'__' + _Decorator.KW_URL)
-                except AssertionError:
+                    assert self.__url # getattr(self, self.__mangled_attr(_Decorator.KW_URL))
+                except (AssertionError,AttributeError):
                     try:
                         url = self.__get_url(**kwargs) 
                         assert url not in  ('',[],None)
@@ -1134,13 +1137,16 @@ class NUTS(_Feature):
                         raise happyError('incompatible arguments %s and %s - parse one at least' % \
                                          (_Decorator.KW_FEATURE.upper(),_Decorator.KW_URL.upper()))
                 else:
-                    kwargs.update({_Decorator.KW_URL: self.url})
+                    pass # kwargs.update({_Decorator.KW_URL: self.url})
             else:
                 kwargs.update({_Decorator.KW_FEATURE: self.feature})
         try:
-            geom = self.transform.get_geometry(**kwargs)           
-        except:
-            raise happyError('impossible to extract vector geometries from input data')
+            geom = [self.service.read_url(u, **kwargs) for u in self.__url]
+        except: 
+            try:
+                geom = self.transform.get_geometry(**kwargs)           
+            except:
+                raise happyError('impossible to extract vector geometries from input data')
         return geom
                 
     #/************************************************************************/
@@ -1289,15 +1295,16 @@ class NUTS(_Feature):
     def feature(self):
         """Vector property (:data:`setter`/:data:`getter`) of a :class:`NUTS` instance.
         """ 
-        if self.__feature in ([],None):
+        print(self.__feat)
+        if self.__feat in ([],None):
             try:
                 feature = self.__get_feature()
             except:     
                 #raise happyError('unable to retrieve feature vector') 
                 pass
             else:
-                self.__feature = feature
-        return self.__feature    
+                self.__feat = feature
+        return self.__feat    
     @feature.setter
     def feature(self, feature):
         try:
@@ -1310,22 +1317,24 @@ class NUTS(_Feature):
         except:
             raise happyError('wrong format for %s argument' % _Decorator.KW_FEATURE.upper()) 
         else:
-            self.__feature = feature
+            self.__feat = feature
 
     #/************************************************************************/
     @property
     def geometry(self):
         """Feature property (:data:`setter`/:data:`getter`) of a :class:`NUTS` instance.
         """ 
-        if self.__geometry in ([],None):
+        print('in geometry')
+        if self.__geom in ([],None):
+            geom = self.__get_geometry() 
             try:
                 geom = self.__get_geometry() 
             except:     
                 #raise happyError('unable to retrieve feature') 
                 pass
             else:
-                self.__geometry = geom
-        return self.__geometry    
+                self.__geom = geom
+        return self.__geom    
     @geometry.setter
     def geometry(self, geom):
         try:
@@ -1335,7 +1344,7 @@ class NUTS(_Feature):
             geom = decorator(func)(**{_Decorator.KW_GEOMETRY: geom})
         except:
             raise happyError('wrong %s argument' % _Decorator.KW_GEOMETRY) 
-        self.__geometry = happyType.jsonstringify(geom)
+        self.__geom = happyType.jsonstringify(geom)
 
     #/************************************************************************/    
     @property

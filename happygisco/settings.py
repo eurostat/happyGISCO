@@ -127,16 +127,19 @@ GISCO_CACHEURL      = 'ec.%s/%s' % (EC_DOMAIN, GISCO_CACHEDOMAIN)
 """Complete URL of |GISCO| cache database.
 """
 
-GISCO_NUTSDOMAIN    = 'nuts'
+GISCO_NUTSTHEME     = 'nuts'
+"""NUTS theme used for URL naming.
+"""
+GISCO_NUTSDOMAIN    = GISCO_NUTSTHEME
 """Subdomain of |NUTS|.
 """
 GISCO_NUTSURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_NUTSDOMAIN) 
 """Complete URL of |NUTS| download/distribution services.
 """
-GISCO_NUTSTHEME     = 'nuts'
+GISCO_CTRYTHEME     = 'countries'
 """NUTS theme used for URL naming.
 """
-GISCO_CTRYDOMAIN    = 'countries'
+GISCO_CTRYDOMAIN    = GISCO_CTRYTHEME
 """Subdomain of countries.
 """
 GISCO_CTRYURL       = '%s/%s' % (GISCO_CACHEURL, GISCO_CTRYDOMAIN) 
@@ -148,18 +151,20 @@ GISCO_PATTERNS      = {'bulk':
                              'compress':    'zip'
                              },
                        'distribution': 
-                            {'domain':      GISCO_CACHEDOMAIN, #'distribution', 
+                            {'domain':      GISCO_CACHEDOMAIN, 
                              'base':        ''
                              },                             
                        'country':
-                            {'domain':      GISCO_CTRYURL, #'distribution', 
+                            {'theme':       GISCO_CTRYTHEME, 
+                             'domain':      'distribution', # GISCO_CTRYDOMAIN,
                              'base':        'CNTR_',
                              'info':        'countries-{year}-units', 
                              'bulk':        'ref-countries-',
                              'fmt':         'json'
                              },
                        'nuts':
-                            {'domain':      GISCO_NUTSURL, # 'distribution', 
+                            {'theme':       GISCO_NUTSTHEME, 
+                             'domain':      'distribution', # GISCO_NUTSDOMAIN,
                              'base':        'NUTS_',
                              'info':        'nuts-{year}-units', 
                              'bulk':        'ref-nuts-',
