@@ -798,29 +798,33 @@ class NUTS(_Feature):
       listed in the `json file <http://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/nuts-2016-units.json>`_.
     """
             
-    ATTRIBUTES = ['UNIT', 'FILE', 'URL', 'LAYER', 'FEATURE', 'GEOMETRY',   \
-                   'RESPONSE', 'CONTENT']
-    
     #/************************************************************************/
-    @_Decorator.parse_nuts
     def __init__(self, *args, **kwargs):
         # dump whatever is in args into kwargs so as to simplify the process
         if args not in ((),(None,)):
             kwargs.update({_Decorator.KW_CONTENT: args[0] if len(args)==0 and happyType.issequence(args) else args}) 
             args = ()
-        items = []
+        self.__unit = None
+        self.__file, self.__url = '', ''
+        self.__layer, self.__feat, self.__geom = None, None, None
+        self.__response, self.__content = None, None
+        
+        super(NUTS,self).__init__(**kwargs)        
+
         # initialise the attributes of the NUTS feature 
-        for key in self.ATTRIBUTES:
+        items = []
+        for key in ['UNIT', 'FILE', 'URL', 'LAYER', 'FEATURE', 'GEOMETRY',   \
+                   'RESPONSE', 'CONTENT']:
             kw = getattr(_Decorator, 'KW_' + key)
             attr = kwargs.pop(kw, None)
             try:
                 assert attr not in (None,[],{},'')
-            except AssertionError:
-                setattr(self, '__' + kw, None)                
+            except AssertionError: # note: force mangling
+                setattr(self, '_%s__%s' % (self.__class__.__name__, kw), None)                
             else:
                 items.append(key)
                 # kw = '_' + kw if kw in ('RESPONSE','CONTENT') else '__' + kw   
-                setattr(self, '__' + kw, attr) # may raise an Error
+                setattr(self, '_%s__%s' % (self.__class__.__name__, kw), attr) # may raise an Error
         # check that one at least is parsed
         try:
             assert len(items) == 1
@@ -831,20 +835,18 @@ class NUTS(_Feature):
                 raise happyError('missing keyword arguments - NUTS cannot be defined') 
         else:
             items = items[0]
-        if items in ('UNIT', 'GEOMETRY', 'CONTENT'):                 
+        if items in ('UNIT', 'CONTENT'):                 
             dimensions = self.__get_dimensions(_default_ = True)
             for key in dimensions.keys(): # settings.GISCO_DATA_DIMENSIONS: 
-                if key in ('FORMAT','SOURCE'): 
-                    continue
-                kw = getattr(_Decorator, 'KW_' + key)
-                attr = kwargs.pop(kw, dimensions[kw])
+                attr = kwargs.pop(key, dimensions[key])
                 try:
                     assert attr not in (None,[],{},'')
                 except AssertionError:
                     pass # setattr(self, '__' + kw, None)                
                 else:
-                    setattr(self, '__' + kw, attr) 
-        super(NUTS,self).__init__(**kwargs)            
+                    setattr(self, '_%s__%s' % (self.__class__.__name__, key), attr) 
+        if items == 'UNIT':
+            self.__url = self.service.url_nuts(source=self.unit, **dimensions)                 
     
     #/************************************************************************/
     def __getattr__(self, attr_name): 
@@ -870,11 +872,13 @@ class NUTS(_Feature):
     @_Decorator.parse_vector
     @_Decorator.parse_level
     def __get_dimensions(self, **kwargs): 
+        print('in get_dimensions')
         default = kwargs.pop('_default_', False) # blind...
         # let us define the default dimensions (those in settings.GISCO_DATA_DIMENSIONS)
         # e.g., [YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT']
         defkw = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)(lambda **kw: kw)()
-        [defkw.pop(k,None) for k in ('FORMAT','SOURCE')]
+        print(defkw)
+        [defkw.pop(k,None) for k in ('SOURCE',)] # ('FORMAT','SOURCE')
         content = kwargs.pop(_Decorator.KW_CONTENT, None)
         geom = kwargs.pop(_Decorator.KW_GEOMETRY, None)
         url = kwargs.pop(_Decorator.KW_URL, None)
@@ -886,13 +890,13 @@ class NUTS(_Feature):
                              (_Decorator.KW_CONTENT.upper(),_Decorator.KW_GEOMETRY.upper(),_Decorator.KW_URL.upper()))        
         if sum(_argsTrue) == 3: # all None
             try:
-                assert getattr(self,'__' + _Decorator.KW_GEOMETRY) 
+                assert getattr(self, '_%s__%s' % (self.__class__.__name__,_Decorator.KW_GEOMETRY))
             except AssertionError:
                 try:
-                    assert getattr(self,'__' + _Decorator.KW_CONTENT) 
+                    assert getattr(self, '_%s__%s' % (self.__class__.__name__,_Decorator.KW_CONTENT))
                 except AssertionError:
                     try:
-                        assert getattr(self,'__' + _Decorator.KW_URL) 
+                        assert getattr(self, '_%s__%s' % (self.__class__.__name__,_Decorator.KW_URL))
                     except AssertionError:
                         pass
                     else:
@@ -901,15 +905,15 @@ class NUTS(_Feature):
                     content = self._content
             else:
                 geom = self.geometry
+        print('default=%s' % default)
         if default is True                                                  \
                 or (geom in ([],{},None) and content in ([],'',None) and url in ([],'',None)):
             dimensions = {}
-            for kw in settings.GISCO_DATA_DIMENSIONS:
-                if kw not in defkw.keys(): # kw in ('FORMAT','SOURCE'):      
-                    continue
-                else:                   
-                    key = getattr(_Decorator, 'KW_' + kw)
+            print(settings.GISCO_DATA_DIMENSIONS)
+            print(defkw.keys())
+            for key in defkw.keys():
                 try:
+                    print('key=%s' % key)
                     defval = getattr(self, key)
                 except:
                     defval = None
@@ -937,7 +941,7 @@ class NUTS(_Feature):
                 dimensions = [self.serv.url2dimension(u, _force_list_=True) for u in url]             
             except:
                 raise happyError('impossible to extract NUTS dimensions from input URL')
-        [d.pop(k,None) for k in ('FORMAT',) for d in dimensions]
+        # [d.pop(k,None) for k in ('FORMAT',) for d in dimensions]
         if url in ([],'',None):
             [d.update({kw: d.get(kw) or defkw[kw]}) for kw in defkw.keys() for d in dimensions]
         # dimensions = _NestedDict([d.items() for d in dimensions])
@@ -1187,7 +1191,7 @@ class NUTS(_Feature):
         """ 
         if self.__unit in ('',[],None):
             try:
-                unit = self.id or self.fid
+                unit = self.__get_unit()
             except:
                 unit = None
             else:

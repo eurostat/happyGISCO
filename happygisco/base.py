@@ -41,9 +41,10 @@ Base implementations (generic methods and classes) used trhoughout :mod:`happygi
   
 **Note**
 
-The :class:`_Decorator` class and its subclasses exposed in this module **can be 
-ignored** at the first glance since they are not requested to run the services. 
-They are provided here for the sake of an exhaustive documentation.
+The classes :class:`_Decorator` and :class:`_NestedDict` exposed in this module, 
+as well as their respective subclasses  **can be ignored** in a first instance 
+since they are not requested to run the services. They are provided here for the 
+sake of an exhaustive documentation.
 
 **Dependencies**
 
