@@ -1575,9 +1575,9 @@ class GISCOService(OSMService):
         return dic 
 
     #/************************************************************************/
-    def _data_content(self, data, **kwargs):
-        """Generic version of methods :meth:`~GISCOService.country_content` and
-        :meth:`~GISCOService.nuts_content`.
+    def _data_geometry(self, data, **kwargs):
+        """Generic version of methods :meth:`~GISCOService.country_geometry` and
+        :meth:`~GISCOService.nuts_geometry`.
         """
         try:
             response = kwargs.pop(_Decorator.KW_RESPONSE,None)
@@ -1768,7 +1768,7 @@ class GISCOService(OSMService):
 
         See also
         --------
-        :meth:`~GISCOService.nuts_content`, :meth:`~GISCOService.nuts_info`, 
+        :meth:`~GISCOService.nuts_geometry`, :meth:`~GISCOService.nuts_info`, 
         :meth:`~GISCOService.country_response`, :meth:`~GISCOService._data_response`.
         """
         try:
@@ -1853,11 +1853,11 @@ class GISCOService(OSMService):
         return self._data_response('NUTS', dimensions, **kwargs)
                 
     #/************************************************************************/
-    def country_content(self, **kwargs):
+    def country_geometry(self, **kwargs):
         """Load the content of responses associated to NUTS vector files available 
         through |GISCO| Rest API.
             
-            >>> content = serv.country_content(**kwargs)
+            >>> content = serv.country_geometry(**kwargs)
             
         Returns
         -------
@@ -1866,16 +1866,16 @@ class GISCOService(OSMService):
         See also
         --------
         :meth:`~GISCOService.country_response`, :meth:`~GISCOService.country_info`, 
-        :meth:`~GISCOService.nuts_content`, :meth:`base._Service.load_content`.
+        :meth:`~GISCOService.nuts_geometry`, :meth:`base._Service.read_response`.
         """
-        return self._data_content('country', **kwargs)
+        return self._data_geometry('country', **kwargs)
 
     #/************************************************************************/
-    def nuts_content(self, **kwargs):
+    def nuts_geometry(self, **kwargs):
         """Load the content of responses associated to NUTS vector files available 
         through |GISCO| Rest API.
             
-            >>> content = serv.nuts_content(**kwargs)
+            >>> content = serv.nuts_geometry(**kwargs)
             
         Returns
         -------
@@ -1886,7 +1886,7 @@ class GISCOService(OSMService):
         The method can be used to retrieve the data content from |GISCO| Rest API:
             
             >>> serv = services.GISCOService()
-            >>> data = serv.nuts_content(unit='AT1', year=[2013,2016], scale=['20m','60m'], vector='region')
+            >>> data = serv.nuts_geometry(unit='AT1', year=[2013,2016], scale=['20m','60m'], vector='region')
             >>> print(data.order)
                 ['source', 'year', 'proj', 'scale', 'vector', 'ifmt']
             >>> print(data.dimensions)
@@ -1917,7 +1917,7 @@ class GISCOService(OSMService):
                     '60m': {'RG': {'geojson': <Response [200]>}}}},
                   2016: {4326: {'20m': {'RG': {'geojson': <Response [200]>}},
                     '60m': {'RG': {'geojson': <Response [200]>}}}}})            
-            >>> newdata = serv.nuts_content(resp=r)
+            >>> newdata = serv.nuts_geometry(resp=r)
             >>> newdata == data
                 True
         
@@ -1931,9 +1931,9 @@ class GISCOService(OSMService):
         See also
         --------
         :meth:`~GISCOService.nuts_response`, :meth:`~GISCOService.nuts_info`, 
-        :meth:`~GISCOService.country_content`, :meth:`base._Service.load_content`.
+        :meth:`~GISCOService.country_geometry`, :meth:`base._Service.read_response`.
         """
-        return self._data_content('NUTS', **kwargs)
+        return self._data_geometry('NUTS', **kwargs)
 
     #/************************************************************************/
     def country_info(self, **kwargs):
@@ -2255,7 +2255,7 @@ class GISCOService(OSMService):
         
         See also
         --------
-        :meth:`~GISCOService.nuts_response`, :meth:`~GISCOService.nuts_content`, 
+        :meth:`~GISCOService.nuts_response`, :meth:`~GISCOService.nuts_geometry`, 
         :meth:`~GISCOService.country_info`, :meth:`~GISCOService.url_nuts`, 
         :meth:`base._Service.read_response`, :meth:`base._Service._data_response`.
         """
