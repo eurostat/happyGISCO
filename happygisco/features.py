@@ -804,28 +804,29 @@ class NUTS(_Feature):
         if args not in ((),(None,)):
             kwargs.update({_Decorator.KW_CONTENT: args[0] if len(args)==0 and happyType.issequence(args) else args}) 
             args = ()
+        # we need to declare them beforehand, unless we use the mangled method...
+        self.__dimensions = []
         self.__unit = None
         self.__file, self.__url = '', ''
         self.__layer, self.__feat, self.__geom = None, None, None
         self.__response, self.__content = None, None
-        
+        self.__level, self.__scale = [], []
+        self.__year, self.__name = None, ''        
         super(NUTS,self).__init__(**kwargs)        
-
         # initialise the attributes of the NUTS feature 
         items = []
-        for key in ['UNIT', 'FILE', 'URL', 'LAYER', 'FEATURE', 'GEOMETRY',   \
-                   'RESPONSE', 'CONTENT']:
+        for key in settings.GISCO_DATA_INPUT:
             kw = getattr(_Decorator, 'KW_' + key)
-            kw = '_' + kw if key in ('RESPONSE','CONTENT') else kw   
+            # kw = '_' + kw if key in ('RESPONSE','CONTENT') else kw   
             attr = kwargs.pop(kw, None)
             try:
                 assert attr not in (None,[],{},'')
             except AssertionError: # note: force mangling
-                # setattr(self, self.__mangled_attr(kw), None)                
+                #setattr(self, self.__mangled_attr(kw), None)                
                 setattr(self, kw, None)   
             else:
                 items.append(key)
-                # setattr(self, self.__mangled_attr(kw), attr) # may raise an Error
+                #setattr(self, self.__mangled_attr(kw), attr) 
                 setattr(self, kw, attr)   
         # check that one at least is parsed
         try:
@@ -840,17 +841,16 @@ class NUTS(_Feature):
                 return
         else:
             items = items[0]
-        if items in ('UNIT', 'CONTENT'):                 
-            dimensions = self.__get_dimensions(_default_ = True)
-            for key in dimensions.keys(): # settings.GISCO_DATA_DIMENSIONS: 
-                attr = kwargs.pop(key, dimensions[key])
-                try:
-                    assert attr not in (None,[],{},'')
-                except AssertionError:
-                    pass # setattr(self, '__' + kw, None)                
-                else:
-                    setattr(self, self.__mangled_attr(key), attr)     
-    
+        for key in settings.GISCO_DATA_DIMENSIONS:
+            kw = getattr(_Decorator, 'KW_' + key)
+            attr = kwargs.pop(kw, None)
+            try:
+                assert attr not in (None,[],{},'')
+            except AssertionError:                 
+                pass   
+            else:
+                setattr(self, kw, attr)   
+                    
     #/************************************************************************/
     def __mangled_attr(self, attr):
         return '_%s__%s' % (self.__class__.__name__, attr)
@@ -873,94 +873,139 @@ class NUTS(_Feature):
     @_Decorator.parse_url
     @_Decorator.parse_geometry
     @_Decorator._parse_class((str,dict), _Decorator.KW_CONTENT)
-    @_Decorator.parse_year
-    @_Decorator.parse_projection
-    @_Decorator.parse_scale
-    @_Decorator.parse_vector
-    @_Decorator.parse_level
-    def __get_dimensions(self, **kwargs): 
-        default = kwargs.pop('_default_', False) # blind...
-        # let us define the default dimensions (those in settings.GISCO_DATA_DIMENSIONS)
-        # e.g., [YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT']
-        defkw = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)(lambda **kw: kw)()
-        [defkw.pop(k,None) for k in ('SOURCE',)] # ('FORMAT','SOURCE')
+    #@_Decorator.parse_year
+    #@_Decorator.parse_projection
+    #@_Decorator.parse_scale
+    #@_Decorator.parse_vector
+    #@_Decorator.parse_level
+    def __get_dimensions(self, **kwargs):
         content = kwargs.pop(_Decorator.KW_CONTENT, None)
         geom = kwargs.pop(_Decorator.KW_GEOMETRY, None)
         url = kwargs.pop(_Decorator.KW_URL, None)
-        _argsTrue = [1 for arg in (content, url, geom) if arg in ('',None)]
+        unit = kwargs.pop(_Decorator.KW_UNIT, None)
+        _argsNone = [1 for arg in (content, url, geom, unit) if arg in ('',None)]
         try:
-            assert sum(_argsTrue) >= 2
+            assert sum(_argsNone) >= 2
         except:
             raise happyError('incompatible arguments %s, %s and %s - parse one only' % \
                              (_Decorator.KW_CONTENT.upper(),_Decorator.KW_GEOMETRY.upper(),_Decorator.KW_URL.upper()))        
-        if sum(_argsTrue) == 3: # all None
+        if sum(_argsNone) == 4: # all None
             try:
                 assert self.__geom # getattr(self, self.__mangled_attr(_Decorator.KW_GEOMETRY))
             except (AssertionError,AttributeError):
                 try:
                     assert self.__content # getattr(self, self.__mangled_attr(_Decorator.KW_CONTENT))
-                except AssertionError:
+                except (AssertionError,AttributeError):
                     try:
                         assert self.__url # getattr(self, self.__mangled_attr(_Decorator.KW_URL))
-                    except AssertionError:
-                        pass
+                    except (AssertionError,AttributeError):
+                        try:
+                            assert self.__unit # getattr(self, self.__mangled_attr(_Decorator.KW_UNIT))
+                        except AssertionError:
+                            pass
+                        else:
+                            unit = self.__unit
                     else:
                         url = self.__url
                 else:
                     content = self.__content
             else:
                 geom = self.__geom
-        if default is True                                                  \
-                or (geom in ([],{},None) and content in ([],'',None) and url in ([],'',None)):
-            dimensions = {}
-            for key in defkw.keys():
-                try:
-                    defval = getattr(self, key)
-                except:
-                    defval = None
-                dimensions.update({key: kwargs.get(key) or defval or defkw[key]})
-            return dimensions
         dimensions = []
-        if geom not in ([],None):
+        # let us define the default dimensions (those in settings.GISCO_DATA_DIMENSIONS)
+        # e.g., [YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'FORMAT']
+        defdim = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS)(lambda **kw: kw)()
+        [defdim.pop(getattr(_Decorator, 'KW_' + k),None) for k in ('SOURCE',)] # ('FORMAT','SOURCE')
+        for key in defdim.keys():
+            try:
+                assert getattr(self, self.__mangled_attr(key)) # getattr(self, key)
+            except:
+                defval = None
+            else:
+                defval = getattr(self, key) 
+            defdim.update({key: kwargs.get(key) or defval or defdim[key]})
+        if unit in ([],'',None) and geom in ([],{},None) and content in ([],'',None) and url in ([],'',None):
+            return [defdim,]
+        if unit not in ([],'',None):
+            if not happyType.issequence(unit): 
+                unit = [unit,]  
+            try:
+                dimensions = defdim.copy() 
+                dimensions.update({_Decorator.KW_LEVEL: [sum(c.isdigit() for c in u) for u in unit]})
+            except:
+                raise happyError('impossible to define NUTS dimensions from input unit')
+            else:
+                dimensions = [dimensions,]
+        elif geom not in ([],None):
             if not happyType.issequence(geom): 
                 geom = [geom,]  
             try:
-                dimensions = [self.serv.geom2dimension(g, _force_list_=True) for g in geom]             
+                dimensions = [self.service.geom2dimension(g, **{_Decorator.KW_FORCE_LIST: True}) for g in geom]             
             except:
                 raise happyError('impossible to extract NUTS dimensions from input geometry')
         elif content not in ([],None):
             if not happyType.issequence(content): 
                 content = [content,]  
             try:
-                dimensions = [self.serv.geom2dimension(c, _force_list_=True) for c in content]             
+                dimensions = [self.service.geom2dimension(c, **{_Decorator.KW_FORCE_LIST: True}) for c in content]             
             except:
                 raise happyError('impossible to extract NUTS dimensions from input content')
         elif url not in ([],'',None):
             if not happyType.issequence(url): 
                 url = [url,]  
             try:
-                dimensions = [self.serv.url2dimension(u, _force_list_=True) for u in url]             
+                dimensions = [self.service.url2dimension(u, **{_Decorator.KW_FORCE_LIST: True}) for u in url]             
             except:
                 raise happyError('impossible to extract NUTS dimensions from input URL')
         # [d.pop(k,None) for k in ('FORMAT',) for d in dimensions]
-        if url in ([],'',None):
-            [d.update({kw: d.get(kw) or defkw[kw]}) for kw in defkw.keys() for d in dimensions]
+        if not (geom in ([],None) and content in ([],None)):
+            [d.update({kw: d.get(kw) or defdim[kw]}) for kw in defdim.keys() for d in dimensions]
         # dimensions = _NestedDict([d.items() for d in dimensions])
         return dimensions # if len(dimensions)>1 else dimensions[0]
+   
+    #/************************************************************************/    
+    def __get_dimension(self, key, **kwargs): 
+        #ignore-doc
+        try:
+            kw = getattr(_Decorator, 'KW_' + key.upper())
+        except AttributeError:
+            raise happyError('dimension %s not recognised' % key)
+        dimensions = self._dimensions
+        dimensions = [dimensions.copy(),] if happyType.ismapping(dimensions)    \
+            else [d.copy() for d in dimensions]
+        if kwargs != {}:
+            [d.update(kwargs) for d in dimensions]     
+        return [d.get(kw) for d in dimensions]
 
     #/************************************************************************/    
     def __get_unit(self, **kwargs): 
         """Retrieve NUTS identifier.
         """
-        dimensions = self._get_dimensions(**kwargs)
-        return [d.get(_Decorator.KW_SOURCE) for d in dimensions]
+        return self.__get_dimension('SOURCE', **kwargs) # not 'UNIT'
     
     #/************************************************************************/    
     def __get_level(self, **kwargs): 
         """Retrieve NUTS level.
-        """
-        dimensions = self.__get_dimensions(**kwargs)
-        return [d.get(_Decorator.KW_LEVEL) for d in dimensions]
+        """     
+        return self.__get_dimension('LEVEL', **kwargs)
+    
+    #/************************************************************************/    
+    def __get_scale(self, **kwargs): 
+        """Retrieve NUTS scale.
+        """     
+        return self.__get_dimension('SCALE', **kwargs)
+        
+    #/************************************************************************/    
+    def __get_year(self, **kwargs): 
+        """Retrieve NUTS year.
+        """     
+        return self.__get_dimension('YEAR', **kwargs)
+    
+    ##/************************************************************************/    
+    #def __get_projection(self, **kwargs): 
+    #    """Retrieve NUTS projection.
+    #    """     
+    #    return self.__get_dimension('PROJECTION', **kwargs)
 
     #/************************************************************************/    
     @_Decorator._parse_class(str, _Decorator.KW_SOURCE)
@@ -988,14 +1033,13 @@ class NUTS(_Feature):
                 unit = self.unit
         source = source or unit
         try:
-            # kwargs.update({'_default_': True})
-            kwargs.update(self.__get_dimensions(_default_=True, **kwargs))
+            kwargs.update(self._dimensions)            
             url = self.service.url_nuts(source=source, **kwargs)            
         except:
             raise happyError('impossible to define URL from input data') 
         else:
             if not happyType.issequence(url):
-                url = [url,]            
+                url = [url,]       
         return url
 
     #/************************************************************************/    
@@ -1082,13 +1126,13 @@ class NUTS(_Feature):
     def __get_feature(self, **kwargs):
         file, layer, url =                  \
             kwargs.get(_Decorator.KW_FILE), kwargs.get(_Decorator.KW_LAYER), kwargs.get(_Decorator.KW_URL)
-        _argsTrue = [1 for arg in (file, url, layer) if arg in ('',None)]
+        _argsNone = [1 for arg in (file, url, layer) if arg in ('',None)]
         try:
-            assert sum(_argsTrue) >= 2
+            assert sum(_argsNone) >= 2
         except:
             raise happyError('incompatible arguments %s, %s and %s - parse one only' % \
                              (_Decorator.KW_FILE.upper(),_Decorator.KW_LAYER.upper(),_Decorator.KW_URL.upper()))
-        if sum(_argsTrue) == 3: # all None
+        if sum(_argsNone) == 3: # all None
             try:
                 assert self.__layer # getattr(self, self.__mangled_attr(_Decorator.KW_LAYER)) 
             except AssertionError:
@@ -1151,10 +1195,11 @@ class NUTS(_Feature):
                     else:
                         url = self.__url
                 else:
-                    kwargs.update(self.__get_dimensions(_default_=True, **kwargs))
+                    kwargs.update(self._dimensions)
                     kwargs.update({_Decorator.KW_UNIT: self.unit})
             else:
                 kwargs.update({_Decorator.KW_FEATURE: self.feature})
+        kwargs.update({_Decorator.KW_OFORMAT: kwargs.pop(_Decorator.KW_OFORMAT, 'text')}) 
         try:
             geom = [self.service.nuts_geometry(**self.service.url2dimension(u)) for u in url]
             # geom = [self.service.read_url(u, **kwargs) for u in url]
@@ -1163,6 +1208,7 @@ class NUTS(_Feature):
                 geom = self.transform.get_geometry(**kwargs)           
             except: 
                 try:
+                    print('try again')
                     geom = self.service.nuts_geometry(**kwargs)
                 except:
                     raise happyError('impossible to extract vector geometries from input data')
@@ -1212,6 +1258,31 @@ class NUTS(_Feature):
         
     #/************************************************************************/
     @property
+    def _dimensions(self):
+        #ignore-doc
+        if self.__dimensions in ([],{},None):
+            try:
+                dimensions = self.__get_dimensions()
+            except:
+                dimensions = None
+            else:
+                self.__dimensions = dimensions
+        return self.__dimensions if self.__dimensions in ({},None)                      \
+            or (happyType.issequence(self.__dimensions) and len(self.__dimensions)>1)   \
+            else self.__dimensions[0]
+    @_dimensions.setter
+    def _dimensions(self, dimensions):
+        try:
+            assert dimensions is None or happyType.ismapping(dimensions) or             \
+                (happyType.issequence(dimensions) and all([happyType.ismapping(d) for d in dimensions]))
+        except:
+            raise happyError('wrong format for DIMENSIONS argument')
+        if dimensions is not None and not happyType.issequence(dimensions):
+                dimensions = [dimensions,]
+        self.__dimensions = dimensions
+        
+    #/************************************************************************/
+    @property
     def unit(self):
         """Unit property (:data:`setter`/:data:`getter`) of a :class:`NUTS` 
         instance, if any.
@@ -1233,7 +1304,7 @@ class NUTS(_Feature):
         except:
             raise happyError('wrong format for %s argument' % _Decorator.KW_UNIT.upper())
         if unit is not None and not happyType.issequence(unit):
-                unit = [unit,]
+            unit = [unit,]
         self.__unit = unit
                 
     #/************************************************************************/
@@ -1362,6 +1433,7 @@ class NUTS(_Feature):
         """Feature property (:data:`setter`/:data:`getter`) of a :class:`NUTS` instance.
         """ 
         if self.__geom in ([],None):
+            geom = self.__get_geometry() 
             try:
                 geom = self.__get_geometry() 
             except:     
@@ -1369,8 +1441,11 @@ class NUTS(_Feature):
                 pass
             else:
                 self.__geom = geom
-        return self.__geom if self.__geom is None or len(self.__geom)>1     \
-            else self.__geom[0]     
+        if self.__geom not in ([],None): 
+            geom = [g.xvalues() if isinstance(g, _NestedDict) else g for g in self.__geom]
+            return geom if len(geom)>1 else geom[0]         
+        else:
+            return None
     @geometry.setter
     def geometry(self, geom):
         try:
@@ -1379,8 +1454,10 @@ class NUTS(_Feature):
             func = lambda **kw: kw.get(_Decorator.KW_GEOMETRY)
             geom = decorator(func)(**{_Decorator.KW_GEOMETRY: geom})
         except:
-            raise happyError('wrong %s argument' % _Decorator.KW_GEOMETRY) 
-        self.__geom = happyType.jsonstringify(geom)
+            raise happyError('wrong %s argument' % _Decorator.KW_GEOMETRY.upper()) 
+        if geom is not None and not happyType.issequence(geom):
+                geom = [geom,]
+        self.__geom = [happyType.jsonstringify(g) for g in geom]
 
     #/************************************************************************/    
     @property
@@ -1404,7 +1481,7 @@ class NUTS(_Feature):
         """Level property (:data:`getter`) of a :class:`NUTS` instance. 
         A `level` type is (a list of) :class:`int`.
         """
-        if self.__level is None:
+        if self.__level in ([],None):
             try:
                 level = self.__get_level()
             except:     
@@ -1412,6 +1489,66 @@ class NUTS(_Feature):
             else:
                 self.__level = level
         return self.__level if self.__level is None or len(self.__level)>1 else self.__level[0] 
+    @level.setter
+    def level(self, level):
+        try:
+            func = lambda **kw: kw.get(_Decorator.KW_LEVEL)
+            level = _Decorator.parse_level(func)(**{_Decorator.KW_LEVEL: level})
+        except:
+            raise happyError('wrong %s argument' % _Decorator.KW_LEVEL.upper()) 
+        if level is not None and not happyType.issequence(level):
+                level = [level,]
+        self.__level = level
+
+    #/************************************************************************/    
+    @property
+    def year(self):
+        """Year property (:data:`getter`) of a :class:`NUTS` instance. 
+        A `year` type is (a list of) :class:`int`.
+        """
+        if self.__year in ([],None):
+            try:
+                year = self.__get_year()
+            except:     
+                raise happyError('year not found') 
+            else:
+                self.__year = year
+        return self.__year if self.__year is None or len(self.__year)>1 else self.__year[0] 
+    @year.setter
+    def year(self, year):
+        try:
+            func = lambda **kw: kw.get(_Decorator.KW_YEAR)
+            year = _Decorator.parse_year(func)(**{_Decorator.KW_YEAR: year})
+        except:
+            raise happyError('wrong %s argument' % _Decorator.KW_YEAR.upper()) 
+        if year is not None and not happyType.issequence(year):
+                year = [year,]
+        self.__year = year
+
+    #/************************************************************************/    
+    @property
+    def scale(self):
+        """Scale property (:data:`getter`) of a :class:`NUTS` instance. 
+        A `scale` type is (a list of) :class:`int`.
+        """
+        if self.__scale in ([],None):
+            try:
+                scale = self.__get_scale()
+            except:     
+                raise happyError('scale not found') 
+            else:
+                self.__scale = scale
+        return self.__scale if self.__scale is None or len(self.__scale)>1 else self.__scale[0] 
+    @scale.setter
+    def scale(self, scale):
+        try:
+            func = lambda **kw: kw.get(_Decorator.KW_SCALE)
+            scale = _Decorator.parse_scale(func)(**{_Decorator.KW_SCALE: scale})
+        except:
+            raise happyError('wrong %s argument' % _Decorator.KW_SCALE.upper()) 
+        if scale is not None and not happyType.issequence(scale):
+                scale = [scale,]
+        self.__scale = scale
     
     #/************************************************************************/    
     @property

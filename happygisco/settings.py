@@ -205,6 +205,10 @@ DEF_DRIVER_NAME         = 'ESRI Shapefile'
 """|GDAL| driver name.
 """             
 
+GISCO_DATA_INPUT    = ['UNIT', 'FILE', 'URL', 'LAYER', 'FEATURE', 'GEOMETRY', 'RESPONSE', 'CONTENT']
+"""Type/nature of data parsing a given |GISCO| dataset, *e.g.* a NUTS or a country 
+file.
+"""
 GISCO_DATA_DIMENSIONS = ['SOURCE', 'YEAR', 'PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'IFORMAT'
                          ]
 """Descriptors/parameters used to define a given |GISCO| dataset, *e.g.* a NUTS

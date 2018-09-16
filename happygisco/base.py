@@ -155,6 +155,8 @@ class _Decorator(object):
     
     Methods from the :mod:`services` module rely on these classes.
     """
+    
+    # session/service parameters
     KW_SESSION      = 'session'
     KW_CACHING      = '_caching_'
     KW_CACHE        = 'cache_store'
@@ -166,11 +168,6 @@ class _Decorator(object):
     KW_CACHE_URL    = 'cache_url'
     KW_MAP_URL      = 'map_url'
     KW_ARCGIS       = 'arcgis'
-    
-    KW_DATA         = 'data'
-    KW_CONTENT      = 'content'
-    KW_RESPONSE     = 'resp'
-    KW_INFO         = 'info'
     
     KW_CODER        = 'coder'
     
@@ -188,16 +185,12 @@ class _Decorator(object):
     KW_LOCATION     = 'location' 
     KW_NUTS         = 'nuts' 
     KW_AREA         = 'area'
-        
-    KW_YEAR         = 'year'
-    KW_IFORMAT      = 'ifmt'
-    KW_OFORMAT      = 'ofmt'
-    KW_SCALE        = 'scale'
-    KW_GEOMETRY     = 'geom' # 'geometry' 
-    KW_LEVEL        = 'level'
-    KW_SIZE         = 'size'
-    KW_VECTOR       = 'vector' 
-    
+      
+    # input vector data
+    KW_DATA         = 'data'
+    KW_CONTENT      = 'content'
+    KW_RESPONSE     = 'resp'
+    KW_INFO         = 'info'
     KW_LAYER        = 'layer'
     KW_FILE         = 'file'
     KW_URL          = 'url'
@@ -206,6 +199,16 @@ class _Decorator(object):
     KW_SOURCE       = 'source'
     KW_CODE         = 'code'
     KW_UNIT         = 'unit' 
+        
+    # dimensions
+    KW_YEAR         = 'year'
+    KW_IFORMAT      = 'ifmt'
+    KW_OFORMAT      = 'ofmt'
+    KW_SCALE        = 'scale'
+    KW_GEOMETRY     = 'geom' # 'geometry' 
+    KW_LEVEL        = 'level'
+    KW_SIZE         = 'size'
+    KW_VECTOR       = 'vector' 
     
     KW_NAME         = 'name'
     KW_ID           = 'id'
@@ -3477,7 +3480,7 @@ class _NestedDict(dict):
                 #        target[k] = [target[k],]                        
                 ##elif type(v)!=type(target[k]):              target[k] = []
                 if happyType.issequence(v): 
-                    target[k] = copy.deepcopy(v)
+                    target[k] = v #copy.deepcopy(v)
                 elif happyType.ismapping(v):  
                     target[k] = copy.deepcopy(v)
                 elif type(v) == set:

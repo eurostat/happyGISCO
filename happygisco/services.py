@@ -1548,15 +1548,21 @@ class GISCOService(OSMService):
         """Generic version of methods :meth:`~GISCOService.country_response` and
         :meth:`~GISCOService.nuts_response`.
         """
+        print('in _data_response')
+        print(dimensions.items())
         __del_source = True
         source = dimensions.get('SOURCE')
         if len(source) == 1: source = source[0]
+        print([(getattr(_Decorator,'KW_' + k), v) for k,v in dimensions.items() \
+                               if __del_source is False or source not in ('NUTS2JSON','BULK','INFO') or k!='SOURCE'])
         dic = _NestedDict([(getattr(_Decorator,'KW_' + k), v) for k,v in dimensions.items() \
                                if __del_source is False or source not in ('NUTS2JSON','BULK','INFO') or k!='SOURCE'],
                            **{_Decorator.KW_ORDER: True}) # [getattr(_Decorator,'KW_' + k) for k in dimensions.keys()]
         dim = {}
+        print('in _data_response 2')
         for prod in itertools.product(*list(dimensions.values())):
             dim.update(dict(zip([getattr(_Decorator,'KW_' + attr) for attr in dimensions.keys()], prod)))
+            print('in _data_response 3')
             try:
                 build_url = getattr(self, 'url_' + data.lower())
             except AttributeError:
@@ -1579,6 +1585,10 @@ class GISCOService(OSMService):
         """Generic version of methods :meth:`~GISCOService.country_geometry` and
         :meth:`~GISCOService.nuts_geometry`.
         """
+        # we use a default output format here!
+        ofmt = kwargs.pop(_Decorator.KW_OFORMAT, 'text')
+        # we want a response type in the first place
+        print(kwargs)
         try:
             response = kwargs.pop(_Decorator.KW_RESPONSE,None)
             assert response is None or isinstance(response,(_CachedResponse, requests.Response, _NestedDict))
@@ -1593,8 +1603,9 @@ class GISCOService(OSMService):
                 response = read_response(**kwargs)
             except:
                 raise happyError('error reading %s response' % data.upper())
-        # we use a default output format here!
-        kwargs.update({_Decorator.KW_OFORMAT: kwargs.pop(_Decorator.KW_OFORMAT, 'content')}) 
+        # we insert the output format again
+        print(response)
+        kwargs.update({_Decorator.KW_OFORMAT: ofmt}) 
         if isinstance(response,(_CachedResponse, requests.Response)):
             try:
                 return self.read_response(response, **kwargs)
@@ -1850,6 +1861,8 @@ class GISCOService(OSMService):
                 dimensions.pop('SCALE')
         dimensions.update({'SOURCE': [source,] if source is not None else unit})
         # kwargs.update({_Decorator.KW_OFORMAT: 'resp'})
+        print('in nuts_response: dimensions=%s' % dimensions)
+        print('in nuts_response: kwargs=%s' % kwargs)
         return self._data_response('NUTS', dimensions, **kwargs)
                 
     #/************************************************************************/
@@ -1897,17 +1910,17 @@ class GISCOService(OSMService):
                              ('vector', ['RG']),
                              ('ifmt', ['geojson'])])
             >>> print(data['AT1'][2016][4326]['20m']['RG']['geojson'])
-                b'{"crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:EPSG::4326"}}, 
-                   "type": "FeatureCollection", 
-                   "features": [{"geometry": {"type": "Polygon", "coordinates": [[[15.54245, 48.9077], [15.75363, 48.85218], 
+                '{"crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:EPSG::4326"}}, 
+                  "type": "FeatureCollection", 
+                  "features": [{"geometry": {"type": "Polygon", "coordinates": [[[15.54245, 48.9077], [15.75363, 48.85218], 
                                                                                   [15.84331, 48.87339], [16.10288, 48.7454], 
                 ...
                                                                                   [15.15733, 48.99178], [15.16025, 48.94169], 
                                                                                   [15.36588, 48.98171], [15.54245, 48.9077]]]}, 
-                                              "type": "Feature", 
-                                              "properties": {"CNTR_CODE": "AT", "NUTS_NAME": "OST\\u00d6STERREICH", 
-                                              "LEVL_CODE": 1, "FID": "AT1", "NUTS_ID": "AT1"}, "id": "AT1"}]
-                  }'
+                                             "type": "Feature", 
+                                             "properties": {"CNTR_CODE": "AT", "NUTS_NAME": "OST\\u00d6STERREICH", 
+                                             "LEVL_CODE": 1, "FID": "AT1", "NUTS_ID": "AT1"}, "id": "AT1"}]
+                 }'
                 
         Note that it is also possible to parse an already fetched response:
             
@@ -2649,7 +2662,9 @@ class GISCOService(OSMService):
                 sub = sub[0].split('-')
                 unit, vec = sub[0:2]
                 if vec == 'label':      proj, year = sub[2:]
-                else:                   scale, proj, year = sub[2:]
+                else:                   
+                    scale, proj, year = sub[2:]
+                    level = sum(u.isdigit() for u in unit) # len(unit)-2
                 vec = settings.GISCO_VECTORS[vec]
         elif isnuts2json > 0:
             # source = 'NUTS2JSON'
