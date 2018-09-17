@@ -67,9 +67,10 @@ __all__         = ['_Service', '_Feature', '_Tool', '_Decorator', '_NestedDict']
 # IMPORT STATEMENTS
 #==============================================================================
 
-# standard import
+# import modules from Python Standard Library
 import os, sys, io
 import itertools, functools, collections
+import asyncio
 
 import time
 import hashlib
@@ -122,12 +123,24 @@ else:
         #import lockfile#deprecated
     except ImportError:  
         happyWarning("missing FASTENERS package (https://pypi.org/project/fasteners/)", ImportWarning)
+
+try:
+    import aiohttp
+    import aiofiles
+except:
+    ASYNCIO_AVAILABLE = False
+    happyWarning("missing AIOHTTP package (visit https://github.com/aio-libs/aiohttp)", ImportWarning)
+    happyWarning("missing AIOFILES package (visit https://pypi.org/project/aiofiles/)", ImportWarning)
+else:
+    ASYNCIO_AVAILABLE = True
+    happyVerbose('AIOHTTP help: https://aiohttp.readthedocs.io/en/latest/')
+    happyVerbose('AIOFILES help: https://pypi.org/project/aiofiles/')
     
 try:                                
     import simplejson as json
 except ImportError:
     happyWarning("missing SIMPLEJSON package (https://pypi.python.org/pypi/simplejson/)", ImportWarning)
-    try:                                
+    try:
         import json
     except ImportError: 
         happyWarning("JSON module missing in Python Standard Library", ImportWarning)
@@ -1968,25 +1981,28 @@ class _Service(object):
         if isinstance(self.cache_store,bool):
             self.__cache_store = self.__default_cache() if self.cache_store else None
         # determine appropriate setting for a given session, taking into account
-        # the explicit setting on that request, and the setting in the session. 
+        # the explicit setting on that request, and the setting in the session.         
         try:
-            # whether requests_cache is defined or not, no matter
-            self.__session = requests.Session()
-            # session = requests.session(**kwargs)
-        except:
-            raise happyError('wrong requests setting - SESSION not initialised')
-        if CACHECONTROL_INSTALLED is True and self.cache_store is not None:
+            assert ASYNCIO_AVAILABLE
+        except AssertionError:
             try:
-                if self.expire_after is None or int(self.expire_after) > 0:
-                    cache_store = FileCache(os.path.abspath(self.cache_store))  
-                else:
-                    cache_store = FileCache(os.path.abspath(self.cache_store), forever=True)
+                # whether requests_cache is defined or not, no matter
+                self.__session = requests.Session()
+                # session = requests.session(**kwargs)
             except:
-                pass
-            else:
-                self.__session = CacheControl(self.session, cache_store)
+                raise happyError('wrong requests setting - SESSION not initialised')
+            if CACHECONTROL_INSTALLED is True and self.cache_store is not None:
+                try:
+                    if self.expire_after is None or int(self.expire_after) > 0:
+                        cache_store = FileCache(os.path.abspath(self.cache_store))  
+                    else:
+                        cache_store = FileCache(os.path.abspath(self.cache_store), forever=True)
+                except:
+                    pass
+                else:
+                    self.__session = CacheControl(self.session, cache_store)
         try:
-            assert self.session is not None
+            assert ASYNCIO_AVAILABLE is True or self.session is not None
         except:
             raise happyError('wrong definition for SESSION parameters - SESSION not initialised')
         
@@ -2000,7 +2016,7 @@ class _Service(object):
         return self.__session
     @session.setter#analysis:ignore
     def session(self, session):
-        if session is not None and not isinstance(session, requests.sessions.Session):
+        if session is not None and not isinstance(session, requests.sessions.Session, aiohttp.client.ClientSession):
             raise happyError('wrong type for SESSION parameter')
         self.__session = session
     
@@ -2065,6 +2081,7 @@ class _Service(object):
         return os.path.join(basedir, settings.PACKAGE)    
         
     #/************************************************************************/   
+    @asyncio.coroutine 
     def get_status(self, url):
         """Retrieve the header of a URL and return the server's status code.
         
@@ -2113,18 +2130,18 @@ class _Service(object):
         :meth:`~_Service.get_response`, :meth:`~_Service.build_url`.
         """ 
         try:
-            response = self.session.head(url)
+            response = yield from self.session.head(url)
         except requests.ConnectionError:
             raise happyError('connection failed')  
         else:
-            happyVerbose('response status from web-service: %s' % response.status_code)
+            status = yield from response.status_code
+            happyVerbose('response status from web-service: %s' % status)
         try:
-            response.raise_for_status()
+            yield from response.raise_for_status()
         except:
             raise happyError('wrong request formulated')  
         else:
-            status = response.status_code
-            response.close()
+            yield from response.close()
         return status
 
     #/************************************************************************/
@@ -2171,14 +2188,16 @@ class _Service(object):
             os.remove(pathname)
                         
     #/************************************************************************/
-    def __get_response(self, url, **kwargs):
+    @asyncio.coroutine 
+    def __cache_response(self, session, url, **kwargs):
         """Download URL from internet and store the downloaded content into 
         <cache>/file.
         If <cache>/file already exists, it returns content from disk.
         
-            >>> page = serv.__get_response(url, cache_store=False, 
+            >>> page = serv.__cache_response(url, cache_store=False, 
                                            _force_download_=False, _expire_after_=-1)
         """
+        session = session or self.session
         # create cache directory only the fist time it is needed
         # note: html must be a str type not byte type
         cache_store = kwargs.get(_Decorator.KW_CACHE) or self.cache_store or False
@@ -2195,8 +2214,9 @@ class _Service(object):
             pathname = pathname.hex()
         pathname = os.path.join(cache_store or './', pathname)
         if force_download is True or not self.__is_cached(pathname, expire_after):
-            response = self.session.get(url)
-            content = response.content
+            response = yield from session.get(url)
+            content = yield from response.content.read()
+            # why no 'yield from'? StreamReader' object is not iterable
             if cache_store is not None:
                 if not os.path.exists(cache_store):
                     os.makedirs(cache_store)
@@ -2204,19 +2224,28 @@ class _Service(object):
                     raise happyError('cache {} is not a directory'.format(cache_store))
                 # write "content" to a given pathname
                 with open(pathname, 'wb') as f:
+                #with aiofiles.open(pathname, 'wb') as f:
                     f.write(content)
-                    f.close()  
+                    f.close() 
+                #with open(pathname, 'wb') as f:
+                #    f.write(content)
+                #    f.close()  
         else:
             if not os.path.exists(cache_store) or not os.path.isdir(cache_store):
                 raise happyError('cache %s is not a directory' % cache_store)
             # read "content" from a given pathname.
             with open(pathname, 'rb') as f:
+            #with aiofiles.open(pathname, 'rb') as f:
                 content = f.read()
-                f.close()
+                f.close() 
+            #with open(pathname, 'rb') as f:
+            #    content = f.read()
+            #    f.close()
         return content, pathname
     
     #/************************************************************************/
-    def get_response(self, url, **kwargs):
+    @asyncio.coroutine 
+    def __get_response(self, session, url, **kwargs):
         """Retrieve the GET response of a URL.
         
             >>> response = serv.get_response(url, **kwargs)
@@ -2302,6 +2331,7 @@ class _Service(object):
         --------
         :meth:`~_Service.get_status`, :meth:`~_Service.build_url`.
         """
+        session = session or self.session
         force_download = kwargs.pop(_Decorator.KW_FORCE, False)
         caching = kwargs.pop(_Decorator.KW_CACHING, True)
         if not isinstance(force_download, bool):
@@ -2314,37 +2344,60 @@ class _Service(object):
             try:
                 if REQUESTS_CACHE_INSTALLED is True:
                     with requests_cache.disabled():
-                        response = self.session.get(url)    
+                        response = yield from session.get(url)    
                 else:
-                    response = self.session.get(url)                
+                    response = yield from session.get(url)                
             except:
                 raise happyError('wrong request formulation') 
         else: 
             pathname = ''
+            kwargs.update({_Decorator.KW_FORCE: force_download,
+                           _Decorator.KW_CACHE: cache_store,
+                           _Decorator.KW_EXPIRE: expire_after})
+            response, pathname = yield from self.__cache_response(session, url, **kwargs)
             try:
                 if CACHECONTROL_INSTALLED is True:
-                    response = self.session.get(url)                
+                    response = yield from session.get(url)                
                 elif REQUESTS_CACHE_INSTALLED is True:
                     with requests_cache.enabled(self.cache_store, **kwargs):
-                        response = self.session.get(url)                
+                        response = yield from session.get(url)                
                 else:
                     kwargs.update({_Decorator.KW_FORCE: force_download,
                                    _Decorator.KW_CACHE: cache_store,
                                    _Decorator.KW_EXPIRE: expire_after})
-                    response, pathname = self.__get_response(url, **kwargs)
+                    response, pathname = yield from self.__cache_response(session, url, **kwargs)
             except:
                 raise happyError('wrong request formulated')  
             else:
                 response = _CachedResponse(response, url, path=pathname)
         try:
             assert response is not None
-            response.raise_for_status()
+            # yield from response.raise_for_status()
         except:
             raise happyError('wrong response retrieved')  
         return response
-        
+
     #/************************************************************************/
-    def read_response(self, response, **kwargs):
+    @asyncio.coroutine 
+    def get_response(self, urls, **kwargs):
+        @asyncio.coroutine 
+        def get_all_response(urls, **kwargs):
+            session = aiohttp.ClientSession()
+            tasks = []
+            # create list of tasks
+            for url in urls:
+                task = asyncio.ensure_future(self.__get_response(session, url, **kwargs))
+                tasks.append(task)
+            response = yield from asyncio.gather(*tasks) # gather task responses
+            yield from session.close()
+            return response
+        loop = asyncio.get_event_loop() # event loop
+        future = asyncio.ensure_future(get_all_response(urls, **kwargs)) # tasks to do
+        return loop.run_until_complete(future) # loop until done
+    
+    #/************************************************************************/
+    @asyncio.coroutine 
+    def __read_response(self, response, **kwargs):
         """Read the response of a given request.
         
             >>> data = serv.read_response(response, **kwargs)
@@ -2400,14 +2453,14 @@ class _Service(object):
         if fmt.startswith('json'):
             try:
                 assert fmt not in ('jsontext', 'jsonbytes')
-                data = response.json()
+                data = yield from response.json()
             except:
                 try:
                     assert fmt != 'jsonbytes'
-                    data = response.text
+                    data = yield from response.text
                 except:
                     try:
-                        data = response.content 
+                        data = yield from response.content 
                     except:
                         raise happyError('error JSON-encoding of response')
                     else:
@@ -2418,17 +2471,17 @@ class _Service(object):
                 return data
         elif fmt == 'raw':
             try:
-                data = response.raw
+                data = yield from response.raw
             except:
                 raise happyError('error accessing ''raw'' attribute of response')
         elif fmt in ('text', 'stringio'):
             try:
-                data = response.text
+                data = yield from response.text
             except:
                 raise happyError('error accessing ''text'' attribute of response')
         elif fmt in ('bytes', 'bytesio', 'zip'):
             try:
-                data = response.content 
+                data = yield from response.content 
             except:
                 raise happyError('error accessing ''content'' attribute of response')
         if fmt == 'stringio':
@@ -2495,6 +2548,20 @@ class _Service(object):
                 return data if data in ([],[None]) or len(data)>1 else data[0]
             elif operator == 'extractall':
                 return zf.extractall(path=path)    
+
+    #/************************************************************************/
+    @asyncio.coroutine 
+    def read_response(self, response, **kwargs):
+        async def read_all_response(session, response, **kwargs):
+            tasks = []
+            for resp in response:
+                task = asyncio.ensure_future(self.__read_response(resp, **kwargs))
+                tasks.append(task) # create list of tasks
+            all_resp = asyncio.gather(*tasks) # gather task responses
+            await all_resp
+        loop = asyncio.get_event_loop() # event loop
+        future = asyncio.ensure_future(read_all_response(response)) # tasks to do
+        loop.run_until_complete(future) # loop until done
             
     #/************************************************************************/
     def read_url(self, url, **kwargs):
@@ -2900,7 +2967,6 @@ class _NestedDict(dict):
         except:
             raise happyError('incompatible positional arguments with _NESTED_ keyword argument')            
         if dic in (None,{}):
-            dic, dimensions = self._deepcreate(*args, **kwargs)
             try:
                 dic, dimensions = self._deepcreate(*args, **kwargs)
             except:
@@ -3187,7 +3253,7 @@ class _NestedDict(dict):
         #    assert dic
         #except:
         #    dic, dimensions = {}, {}
-        #return dic, dimensions        
+        #return dic, dimensions   
         if happyType.ismapping(args):
             args = list(args.items())
         if not all([len(a)==2 for a in args]):
@@ -3388,7 +3454,7 @@ class _NestedDict(dict):
             >>> _NestedDict._deepinsert({}, ((1, 2), 3), ((4, 5), 6))
                 {1: {2: 3}, 4: {5: 6}}
         
-        Note the various way/syntax to parse items, and the different possible 
+        Note the various way/syntax items can be parsed, and the different possible 
         outputs:
             
             >>> _NestedDict._deepinsert({}, (1,2), (1,3) )
@@ -3415,16 +3481,20 @@ class _NestedDict(dict):
                 {1: {2: (3, 4)}, 3: 7, 10: 11}
             >>> _NestedDict._deepinsert(d, *items)
                 1: 2, 3: 4, 10: 11}
-            >>> items = ((1,2), ((3,4,5),6), ((3,4,7),8), ((3,4,9),10), (11,12))
+            >>> items2 = ((1,2), ((3,4,5),6), ((3,4,7),8), ((3,4,9),10), (11,12))
             >>> d2 = {1: -2, 3: {4: {-5:{-6:-7}}}, 8:-9}
-            >>> _NestedDict._deepinsert(d2, *items)
+            >>> _NestedDict._deepinsert(d2, *items2)
                 {1: 2, 3: {4: {-5: {-6: -7}, 5: 6, 7: 8, 9: 10}}, 8: -9, 11: 12}
         
         The keyword argument :data:`in_place` can be used for in-place update:
             
-            >>> d = {}
             >>> items = ((1,2), (3,(4,5)))
+            >>> d = {}
             >>> _NestedDict._deepinsert(d, items, in_place=True)
+            >>> print(d)
+                {1: {2: (3, (4, 5))}}
+            >>> d = {}
+            >>> _NestedDict._deepinsert(d, *items, in_place=True)
             >>> print(d)
                 {1: 2, 3: (4, 5)}
             >>> items = [(('a',1,'x'), 1), (('a',2,'y'), 2),
@@ -3449,8 +3519,13 @@ class _NestedDict(dict):
             assert happyType.ismapping(dic) and all([happyType.issequence(item) for item in items])
         except:
             raise happyError('wrong format/value for input arguments')
-        if len(items)==1 and not(happyType.issequence(items[0]) and len(items[0])==2): 
-            items = items[0]
+        # we speculate a lot here... probably not the best way...
+        if len(items)==1:
+            if not(happyType.issequence(items[0]) and len(items[0])==2)     \
+                    or all([happyType.issequence(i) and happyType.issequence(i[0]) for i in items[0]]):
+                items = items[0]
+            else:
+                pass
         try:
             assert len(items)==2 or all([len(item)==2 for item in items])
         except:
