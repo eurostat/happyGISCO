@@ -1548,21 +1548,15 @@ class GISCOService(OSMService):
         """Generic version of methods :meth:`~GISCOService.country_response` and
         :meth:`~GISCOService.nuts_response`.
         """
-        print('in _data_response')
-        print(dimensions.items())
         __del_source = True
         source = dimensions.get('SOURCE')
         if len(source) == 1: source = source[0]
-        print([(getattr(_Decorator,'KW_' + k), v) for k,v in dimensions.items() \
-                               if __del_source is False or source not in ('NUTS2JSON','BULK','INFO') or k!='SOURCE'])
         dic = _NestedDict([(getattr(_Decorator,'KW_' + k), v) for k,v in dimensions.items() \
                                if __del_source is False or source not in ('NUTS2JSON','BULK','INFO') or k!='SOURCE'],
                            **{_Decorator.KW_ORDER: True}) # [getattr(_Decorator,'KW_' + k) for k in dimensions.keys()]
         dim = {}
-        print('in _data_response 2')
         for prod in itertools.product(*list(dimensions.values())):
             dim.update(dict(zip([getattr(_Decorator,'KW_' + attr) for attr in dimensions.keys()], prod)))
-            print('in _data_response 3')
             try:
                 build_url = getattr(self, 'url_' + data.lower())
             except AttributeError:
@@ -1588,7 +1582,6 @@ class GISCOService(OSMService):
         # we use a default output format here!
         ofmt = kwargs.pop(_Decorator.KW_OFORMAT, 'text')
         # we want a response type in the first place
-        print(kwargs)
         try:
             response = kwargs.pop(_Decorator.KW_RESPONSE,None)
             assert response is None or isinstance(response,(_CachedResponse, requests.Response, _NestedDict))
@@ -1604,7 +1597,6 @@ class GISCOService(OSMService):
             except:
                 raise happyError('error reading %s response' % data.upper())
         # we insert the output format again
-        print(response)
         kwargs.update({_Decorator.KW_OFORMAT: ofmt}) 
         if isinstance(response,(_CachedResponse, requests.Response)):
             try:
@@ -1861,8 +1853,6 @@ class GISCOService(OSMService):
                 dimensions.pop('SCALE')
         dimensions.update({'SOURCE': [source,] if source is not None else unit})
         # kwargs.update({_Decorator.KW_OFORMAT: 'resp'})
-        print('in nuts_response: dimensions=%s' % dimensions)
-        print('in nuts_response: kwargs=%s' % kwargs)
         return self._data_response('NUTS', dimensions, **kwargs)
                 
     #/************************************************************************/

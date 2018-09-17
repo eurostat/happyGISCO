@@ -1208,7 +1208,6 @@ class NUTS(_Feature):
                 geom = self.transform.get_geometry(**kwargs)           
             except: 
                 try:
-                    print('try again')
                     geom = self.service.nuts_geometry(**kwargs)
                 except:
                     raise happyError('impossible to extract vector geometries from input data')
