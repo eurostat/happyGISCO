@@ -126,15 +126,15 @@ else:
 
 try:
     import aiohttp
-    import aiofiles
+    #import aiofiles
 except:
     ASYNCIO_AVAILABLE = False
     happyWarning("missing AIOHTTP package (visit https://github.com/aio-libs/aiohttp)", ImportWarning)
-    happyWarning("missing AIOFILES package (visit https://pypi.org/project/aiofiles/)", ImportWarning)
+    #happyWarning("missing AIOFILES package (visit https://pypi.org/project/aiofiles/)", ImportWarning)
 else:
     ASYNCIO_AVAILABLE = True
     happyVerbose('AIOHTTP help: https://aiohttp.readthedocs.io/en/latest/')
-    happyVerbose('AIOFILES help: https://pypi.org/project/aiofiles/')
+    #happyVerbose('AIOFILES help: https://pypi.org/project/aiofiles/')
     
 try:                                
     import simplejson as json
@@ -1982,9 +1982,7 @@ class _Service(object):
             self.__cache_store = self.__default_cache() if self.cache_store else None
         # determine appropriate setting for a given session, taking into account
         # the explicit setting on that request, and the setting in the session.         
-        try:
-            assert ASYNCIO_AVAILABLE
-        except AssertionError:
+        if ASYNCIO_AVAILABLE is False:            
             try:
                 # whether requests_cache is defined or not, no matter
                 self.__session = requests.Session()
@@ -2001,10 +1999,10 @@ class _Service(object):
                     pass
                 else:
                     self.__session = CacheControl(self.session, cache_store)
-        try:
-            assert ASYNCIO_AVAILABLE is True or self.session is not None
-        except:
-            raise happyError('wrong definition for SESSION parameters - SESSION not initialised')
+            try:
+                assert ASYNCIO_AVAILABLE is True or self.session is not None
+            except:
+                raise happyError('wrong definition for SESSION parameters - SESSION not initialised')
         
     #/************************************************************************/
     @property
@@ -2081,21 +2079,57 @@ class _Service(object):
         return os.path.join(basedir, settings.PACKAGE)    
         
     #/************************************************************************/   
-    @asyncio.coroutine 
-    def get_status(self, url):
+    @staticmethod
+    def __get_status(session, url):
+        # sequential implementation of get_status
+        try:
+            response = session.head(url)
+        except requests.ConnectionError:
+            raise happyError('connection failed')  
+        else:
+            status = response.status_code
+            happyVerbose('response status from web-service: %s' % status)
+        try:
+            response.raise_for_status()
+        except:
+            raise happyError('wrong request formulated')  
+        else:
+            response.close()
+        return status
+
+    #/************************************************************************/
+    @staticmethod
+    async def __aio_get_status(session, url):
+        # asynchronous implementation of get_status
+        try:
+            response = await session.head(url)
+        except requests.ConnectionError:
+            raise happyError('connection failed')  
+        async with response:
+            try:
+                response.raise_for_status()
+            except:
+                raise happyError('wrong request formulated') 
+            else: 
+                status = response.status
+                #happyVerbose('response status from web-service: %s' % status)
+        return status
+        
+    #/************************************************************************/   
+    def get_status(self, *urls):
         """Retrieve the header of a URL and return the server's status code.
         
-            >>> status = serv.get_status(url)
+            >>> status = serv.get_status(*urls)
             
         Arguments
         ---------
-        url : str
-            complete URL name whom status will be checked.
+        urls : str
+            complete URL name(s)) whom status will be checked.
         
         Returns
         -------
         status : int
-            response status code.
+            response status code(s).
             
         Raises
         ------
@@ -2129,20 +2163,31 @@ class _Service(object):
         --------
         :meth:`~_Service.get_response`, :meth:`~_Service.build_url`.
         """ 
-        try:
-            response = yield from self.session.head(url)
-        except requests.ConnectionError:
-            raise happyError('connection failed')  
+        if ASYNCIO_AVAILABLE is False:
+            status = [self.__get_status(self.session, url) for url in urls]
+            try:
+                status = [self.__get_status(self.session, url) for url in urls]
+            except:
+                raise happyError('sequential status extraction error')
         else:
-            status = yield from response.status_code
-            happyVerbose('response status from web-service: %s' % status)
-        try:
-            yield from response.raise_for_status()
-        except:
-            raise happyError('wrong request formulated')  
-        else:
-            yield from response.close()
-        return status
+            asyncio.set_event_loop(asyncio.new_event_loop())
+            loop = asyncio.get_event_loop() # event loop
+            async def aio_get_all_status(loop, urls):
+                async with aiohttp.ClientSession(loop=loop, raise_for_status=True) as session:
+                    # tasks to do
+                    tasks = [asyncio.ensure_future(self.__aio_get_status(session, url)) for url in urls]
+                    # gather task responses
+                    return await asyncio.gather(*tasks) 
+            try:
+                future = asyncio.ensure_future(aio_get_all_status(loop,urls)) 
+                # future = loop.create_task(aio_get_all_status(urls))
+                status = loop.run_until_complete(future) # loop until done
+                # status = future.result()
+            except:
+                raise happyError('asynchronous status extraction error')
+            finally:
+                loop.close()             
+        return status if status in ([],None) or len(status)>1 else status[0]
 
     #/************************************************************************/
     @staticmethod
@@ -2393,7 +2438,9 @@ class _Service(object):
             return response
         loop = asyncio.get_event_loop() # event loop
         future = asyncio.ensure_future(get_all_response(urls, **kwargs)) # tasks to do
-        return loop.run_until_complete(future) # loop until done
+        loop.run_until_complete(future) # loop until done
+        loop.close() 
+        return future.results
     
     #/************************************************************************/
     @asyncio.coroutine 
