@@ -1946,7 +1946,6 @@ else:
                     setattr(self, attr, getattr(r, attr))
             # self._encoding = ?
 
-
 #%%
 #==============================================================================
 # CLASS _Service
@@ -1981,7 +1980,7 @@ class _Service(object):
         if isinstance(self.cache_store,bool):
             self.__cache_store = self.__default_cache() if self.cache_store else None
         # determine appropriate setting for a given session, taking into account
-        # the explicit setting on that request, and the setting in the session.         
+        # the explicit setting on that request, and the setting in the session.
         if ASYNCIO_AVAILABLE is False:            
             try:
                 # whether requests_cache is defined or not, no matter
@@ -2103,8 +2102,8 @@ class _Service(object):
         # asynchronous implementation of get_status
         try:
             response = await session.head(url)
-        except requests.ConnectionError:
-            raise happyError('connection failed')  
+        except Exception as e: # aiohttp.ClientConnectionError:
+            raise happyError('connection failed', errtype=e)  
         async with response:
             try:
                 response.raise_for_status()
@@ -2146,7 +2145,7 @@ class _Service(object):
         
             >>> serv = base._Service()
             >>> serv.get_status('http://dumb')
-                ConnectionError: connection failed
+                Cannot connect to host dumb:80 ssl:None [nodename nor servname provided, or not known]: connection failed
             >>> serv.get_status('http://www.dumbanddumber.com')
                 301 
         
@@ -2164,11 +2163,10 @@ class _Service(object):
         :meth:`~_Service.get_response`, :meth:`~_Service.build_url`.
         """ 
         if ASYNCIO_AVAILABLE is False:
-            status = [self.__get_status(self.session, url) for url in urls]
             try:
                 status = [self.__get_status(self.session, url) for url in urls]
-            except:
-                raise happyError('sequential status extraction error')
+            except happyError as e:
+                raise happyError(errtype=e) # 'sequential status extraction error'
         else:
             asyncio.set_event_loop(asyncio.new_event_loop())
             loop = asyncio.get_event_loop() # event loop
@@ -2183,8 +2181,8 @@ class _Service(object):
                 # future = loop.create_task(aio_get_all_status(urls))
                 status = loop.run_until_complete(future) # loop until done
                 # status = future.result()
-            except:
-                raise happyError('asynchronous status extraction error')
+            except happyError as e:
+                raise happyError(errtype=e) # 'asynchronous status extraction error'
             finally:
                 loop.close()             
         return status if status in ([],None) or len(status)>1 else status[0]
@@ -2233,32 +2231,10 @@ class _Service(object):
             os.remove(pathname)
                         
     #/************************************************************************/
-    @asyncio.coroutine 
-    def __cache_response(self, session, url, **kwargs):
-        """Download URL from internet and store the downloaded content into 
-        <cache>/file.
-        If <cache>/file already exists, it returns content from disk.
-        
-            >>> page = serv.__cache_response(url, cache_store=False, 
-                                           _force_download_=False, _expire_after_=-1)
-        """
-        session = session or self.session
-        # create cache directory only the fist time it is needed
-        # note: html must be a str type not byte type
-        cache_store = kwargs.get(_Decorator.KW_CACHE) or self.cache_store or False
-        if isinstance(cache_store, bool) and cache_store is True:
-            cache_store = self.__default_cache()
-        force_download = kwargs.get(_Decorator.KW_FORCE) or False
-        expire_after = kwargs.get(_Decorator.KW_EXPIRE) or self.expire_after
-        # build unique filename from URL name and cache directory, _e.g._ using 
-        # hashlib encoding.
-        pathname = url.encode('utf-8')
-        try:
-            pathname = hashlib.md5(pathname).hexdigest()
-        except:
-            pathname = pathname.hex()
-        pathname = os.path.join(cache_store or './', pathname)
-        if force_download is True or not self.__is_cached(pathname, expire_after):
+    @staticmethod
+    def __cache_response(session, url, pathname, is_cache, cache_store):
+        # sequential implementation of cache_response
+        if is_cache is True:
             response = yield from session.get(url)
             content = yield from response.content.read()
             # why no 'yield from'? StreamReader' object is not iterable
@@ -2287,7 +2263,75 @@ class _Service(object):
             #    content = f.read()
             #    f.close()
         return content, pathname
+
+    #/************************************************************************/
+    @staticmethod
+    async def __aio_cache_response(session, url, pathname, is_cache, cache_store):
+        # asynchronous implementation of cache_response
+        pass
     
+    #/************************************************************************/
+    def cache_response(self, urls, **kwargs):
+        """Download URL from internet and store the downloaded content into 
+        <cache>/file.
+        If <cache>/file already exists, it returns content from disk.
+        
+            >>> page = serv.__cache_response(url, cache_store=False, 
+                                           _force_download_=False, _expire_after_=-1)
+        """
+        # create cache directory only the fist time it is needed
+        # note: html must be a str type not byte type
+        cache_store = kwargs.get(_Decorator.KW_CACHE) or self.cache_store or False
+        if isinstance(cache_store, bool) and cache_store is True:
+            cache_store = self.__default_cache()
+        force_download = kwargs.get(_Decorator.KW_FORCE) or False
+        expire_after = kwargs.get(_Decorator.KW_EXPIRE) or self.expire_after
+        # build unique filename from URL name and cache directory, _e.g._ using 
+        # hashlib encoding.
+        pathname = [url.encode('utf-8') for url in urls]
+        for i, pn in enumerate(pathname):
+            try:
+                pathname[i] = hashlib.md5(pn).hexdigest()
+            except:
+                pathname[i] = pn.hex()
+        pathname = [os.path.join(cache_store or './', pn) for pn in pathname]
+        is_cached = [self.__is_cached(pn, expire_after) for pn in pathname]
+        if force_download or any([ic is False for ic in is_cached]):
+            if cache_store is not None:
+                if not os.path.exists(cache_store):
+                    os.makedirs(cache_store)
+                elif not os.path.isdir(cache_store):
+                    raise happyError('cache {} is not a directory'.format(cache_store))
+        elif not os.path.exists(cache_store) or not os.path.isdir(cache_store):
+            raise happyError('cache %s is not a directory' % cache_store)
+        if ASYNCIO_AVAILABLE is False:
+            try:
+                status = [self.__cache_status(self.session, pn, urls[i], is_cached[i], cache_store)     \
+                          for i, pn in enumerate(pathname)]
+            except happyError as e:
+                raise happyError(errtype=e) # 'sequential status extraction error'
+        else:
+            asyncio.set_event_loop(asyncio.new_event_loop())
+            loop = asyncio.get_event_loop() # event loop
+            async def aio_cache_all_response(loop, urls):
+                async with aiohttp.ClientSession(loop=loop, raise_for_status=True) as session:
+                    # tasks to do
+                    tasks = [asyncio.ensure_future(self.__aio_cache_response(session, url)) for url in urls]
+                    # gather task responses
+                    return await asyncio.gather(*tasks) 
+            try:
+                future = asyncio.ensure_future(aio_cache_all_response(loop,urls)) 
+                # future = loop.create_task(aio_get_all_status(urls))
+                status = loop.run_until_complete(future) # loop until done
+                # status = future.result()
+            except happyError as e:
+                raise happyError(errtype=e) # 'asynchronous status extraction error'
+            finally:
+                loop.close()             
+        return status if status in ([],None) or len(status)>1 else status[0]
+
+
+
     #/************************************************************************/
     @asyncio.coroutine 
     def __get_response(self, session, url, **kwargs):

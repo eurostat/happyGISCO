@@ -257,7 +257,7 @@ class happyError(Exception):
             happyError: !!! AssertionError: It is False !!!
     """
     
-    def __init__(self, errmsg, errtype=None, errcode=None, expr=''):   
+    def __init__(self, errmsg='', errtype=None, errcode=None, expr=''):   
         self.errmsg = errmsg
         if expr is not None:        self.expr = expr
         else:                       self.expr = '' 
@@ -275,8 +275,7 @@ class happyError(Exception):
 
     def __str__(self):              
         # return repr(self.msg)
-        return ( 
-                "!!! %s%s%s%s%s%s%s !!!" %
+        str_ = ("%s%s%s%s%s%s%s" %
                 (self.errtype or '', 
                  ' ' if self.errtype and self.errcode else '',
                  self.errcode or '',
@@ -285,7 +284,13 @@ class happyError(Exception):
                  ' ' if self.errmsg and self.expr else '',
                  self.expr or '' #[' ' + self.expr if self.expr else '']
                  )
-            )
+                )
+        return ( "%s%s%s" % 
+                ('' if str_.startswith('!!!') else '!!! ',
+                 str_,
+                 '' if str_.endswith('!!!') else ' !!!'
+                 )
+                )
 
 
 #%%
