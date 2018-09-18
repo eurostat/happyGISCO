@@ -126,15 +126,15 @@ else:
 
 try:
     import aiohttp
-    #import aiofiles
+    import aiofiles
 except:
     ASYNCIO_AVAILABLE = False
     happyWarning("missing AIOHTTP package (visit https://github.com/aio-libs/aiohttp)", ImportWarning)
-    #happyWarning("missing AIOFILES package (visit https://pypi.org/project/aiofiles/)", ImportWarning)
+    happyWarning("missing AIOFILES package (visit https://pypi.org/project/aiofiles/)", ImportWarning)
 else:
     ASYNCIO_AVAILABLE = True
     happyVerbose('AIOHTTP help: https://aiohttp.readthedocs.io/en/latest/')
-    #happyVerbose('AIOFILES help: https://pypi.org/project/aiofiles/')
+    happyVerbose('AIOFILES help: https://pypi.org/project/aiofiles/')
     
 try:                                
     import simplejson as json
@@ -2175,7 +2175,7 @@ class _Service(object):
                     # tasks to do
                     tasks = [asyncio.ensure_future(self.__aio_get_status(session, url)) for url in urls]
                     # gather task responses
-                    return await asyncio.gather(*tasks) 
+                    return await asyncio.gather(*tasks, return_exceptions=True) 
             try:
                 future = asyncio.ensure_future(aio_get_all_status(loop,urls)) 
                 # future = loop.create_task(aio_get_all_status(urls))
@@ -2184,7 +2184,8 @@ class _Service(object):
             except happyError as e:
                 raise happyError(errtype=e) # 'asynchronous status extraction error'
             finally:
-                loop.close()             
+                loop.close()  
+        status = [s if isinstance(s,int) else -1 for s in status]
         return status if status in ([],None) or len(status)>1 else status[0]
 
     #/************************************************************************/
@@ -2232,51 +2233,49 @@ class _Service(object):
                         
     #/************************************************************************/
     @staticmethod
-    def __cache_response(session, url, pathname, is_cache, cache_store):
+    def __cache_response(session, url, pathname, no_cache, cache_store):
         # sequential implementation of cache_response
-        if is_cache is True:
-            response = yield from session.get(url)
-            content = yield from response.content.read()
-            # why no 'yield from'? StreamReader' object is not iterable
+        if no_cache is True or cache_store in (None,False):
+            response = session.get(url)
+            content = response.content
             if cache_store is not None:
-                if not os.path.exists(cache_store):
-                    os.makedirs(cache_store)
-                elif not os.path.isdir(cache_store):
-                    raise happyError('cache {} is not a directory'.format(cache_store))
                 # write "content" to a given pathname
                 with open(pathname, 'wb') as f:
-                #with aiofiles.open(pathname, 'wb') as f:
                     f.write(content)
                     f.close() 
-                #with open(pathname, 'wb') as f:
-                #    f.write(content)
-                #    f.close()  
         else:
-            if not os.path.exists(cache_store) or not os.path.isdir(cache_store):
-                raise happyError('cache %s is not a directory' % cache_store)
             # read "content" from a given pathname.
             with open(pathname, 'rb') as f:
-            #with aiofiles.open(pathname, 'rb') as f:
                 content = f.read()
                 f.close() 
-            #with open(pathname, 'rb') as f:
-            #    content = f.read()
-            #    f.close()
         return content, pathname
 
     #/************************************************************************/
     @staticmethod
-    async def __aio_cache_response(session, url, pathname, is_cache, cache_store):
+    async def __aio_cache_response(session, url, pathname, no_cache, cache_store):
         # asynchronous implementation of cache_response
-        pass
+        if no_cache is True or cache_store in (None,False):
+            response = await session.get(url)
+            content = await response.content.read()
+            if cache_store is not None:
+                # write "content" to a given pathname
+                async with aiofiles.open(pathname, 'wb') as f:
+                    f.write(content)
+                    f.close() 
+        else:
+            # read "content" from a given pathname.
+            async with aiofiles.open(pathname, 'rb') as f:
+                content = f.read()
+                f.close() 
+        return content, pathname
     
     #/************************************************************************/
-    def cache_response(self, urls, **kwargs):
+    def cache_response(self, *urls, **kwargs):
         """Download URL from internet and store the downloaded content into 
         <cache>/file.
         If <cache>/file already exists, it returns content from disk.
         
-            >>> page = serv.__cache_response(url, cache_store=False, 
+            >>> page = serv.cache_response(url, cache_store=False, 
                                            _force_download_=False, _expire_after_=-1)
         """
         # create cache directory only the fist time it is needed
@@ -2285,6 +2284,11 @@ class _Service(object):
         if isinstance(cache_store, bool) and cache_store is True:
             cache_store = self.__default_cache()
         force_download = kwargs.get(_Decorator.KW_FORCE) or False
+        if cache_store not in (False, None):
+            if not os.path.exists(cache_store):
+                os.makedirs(cache_store)
+            elif not os.path.isdir(cache_store):
+                raise happyError('cache %s is not a directory' % cache_store)
         expire_after = kwargs.get(_Decorator.KW_EXPIRE) or self.expire_after
         # build unique filename from URL name and cache directory, _e.g._ using 
         # hashlib encoding.
@@ -2295,18 +2299,12 @@ class _Service(object):
             except:
                 pathname[i] = pn.hex()
         pathname = [os.path.join(cache_store or './', pn) for pn in pathname]
-        is_cached = [self.__is_cached(pn, expire_after) for pn in pathname]
-        if force_download or any([ic is False for ic in is_cached]):
-            if cache_store is not None:
-                if not os.path.exists(cache_store):
-                    os.makedirs(cache_store)
-                elif not os.path.isdir(cache_store):
-                    raise happyError('cache {} is not a directory'.format(cache_store))
-        elif not os.path.exists(cache_store) or not os.path.isdir(cache_store):
-            raise happyError('cache %s is not a directory' % cache_store)
         if ASYNCIO_AVAILABLE is False:
             try:
-                status = [self.__cache_status(self.session, pn, urls[i], is_cached[i], cache_store)     \
+                response = [self.__cache_response(self.session, 
+                                                  urls[i], pn, 
+                                                  force_download or not self.__is_cached(pn, expire_after), 
+                                                  cache_store)     \
                           for i, pn in enumerate(pathname)]
             except happyError as e:
                 raise happyError(errtype=e) # 'sequential status extraction error'
@@ -2316,21 +2314,23 @@ class _Service(object):
             async def aio_cache_all_response(loop, urls):
                 async with aiohttp.ClientSession(loop=loop, raise_for_status=True) as session:
                     # tasks to do
-                    tasks = [asyncio.ensure_future(self.__aio_cache_response(session, url)) for url in urls]
+                    tasks = [asyncio.ensure_future(self.__aio_cache_response(session, 
+                                                                             urls[i], pn, 
+                                                                             force_download or not self.__is_cached(pn, expire_after), 
+                                                                             cache_store))     \
+                            for i, pn in enumerate(pathname)]
                     # gather task responses
-                    return await asyncio.gather(*tasks) 
+                    return await asyncio.gather(*tasks, return_exceptions=True) 
             try:
                 future = asyncio.ensure_future(aio_cache_all_response(loop,urls)) 
                 # future = loop.create_task(aio_get_all_status(urls))
-                status = loop.run_until_complete(future) # loop until done
+                response = loop.run_until_complete(future) # loop until done
                 # status = future.result()
             except happyError as e:
                 raise happyError(errtype=e) # 'asynchronous status extraction error'
             finally:
                 loop.close()             
-        return status if status in ([],None) or len(status)>1 else status[0]
-
-
+        return response # if response in ([],None) or len(response)>1 else response[0]
 
     #/************************************************************************/
     @asyncio.coroutine 
