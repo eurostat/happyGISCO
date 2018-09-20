@@ -1039,7 +1039,7 @@ class NUTS(_Feature):
         source = source or unit
         try:
             kwargs.update(self._dimensions)            
-            url = self.service.url_nuts(source=source, **kwargs)            
+            url = [self.service.url_nuts(source=s, **kwargs) for s in source]         
         except:
             raise happyError('impossible to define URL from input data') 
         else:
@@ -1048,7 +1048,7 @@ class NUTS(_Feature):
         return url
 
     #/************************************************************************/    
-    @_Decorator._parse_class((_CachedResponse, (aiohttp.ClientResponse,requests.Response)), _Decorator.KW_RESPONSE)
+    @_Decorator._parse_class((_CachedResponse, aiohttp.ClientResponse,requests.Response), _Decorator.KW_RESPONSE)
     @_Decorator.parse_url
     def __get_file(self, **kwargs):
         resp = kwargs.pop(_Decorator.KW_RESPONSE, None)
@@ -1204,7 +1204,7 @@ class NUTS(_Feature):
                     kwargs.update({_Decorator.KW_UNIT: self.unit})
             else:
                 kwargs.update({_Decorator.KW_FEATURE: self.feature})
-        kwargs.update({_Decorator.KW_OFORMAT: kwargs.pop(_Decorator.KW_OFORMAT, 'text')}) 
+        kwargs.update({_Decorator.KW_OFORMAT: kwargs.pop(_Decorator.KW_OFORMAT, 'JSON')})         
         try:
             geom = [self.service.nuts_geometry(**self.service.url2dimension(u)) for u in url]
             # geom = [self.service.read_url(u, **kwargs) for u in url]
@@ -1420,7 +1420,7 @@ class NUTS(_Feature):
     def feature(self, feature):
         try:
             assert GDAL_TOOL is True
-            decorator = _Decorator._parse_class([ogr.Feature,list], _Decorator.KW_FEATURE)
+            decorator = _Decorator._parse_class((ogr.Feature,list), _Decorator.KW_FEATURE)
             func = lambda **kw: kw.get(_Decorator.KW_FEATURE)
             feature = decorator(func)(**{_Decorator.KW_FEATURE: feature})
         except AssertionError:
@@ -1453,7 +1453,7 @@ class NUTS(_Feature):
     @geometry.setter
     def geometry(self, geom):
         try:
-            decorator = _Decorator._parse_class([str,dict,list], _Decorator.KW_GEOMETRY)
+            decorator = _Decorator._parse_class((str,dict,list), _Decorator.KW_GEOMETRY)
             # decorator = _Decorator._parse_class(None, _Decorator.KW_VECTOR)
             func = lambda **kw: kw.get(_Decorator.KW_GEOMETRY)
             geom = decorator(func)(**{_Decorator.KW_GEOMETRY: geom})
@@ -1560,12 +1560,16 @@ class NUTS(_Feature):
         """Feature identity property.
         """
         try:
-            fid = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_FID]         \
-                   for f in self.feature]
+            fid = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_FID]     \
+                   for f in self.geometry]
         except:
-            fid = None
-        else:
-            return fid if len(fid)>1 else fid[0]
+            try:
+                fid = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_FID] \
+                             for g in self.geometry                                         \
+                             for f in g[_Decorator.parse_nuts.KW_FEATURES]]                          
+            except:
+                fid = None
+        return fid if fid is None or len(fid)>1 else fid[0]
     
     #/************************************************************************/    
     @property
@@ -1574,16 +1578,20 @@ class NUTS(_Feature):
         A name type is :class:`str`.
         """
         try:
-            name = [n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_NAME]  \
-                    for n in self.feature]
+            name = [c[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_NAME]          \
+                    for c in self.content]
         except:
             try:
-                name = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_NUTS_NAME] \
-                        for f in self.feature]
+                name = [g[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_NUTS_NAME]      \
+                            for g in self.geometry]
             except:
-                name = None
-        else:
-            return name if name is None or len(name)>1 else name[0]
+                try:
+                    name = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_NUTS_NAME]  \
+                                 for g in self.geometry                                                 \
+                                 for f in g[_Decorator.parse_nuts.KW_FEATURES]]                          
+                except:
+                    name = None
+        return name if name is None or len(name)>1 else name[0]
     
     #/************************************************************************/    
     @property
@@ -1592,11 +1600,18 @@ class NUTS(_Feature):
         A value type is :class:`str`.
         """
         try:
-            value = [n[_Decorator.parse_nuts.KW_VALUE] for n in self.feature]
+            value = [c[_Decorator.parse_nuts.KW_VALUE] for c in self.content]
         except:
-            return None
-        else:
-            return value if value is None or len(value)>1 else value[0]
+            try:
+                value = [g[_Decorator.parse_nuts.KW_VALUE] for g in self.geometry]
+            except:
+                try:
+                    value = [f[_Decorator.parse_nuts.KW_VALUE]                      \
+                                 for g in self.geometry                             \
+                                 for f in g[_Decorator.parse_nuts.KW_FEATURES]]                          
+                except:
+                    value = None
+        return value if value is None or len(value)>1 else value[0]
     
     #/************************************************************************/    
     @property
