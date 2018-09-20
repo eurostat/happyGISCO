@@ -48,9 +48,9 @@ sake of an exhaustive documentation.
 
 **Dependencies**
 
-*require*:      :mod:`os`, :mod:`sys`, :mod:`io`, :mod:`itertools`, :mod:`functools`, :mod:`collections`, :mod:`time`, :mod:`hashlib`, :mod:`zipfile`, :mod:`copy`, :mod:`json`
+*require*:      :mod:`os`, :mod:`sys`, :mod:`io`, :mod:`asyncio`, :mod:`itertools`, :mod:`functools`, :mod:`collections`, :mod:`time`, :mod:`hashlib`, :mod:`copy`, :mod:`json`
 
-*optional*:     :mod:`datetime`, :mod:`requests`,  :mod:`requests_cache`,  :mod:`cachecontrol`, :mod:`chardet`
+*optional*:     :mod:`datetime`, :mod:`requests`,  :mod:`requests_cache`,  :mod:`cachecontrol`, :mod:`aiohttp`, :mod:`aiofiles`, :mod:`chardet`, :mod:`zipfile`, :mod:`zipstream` 
 
 *call*:         :mod:`settings`         
 
@@ -111,7 +111,16 @@ else:
         happyVerbose('AIOFILES help: https://pypi.org/project/aiofiles/')
     else:
         happyWarning("missing AIOFILES package (visit https://pypi.org/project/aiofiles/)", ImportWarning)
-
+    try:
+        import zipstream
+    except:
+        happyVerbose('ZIPSTREAM help: https://github.com/kbbdy/zipstream')
+        class AioZipStream():
+            pass
+    else:
+        happyWarning("missing ZIPSTREAM package (visit https://github.com/kbbdy/zipstream)", ImportWarning)
+        from zipstream import AioZipStream
+        
 try:                
     assert ASYNCIO_AVAILABLE                             
     import requests # urllib2
@@ -2009,7 +2018,7 @@ class _Service(object):
         # determine appropriate setting for a given session, taking into account
         # the explicit setting on that request, and the setting in the session. 
         self.__cache_backend = 'File'
-        if isinstance(self.cache_store,bool):
+        if isinstance(self.__cache_store, bool):
             self.__cache_store = self.__default_cache() if self.cache_store else None
         # determine appropriate setting for a given session, taking into account
         # the explicit setting on that request, and the setting in the session.
@@ -2031,9 +2040,11 @@ class _Service(object):
                 else:
                     self.__session = CacheControl(self.session, cache_store)
             try:
-                assert ASYNCIO_AVAILABLE is True or self.session is not None
+                assert self.session is not None
             except:
                 raise happyError('wrong definition for SESSION parameters - SESSION not initialised')
+        else:
+            self.__session = None
         
     #/************************************************************************/
     @property
@@ -2092,22 +2103,6 @@ class _Service(object):
             raise happyError('wrong type for %s parameter' % _Decorator.KW_EXPIRE.upper())
         #elif isinstance(expire_after, int) and expire_after<0:
         #    raise happyError('wrong time setting for %s parameter' % _Decorator.KW_EXPIRE.upper())
-
-    #/************************************************************************/
-    @staticmethod
-    def __default_cache():
-        """Create default pathname for cache directory depending on OS platform.
-        Inspired by `Python` package `mod:wbdata`: default path defined for 
-        `property:path` property of `class:Cache` class.
-        """
-        platform = sys.platform
-        if platform.startswith("win"): # windows
-            basedir = os.getenv("LOCALAPPDATA",os.getenv("APPDATA",os.path.expanduser("~")))
-        elif platform.startswith("darwin"): # Mac OS
-            basedir = os.path.expanduser("~/Library/Caches")
-        else:
-            basedir = os.getenv("XDG_CACHE_HOME",os.path.expanduser("~/.cache"))
-        return os.path.join(basedir, settings.PACKAGE)    
         
     #/************************************************************************/   
     def __get_status(self, url):
@@ -2228,7 +2223,23 @@ class _Service(object):
 
     #/************************************************************************/
     @staticmethod
-    def __build_cache_path(url, cache_store):
+    def __default_cache():
+        """Create default pathname for cache directory depending on OS platform.
+        Inspired by `Python` package `mod:wbdata`: default path defined for 
+        `property:path` property of `class:Cache` class.
+        """
+        platform = sys.platform
+        if platform.startswith("win"): # windows
+            basedir = os.getenv("LOCALAPPDATA",os.getenv("APPDATA",os.path.expanduser("~")))
+        elif platform.startswith("darwin"): # Mac OS
+            basedir = os.path.expanduser("~/Library/Caches")
+        else:
+            basedir = os.getenv("XDG_CACHE_HOME",os.path.expanduser("~/.cache"))
+        return os.path.join(basedir, settings.PACKAGE)    
+
+    #/************************************************************************/
+    @staticmethod
+    def __build_cache(url, cache_store):
         """Build unique filename from URL name and cache directory, e.g. using 
         hashlib encoding.
         :param url:
@@ -2244,12 +2255,8 @@ class _Service(object):
 
     #/************************************************************************/
     @staticmethod
-    def __is_cached(pathname, time_out):
-        """Check whether a URL has been already cached.
-        :param pathname:
-        :param time_out:
-        :returns: True if the file can be retrieved from the disk (cache)
-        """
+    def __is_cached(pathname, time_out): # note: we check a path here
+        #ignore-doc
         if not os.path.exists(pathname):
             resp = False
         elif time_out is None:
@@ -2264,14 +2271,30 @@ class _Service(object):
             happyVerbose("%s - last modified: %s" % (pathname,time.ctime(mtime)))
             resp = cur - mtime < time_out
         return resp
-
+    
+    #/************************************************************************/
+    @_Decorator.parse_url
+    def is_cached(self, *urls, **kwargs):
+        """Check whether a URL has been already cached.
+        
+        Returns
+        -------
+        ans : bool, list[bool] 
+            True if the input URL(s) can be retrieved from the disk (cache).,
+        """
+        urls = kwargs.pop('url', None) # overide
+        cache_store = kwargs.get(_Decorator.KW_CACHE) or self.cache_store or True
+        if isinstance(cache_store, bool) and cache_store is True:
+            cache_store = self.__default_cache()
+        expire_after = kwargs.get(_Decorator.KW_EXPIRE) or self.expire_after
+        ans = [self.__is_cached(self.__build_cache(url, cache_store), expire_after) 
+                for url in urls]
+        return ans if len(ans)>1 else ans[0]
+    
     #/************************************************************************/
     @staticmethod
-    def __clean_cache(pathname, time_out):
-        """Clean a cached file.
-        :param pathname:
-        :param time_out:
-        """
+    def __clean_cache(pathname, time_out): # note: we clean a path here
+        #ignore-doc
         if not os.path.exists(pathname):
             resp = False
         elif time_out is None or time_out <= 0:
@@ -2284,11 +2307,33 @@ class _Service(object):
         if resp is True:
             happyVerbose("removing disk file %s" % pathname)
             os.remove(pathname)
+            
+    #/************************************************************************/
+    @_Decorator.parse_url
+    def clean_cache(self, *urls, **kwargs):
+        """Clean a cached file or a cached repository.
+
+        """
+        urls = kwargs.pop('url', None) # overide
+        cache_store = kwargs.get(_Decorator.KW_CACHE) or self.cache_store or True
+        if isinstance(cache_store, bool) and cache_store is True:
+            cache_store = self.__default_cache()
+        expire_after = kwargs.get(_Decorator.KW_EXPIRE) or self.expire_after
+        if urls in ([],None):
+            pathnames = os.scandir(cache_store) 
+        else:
+            pathnames = [self.__build_cache(url, cache_store) for url in urls]
+        for pathname in pathnames:
+            self.__clean_cache(pathname, expire_after)
+        try:
+            os.rmdir(cache_store)
+        except OSError:
+            pass # the directory was not empty
                         
     #/************************************************************************/
     def __cache_response(self, url, force_download, cache_store, expire_after):
         # sequential implementation of cache_response
-        pathname = self.__build_cache_path(url, cache_store)
+        pathname = self.__build_cache(url, cache_store)
         is_cached = self.__is_cached(pathname, expire_after)
         if force_download is True or is_cached is False or cache_store in (None,False):
             response = self.session.get(url)
@@ -2297,18 +2342,16 @@ class _Service(object):
                 # write "content" to a given pathname
                 with open(pathname, 'wb') as f:
                     f.write(content)
-                    #f.close() 
         else:
             # read "content" from a given pathname.
             with open(pathname, 'rb') as f:
                 content = f.read()
-                #f.close() 
         return content, pathname
 
     #/************************************************************************/
     async def __aio_cache_response(self, session, url, force_download, cache_store, expire_after):
         # asynchronous implementation of cache_response
-        pathname = self.__build_cache_path(url, cache_store)
+        pathname = self.__build_cache(url, cache_store)
         is_cached = self.__is_cached(pathname, expire_after)
         if force_download is True or is_cached is False or cache_store in (None,False):
             response = await session.get(url)
@@ -2397,16 +2440,16 @@ class _Service(object):
             try:
                 if REQUESTS_CACHE_INSTALLED is True:
                     with requests_cache.disabled():
-                        response = self.session.get(url)    
+                        resp = self.session.get(url)    
                 else:
-                    response = self.session.get(url)                
+                    resp = self.session.get(url)                
             except:
                 raise happyError('wrong request formulation') 
         else: 
             path = ''
             try:
                 if CACHECONTROL_INSTALLED is True:
-                    response = self.session.get(url)                
+                    resp = self.session.get(url)                
                 elif REQUESTS_CACHE_INSTALLED is True:
                     with requests_cache.enabled(cache_store, **kwargs):
                         resp = self.session.get(url)                
@@ -2415,7 +2458,7 @@ class _Service(object):
             except:
                 raise happyError('wrong request formulated')  
             else:
-                resp = _CachedResponse(response, url, path=path)
+                resp = _CachedResponse(resp, url, path=path)
         try:
             assert resp is not None
         except:
@@ -2577,44 +2620,7 @@ class _Service(object):
         return response if response in ([],None) or len(response)>1 else response[0]
     
     #/************************************************************************/
-    @asyncio.coroutine 
     def __read_response(self, response, **kwargs):
-        """Read the response of a given request.
-        
-            >>> data = serv.read_response(response, **kwargs)
-            
-        Arguments
-        ---------
-        response : :class:`requests.models.Response`
-            response from an online request.
-            
-        Keyword arguments
-        -----------------
-        ofmt : str
-        kwargs :
-            
-        Returns
-        -------
-        data : 
-            data associated to the input argument :data:`response`, formatted 
-            according to what is parsed through the keyword arguments.
-            
-        Raises
-        ------
-        happyError
-            error is raised in the cases:
-            
-                * the input keyword parameters are wrongly set,
-                * there is an error in reading the response,
-                * there is an error in encoding the response.
-             
-        Examples
-        --------      
-
-        See also
-        --------
-        :meth:`~_Service.read_url`.
-        """
         fmt = kwargs.pop(_Decorator.KW_OFORMAT, None)
         if fmt in (None,'resp'):
             return response
@@ -2634,14 +2640,14 @@ class _Service(object):
         if fmt.startswith('json'):
             try:
                 assert fmt not in ('jsontext', 'jsonbytes')
-                data = yield from response.json()
+                data = response.json()
             except:
                 try:
                     assert fmt != 'jsonbytes'
-                    data = yield from response.text
+                    data = response.text
                 except:
                     try:
-                        data = yield from response.content 
+                        data = response.content 
                     except:
                         raise happyError('error JSON-encoding of response')
                     else:
@@ -2652,17 +2658,17 @@ class _Service(object):
                 return data
         elif fmt == 'raw':
             try:
-                data = yield from response.raw
+                data = response.raw
             except:
                 raise happyError('error accessing ''raw'' attribute of response')
         elif fmt in ('text', 'stringio'):
             try:
-                data = yield from response.text
+                data = response.text
             except:
                 raise happyError('error accessing ''text'' attribute of response')
         elif fmt in ('bytes', 'bytesio', 'zip'):
             try:
-                data = yield from response.content 
+                data = response.content 
             except:
                 raise happyError('error accessing ''content'' attribute of response')
         if fmt == 'stringio':
@@ -2731,19 +2737,169 @@ class _Service(object):
                 return zf.extractall(path=path)    
 
     #/************************************************************************/
-    @asyncio.coroutine 
+    async def __aio_read_response(self, response, **kwargs):
+        fmt = kwargs.pop(_Decorator.KW_OFORMAT, None)
+        if fmt in (None,'resp'):
+            return response
+        try:
+            assert fmt is None or happyType.isstring(fmt)
+        except:
+            raise happyError('wrong format for %s parameter' % _Decorator.KW_OFORMAT.upper()) 
+        else:
+            fmt = fmt.lower()
+        try:
+            assert fmt in ['jsontext', 'jsonbytes'] + self.RESPONSE_FORMATS # only for developers
+        except:
+            raise happyError('wrong value for FMT parameter - must be in %s' % self.RESPONSE_FORMATS) 
+        else:
+            if fmt == 'content':
+                fmt = 'bytes'
+        if fmt.startswith('json'):
+            try:
+                assert fmt not in ('jsontext', 'jsonbytes')
+                data = await response.json()
+            except:
+                try:
+                    assert fmt != 'jsonbytes'
+                    data = await response.text
+                except:
+                    try:
+                        data = await response.content 
+                    except:
+                        raise happyError('error JSON-encoding of response')
+                    else:
+                        fmt = 'jsonbytes' # force
+                else:
+                    fmt = 'jsontext' # force
+            else:
+                return data
+        elif fmt == 'raw':
+            try:
+                data = await response.raw
+            except:
+                raise happyError('error accessing ''raw'' attribute of response')
+        elif fmt in ('text', 'stringio'):
+            try:
+                data = await response.text
+            except:
+                raise happyError('error accessing ''text'' attribute of response')
+        elif fmt in ('bytes', 'bytesio', 'zip'):
+            try:
+                data = await response.content 
+            except:
+                raise happyError('error accessing ''content'' attribute of response')
+        if fmt == 'stringio':
+            try:
+                data = await io.StringIO(data)
+            except:
+                raise happyError('error loading StringIO data')
+        elif fmt in ('bytesio', 'zip'):
+            try:
+                data = await io.BytesIO(data)
+            except:
+                raise happyError('error loading BytesIO data')
+        elif fmt == 'jsontext':
+            try:
+                data = await json.loads(data)
+            except:
+                raise happyError('error JSON-encoding of str text')
+        elif fmt == 'jsonbytes':                
+                try:
+                    data = json.loads(data.decode())
+                except:
+                    try:            
+                        assert CHARDET_INSTALLED is True
+                        data = await json.loads(data.decode(chardet.detect(data)["encoding"]))
+                    except:
+                        raise happyError('error JSON-encoding of bytes content')
+        if fmt != 'zip':
+            return data 
+        # deal with special case
+        operators = [op for op in self.ZIP_OPERATIONS if op in kwargs.keys()] 
+        try:
+            #assert set(kwargs.keys()).difference(set(self.ZIP_OPERATIONS)) == set()
+            assert operators not in ([],[None])
+        except:
+            raise happyError('parsed operations are not recognised')
+        try:
+            assert sum([1 for op in operators]) == 1
+        except:
+            raise happyError('only one operation supported per call')  
+        else:
+            operator = operators[0] 
+        members, path = None, None
+        if operator in ('extract', 'getinfo', 'read'):
+            members = kwargs.pop(operator, None)
+        elif operator == 'extractall':
+            path = kwargs.pop('extractall', None)
+        else: # elif operator in ('infolist','namelist'):
+            try:
+                assert kwargs.get(operator) not in (False,None)
+            except:
+                raise happyError('no operation parsed')
+        if not happyType.issequence(members):
+            members = [members,]
+
+        async def zip_async(zipname, files):
+            aiozip = AioZipStream(files, chunksize=32768)
+            async with aiofiles.open(zipname, mode='wb') as z:
+                async for chunk in aiozip.stream():
+                    await z.write(chunk)
+
+        async with zipfile.ZipFile(data) as zf:
+            #if not zipfile.is_zipfile(zf): # does not work
+            #    raise happyError('file not recognised as zip file')    
+            if operator in  ('infolist','namelist'):
+                return getattr(zf, operator)()
+            elif members is not None:
+                if not all([m in zf.namelist() for m in members]):
+                    raise happyError('impossible to retrieve member file(s) from zipped data')
+            if operator in ('extract', 'getinfo', 'read'):
+                data = [getattr(zf, operator)(m) for m in members]
+                return data if data in ([],[None]) or len(data)>1 else data[0]
+            elif operator == 'extractall':
+                return zf.extractall(path=path)    
+
+    #/************************************************************************/
     def read_response(self, response, **kwargs):
-        async def read_all_response(session, response, **kwargs):
-            tasks = []
-            for resp in response:
-                task = asyncio.ensure_future(self.__read_response(resp, **kwargs))
-                tasks.append(task) # create list of tasks
-            all_resp = asyncio.gather(*tasks) # gather task responses
-            await all_resp
-        loop = asyncio.get_event_loop() # event loop
-        future = asyncio.ensure_future(read_all_response(response)) # tasks to do
-        loop.run_until_complete(future) # loop until done
+        """Read the response of a given request.
+        
+            >>> data = serv.read_response(response, **kwargs)
             
+        Arguments
+        ---------
+        response : :class:`requests.models.Response`
+            response from an online request.
+            
+        Keyword arguments
+        -----------------
+        ofmt : str
+        kwargs :
+            
+        Returns
+        -------
+        data : 
+            data associated to the input argument :data:`response`, formatted 
+            according to what is parsed through the keyword arguments.
+            
+        Raises
+        ------
+        happyError
+            error is raised in the cases:
+            
+                * the input keyword parameters are wrongly set,
+                * there is an error in reading the response,
+                * there is an error in encoding the response.
+             
+        Examples
+        --------      
+
+        See also
+        --------
+        :meth:`~_Service.read_url`.
+        """
+        pass
+    
     #/************************************************************************/
     def read_url(self, url, **kwargs):
         """Returns the (possibly formatted) response of a given URL.
@@ -2896,13 +3052,6 @@ class _Service(object):
             url = "%s%s%s" % (url, sep, filters)
         return url
         
-    #/************************************************************************/
-    @classmethod
-    def clean_cache(cls, domain=None, **kwargs):
-        """
-        """
-        pass
-
 #%%
 #==============================================================================
 # CLASS _Tool

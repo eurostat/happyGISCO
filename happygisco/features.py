@@ -57,7 +57,7 @@ import functools#analysis:ignore
 from happygisco import happyWarning, happyVerbose, happyError, happyType
 from happygisco import settings
 #from happygisco import base
-from happygisco.base import SERVICE_AVAILABLE
+from happygisco.base import ASYNCIO_AVAILABLE
 from happygisco.base import _Feature, _CachedResponse, _Decorator, _NestedDict
 from happygisco import tools     
 from happygisco.tools import GDAL_TOOL, FOLIUM_TOOL, LEAFLET_TOOL#analysis:ignore
@@ -67,15 +67,20 @@ from happygisco.services import GISCO_SERVICE, API_SERVICE
 #from happygisco.services import GISCOService, APIService
    
 # requirements
-
-try:                
-    assert SERVICE_AVAILABLE                    
-except AssertionError:
-    class requests():
-        class Response():
+try:
+    assert ASYNCIO_AVAILABLE                             
+except:
+    import requests # urllib2
+    class aiohttp():
+        class ClientResponse():
             pass
 else:
-    import requests 
+    import aiohttp
+    class requests():
+        class codes():
+            ok = 200
+        class Response():
+            pass
 
 try:                                
     import simplejson as json
@@ -1043,7 +1048,7 @@ class NUTS(_Feature):
         return url
 
     #/************************************************************************/    
-    @_Decorator._parse_class((_CachedResponse, requests.Response), _Decorator.KW_RESPONSE)
+    @_Decorator._parse_class((_CachedResponse, (aiohttp.ClientResponse,requests.Response)), _Decorator.KW_RESPONSE)
     @_Decorator.parse_url
     def __get_file(self, **kwargs):
         resp = kwargs.pop(_Decorator.KW_RESPONSE, None)
@@ -1249,7 +1254,7 @@ class NUTS(_Feature):
         elif not happyType.issequence(resp):
             resp = [resp,]
         try:
-            assert all([isinstance(r,(_CachedResponse, requests.Response)) for r in resp])
+            assert all([isinstance(r,(_CachedResponse, aiohttp.ClientResponse, requests.Response)) for r in resp])
         except:
             raise happyError('wrong format/value for %s argument' % _Decorator.KW_RESPONSE.upper())
         else:
