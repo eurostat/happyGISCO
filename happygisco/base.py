@@ -70,10 +70,11 @@ __all__         = ['_Service', '_Feature', '_Tool', '_Decorator', '_NestedDict']
 # import modules from Python Standard Library
 import os, sys, io
 import itertools, functools, collections
+import inspect
 import asyncio
 
 import time
-import hashlib
+import hashlib, shutil
 import copy, zipfile
 #import abc
 
@@ -111,15 +112,6 @@ else:
         happyVerbose('AIOFILES help: https://pypi.org/project/aiofiles/')
     else:
         happyWarning("missing AIOFILES package (visit https://pypi.org/project/aiofiles/)", ImportWarning)
-    try:
-        import zipstream
-    except:
-        happyVerbose('ZIPSTREAM help: https://github.com/kbbdy/zipstream')
-        class AioZipStream():
-            pass
-    else:
-        happyWarning("missing ZIPSTREAM package (visit https://github.com/kbbdy/zipstream)", ImportWarning)
-        from zipstream import AioZipStream
         
 try:                
     assert ASYNCIO_AVAILABLE                             
@@ -1482,7 +1474,6 @@ class _Decorator(object):
                            '_values_':      settings.GISCO_YEARS,
                            '_key_default_': settings.DEF_GISCO_YEAR})
             super(_Decorator.parse_year, self).__init__(*args, **kwargs)
-        #pass
 
     #/************************************************************************/
     class parse_projection(__base):
@@ -2141,15 +2132,15 @@ class _Service(object):
         
     #/************************************************************************/ 
     @_Decorator.parse_url
-    def get_status(self, *args, **kwargs):
+    def get_status(self, *url, **kwargs):
         """Retrieve the header of a URL and return the server's status code.
         
-            >>> status = serv.get_status(*urls)
+            >>> status = serv.get_status(*url)
             
         Arguments
         ---------
-        urls : str
-            complete URL name(s)) whom status will be checked.
+        url : str
+            complete URL name(s) whom status will be checked.
         
         Returns
         -------
@@ -2188,7 +2179,12 @@ class _Service(object):
         --------
         :meth:`~_Service.get_response`, :meth:`~_Service.build_url`.
         """ 
-        urls = kwargs.pop('url')
+        try:
+            assert _Decorator.KW_URL in kwargs
+        except:
+            pass
+        else:
+            url = kwargs.pop(_Decorator.KW_URL)
         #if len(urls)==1 and happyType.issequence(urls[0]):
         #    urls = urls[0]
         #try:
@@ -2197,20 +2193,20 @@ class _Service(object):
         #    raise happyError('wrong type for input URLs')
         if ASYNCIO_AVAILABLE is False:
             try:
-                status = [self.__get_status(url) for url in urls]
+                status = [self.__get_status(u) for u in url]
             except happyError as e:
                 raise happyError(errtype=e) # 'sequential status extraction error'
         else:
             asyncio.set_event_loop(asyncio.new_event_loop())
             loop = asyncio.get_event_loop() # event loop
-            async def aio_get_all_status(loop, urls):
+            async def aio_get_all_status(loop, url):
                 async with aiohttp.ClientSession(loop=loop, raise_for_status=True) as session:
                     # tasks to do
-                    tasks = [self.__aio_get_status(session, url) for url in urls]
+                    tasks = [self.__aio_get_status(session, u) for u in url]
                     # gather task responses
                     return await asyncio.gather(*tasks, return_exceptions=True) 
             try:
-                future = asyncio.ensure_future(aio_get_all_status(loop,urls)) 
+                future = asyncio.ensure_future(aio_get_all_status(loop, url)) 
                 # future = loop.create_task(aio_get_all_status(urls))
                 status = loop.run_until_complete(future) # loop until done
                 # status = future.result()
@@ -2274,7 +2270,7 @@ class _Service(object):
     
     #/************************************************************************/
     @_Decorator.parse_url
-    def is_cached(self, *urls, **kwargs):
+    def is_cached(self, *url, **kwargs):
         """Check whether a URL has been already cached.
         
         Returns
@@ -2282,56 +2278,82 @@ class _Service(object):
         ans : bool, list[bool] 
             True if the input URL(s) can be retrieved from the disk (cache).,
         """
-        urls = kwargs.pop('url', None) # overide
+        try:
+            assert _Decorator.KW_URL in kwargs
+        except:
+            pass
+        else:
+            url = kwargs.pop(_Decorator.KW_URL)
         cache_store = kwargs.get(_Decorator.KW_CACHE) or self.cache_store or True
         if isinstance(cache_store, bool) and cache_store is True:
             cache_store = self.__default_cache()
         expire_after = kwargs.get(_Decorator.KW_EXPIRE) or self.expire_after
-        ans = [self.__is_cached(self.__build_cache(url, cache_store), expire_after) 
-                for url in urls]
+        ans = [self.__is_cached(self.__build_cache(u, cache_store), expire_after) 
+                for u in url]
         return ans if len(ans)>1 else ans[0]
     
     #/************************************************************************/
     @staticmethod
-    def __clean_cache(pathname, time_out): # note: we clean a path here
+    def __clean_cache(pathname, time_expiration): # note: we clean a path here
         #ignore-doc
         if not os.path.exists(pathname):
             resp = False
-        elif time_out is None or time_out <= 0:
+        elif time_expiration is None or time_expiration <= 0:
             resp = True
         else:
             cur = time.time()
             mtime = os.stat(pathname).st_mtime
             happyVerbose("%s - last modified: %s" % (pathname,time.ctime(mtime)))
-            resp = cur - mtime < time_out
+            resp = cur - mtime >= time_expiration
         if resp is True:
             happyVerbose("removing disk file %s" % pathname)
-            os.remove(pathname)
+            if os.path.isfile(pathname):
+                os.remove(pathname)
+            elif os.path.isdir(pathname):
+                shutil.rmtree(pathname) 
             
     #/************************************************************************/
     @_Decorator.parse_url
-    def clean_cache(self, *urls, **kwargs):
+    def clean_cache(self, *url, **kwargs):
         """Clean a cached file or a cached repository.
 
+        Examples
+        --------
+        
+            >>> serv = services.GISCOService()
+            >>> serv.clean_cache()
+            
+        To be sure, one can enfore the :data:`expire_after` parameter:
+            
+            >>> serv.clean_cache(expire_after=0)
+            
         """
-        urls = kwargs.pop('url', None) # overide
+        try:
+            assert _Decorator.KW_URL in kwargs
+        except:
+            pass
+        else:
+            url = kwargs.pop(_Decorator.KW_URL,None)
         cache_store = kwargs.get(_Decorator.KW_CACHE) or self.cache_store or True
         if isinstance(cache_store, bool) and cache_store is True:
             cache_store = self.__default_cache()
         expire_after = kwargs.get(_Decorator.KW_EXPIRE) or self.expire_after
-        if urls in ([],None):
+        if url in ((),None):
             pathnames = os.scandir(cache_store) 
         else:
-            pathnames = [self.__build_cache(url, cache_store) for url in urls]
+            pathnames = [self.__build_cache(u, cache_store) for u in url]
         for pathname in pathnames:
-            self.__clean_cache(pathname, expire_after)
-        try:
-            os.rmdir(cache_store)
-        except OSError:
-            pass # the directory was not empty
+            if pathname.is_dir():
+                self.__clean_cache(pathname, expire_after)
+        #try:
+        #    os.rmdir(cache_store)
+        #except OSError:
+        #    pass # the directory was not empty
+        if url in ((),None):
+            shutil.rmtree(cache_store) 
                         
     #/************************************************************************/
-    def __cache_response(self, url, force_download, cache_store, expire_after):
+    def __sync_cache_response(self, url, force_download, cache_store, expire_after):
         # sequential implementation of cache_response
         pathname = self.__build_cache(url, cache_store)
         is_cached = self.__is_cached(pathname, expire_after)
@@ -2349,7 +2371,8 @@ class _Service(object):
         return content, pathname
 
     #/************************************************************************/
-    async def __aio_cache_response(self, session, url, force_download, cache_store, expire_after):
+    async \
+    def __async_cache_response(self, session, url, force_download, cache_store, expire_after):
         # asynchronous implementation of cache_response
         pathname = self.__build_cache(url, cache_store)
         is_cached = self.__is_cached(pathname, expire_after)
@@ -2378,7 +2401,7 @@ class _Service(object):
     
     #/************************************************************************/
     @_Decorator.parse_url
-    def cache_response(self, *args, **kwargs):
+    def cache_response(self, *url, **kwargs):
         """Download URL from internet and store the downloaded content into 
         <cache>/file.
         If <cache>/file already exists, it returns content from disk.
@@ -2386,7 +2409,12 @@ class _Service(object):
             >>> page = serv.cache_response(url, cache_store=False, 
                                            _force_download_=False, _expire_after_=-1)
         """
-        urls = kwargs.pop('url')
+        try:
+            assert _Decorator.KW_URL in kwargs
+        except:
+            pass
+        else:
+            url = kwargs.pop(_Decorator.KW_URL)
         #if len(urls)==1 and happyType.issequence(urls[0]):
         #    urls = urls[0]
         #try:
@@ -2408,23 +2436,23 @@ class _Service(object):
         expire_after = kwargs.get(_Decorator.KW_EXPIRE) or self.expire_after
         if ASYNCIO_AVAILABLE is False:
             try:
-                resp, path = zip(*[self.__cache_response(url, force_download, cache_store, expire_after)              \
-                                        for url in urls])
+                resp, path = zip(*[self.__sync_cache_response(u, force_download, cache_store, expire_after)              \
+                                        for u in url])
             except happyError as e:
                 raise happyError(errtype=e) # 'sequential status extraction error'
         else:
             asyncio.set_event_loop(asyncio.new_event_loop())
             loop = asyncio.get_event_loop() # event loop
-            async def aio_cache_all_response(loop, urls):
+            async def async_cache_all_response(loop, url):
                 async with aiohttp.ClientSession(loop=loop, raise_for_status=True) as session:
                     # tasks to do
-                    tasks = [self.__aio_cache_response(session, url, 
+                    tasks = [self.__async_cache_response(session, u, 
                                                        force_download, cache_store, expire_after)         \
-                                for url in urls]
+                                for u in url]
                     # gather task responses
                     return await asyncio.gather(*tasks, return_exceptions=True) 
             try:
-                future = asyncio.ensure_future(aio_cache_all_response(loop, urls)) 
+                future = asyncio.ensure_future(async_cache_all_response(loop, url)) 
                 # future = loop.create_task(aio_get_all_status(urls))
                 resp, path = zip(*loop.run_until_complete(future)) # loop until done
                 # status = future.result()
@@ -2435,7 +2463,7 @@ class _Service(object):
         return (resp, path) if resp in ([],None) or len(resp)>1 else (resp[0], path[0])
 
     #/************************************************************************/
-    def __get_response(self, url, force_download, caching, cache_store, expire_after, **kwargs):
+    def __sync_get_response(self, url, force_download, caching, cache_store, expire_after, **kwargs):
         if caching is False or cache_store is None:
             try:
                 if REQUESTS_CACHE_INSTALLED is True:
@@ -2466,7 +2494,8 @@ class _Service(object):
         return resp
 
     #/************************************************************************/
-    async def __aio_get_response(self, session, url, force_download, caching, cache_store, expire_after):
+    async \
+    def __async_get_response(self, session, url, force_download, caching, cache_store, expire_after):
         if caching is False or cache_store is None:
             try:
                 resp = await session.get(url)                
@@ -2488,15 +2517,15 @@ class _Service(object):
     
     #/************************************************************************/
     @_Decorator.parse_url
-    def get_response(self, *args, **kwargs):
+    def get_response(self, *url, **kwargs):
         """Retrieve the GET response of a URL.
         
-            >>> response = serv.get_response(url, **kwargs)
+            >>> response = serv.get_response(*url, **kwargs)
             
         Arguments
         ---------
         url : str
-            complete URL name whose response is retrieved.
+            complete URL name(s) whose response(s) is(are) retrieved.
             
         Keyword arguments
         -----------------
@@ -2521,7 +2550,7 @@ class _Service(object):
         Returns
         -------
         response : :class:`requests.models.Response`
-            response retrieved from the input :data:`url` location.
+            response(s) fetched from the input :data:`url` addresses.
             
         Raises
         ------
@@ -2574,7 +2603,12 @@ class _Service(object):
         --------
         :meth:`~_Service.get_status`, :meth:`~_Service.build_url`.
         """
-        urls = kwargs.pop('url')
+        try:
+            assert _Decorator.KW_URL in kwargs
+        except:
+            pass
+        else:
+            url = kwargs.pop(_Decorator.KW_URL)
         caching = kwargs.pop(_Decorator.KW_CACHING, True)
         cache_store = kwargs.pop(_Decorator.KW_CACHE,None) or self.cache_store or False
         if isinstance(cache_store, bool) and cache_store is True:
@@ -2594,22 +2628,22 @@ class _Service(object):
             cache_store = self.__default_cache()
         if ASYNCIO_AVAILABLE is False:
             try:
-                response = [self.__get_response(url, force_download, caching, cache_store, expire_after)              \
-                            for url in urls]
+                response = [self.__sync_get_response(u, force_download, caching, cache_store, expire_after)              \
+                            for u in url]
             except happyError as e:
                 raise happyError(errtype=e) # 'sequential status extraction error'
         else:
             asyncio.set_event_loop(asyncio.new_event_loop())
             loop = asyncio.get_event_loop() # event loop
-            async def aio_get_all_response(loop, urls):
+            async def async_get_all_response(loop, url):
                 async with aiohttp.ClientSession(loop=loop, raise_for_status=True) as session:
                     # tasks to do
-                    tasks = [self.__aio_get_response(session, url, force_download, caching, cache_store, expire_after)  \
-                             for url in urls]
+                    tasks = [self.__async_get_response(session, u, force_download, caching, cache_store, expire_after)  \
+                             for u in url]
                     # gather task responses
                     return await asyncio.gather(*tasks, return_exceptions=True) 
             try:
-                future = asyncio.ensure_future(aio_get_all_response(loop, urls)) 
+                future = asyncio.ensure_future(async_get_all_response(loop, url)) 
                 # future = loop.create_task(aio_get_all_status(urls))
                 response = loop.run_until_complete(future) # loop until done
                 # status = future.result()
@@ -2620,7 +2654,7 @@ class _Service(object):
         return response if response in ([],None) or len(response)>1 else response[0]
     
     #/************************************************************************/
-    def __read_response(self, response, **kwargs):
+    def __sync_read_response(self, response, **kwargs):
         fmt = kwargs.pop(_Decorator.KW_OFORMAT, None)
         if fmt in (None,'resp'):
             return response
@@ -2737,9 +2771,10 @@ class _Service(object):
                 return zf.extractall(path=path)    
 
     #/************************************************************************/
-    async def __aio_read_response(self, response, **kwargs):
-        fmt = kwargs.pop(_Decorator.KW_OFORMAT, None)
-        if fmt in (None,'resp'):
+    async \
+    def __async_read_response(self, response, **kwargs):
+        fmt = kwargs.pop(_Decorator.KW_OFORMAT, 'json')
+        if fmt=='resp':
             return response
         try:
             assert fmt is None or happyType.isstring(fmt)
@@ -2839,37 +2874,32 @@ class _Service(object):
                 raise happyError('no operation parsed')
         if not happyType.issequence(members):
             members = [members,]
-
-        async def zip_async(zipname, files):
-            aiozip = AioZipStream(files, chunksize=32768)
-            async with aiofiles.open(zipname, mode='wb') as z:
-                async for chunk in aiozip.stream():
-                    await z.write(chunk)
-
+        # whatever comes next is actually not asynchronous
         async with zipfile.ZipFile(data) as zf:
             #if not zipfile.is_zipfile(zf): # does not work
             #    raise happyError('file not recognised as zip file')    
             if operator in  ('infolist','namelist'):
-                return getattr(zf, operator)()
+                return await getattr(zf, operator)()
             elif members is not None:
                 if not all([m in zf.namelist() for m in members]):
                     raise happyError('impossible to retrieve member file(s) from zipped data')
             if operator in ('extract', 'getinfo', 'read'):
-                data = [getattr(zf, operator)(m) for m in members]
+                data = await [getattr(zf, operator)(m) for m in members]
                 return data if data in ([],[None]) or len(data)>1 else data[0]
             elif operator == 'extractall':
-                return zf.extractall(path=path)    
+                return await zf.extractall(path=path)    
 
     #/************************************************************************/
-    def read_response(self, response, **kwargs):
+    @_Decorator._parse_class((_CachedResponse, aiohttp.ClientResponse, requests.Response), _Decorator.KW_RESPONSE)
+    def read_response(self, *response, **kwargs):
         """Read the response of a given request.
         
-            >>> data = serv.read_response(response, **kwargs)
+            >>> data = serv.read_response(*response, **kwargs)
             
         Arguments
         ---------
-        response : :class:`requests.models.Response`
-            response from an online request.
+        response : :class:`_CachedResponse`,:class:`requests.Response`,:class:`aiohttp.ClientResponse`,
+            response(s) from an online request.
             
         Keyword arguments
         -----------------
@@ -2898,18 +2928,47 @@ class _Service(object):
         --------
         :meth:`~_Service.read_url`.
         """
-        pass
+        try:
+            assert _Decorator.KW_RESPONSE in kwargs
+        except:
+            pass
+        else:
+            response = kwargs.pop(_Decorator.KW_RESPONSE)
+        if ASYNCIO_AVAILABLE is False:
+            try:
+                data = [self.__sync_read_response(resp, **kwargs) for resp in response]
+            except happyError as e:
+                raise happyError(errtype=e) # 'sequential status extraction error'
+        else:
+            asyncio.set_event_loop(asyncio.new_event_loop())
+            loop = asyncio.get_event_loop() # event loop
+            async def async_read_all_response(loop, response):
+                # tasks to do
+                tasks = [self.__async_read_response(resp, **kwargs) for resp in response]
+                # gather task responses
+                return await asyncio.gather(*tasks, return_exceptions=True) 
+            try:
+                future = asyncio.ensure_future(async_read_all_response(loop, response)) 
+                # future = loop.create_task(aio_get_all_status(urls))
+                data = loop.run_until_complete(future) # loop until done
+                # status = future.result()
+            except happyError as e:
+                raise happyError(errtype=e) # 'asynchronous status extraction error'
+            finally:
+                loop.close()             
+        return data if data in ([],None) or len(data)>1 else data[0]
     
     #/************************************************************************/
-    def read_url(self, url, **kwargs):
+    @_Decorator.parse_url
+    def read_url(self, *url, **kwargs):
         """Returns the (possibly formatted) response of a given URL.
         
-            >>> data = serv.read_url(url, **kwargs)
+            >>> data = serv.read_url(*url, **kwargs)
             
         Arguments
         ---------
         url : str
-            complete URL name from which data will be fetched.
+            complete URL name(s) from which data will be fetched.
             
         Keyword arguments
         -----------------
@@ -2932,12 +2991,22 @@ class _Service(object):
              
         Examples
         --------
+        
+        Note
+        ----
+        A mix of sequential/asynchronous implementations... 
 
         See also
         --------
         :meth:`~_Service.get_status`, :meth:`~_Service.get_response`, 
         :meth:`~_Service.read_response`.
         """
+        try:
+            assert _Decorator.KW_URL in kwargs
+        except:
+            pass
+        else:
+            url = kwargs.pop(_Decorator.KW_URL)
         try:
             assert self.get_status(url) is not None
         except:
@@ -3328,14 +3397,15 @@ class _NestedDict(dict):
             if len(values)==1:      
                 values = values * self.xlen()
         try:
-            self.xupdate(*zip(self.xkeys(),values))
+            self.xupdate(*zip(self.xkeys(**{_Decorator.KW_FORCE_LIST: True}), values))
         except:
             raise happyError('error loading dictionary values')
             
     #/************************************************************************/
     def __getattr__(self, attr): 
-        #if attr in inspect.getmembers(base._NestedDict, predicate=inspect.ismethod):
-        #   return object.__getattribute__(self, attr)
+        # ugly trick here...
+        if attr in inspect.getmembers(base._NestedDict, predicate=inspect.ismethod):#analysis:ignore
+            return object.__getattribute__(self, attr)
         try:
             xkeys = self.xkeys(**{_Decorator.KW_FORCE_LIST: True})
             xvalues = [getattr(v, attr) for v in self.xvalues(**{_Decorator.KW_FORCE_LIST: True})]
@@ -4100,15 +4170,19 @@ class _NestedDict(dict):
             assert item in (None,'') or item in ('items','keys','values')
         except:
             raise happyError('wrong format/value for ITEM argument')
-        def recurse(d):
+        if isinstance(dic, cls):
+            depth = dic.depth
+        else:
+            depth = -1
+        def recurse(d, inc):
             for k, v in d.items():
-                if happyType.ismapping(v) and v!={}:
-                    yield from recurse(v)
+                if depth>0 and inc<depth and happyType.ismapping(v) and v!={}:
+                    yield from recurse(v, inc+1)
                 else:
                     if item=='items':           yield (k, v)
                     elif item=='keys':          yield k
                     elif item=='values':        yield v
-        return list(recurse(dic))
+        return list(recurse(dic, 1))
     
     #/************************************************************************/
     def xget(self, *args, **kwargs):
@@ -4410,6 +4484,19 @@ class _NestedDict(dict):
         """Retrieve nested values of nested dictionary.
         
             >>> values = dnest.xvalues(*arg, **kwargs)
+            
+        Examples
+        --------
+        
+            >>> dic = {'a':[1,2], 'b':[4,5]}
+            >>> order = ['a', 'b']
+            >>> val = [{1:{2:3}}, {4:{5:6}, 7:{8:{9:10}}}, [11,12], 13]
+            >>> nd = base._NestedDict(dic, values=val, order=ord)
+            >>> print(nd)
+                {1: {4: {1: {2: 3}}, 5: {4: {5: 6}, 7: {8: {9: 10}}}}, 2: {4: [11, 12], 5: 13}}
+            >>> values = nd.xvalues()
+            >>> values == val
+                True
         """
         __force_list = kwargs.pop(_Decorator.KW_FORCE_LIST, False)
         if kwargs=={}:
