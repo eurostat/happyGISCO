@@ -1580,7 +1580,7 @@ class GISCOService(OSMService):
         :meth:`~GISCOService.nuts_geometry`.
         """
         # we use a default output format here!
-        ofmt = kwargs.pop(_Decorator.KW_OFORMAT, 'text')
+        ofmt = kwargs.pop(_Decorator.KW_OFORMAT, 'JSON')
         # we want a response type in the first place
         try:
             response = kwargs.pop(_Decorator.KW_RESPONSE,None)
@@ -2207,7 +2207,7 @@ class GISCOService(OSMService):
                 1948        ME      ME                                         ЦРНА ГОРА
                 1949        NL      NL                                         NEDERLAND
                 1950        SI      SI                                         SLOVENIJA        
-            >>> serv.nuts_info(info='NAMES', units=['BE','BG'])
+            >>> serv.nuts_info(info='NAMES', unit=['BE','BG'])
                      CNTR_CODE NUTS_ID                                          NUTS_NAME
                 41          BE     BE1  RÉGION DE BRUXELLES-CAPITALE / BRUSSELS HOOFDS...
                 42          BE   BE100  Arr. de Bruxelles-Capitale / Arr. van Brussel-...
