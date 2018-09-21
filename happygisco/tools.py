@@ -114,6 +114,15 @@ else:
     FOLIUM_TOOL = False
     happyVerbose('ipyleaflet help: https://ipyleaflet.readthedocs.io/en/latest/index.html')
 
+try:
+    import ipywidgets as widgets
+except ImportError:
+    WIDGET_TOOL = False
+    happyWarning('ipywidgets package (https://github.com/jupyter-widgets/ipywidgets) not loaded - Map resources not available')
+else:
+    WIDGET_TOOL = True
+    happyVerbose('ipywidgets help: https://ipywidgets.readthedocs.io/en/stable/index.html')
+
 #%%
 #==============================================================================
 # CLASS GeoLocation
@@ -2842,6 +2851,65 @@ class LeafMap(_Tool):
                 feature.add_to(self.Map) 
         # return self.Map
     
+
+#%%
+#==============================================================================
+# CLASS DimensionWidgets
+#==============================================================================
+
+try:    
+    assert WIDGET_TOOL 
+except AssertionError:
+    class DimensionWidgets():
+        pass
+else:
+    class DimensionWidgets():
+        
+        #@_Decorator.parse_level 
+        def gisco_level(self, **kwargs):
+            return widgets.SelectMultiple(
+                options=        kwargs.pop('options',settings.GISCO_NUTSLEVELS),
+                value=          kwargs.pop('value',settings.DEF_GISCO_NUTSLEVEL),
+                description=    'NUTS levels',
+                disabled=       False
+            )
+                              
+        #@_Decorator.parse_year
+        def gisco_year(self, **kwargs):
+            return widgets.RadioButtons(
+                options=        kwargs.pop('options',list(set(settings.GISCO_YEARS.values()))),
+                value=          kwargs.pop('value',settings.DEF_GISCO_YEAR),
+                description=    'NUTS year:',
+                disabled=       False
+            )
+            
+        #@_Decorator.parse_scale
+        def gisco_scale(self, **kwargs):
+            return widgets.RadioButtons(
+                options=        kwargs.pop('options',list(set(settings.GISCO_SCALES.values()))),
+                value=          kwargs.pop('value',settings.DEF_GISCO_SCALE),
+                description=    'Spatial scale:',
+                disabled=       False
+            )
+                                      
+        #@_Decorator.parse_vector 
+        def gisco_vector(self, **kwargs):
+            return widgets.RadioButtons(
+                options=        kwargs.pop('options',list(set(settings.GISCO_VECTORS.values()))),
+                value=          kwargs.pop('value',settings.DEF_GISCO_VECTOR),
+                description=    'Spatial type:',
+                disabled=       False
+            )
+            
+        #@_Decorator.parse_projection
+        def gisco_projection(self, **kwargs):
+            return widgets.RadioButtons(
+                options=        kwargs.pop('options',list(set(settings.GISCO_PROJECTIONS.values()))),
+                value=          kwargs.pop('value',settings.DEF_GISCO_PROJECTION),
+                description=    'Projection:',
+                disabled=       False
+            )
+
 
 #%%
 #==============================================================================
