@@ -971,6 +971,9 @@ class NUTS(_Feature):
     #/************************************************************************/    
     def __get_dimension(self, key, **kwargs): 
         #ignore-doc
+        if key.upper() in ('UNIT','SOURCE'):
+            happyWarning('keys %s and %s not used as dimensions' % ('UNIT','SOURCE'))
+            return
         try:
             kw = getattr(_Decorator, 'KW_' + key.upper())
         except AttributeError:
@@ -1173,15 +1176,16 @@ class NUTS(_Feature):
     @_Decorator.parse_url
     @_Decorator._parse_class(ogr.Feature, _Decorator.KW_FEATURE)
     def __get_geometry(self, **kwargs):
-        unit = kwargs.get(_Decorator.KW_UNIT)
+        unit = kwargs.get(_Decorator.KW_UNIT) or kwargs.pop(_Decorator.KW_SOURCE, None)
         feature = kwargs.pop(_Decorator.KW_FEATURE, None)
         url = kwargs.pop(_Decorator.KW_URL, None)
+        _argsNone = [1 for arg in (unit, feature, url) if arg in ('',None)]
         try:
-            assert feature is None or url in ('',None)
+            assert sum(_argsNone) >= 2
         except:
-            raise happyError('incompatible arguments %s and %s - parse one only' % \
-                             (_Decorator.KW_FEATURE.upper(),_Decorator.KW_URL.upper()))
-        if unit in ('',None) and feature in ('',None) and url in ('',None):
+            raise happyError('incompatible arguments %s, %s and %s - parse one only' % \
+                             (_Decorator.KW_UNIT.upper(), _Decorator.KW_FEATURE.upper(),_Decorator.KW_URL.upper()))
+        if sum(_argsNone) == 3:
             try:
                 assert self.__feat # getattr(self, self.__mangled_attr(_Decorator.KW_FEATURE))
             except (AssertionError,AttributeError):
@@ -1204,6 +1208,8 @@ class NUTS(_Feature):
                     kwargs.update({_Decorator.KW_UNIT: self.unit})
             else:
                 kwargs.update({_Decorator.KW_FEATURE: self.feature})
+        elif unit not in ('', None):
+            kwargs.update(**{_Decorator.KW_UNIT: unit})
         kwargs.update({_Decorator.KW_OFORMAT: kwargs.pop(_Decorator.KW_OFORMAT, 'JSON')})         
         try:
             geom = [self.service.nuts_geometry(**self.service.url2dimension(u)) for u in url]
@@ -1623,15 +1629,43 @@ class NUTS(_Feature):
     
     #/************************************************************************/
     def dump(self, **kwargs):
+        """
+        """
+        dimensions = self._dimensions
+        dimensions = [dimensions.copy(),] if happyType.ismapping(dimensions)    \
+            else [d.copy() for d in dimensions]
+        # LEVEL is useless...
+        [d.pop(_Decorator.KW_LEVEL,None) for d in dimensions]
+        if kwargs != {}:
+            if _Decorator.KW_UNIT in kwargs:
+                kwargs.update({_Decorator.KW_SOURCE: kwargs.pop(_Decorator.KW_UNIT)}) 
+            [d.update(kwargs) for d in dimensions] 
         try:
-            data = resp.json()
-        except:
+            assert self.__geom # getattr(self, self.__mangled_attr(_Decorator.KW_GEOMETRY))
+        except AssertionError:
             try:
-                data = resp.content 
-                data = json.loads(data.decode(chardet.detect(data)["encoding"]))
+                if len(dimensions)>1:
+                    dim = functools.reduce(lambda d1, d2:_NestedDict._deepmerge(d1, d2), dimensions)
+                else:
+                    dim = dimensions[0]
+                geom = self.__get_geometry(**dim) 
+                assert geom not in  ([],None)
             except:
-                data = None
-        json.dumps(resp.json())
+                raise happyError('missing property %s' % _Decorator.KW_GEOMETRY.upper()) 
+        else:
+            geom = self.__geom
+        try:
+            geom = [g.xvalues(**dimensions[i]) if isinstance(g, _NestedDict) else g   \
+                    for i, g in enumerate(geom)]
+        except:
+            raise happyError('error when dumping arguments %s' % kwargs) 
+        #try:
+        #    data = resp.content 
+        #    data = json.loads(data.decode(chardet.detect(data)["encoding"]))
+        #except:
+        #    data = None
+        #json.dumps(resp.json())
+        return geom if len(geom)>1 else geom[0]
     
     #/************************************************************************/
     def loads(self, **kwargs):
