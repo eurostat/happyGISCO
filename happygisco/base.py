@@ -4006,7 +4006,7 @@ class _NestedDict(dict):
                     break
         else:
             pass
-        val = [self.__dict__]
+        val = [self.copy()] 
         for i, dim in enumerate(order):
             val = happyType.seqflatten([list(v.items()) for v in val])
             if dim in kwargs.keys():
@@ -4489,9 +4489,9 @@ class _NestedDict(dict):
         --------
         
             >>> dic = {'a':[1,2], 'b':[4,5]}
-            >>> order = ['a', 'b']
+            >>> ord = ['a', 'b']
             >>> val = [{1:{2:3}}, {4:{5:6}, 7:{8:{9:10}}}, [11,12], 13]
-            >>> nd = base._NestedDict(dic, values=val, order=ord)
+            >>> nd = _NestedDict(dic, values=val, order=ord)
             >>> print(nd)
                 {1: {4: {1: {2: 3}}, 5: {4: {5: 6}, 7: {8: {9: 10}}}}, 2: {4: [11, 12], 5: 13}}
             >>> values = nd.xvalues()
@@ -4502,16 +4502,15 @@ class _NestedDict(dict):
         if kwargs=={}:
             values = self._deepest(self, item='values')
         else:
-            dic = {} 
             values = []
             kwargs.update({_Decorator.KW_FORCE_LIST: True})
             for xk in self.xkeys(**kwargs):
-                rdic = dic
+                rdic = self.copy() # copy.deepcopy(self)
                 for x in xk:
                     if x not in rdic:
                         rdic.update({x: {}})
                     rdic = rdic[x]
-                values.append(self.get(xk))
+                values.append(rdic)
         if values == []: values = None
         return values if __force_list is True or values in ([],None) or len(values)>1 else values[0]
 
