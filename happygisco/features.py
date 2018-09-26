@@ -1629,7 +1629,7 @@ class NUTS(_Feature):
     
     #/************************************************************************/
     def dump(self, **kwargs):
-        """
+        """Dump the geometry stored in this NUTS instance.
         """
         dimensions = self._dimensions
         dimensions = [dimensions.copy(),] if happyType.ismapping(dimensions)    \
@@ -1667,6 +1667,20 @@ class NUTS(_Feature):
         #json.dumps(resp.json())
         return geom if len(geom)>1 else geom[0]
     
+    #/************************************************************************/
+    def dumps(self, **kwargs):
+        """Dump the geometry stored in this NUTS instance as a string. 
+        """
+        geom = self.dump(**kwargs)
+        if happyType.issequence(geom) and len(geom)>1:
+            return [happyType.jsonstringify(g) for g in geom]
+        else:
+            return happyType.jsonstringify(geom)
+                    
+    #/************************************************************************/
+    def load(self, **kwargs):
+        pass
+                    
     #/************************************************************************/
     def loads(self, **kwargs):
         pass
@@ -1764,7 +1778,7 @@ class NUTS(_Feature):
                 raise happyError('unable to retrieve coordinates')
             else:
                 loc = Location(kwargs)
-        return self.id in loc.nuts()
+        return self.fid in loc.nuts()
         
 
 #%%

@@ -48,9 +48,9 @@ sake of an exhaustive documentation.
 
 **Dependencies**
 
-*require*:      :mod:`os`, :mod:`sys`, :mod:`io`, :mod:`asyncio`, :mod:`itertools`, :mod:`functools`, :mod:`collections`, :mod:`time`, :mod:`hashlib`, :mod:`copy`, :mod:`json`
+*require*:      :mod:`os`, :mod:`sys`, :mod:`io`, :mod:`asyncio`, :mod:`itertools`, :mod:`functools`, :mod:`collections`, :mod:`time`, :mod:`hashlib`, :mod:`zipfile`, :mod:`copy`, :mod:`json`
 
-*optional*:     :mod:`datetime`, :mod:`requests`,  :mod:`requests_cache`,  :mod:`cachecontrol`, :mod:`aiohttp`, :mod:`aiofiles`, :mod:`chardet`, :mod:`zipfile`, :mod:`zipstream` 
+*optional*:     :mod:`datetime`, :mod:`requests`,  :mod:`requests_cache`,  :mod:`cachecontrol`, :mod:`aiohttp`, :mod:`aiofiles`, :mod:`chardet`, :mod:`zipstream` 
 
 *call*:         :mod:`settings`         
 
@@ -117,6 +117,7 @@ try:
     assert ASYNCIO_AVAILABLE                             
     import requests # urllib2
 except AssertionError:
+    SERVICE_AVAILABLE = False                
     class requests():
         class Response():
             pass
@@ -425,6 +426,7 @@ class _Decorator(object):
              
         Notes
         -----
+        
         * As per the use  of the :class:`_Decorator` decorating functions in the
           module :mod:`happyGISCO`, the keyword arguments :data:`obj,cls,method_type` 
           can be ignored. 
@@ -846,6 +848,7 @@ class _Decorator(object):
             
         Notes
         -----
+        
         * The decorated method/function :data:`new_func` accepts the same :data:`*args` 
           positional arguments as :data:`func` and, in addition to the arguments 
           in `data:`**kwargs` already supported by the input method/function :data:`func`, 
@@ -3150,18 +3153,14 @@ class _Feature(object):
         self.__coord, self.__projection = None, None
         self.__service, self.__mapping, self.__transform = None, None, None
         try:
-            assert True
-        except:
-            happyWarning('transform/mapping tool(s) not available')
-        else:
             self.__transform = _Tool()
             self.__mapping = _Tool()
+        except:
+            happyWarning('transform/mapping tool(s) not available')
         try:
-            assert SERVICE_AVAILABLE
+            self.__service = _Service()
         except:
             happyWarning('web service(s) not available')
-        else:
-            self.__service = _Service()
        
     #/************************************************************************/
     @property

@@ -104,8 +104,9 @@ except ImportError:
     pass
 else:
     MOCK_MODULES = [package, ] + [package + '.' + m for m in HAPPYMODULES]
-    MOCK_MODULES += ['requests', 'requests_cache', 'cachecontrol', 'datetime', 'fasteners', # base
-                     'multiprocessing', 'osgeo', 'ipyleaflet', 'folium', # tools
+    MOCK_MODULES += [# 'asyncio', 'time', 'hashlib', 'shutil', 'copy', 'zipfile', 'inspect',
+                     'requests', 'requests_cache', 'cachecontrol', 'aiohttp', 'aiofiles', 'datetime', 'fasteners', # base
+                     'multiprocessing', 'osgeo', 'ipyleaflet', 'folium', 'ipywidgets', # tools
                      'googlemaps', 'googleplaces', 'geopy', 'pandas', 'Levenshtein', 'simplejson', # services
                      # features
                      ]
