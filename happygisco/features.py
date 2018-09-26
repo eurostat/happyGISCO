@@ -132,7 +132,10 @@ def __lat(inst):
         except:  # AttributeError
             raise happyError('coordinates parameter not set')
     return lat if lat is None or happyType.isnumeric(lat) or len(lat)>1 else lat[0]
-_Feature.lat = property(__lat) 
+try:
+    _Feature.lat = property(__lat) 
+except:
+    pass
 
 def __Lon(inst):
     try:
@@ -143,32 +146,47 @@ def __Lon(inst):
         except:  # AttributeError
             raise happyError('coordinates parameter not set')
     return Lon if Lon is None or happyType.isnumeric(Lon) or len(Lon)>1 else Lon[0]
-_Feature.Lon = property(__Lon) 
+try:
+    _Feature.Lon = property(__Lon) 
+except:
+    pass
     
 def __coordinates(inst):  
     try:            
         return [_ for _ in zip(inst.lat, inst.Lon)]
     except:
         return [inst.lat, inst.Lon]
-_Feature.coordinates = property(__coordinates) 
+try:
+    _Feature.coordinates = property(__coordinates) 
+except:
+    pass
 
 def __service(inst, service):
     if not (service is None or isinstance(service,(services.GISCOService, services.APIService, services.OSMService))):
         raise happyError('wrong type for SERVICE property')
     inst._Feature__service = service # we override the private attribute here
-_Feature.service = _Feature.service.setter(__service)
+try:
+    _Feature.service = _Feature.service.setter(__service)
+except:
+    pass
 
 def __transform(inst, transform):
     if not (transform is None or isinstance(transform,tools.GDALTransform)):
         raise happyError('wrong type for TRANSFORM property')
     inst._Feature__transform = transform
-_Feature.transform = _Feature.transform.setter(__transform)
+try:
+    _Feature.transform = _Feature.transform.setter(__transform)
+except:
+    pass
  
 def __mapping(inst, mapping):
     if not (mapping is None or isinstance(mapping,tools.LeafMap)): # ipyleaflet.Map, folium.Map
         raise happyError('wrong type for MAPPING property')
     inst._Feature__mapping = mapping
-_Feature.mapping = _Feature.mapping.setter(__mapping)
+try:
+    _Feature.mapping = _Feature.mapping.setter(__mapping)
+except:
+    pass
   
 #/****************************************************************************/
 def __init(inst, *args, **kwargs):
@@ -216,7 +234,10 @@ def __init(inst, *args, **kwargs):
         happyWarning('folium mapping services not available')
     else:
         inst.mapping = tools.LeafMap()
-_Feature.__init__ = __init
+try:
+    _Feature.__init__ = __init
+except:
+    pass
      
 #%%
 #==============================================================================
