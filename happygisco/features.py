@@ -807,13 +807,6 @@ class NUTS(_Feature):
     nuts : dict, list[dict]
         a (list of) dictionary(ies) representing a single NUTS geometry.
         
-    Properties
-    ----------
-    feature :
-        Feature property (:data:`getter`) of a :class:`NUTS` instance.
-    layer :
-        Layer property (:data:`getter`) of a :class:`NUTS` instance.
-
     Notes
     -----
     Bulk datasets:
@@ -881,19 +874,19 @@ class NUTS(_Feature):
     def __mangled_attr(self, attr):
         return '_%s__%s' % (self.__class__.__name__, attr)
     
-#    #/************************************************************************/
-#    def __getattr__(self, attr_name): 
-#        # ignore-doc
-#        try:
-#            return super(NUTS,self).__getattribute__(attr_name) 
-#        except AttributeError:
-#            try:
-#                attr = [n[attr_name] for n in getattr(self, '__' + _Decorator.KW_GEOMETRY)]
-#                assert not attr in ([],[None])
-#            except:
-#                raise AttributeError('attribute %s not known' % attr_name)
-#            else:
-#                return attr if attr is None or len(attr)>1 else attr[0]
+    ##/************************************************************************/
+    #def __getattr__(self, attr_name): 
+    #    # ignore-doc
+    #    try:
+    #        return super(NUTS,self).__getattribute__(attr_name) 
+    #    except AttributeError:
+    #        try:
+    #            attr = [n[attr_name] for n in getattr(self, '__' + _Decorator.KW_GEOMETRY)]
+    #            assert not attr in ([],[None])
+    #        except:
+    #            raise AttributeError('attribute %s not known' % attr_name)
+    #        else:
+    #            return attr if attr is None or len(attr)>1 else attr[0]
 
     #/************************************************************************/    
     @_Decorator.parse_url
@@ -905,6 +898,7 @@ class NUTS(_Feature):
     #@_Decorator.parse_vector
     #@_Decorator.parse_level
     def __get_dimensions(self, **kwargs):
+        #ignore-doc
         content = kwargs.pop(_Decorator.KW_CONTENT, None)
         geom = kwargs.pop(_Decorator.KW_GEOMETRY, None)
         url = kwargs.pop(_Decorator.KW_URL, None)
@@ -992,6 +986,7 @@ class NUTS(_Feature):
     #/************************************************************************/    
     def __get_dimension(self, key, **kwargs): 
         #ignore-doc
+        # Retrieve the dimension
         if key.upper() in ('UNIT','SOURCE'):
             happyWarning('keys %s and %s not used as dimensions' % ('UNIT','SOURCE'))
             return
@@ -1008,26 +1003,26 @@ class NUTS(_Feature):
 
     #/************************************************************************/    
     def __get_unit(self, **kwargs): 
-        """Retrieve NUTS identifier.
-        """
+        #ignore-doc
+        # Retrieve NUTS identifier
         return self.__get_dimension('SOURCE', **kwargs) # not 'UNIT'
     
     #/************************************************************************/    
     def __get_level(self, **kwargs): 
-        """Retrieve NUTS level.
-        """     
+        #ignore-doc
+        # Retrieve NUTS level
         return self.__get_dimension('LEVEL', **kwargs)
     
     #/************************************************************************/    
     def __get_scale(self, **kwargs): 
-        """Retrieve NUTS scale.
-        """     
+        #ignore-doc
+        # Retrieve NUTS scale
         return self.__get_dimension('SCALE', **kwargs)
         
     #/************************************************************************/    
     def __get_year(self, **kwargs): 
-        """Retrieve NUTS year.
-        """     
+        #ignore-doc
+        # Retrieve NUTS year
         return self.__get_dimension('YEAR', **kwargs)
     
     ##/************************************************************************/    
@@ -1040,6 +1035,7 @@ class NUTS(_Feature):
     @_Decorator._parse_class(str, _Decorator.KW_SOURCE)
     @_Decorator._parse_class(str, _Decorator.KW_UNIT)
     def __get_url(self, **kwargs):
+        #ignore-doc
         source = kwargs.pop(_Decorator.KW_SOURCE, None)
         unit = kwargs.pop(_Decorator.KW_UNIT, None)
         #try:
@@ -1075,6 +1071,7 @@ class NUTS(_Feature):
     @_Decorator._parse_class((_CachedResponse, aiohttp.ClientResponse,requests.Response), _Decorator.KW_RESPONSE)
     @_Decorator.parse_url
     def __get_file(self, **kwargs):
+        #ignore-doc
         resp = kwargs.pop(_Decorator.KW_RESPONSE, None)
         url = kwargs.pop(_Decorator.KW_URL, None)
         try:
@@ -1115,6 +1112,7 @@ class NUTS(_Feature):
     @_Decorator.parse_file
     @_Decorator.parse_url
     def __get_layer(self, **kwargs):
+        #ignore-doc
         file, url =                         \
             kwargs.get(_Decorator.KW_FILE), kwargs.get(_Decorator.KW_URL)
         try:
@@ -1153,6 +1151,7 @@ class NUTS(_Feature):
     @_Decorator.parse_url
     @_Decorator._parse_class(ogr.Layer, _Decorator.KW_LAYER)
     def __get_feature(self, **kwargs):
+        #ignore-doc
         file, layer, url =                  \
             kwargs.get(_Decorator.KW_FILE), kwargs.get(_Decorator.KW_LAYER), kwargs.get(_Decorator.KW_URL)
         _argsNone = [1 for arg in (file, url, layer) if arg in ('',None)]
@@ -1197,6 +1196,7 @@ class NUTS(_Feature):
     @_Decorator.parse_url
     @_Decorator._parse_class(ogr.Feature, _Decorator.KW_FEATURE)
     def __get_geometry(self, **kwargs):
+        #ignore-doc
         unit = kwargs.get(_Decorator.KW_UNIT) or kwargs.pop(_Decorator.KW_SOURCE, None)
         feature = kwargs.pop(_Decorator.KW_FEATURE, None)
         url = kwargs.pop(_Decorator.KW_URL, None)
@@ -1431,7 +1431,7 @@ class NUTS(_Feature):
     #/************************************************************************/
     @property
     def feature(self):
-        """Vector property (:data:`setter`/:data:`getter`) of a :class:`NUTS` instance.
+        """Feature property (:data:`setter`/:data:`getter`) of a :class:`NUTS` instance.
         """ 
         if self.__feat in ([],None):
             try:
@@ -1461,7 +1461,7 @@ class NUTS(_Feature):
     #/************************************************************************/
     @property
     def geometry(self):
-        """Feature property (:data:`setter`/:data:`getter`) of a :class:`NUTS` instance.
+        """Geometry property (:data:`setter`/:data:`getter`) of a :class:`NUTS` instance.
         """ 
         if self.__geom in ([],None):
             geom = self.__get_geometry() 
@@ -1584,7 +1584,7 @@ class NUTS(_Feature):
     #/************************************************************************/    
     @property
     def fid(self):
-        """Feature identity property.
+        """Feature identity property (:data:`getter`) of a :class:`NUTS` instance.
         """
         try:
             fid = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_FID]     \
