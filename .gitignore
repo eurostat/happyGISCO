@@ -1,12 +1,23 @@
-.gitignore
+#.gitignore
+
+# dummy backups
 *~
-__pycache__
 .DS_Store
 */.DS_Store
+*.bak
+
+# compiled python modules
 */__pycache__
 *.pyc
 */*.pyc
-*.bak
+
+# setuptools distribution folder.
+/dist/
+
+# Python egg metadata, regenerated from source files by setuptools.
+/*.egg-info
+
+# specific to this package
 docs/html
 notebooks/.ipynb_checkpoints
 notebooks/Untitled.ipynb
