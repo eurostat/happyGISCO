@@ -1,4 +1,4 @@
-#.gitignore
+.gitignore
 
 # dummy backups
 *~
