@@ -1,4 +1,4 @@
-.gitignore
+#.gitignore
 
 # dummy backups
 *~
@@ -12,12 +12,16 @@
 */*.pyc
 
 # setuptools distribution folder.
-/dist/
+dist/*
+build/*
 
 # Python egg metadata, regenerated from source files by setuptools.
-/*.egg-info
+*.egg-info/
+
+# documentation
+docs/html/*
+docs/doctrees/*
 
 # specific to this package
-docs/html
 notebooks/.ipynb_checkpoints
 notebooks/Untitled.ipynb
