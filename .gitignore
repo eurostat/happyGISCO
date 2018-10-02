@@ -19,7 +19,9 @@ build/*
 *.egg-info/
 
 # documentation
+docs/html
 docs/html/*
+docs/doctrees
 docs/doctrees/*
 
 # specific to this package
