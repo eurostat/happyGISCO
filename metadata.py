@@ -20,7 +20,7 @@ __date__            = '2018'
 __author__          = 'J. Grazzini'
 __contact__         = 'jacopo.grazzini@ec.europa.eu'
 __license__         = 'European Union Public Licence (EUPL)'
-__version__         = '1.0.3'
+__version__         = '1.0.0'
 __copyright__       = 'European Union'
 
 #/****************************************************************************/
