@@ -212,7 +212,7 @@ class happyError(Exception):
                 pass
         if inspect.isclass(errtype):            self.errtype = errtype.__name__
         elif isinstance(errtype, (int,float)):  self.errtype = str(errtype)
-        else:                               self.errtype = errtype
+        else:                                   self.errtype = errtype
         if errcode is not None:     self.errcode = str(errcode)
         else:                       self.errcode = ''
         # super(happyError,self).__init__(self, msg)
