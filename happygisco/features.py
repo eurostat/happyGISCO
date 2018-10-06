@@ -1603,12 +1603,19 @@ class NUTS(_Feature):
         """Feature identity property (:data:`getter`) of a :class:`NUTS` instance.
         """
         try:
+            geom = self.geometry
+        except:
+            return None
+        else:
+            if not happyType.issequence(geom):
+                geom = [geom,]
+        try:
             fid = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_FID]     \
-                   for f in self.geometry]
+                   for f in geom]
         except:
             try:
                 fid = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_FID] \
-                             for g in self.geometry                                         \
+                             for g in geom                                         \
                              for f in g[_Decorator.parse_nuts.KW_FEATURES]]                          
             except:
                 fid = None
@@ -1621,20 +1628,34 @@ class NUTS(_Feature):
         A name type is :class:`str`.
         """
         try:
-            name = [c[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_NAME]          \
-                    for c in self.content]
-        except:
+            geom = self.geometry
+            assert geom not in ([],None)
+        except:           
+            try:
+                cont = self._content
+                assert cont is not None
+            except:
+                return None
+            else:
+                if not happyType.issequence(cont):
+                    cont = [cont,]
+                name = [c[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_NAME]          \
+                        for c in cont]
+        else:
+            if not happyType.issequence(geom):
+                geom = [geom,]
             try:
                 name = [g[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_NUTS_NAME]      \
-                            for g in self.geometry]
+                            for g in geom]
             except:
                 try:
                     name = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_NUTS_NAME]  \
-                                 for g in self.geometry                                                 \
+                                 for g in geom                                                \
                                  for f in g[_Decorator.parse_nuts.KW_FEATURES]]                          
                 except:
                     name = None
-        return name if name is None or len(name)>1 else name[0]
+        finally:
+            return name if name is None or len(name)>1 else name[0]
     
     #/************************************************************************/    
     @property
@@ -1643,18 +1664,32 @@ class NUTS(_Feature):
         A value type is :class:`str`.
         """
         try:
-            value = [c[_Decorator.parse_nuts.KW_VALUE] for c in self.content]
-        except:
+            geom = self.geometry
+            assert geom not in ([],None)
+        except:           
             try:
-                value = [g[_Decorator.parse_nuts.KW_VALUE] for g in self.geometry]
+                cont = self._content
+                assert cont is not None
+            except:
+                return None
+            else:
+                if not happyType.issequence(cont):
+                    cont = [cont,]
+                value = [c[_Decorator.parse_nuts.KW_VALUE] for c in cont]
+        else:
+            if not happyType.issequence(geom):
+                geom = [geom,]
+            try:
+                value = [g[_Decorator.parse_nuts.KW_VALUE] for g in geom]
             except:
                 try:
                     value = [f[_Decorator.parse_nuts.KW_VALUE]                      \
-                                 for g in self.geometry                             \
+                                 for g in geom                           \
                                  for f in g[_Decorator.parse_nuts.KW_FEATURES]]                          
                 except:
                     value = None
-        return value if value is None or len(value)>1 else value[0]
+        finally:
+            return value if value is None or len(value)>1 else value[0]
     
     #/************************************************************************/    
     @property
