@@ -2104,14 +2104,21 @@ class _Service(object):
         try:
             response = self.session.head(url)
         except requests.ConnectionError:
-            raise happyError('connection failed')  
+            raise happyError('connection failed - a Connection error occurred')  
+        except requests.HTTPError:
+            raise happyError('request failed - an HTTP error occurred.')  
         else:
             status = response.status_code
-            happyVerbose('response status from web-service: %s' % status)
+        try:
+            name = settings.HTTP_ERROR_STATUS[status]['name']
+            desc = settings.HTTP_ERROR_STATUS[status]['desc']
+        except KeyError:
+            name = desc = 'Unknown error'#analysis:ignore
+        happyVerbose('response status from web-service: %s ("%s")' % (status,name))
         try:
             response.raise_for_status()
         except:
-            raise happyError('wrong request formulated')  
+            raise happyError('wrong request - %s status ("%s") returned' % (status,name))  
         else:
             response.close()
         return status
@@ -2123,13 +2130,19 @@ class _Service(object):
             response = await session.head(url)
         except Exception as e: # aiohttp.ClientConnectionError:
             raise happyError('connection failed', errtype=e)  
+        else: 
+            status = response.status
+        try:
+            name = settings.HTTP_ERROR_STATUS[status]['name']
+            desc = settings.HTTP_ERROR_STATUS[status]['desc']
+        except KeyError:
+            name = desc = 'Unknown error'#analysis:ignore
+        happyVerbose('response status from web-service: %s ("%s")' % (status,name))
         async with response:
             try:
                 response.raise_for_status()
             except:
-                raise happyError('wrong request formulated') 
-            else: 
-                status = response.status
+                raise happyError('wrong request - %s status ("%s") returned' % (status,name))  
                 #happyVerbose('response status from web-service: %s' % status)
         return status
         
@@ -2475,7 +2488,7 @@ class _Service(object):
                 else:
                     resp = self.session.get(url)                
             except:
-                raise happyError('wrong request formulation') 
+                raise happyError('wrong request formulated') 
         else: 
             path = ''
             try:
@@ -2503,7 +2516,7 @@ class _Service(object):
             try:
                 resp = await session.get(url)                
             except:
-                raise happyError('wrong request formulation') 
+                raise happyError('wrong request formulated') 
         else: 
             try:
                 resp, path = await self.__aio_cache_response(session, url, force_download, cache_store, expire_after)
@@ -3012,10 +3025,14 @@ class _Service(object):
             url = kwargs.pop(_Decorator.KW_URL)
         try:
             assert self.get_status(url) is not None
+        except happyError as e:
+            raise happyError(errtype=e)
         except:
             raise happyError('error API request - wrong URL status')
         try:
             response = self.get_response(url, **kwargs)
+        except happyError as e:
+            raise happyError(errtype=e)
         except:
             raise happyError('URL data for %s not loaded' % url)
         return self.read_response(response, **kwargs)
