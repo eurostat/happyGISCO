@@ -494,3 +494,299 @@ generate polylines (see the `package website <https://pypi.python.org/pypi/polyl
 Not really necessary to generate the routes.
 """
 
+HTTP_ERROR_STATUS   = { # Informational.
+                        100:
+                            {'name':        'Continue', 
+                             'desc':        'Continue with the request.'
+                             },
+                        101: 
+                            {'name':        'Switching Protocols', 
+                             'desc':        'Server is switching to a different protocol.'
+                             },
+                        102: 
+                            {'name':        'Processing', 
+                             'desc':        'Server has received and is processing the request, but no response is available yet.'
+                             },
+                        # Success
+                        200: 
+                            {'name':        'OK', 
+                             'desc':        'Request was successful.'
+                             },
+                        201: 
+                            {'name':        'Created', 
+                             'desc':        'Request was successful, and a new resource has been created.'
+                             },
+                        202: 
+                            {'name':        'Accepted', 
+                             'desc':        'Request has been accepted but not yet acted upon.'
+                             },
+                        203: 
+                            {'name':        'Non-Authoritative Information', 
+                             'desc':        'Request was successful, but server is returning information that may be from another source.'
+                             },
+                        204: 
+                            {'name':        'No Content', 
+                             'desc':        'There is no content to send for this request, but the headers may be useful.'
+                             },
+                        205: 
+                            {'name':        'Reset Content', 
+                             'desc':        'Server successfully processed the request, but is not returning any content.'
+                             },
+                        206: 
+                            {'name':        'Partial Content', 
+                             'desc':        'Download is separated into multiple streams, due to range header.'
+                             },
+                        207: 
+                            {'name':        'Multi-Status', 
+                             'desc':        'Message body that follows is an XML message and can contain a number of separate response codes.'
+                             },
+                        208: 
+                            {'name':        'Already Reported', 
+                             'desc':        'Response is a representation of the result of one or more instance-manipulations applied to the current instance.'
+                             },
+                        226: 
+                            {'name':        'IM Used', 
+                             'desc':        'The server has fulfilled a GET request for the resource, and the response is a representation of the result of one or more instance-manipulations applied to the current instance.'
+                             },
+                        # Redirection.
+                        300: 
+                            {'name':        'Multiple Choices', 
+                             'desc':        'Request has more than one possible response.'
+                             },
+                        301: 
+                            {'name':        'Moved Permanently', 
+                             'desc':        'URI of this resource has changed.'
+                             },
+                        302: 
+                            {'name':        'Found', 
+                             'desc':        'URI of this resource has changed, temporarily.'
+                             },
+                        303: 
+                            {'name':        'See Other', 
+                             'desc':        'Client should get this resource from another URI.'
+                             },
+                        304: 
+                            {'name':        'Not Modified', 
+                             'desc':        'Response has not been modified, client can continue to use a cached version.'
+                             },
+                        305: 
+                            {'name':        'Use Proxy', 
+                             'desc':        'Requested resource may only be accessed through a given proxy.'
+                             },
+                        306: 
+                            {'name':        'Switch Proxy', 
+                             'desc':        'No longer used. Requested resource may only be accessed through a given proxy.'
+                             },
+                        307: 
+                            {'name':        'Temporary Redirect', 
+                             'desc':        'URI of this resource has changed, temporarily. Use the same HTTP method to access it.'
+                             },
+                        308: 
+                            {'name':        'Permanent Redirect', 
+                             'desc':        'The request, and all future requests should be repeated using another URI.'
+                             }, 
+                        # Client Error.
+                        400: 
+                            {'name':        'Bad Request', 
+                             'desc':        'Server could not understand the request, due to invalid syntax.'
+                             },
+                        401: 
+                            {'name':        'Unauthorized', 
+                             'desc':        'Authentication is needed to access the given resource.'
+                             },
+                        402: 
+                            {'name':        'Payment Required', 
+                             'desc':        'Some form of payment is needed to access the given resource.'
+                             },
+                        403: 
+                            {'name':        'Forbidden', 
+                             'desc':        'Client does not have rights to access the content.'
+                             },
+                        404: 
+                            {'name':        'Not Found', 
+                             'desc':        'Server cannot find requested resource.'
+                             },
+                        405: 
+                            {'name':        'Method Not Allowed', 
+                             'desc':        'Server has disabled this request method and cannot be used.'
+                             },
+                        406: 
+                            {'name':        'Not Acceptable', 
+                             'desc':        'Requested resource is only capable of generating content not acceptable according to the Accept headers sent.'
+                             },
+                        407: 
+                            {'name':        'Proxy Authentication Required', 
+                             'desc':        'Authentication by a proxy is needed to access the given resource.'
+                             },
+                        408: 
+                            {'name':        'Request Timeout', 
+                             'desc':        'Server would like to shut down this unused connection.'
+                             },
+                        409: 
+                            {'name':        'Conflict', 
+                             'desc':        'Request could not be processed because of conflict in the request, such as an edit conflict.'
+                             },
+                        410: 
+                            {'name':        'Gone', 
+                             'desc':        'Requested content has been delected from the server'
+                             },
+                        411: 
+                            {'name':        'Length Required', 
+                             'desc':        'Server requires the Content-Length header to be defined.'
+                             },
+                        412: 
+                            {'name':        'Precondition Failed', 
+                             'desc':        'Client has indicated preconditions in its headers which the server does not meet.'
+                             },
+                        413: 
+                            {'name':        'Request Entity Too Large', 
+                             'desc':        'Request entity is larger than limits defined by server.'
+                             },
+                        414: 
+                            {'name':        'Request-URI Too Long', 
+                             'desc':        'URI requested by the client is too long for the server to handle.'
+                             },
+                        415: 
+                            {'name':        'Unsupported Media Type', 
+                             'desc':        'Media format of the requested data is not supported by the server.'
+                             },
+                        416: 
+                            {'name':        'Requested Range Not Satisfiable', 
+                             'desc':        "Range specified by the Range header in the request can't be fulfilled."
+                             },
+                        417: 
+                            {'name':        'Expectation Failed', 
+                             'desc':        "Expectation indicated by the Expect header can't be met by the server."
+                             },
+                        418: 
+                            {'name':        'I\'m a Teapot', 
+                             'desc':        'HTCPCP server is a teapot; the resulting entity body may be short and stout.'
+                             },
+                        419: 
+                            {'name':        'Authentication Timeout',     
+                             'desc':        'Authentication Timeout.'
+                             },
+                        422: 
+                            {'name':        'Unprocessable Entity', 
+                             'desc':        'Request was well-formed but was unable to be followed due to semantic errors.'
+                             },
+                        423: 
+                            {'name':        'Locked', 
+                             'desc':        'Resource that is being accessed is locked.'
+                             },
+                        424: 
+                            {'name':        'Failed Dependency', 
+                             'desc':        'Request failed due to failure of a previous request (e.g. a PROPPATCH).'
+                             },
+                        #425:  
+                        #    {'name':        'Unordered Collection', 
+                        #     'desc':        'unordered'
+                        #     },
+                        426: 
+                            {'name':        'Upgrade Required', 
+                             'desc':        'Client should switch to a different protocol such as TLS/1.0.'
+                            },
+                        428: 
+                            {'name':        'Precondition Required', 
+                             'desc':        'Origin server requires the request to be conditional.'
+                             },
+                        429: 
+                            {'name':        'Too Many Requests', 
+                             'desc':        'User has sent too many requests in a given amount of time.'
+                             },
+                        431: 
+                            {'name':        'Header Fields Too Large', 
+                             'desc':        'Server rejected the request because either a header, or all the headers collectively, are too large.'
+                             },
+                        440: 
+                            {'name':        'Login Timeout', 
+                             'desc':        'Your session has expired. (Microsoft)'
+                             },
+                        444: 
+                            {'name':        'No Response', 
+                             'desc':        'Server has returned no information to the client and closed the connection (Ngnix).'
+                             },
+                        449: 
+                            {'name':        'Retry With', 
+                             'desc':        'Request should be retried after performing the appropriate action (Microsoft).'
+                             },
+                        450: 
+                            {'name':        'Blocked By Windows Parental Controls', 
+                             'desc':        'Windows Parental Controls are turned on and are blocking access to the given webpage.'
+                             },
+                        451: 
+                            {'name':        'Unavailable For Legal Reasons', 
+                             'desc':        'You attempted to access a Legally-restricted Resource. This could be due to censorship or government-mandated blocked access.'
+                             },
+                        494: 
+                            {'name':        'Request Header Too Large', 
+                             'desc':        'Nginx internal code'
+                             },
+                        495: 
+                            {'name':        'Cert Error', 
+                             'desc':        'SSL client certificate error occurred.'
+                             },
+                        496: 
+                            {'name':        'No Cert', 
+                             'desc':        'Client did not provide certificate.'
+                             },
+                        497: 
+                            {'name':        'HTTP to HTTPS', 
+                             'desc':        'Plain HTTP request sent to HTTPS port.'
+                             },
+                        499: 
+                            {'name':        'Client Closed Request', 
+                             'desc':        'Connection has been closed by client while the server is still processing its request.'
+                             },
+                        # Server Error.
+                        500: 
+                            {'name':        'Internal Server Error', 
+                             'desc':        "Server has encountered a situation it doesn't know how to handle."
+                             },
+                        501: 
+                            {'name':        'Not Implemented', 
+                             'desc':        'Request method is not supported by the server and cannot be handled.'
+                             },
+                        502: 
+                            {'name':        'Bad Gateway', 
+                             'desc':        'Server, while working as a gateway to get a response needed to handle the request, got an invalid response.'
+                             },
+                        503: 
+                            {'name':        'Service Unavailable', 
+                             'desc':        'Server is not yet ready to handle the request.'
+                             },
+                        504: 
+                            {'name':        'Gateway Timeout', 
+                             'desc':        'Server is acting as a gateway and cannot get a response in time.'
+                             },
+                        505: 
+                            {'name':        'HTTP Version Not Supported', 
+                             'desc':        'HTTP version used in the request is not supported by the server.'
+                             },
+                        506: 
+                            {'name':        'Variant Also Negotiates', 
+                             'desc':        'Transparent content negotiation for the request results in a circular reference.'
+                             },
+                        507: 
+                            {'name':        'Insufficient Storage', 
+                             'desc':        'Server is unable to store the representation needed to complete the request.'
+                             },
+                        508: 
+                            {'name':        'Loop Detected', 
+                             'desc':        'The server detected an infinite loop while processing the request'
+                             },
+                        #509: 
+                        #    {'name':        'Bandwidth Limit Exceeded', 
+                        #     'desc':        'This status code, while used by many servers, is not specified in any RFCs.'
+                        #     },
+                        510: 
+                            {'name':        'Not Extended', 
+                             'desc':        'Further extensions to the request are required for the server to fulfill it.'
+                             },
+                        511: 
+                            {'name':        'Network Authentication', 
+                             'desc':        'The client needs to authenticate to gain network access.'
+                             }
+}
+"""Descriptions of HTTP status codes. See https://en.wikipedia.org/wiki/List_of_HTTP_status_codes.
+"""
