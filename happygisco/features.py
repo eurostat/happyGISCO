@@ -961,6 +961,8 @@ class NUTS(_Feature):
                 geom = [geom,]  
             try:
                 dimensions = [self.service.geom2dimension(g, **{_Decorator.KW_FORCE_LIST: True}) for g in geom]             
+            except happyError as e:
+                raise happyError(errtype=e)
             except:
                 raise happyError('impossible to extract NUTS dimensions from input geometry')
         elif content not in ([],None):
@@ -968,6 +970,8 @@ class NUTS(_Feature):
                 content = [content,]  
             try:
                 dimensions = [self.service.geom2dimension(c, **{_Decorator.KW_FORCE_LIST: True}) for c in content]             
+            except happyError as e:
+                raise happyError(errtype=e)
             except:
                 raise happyError('impossible to extract NUTS dimensions from input content')
         elif url not in ([],'',None):
@@ -975,6 +979,8 @@ class NUTS(_Feature):
                 url = [url,]  
             try:
                 dimensions = [self.service.url2dimension(u, **{_Decorator.KW_FORCE_LIST: True}) for u in url]             
+            except happyError as e:
+                raise happyError(errtype=e)
             except:
                 raise happyError('impossible to extract NUTS dimensions from input URL')
         # [d.pop(k,None) for k in ('FORMAT',) for d in dimensions]
@@ -1057,6 +1063,8 @@ class NUTS(_Feature):
             else:
                 unit = self.unit
         source = source or unit
+        if not happyType.issequence(source):
+            source = [source,]       
         try:
             kwargs.update(self._dimensions)            
             url = [self.service.url_nuts(source=s, **kwargs) for s in source]         
@@ -1093,16 +1101,20 @@ class NUTS(_Feature):
                         raise happyError('missing arguments %s and  %s - parse one at least' % \
                                          (_Decorator.KW_RESPONSE.upper(),_Decorator.KW_URL.upper())) 
                 else:
-                    resp = self.serv.get_response(self.__url, **{_Decorator.KW_CACHING: True}) 
+                    url = self.__url
             else:
                 resp = self.__resp
         try:
             assert resp is not None
         except:
-            raise happyError('no reponse retrieved')
-        else:
-            if not happyType.issequence(resp):
-                resp = [resp,]
+            try:
+                resp = self.serv.get_response(url, **{_Decorator.KW_CACHING: True}) 
+            except happyError as e:
+                raise happyError(errtype=e)
+            except:
+                raise happyError('no reponse retrieved')
+        if not happyType.issequence(resp):
+            resp = [resp,]
         try:
             return [r._cache_path for r in resp]
         except:
@@ -1139,11 +1151,12 @@ class NUTS(_Feature):
                 kwargs.update({_Decorator.KW_FILE: self.file})
         try:
             layer = self.transform.get_layer(**kwargs)           
+        except happyError as e:
+            raise happyError(errtype=e)
         except:
             raise happyError('impossible to extract layer from input data')
-        else:
-            if not happyType.issequence(layer):
-                layer = [layer,]            
+        if not happyType.issequence(layer):
+            layer = [layer,]            
         return layer
         
     #/************************************************************************/  
@@ -1184,11 +1197,12 @@ class NUTS(_Feature):
                 kwargs.update({_Decorator.KW_LAYER: self.layer})
         try:
             feature = self.transform.get_feature(**kwargs)           
+        except happyError as e:
+            raise happyError(errtype=e)
         except:
             raise happyError('impossible to extract vector features from input data')
-        else:
-            if not happyType.issequence(feature):
-                feature = [feature,]            
+        if not happyType.issequence(feature):
+            feature = [feature,]            
         return feature
 
     #/************************************************************************/    
@@ -1241,6 +1255,8 @@ class NUTS(_Feature):
             except: 
                 try:
                     geom = self.service.nuts_geometry(**kwargs)
+                except happyError as e:
+                    raise happyError(errtype=e)
                 except:
                     raise happyError('impossible to extract vector geometries from input data')
         if not happyType.issequence(geom):
@@ -1325,7 +1341,7 @@ class NUTS(_Feature):
                 unit = None
             else:
                 self.__unit = unit
-        return self.__unit if self.__unit is None or len(self.__unit)>1     \
+        return self.__unit if self.__unit is None or (happyType.issequence(self.__unit) and len(self.__unit)>1)    \
             else self.__unit[0]
     @unit.setter
     def unit(self, unit):
