@@ -1565,6 +1565,8 @@ class GISCOService(OSMService):
                 url = build_url(**dim)
             try:
                 response = self.read_url(url, **kwargs) 
+            except happyError as e:
+                raise happyError(errtype=e)
             except:
                 raise happyError('file for %s data not loaded' % data)
             else:
@@ -1594,6 +1596,8 @@ class GISCOService(OSMService):
                 raise happyError('argument DATA not recognised - must be ''NUTS'' or ''country''')
             try:
                 response = read_response(**kwargs)
+            except happyError as e:
+                raise happyError(errtype=e)
             except:
                 raise happyError('error reading %s response' % data.upper())
         # we insert the output format again
@@ -1601,6 +1605,8 @@ class GISCOService(OSMService):
         if isinstance(response,(_CachedResponse, requests.Response)):
             try:
                 return self.read_response(response, **kwargs)
+            except happyError as e:
+                raise happyError(errtype=e)
             except:
                 raise happyError('error reading content from response')
         elif isinstance(response, _NestedDict):
@@ -1610,6 +1616,8 @@ class GISCOService(OSMService):
                 # content = copy.deecopy(response)
                 # content.xupdate(xitems)
                 return _NestedDict(list(xitems), order = response.order) 
+            except happyError as e:
+                raise happyError(errtype=e)
             except:
                 raise happyError('error reading content from nested dictionary of responses')            
     
@@ -2071,16 +2079,22 @@ class GISCOService(OSMService):
         try:
             resp = self.country_response(**kwargs)
             resp = resp.xvalues()
+        except happyError as e:
+            raise happyError(errtype=e)
         except:
             raise happyError('error loading country response')                
         if info == 'BULK':
             try:
                 data = self.read_response(resp, namelist=True, **{_Decorator.KW_OFORMAT: 'zip'})
+            except happyError as e:
+                raise happyError(errtype=e)
             except:
                 raise happyError('error zip NUTS file reading')
         else:
             try:
                 data = self.read_response(resp, **{_Decorator.KW_OFORMAT: 'jsontext'})
+            except happyError as e:
+                raise happyError(errtype=e)
             except:
                 raise happyError('error info country file reading')
             else:
@@ -2329,11 +2343,15 @@ class GISCOService(OSMService):
             resp = resp.xvalues() # actually the response is unique
         except AssertionError:
             pass
+        except happyError as e:
+            raise happyError(errtype=e)
         except:
             raise happyError('error loading NUTS response')
         if info == 'BULK':
             try:
                 data = self.read_response(resp, namelist=True, **{_Decorator.KW_OFORMAT: 'zip'})
+            except happyError as e:
+                raise happyError(errtype=e)
             except:
                 raise happyError('error zip NUTS file reading')
         elif info == 'NAMES':
@@ -2342,6 +2360,8 @@ class GISCOService(OSMService):
                 data = self.read_response(resp, read = '%s.%s' % (base,fmt), **{_Decorator.KW_OFORMAT: 'zip'})
             except AssertionError:
                 pass
+            except happyError as e:
+                raise happyError(errtype=e)
             except:
                 raise happyError('error zip NUTS file reading')
             else:
@@ -2358,6 +2378,8 @@ class GISCOService(OSMService):
         else: # if info == 'INFO':
             try:
                 data = self.read_response(resp, **{_Decorator.KW_OFORMAT: 'jsontext'})
+            except happyError as e:
+                raise happyError(errtype=e)
             except:
                 raise happyError('error info NUTS file reading')
             else:
@@ -3173,6 +3195,8 @@ class GISCOService(OSMService):
             try:
                 data = self.read_url(url, **{_Decorator.KW_OFORMAT: 'JSON'})
                 assert data not in ({},None)
+            except happyError as e:
+                raise happyError(errtype=e)
             except:
                 happyError('NUTS for location %s not loaded' % coord[i])
             try:
@@ -3459,6 +3483,8 @@ class GISCOService(OSMService):
         try:
             data = self.read_url(url, **{_Decorator.KW_OFORMAT: 'JSON'})
             assert data is not None
+        except happyError as e:
+            raise happyError(errtype=e)
         except:
             raise happyError('route not available')
         try:
