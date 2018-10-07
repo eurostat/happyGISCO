@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" />
-<title>Example of Eurostat 'Data as a Service' using happyGISCO module</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>example_GISCO_services</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 
 <style type="text/css">
@@ -11775,7 +11775,7 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="A-very-simple-example-of-call-to-GISCO-web-services...">A very simple example of call to <em>GISCO</em> web-services...<a class="anchor-link" href="#A-very-simple-example-of-call-to-GISCO-web-services...">&#182;</a></h3>
+<h3 id="A-very-simple-example-of-call/use-of-GISCO-web-services...">A very simple example of call/use of <em>GISCO</em> web-services...<a class="anchor-link" href="#A-very-simple-example-of-call/use-of-GISCO-web-services...">&#182;</a></h3>
 </div>
 </div>
 </div>
@@ -11811,10 +11811,9 @@ div#notebook {
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>GOOGLEMAPS help: https://github.com/googlemaps/google-maps-services-python
-! GOOGLEPLACES package (https://github.com/slimkrazy/python-google-places) not loaded !
-GEOPY help: http://geopy.readthedocs.io/en/latest/
+<pre>! missing FASTENERS package (https://pypi.org/project/fasteners/) &lt;class &#39;ImportWarning&#39;&gt; !
 ! missing SIMPLEJSON package (https://pypi.python.org/pypi/simplejson/) &lt;class &#39;ImportWarning&#39;&gt; !
+! missing GOOGLEPLACES package (https://github.com/slimkrazy/python-google-places) !
 </pre>
 </div>
 </div>
@@ -11884,7 +11883,7 @@ GEOPY help: http://geopy.readthedocs.io/en/latest/
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">coords</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">place2coord</span><span class="p">(</span><span class="n">whereamI</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+<span class="n">coords</span>
 </pre></div>
 
 </div>
@@ -11897,13 +11896,18 @@ GEOPY help: http://geopy.readthedocs.io/en/latest/
 
 <div class="output_area">
 
-<div class="prompt"></div>
+<div class="prompt output_prompt">Out[4]:</div>
 
 
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>[[49.8158683, 6.1296751], [49.6047585, 6.142580146666669], [48.3777152, 4.2576617], [49.6112768, 6.129799]]
-</pre>
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>[[49.8158683, 6.1296751],
+ [49.6047585, 6.142580146666669],
+ [48.3777152, 4.2576617],
+ [49.6112768, 6.129799]]</pre>
 </div>
+
 </div>
 
 </div>
@@ -11925,7 +11929,7 @@ GEOPY help: http://geopy.readthedocs.io/en/latest/
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">coord</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">place2coord</span><span class="p">(</span><span class="n">whereamI</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">coord</span><span class="p">)</span>
+<span class="n">coord</span>
 </pre></div>
 
 </div>
@@ -11938,13 +11942,15 @@ GEOPY help: http://geopy.readthedocs.io/en/latest/
 
 <div class="output_area">
 
-<div class="prompt"></div>
+<div class="prompt output_prompt">Out[5]:</div>
 
 
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>[49.8158683, 6.1296751]
-</pre>
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>[49.8158683, 6.1296751]</pre>
 </div>
+
 </div>
 
 </div>
@@ -12009,7 +12015,7 @@ GEOPY help: http://geopy.readthedocs.io/en/latest/
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">names</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">coord2place</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+<span class="n">names</span>
 </pre></div>
 
 </div>
@@ -12022,13 +12028,18 @@ GEOPY help: http://geopy.readthedocs.io/en/latest/
 
 <div class="output_area">
 
-<div class="prompt"></div>
+<div class="prompt output_prompt">Out[7]:</div>
 
 
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>[&#39;Schieren, 7421, Luxembourg&#39;, &#34;Rue d&#39;Itzig, Luxembourg, 1118, Luxembourg&#34;, &#34;Rue de l&#39;Église, Bouy-Luxembourg, (Grand Est), 10220, France&#34;, &#39;Luxembourg, 2525, Luxembourg&#39;]
-</pre>
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>[&#39;Schieren, 7421, Luxembourg&#39;,
+ &#34;Rue d&#39;Itzig, Luxembourg, 1118, Luxembourg&#34;,
+ &#34;Rue de l&#39;Église, Bouy-Luxembourg, (Grand Est), 10220, France&#34;,
+ &#39;Luxembourg, 2525, Luxembourg&#39;]</pre>
 </div>
+
 </div>
 
 </div>
@@ -12039,7 +12050,7 @@ GEOPY help: http://geopy.readthedocs.io/en/latest/
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Hum... note that one of the places retrieved is actually...in France. That's the ambiguity related to the toponame. Note that this issue is actually not solved when passing the country as well:</p>
+<p>Hum... note that one of the places retrieved is actually...in France. That's the ambiguity related to the toponame. Note that this issue is actually not solved when passing the country as well (but that is specific to...Luxembourg):</p>
 
 </div>
 </div>
@@ -12084,7 +12095,7 @@ GEOPY help: http://geopy.readthedocs.io/en/latest/
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>We can use the outputs of the <em>GISCO</em> service, <code>names</code> and <code>coords</code> data, for visualisation. For that purpose, we will use the module <a href="https://github.com/python-visualization/folium"><code>folium</code></a> that builds ontop of <a href="https://leafletjs.com"><code>Leaflet.js</code></a> and enables to render simple maps in notebooks.</p>
+<p>We can exploit the outputs of the <em>GISCO</em> service, <code>names</code> and <code>coords</code> data, for visualisation. For that purpose, we will use the module <a href="https://github.com/python-visualization/folium"><code>folium</code></a> that builds ontop of <a href="https://leafletjs.com"><code>Leaflet.js</code></a>. In addition, we will provides the link to the <em>"blue marble"</em> tiles served by GISCO as background to render this simple map in the notebook.</p>
 
 </div>
 </div>
@@ -12095,9 +12106,11 @@ GEOPY help: http://geopy.readthedocs.io/en/latest/
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">folium</span>
-<span class="n">_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">]</span> <span class="c1"># some bug issue with folium when dealing with &quot;&#39;&quot;</span>
-<span class="n">m</span> <span class="o">=</span> <span class="n">folium</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span><span class="n">location</span><span class="o">=</span><span class="n">coord</span><span class="p">,</span> <span class="n">tiles</span><span class="o">=</span><span class="s1">&#39;OpenStreetMap&#39;</span><span class="p">,</span> <span class="n">zoom_start</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
-<span class="p">[</span><span class="n">folium</span><span class="o">.</span><span class="n">Marker</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">popup</span><span class="o">=</span><span class="s1">&#39;&lt;i&gt;</span><span class="si">%s</span><span class="s1">&lt;/i&gt;&#39;</span> <span class="o">%</span> <span class="n">_names</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">.</span><span class="n">add_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">_names</span><span class="p">))]</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">folium</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span><span class="n">location</span><span class="o">=</span><span class="n">coord</span><span class="p">,</span> 
+               <span class="n">tiles</span><span class="o">=</span><span class="s1">&#39;http://europa.eu/webtools/maps/tiles/bmarble/3857/</span><span class="si">{z}</span><span class="s1">/</span><span class="si">{y}</span><span class="s1">/</span><span class="si">{x}</span><span class="s1">&#39;</span><span class="p">,</span> 
+               <span class="n">attr</span><span class="o">=</span><span class="s2">&quot;(C) NASA&#39;s Earth Observatory -- GISCO blue marble tiles&quot;</span><span class="p">,</span>
+               <span class="n">zoom_start</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+<span class="p">[</span><span class="n">folium</span><span class="o">.</span><span class="n">Marker</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">popup</span><span class="o">=</span><span class="n">folium</span><span class="o">.</span><span class="n">Popup</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">names</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">parse_html</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span><span class="o">.</span><span class="n">add_to</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">))]</span>
 <span class="n">m</span>
 </pre></div>
 
@@ -12116,7 +12129,7 @@ GEOPY help: http://geopy.readthedocs.io/en/latest/
 
 
 <div class="output_html rendered_html output_subarea output_execute_result">
-<div style="width:100%;"><div style="position:relative;width:100%;height:0;padding-bottom:60%;"><iframe src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw+CjxoZWFkPiAgICAKICAgIDxtZXRhIGh0dHAtZXF1aXY9ImNvbnRlbnQtdHlwZSIgY29udGVudD0idGV4dC9odG1sOyBjaGFyc2V0PVVURi04IiAvPgogICAgPHNjcmlwdD5MX1BSRUZFUl9DQU5WQVMgPSBmYWxzZTsgTF9OT19UT1VDSCA9IGZhbHNlOyBMX0RJU0FCTEVfM0QgPSBmYWxzZTs8L3NjcmlwdD4KICAgIDxzY3JpcHQgc3JjPSJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvbnBtL2xlYWZsZXRAMS4yLjAvZGlzdC9sZWFmbGV0LmpzIj48L3NjcmlwdD4KICAgIDxzY3JpcHQgc3JjPSJodHRwczovL2FqYXguZ29vZ2xlYXBpcy5jb20vYWpheC9saWJzL2pxdWVyeS8xLjExLjEvanF1ZXJ5Lm1pbi5qcyI+PC9zY3JpcHQ+CiAgICA8c2NyaXB0IHNyYz0iaHR0cHM6Ly9tYXhjZG4uYm9vdHN0cmFwY2RuLmNvbS9ib290c3RyYXAvMy4yLjAvanMvYm9vdHN0cmFwLm1pbi5qcyI+PC9zY3JpcHQ+CiAgICA8c2NyaXB0IHNyYz0iaHR0cHM6Ly9jZG5qcy5jbG91ZGZsYXJlLmNvbS9hamF4L2xpYnMvTGVhZmxldC5hd2Vzb21lLW1hcmtlcnMvMi4wLjIvbGVhZmxldC5hd2Vzb21lLW1hcmtlcnMuanMiPjwvc2NyaXB0PgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvbnBtL2xlYWZsZXRAMS4yLjAvZGlzdC9sZWFmbGV0LmNzcyIvPgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL21heGNkbi5ib290c3RyYXBjZG4uY29tL2Jvb3RzdHJhcC8zLjIuMC9jc3MvYm9vdHN0cmFwLm1pbi5jc3MiLz4KICAgIDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0iaHR0cHM6Ly9tYXhjZG4uYm9vdHN0cmFwY2RuLmNvbS9ib290c3RyYXAvMy4yLjAvY3NzL2Jvb3RzdHJhcC10aGVtZS5taW4uY3NzIi8+CiAgICA8bGluayByZWw9InN0eWxlc2hlZXQiIGhyZWY9Imh0dHBzOi8vbWF4Y2RuLmJvb3RzdHJhcGNkbi5jb20vZm9udC1hd2Vzb21lLzQuNi4zL2Nzcy9mb250LWF3ZXNvbWUubWluLmNzcyIvPgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL2NkbmpzLmNsb3VkZmxhcmUuY29tL2FqYXgvbGlicy9MZWFmbGV0LmF3ZXNvbWUtbWFya2Vycy8yLjAuMi9sZWFmbGV0LmF3ZXNvbWUtbWFya2Vycy5jc3MiLz4KICAgIDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0iaHR0cHM6Ly9yYXdnaXQuY29tL3B5dGhvbi12aXN1YWxpemF0aW9uL2ZvbGl1bS9tYXN0ZXIvZm9saXVtL3RlbXBsYXRlcy9sZWFmbGV0LmF3ZXNvbWUucm90YXRlLmNzcyIvPgogICAgPHN0eWxlPmh0bWwsIGJvZHkge3dpZHRoOiAxMDAlO2hlaWdodDogMTAwJTttYXJnaW46IDA7cGFkZGluZzogMDt9PC9zdHlsZT4KICAgIDxzdHlsZT4jbWFwIHtwb3NpdGlvbjphYnNvbHV0ZTt0b3A6MDtib3R0b206MDtyaWdodDowO2xlZnQ6MDt9PC9zdHlsZT4KICAgIAogICAgICAgICAgICA8c3R5bGU+ICNtYXBfZmUyMDI5ZDcyMDdhNDFhMjhiNmMyYTg1MGNmODE3NDggewogICAgICAgICAgICAgICAgcG9zaXRpb24gOiByZWxhdGl2ZTsKICAgICAgICAgICAgICAgIHdpZHRoIDogMTAwLjAlOwogICAgICAgICAgICAgICAgaGVpZ2h0OiAxMDAuMCU7CiAgICAgICAgICAgICAgICBsZWZ0OiAwLjAlOwogICAgICAgICAgICAgICAgdG9wOiAwLjAlOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICA8L3N0eWxlPgogICAgICAgIAo8L2hlYWQ+Cjxib2R5PiAgICAKICAgIAogICAgICAgICAgICA8ZGl2IGNsYXNzPSJmb2xpdW0tbWFwIiBpZD0ibWFwX2ZlMjAyOWQ3MjA3YTQxYTI4YjZjMmE4NTBjZjgxNzQ4IiA+PC9kaXY+CiAgICAgICAgCjwvYm9keT4KPHNjcmlwdD4gICAgCiAgICAKCiAgICAgICAgICAgIAogICAgICAgICAgICAgICAgdmFyIGJvdW5kcyA9IG51bGw7CiAgICAgICAgICAgIAoKICAgICAgICAgICAgdmFyIG1hcF9mZTIwMjlkNzIwN2E0MWEyOGI2YzJhODUwY2Y4MTc0OCA9IEwubWFwKAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJ21hcF9mZTIwMjlkNzIwN2E0MWEyOGI2YzJhODUwY2Y4MTc0OCcsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB7Y2VudGVyOiBbNDkuODE1ODY4Myw2LjEyOTY3NTFdLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgem9vbTogNiwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIG1heEJvdW5kczogYm91bmRzLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbGF5ZXJzOiBbXSwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHdvcmxkQ29weUp1bXA6IGZhbHNlLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY3JzOiBMLkNSUy5FUFNHMzg1NwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB9KTsKICAgICAgICAgICAgCiAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHRpbGVfbGF5ZXJfZmQzOGQ0NDJkMWU4NGFjNDhiMjBhM2M4YTIyMzA2MDAgPSBMLnRpbGVMYXllcigKICAgICAgICAgICAgICAgICdodHRwczovL3tzfS50aWxlLm9wZW5zdHJlZXRtYXAub3JnL3t6fS97eH0ve3l9LnBuZycsCiAgICAgICAgICAgICAgICB7CiAgImF0dHJpYnV0aW9uIjogbnVsbCwKICAiZGV0ZWN0UmV0aW5hIjogZmFsc2UsCiAgIm1heFpvb20iOiAxOCwKICAibWluWm9vbSI6IDEsCiAgIm5vV3JhcCI6IGZhbHNlLAogICJzdWJkb21haW5zIjogImFiYyIKfQogICAgICAgICAgICAgICAgKS5hZGRUbyhtYXBfZmUyMDI5ZDcyMDdhNDFhMjhiNmMyYTg1MGNmODE3NDgpOwogICAgICAgIAogICAgCgogICAgICAgICAgICB2YXIgbWFya2VyXzNlMGRhNzUyNzMxMDQ2ZTc5ZDk2ZGM2OTAyYTYxMTNiID0gTC5tYXJrZXIoCiAgICAgICAgICAgICAgICBbNDkuODE1ODY4Myw2LjEyOTY3NTFdLAogICAgICAgICAgICAgICAgewogICAgICAgICAgICAgICAgICAgIGljb246IG5ldyBMLkljb24uRGVmYXVsdCgpCiAgICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgKQogICAgICAgICAgICAgICAgLmFkZFRvKG1hcF9mZTIwMjlkNzIwN2E0MWEyOGI2YzJhODUwY2Y4MTc0OCk7CiAgICAgICAgICAgIAogICAgCiAgICAgICAgICAgIHZhciBwb3B1cF81OWI3OWUyNmRhZGM0ZWU4ODBjODAzMmQ5MDRlOWQ0NSA9IEwucG9wdXAoe21heFdpZHRoOiAnMzAwJ30pOwoKICAgICAgICAgICAgCiAgICAgICAgICAgICAgICB2YXIgaHRtbF83ZWRlM2YyMTM3NDE0OTljYTViZDkzNDUwOTk5YTE5NiA9ICQoJzxkaXYgaWQ9Imh0bWxfN2VkZTNmMjEzNzQxNDk5Y2E1YmQ5MzQ1MDk5OWExOTYiIHN0eWxlPSJ3aWR0aDogMTAwLjAlOyBoZWlnaHQ6IDEwMC4wJTsiPjxpPlNjaGllcmVuLCA3NDIxLCBMdXhlbWJvdXJnPC9pPjwvZGl2PicpWzBdOwogICAgICAgICAgICAgICAgcG9wdXBfNTliNzllMjZkYWRjNGVlODgwYzgwMzJkOTA0ZTlkNDUuc2V0Q29udGVudChodG1sXzdlZGUzZjIxMzc0MTQ5OWNhNWJkOTM0NTA5OTlhMTk2KTsKICAgICAgICAgICAgCgogICAgICAgICAgICBtYXJrZXJfM2UwZGE3NTI3MzEwNDZlNzlkOTZkYzY5MDJhNjExM2IuYmluZFBvcHVwKHBvcHVwXzU5Yjc5ZTI2ZGFkYzRlZTg4MGM4MDMyZDkwNGU5ZDQ1KTsKCiAgICAgICAgICAgIAogICAgICAgIAogICAgCgogICAgICAgICAgICB2YXIgbWFya2VyX2NhOWE3MGMwZWJlMDQ5MGNiNzhlYTdlZjRmODBiYzk2ID0gTC5tYXJrZXIoCiAgICAgICAgICAgICAgICBbNDkuNjA0NzU4NSw2LjE0MjU4MDE0NjY2NjY2OV0sCiAgICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAgICAgaWNvbjogbmV3IEwuSWNvbi5EZWZhdWx0KCkKICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICApCiAgICAgICAgICAgICAgICAuYWRkVG8obWFwX2ZlMjAyOWQ3MjA3YTQxYTI4YjZjMmE4NTBjZjgxNzQ4KTsKICAgICAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHBvcHVwX2QyZTgzZjFmMTk3YTQ0OTU5MDc2MzJmMDk3ZmI4MzMwID0gTC5wb3B1cCh7bWF4V2lkdGg6ICczMDAnfSk7CgogICAgICAgICAgICAKICAgICAgICAgICAgICAgIHZhciBodG1sX2Y4Y2ExNDQzZTQ3ZTQ1NWZhMWQ4ZTA2NmM3Y2ZiZDFmID0gJCgnPGRpdiBpZD0iaHRtbF9mOGNhMTQ0M2U0N2U0NTVmYTFkOGUwNjZjN2NmYmQxZiIgc3R5bGU9IndpZHRoOiAxMDAuMCU7IGhlaWdodDogMTAwLjAlOyI+PGk+UnVlIGQgSXR6aWcsIEx1eGVtYm91cmcsIDExMTgsIEx1eGVtYm91cmc8L2k+PC9kaXY+JylbMF07CiAgICAgICAgICAgICAgICBwb3B1cF9kMmU4M2YxZjE5N2E0NDk1OTA3NjMyZjA5N2ZiODMzMC5zZXRDb250ZW50KGh0bWxfZjhjYTE0NDNlNDdlNDU1ZmExZDhlMDY2YzdjZmJkMWYpOwogICAgICAgICAgICAKCiAgICAgICAgICAgIG1hcmtlcl9jYTlhNzBjMGViZTA0OTBjYjc4ZWE3ZWY0ZjgwYmM5Ni5iaW5kUG9wdXAocG9wdXBfZDJlODNmMWYxOTdhNDQ5NTkwNzYzMmYwOTdmYjgzMzApOwoKICAgICAgICAgICAgCiAgICAgICAgCiAgICAKCiAgICAgICAgICAgIHZhciBtYXJrZXJfNTI2OTJhYTZjZWZmNDZiODg5NGY4MjZmOWI5MjQzNDAgPSBMLm1hcmtlcigKICAgICAgICAgICAgICAgIFs0OC4zNzc3MTUyLDQuMjU3NjYxN10sCiAgICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAgICAgaWNvbjogbmV3IEwuSWNvbi5EZWZhdWx0KCkKICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICApCiAgICAgICAgICAgICAgICAuYWRkVG8obWFwX2ZlMjAyOWQ3MjA3YTQxYTI4YjZjMmE4NTBjZjgxNzQ4KTsKICAgICAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHBvcHVwX2UzNWU2NzdiMmY2MTRkOGZhZWQzZmVkNzIyMmZjNDM5ID0gTC5wb3B1cCh7bWF4V2lkdGg6ICczMDAnfSk7CgogICAgICAgICAgICAKICAgICAgICAgICAgICAgIHZhciBodG1sX2E3YjA0NDJhOTFjOTRlMDZhMzdjNTQzZDQ3MzQ1YmRlID0gJCgnPGRpdiBpZD0iaHRtbF9hN2IwNDQyYTkxYzk0ZTA2YTM3YzU0M2Q0NzM0NWJkZSIgc3R5bGU9IndpZHRoOiAxMDAuMCU7IGhlaWdodDogMTAwLjAlOyI+PGk+UnVlIGRlIGwgw4lnbGlzZSwgQm91eS1MdXhlbWJvdXJnLCAoR3JhbmQgRXN0KSwgMTAyMjAsIEZyYW5jZTwvaT48L2Rpdj4nKVswXTsKICAgICAgICAgICAgICAgIHBvcHVwX2UzNWU2NzdiMmY2MTRkOGZhZWQzZmVkNzIyMmZjNDM5LnNldENvbnRlbnQoaHRtbF9hN2IwNDQyYTkxYzk0ZTA2YTM3YzU0M2Q0NzM0NWJkZSk7CiAgICAgICAgICAgIAoKICAgICAgICAgICAgbWFya2VyXzUyNjkyYWE2Y2VmZjQ2Yjg4OTRmODI2ZjliOTI0MzQwLmJpbmRQb3B1cChwb3B1cF9lMzVlNjc3YjJmNjE0ZDhmYWVkM2ZlZDcyMjJmYzQzOSk7CgogICAgICAgICAgICAKICAgICAgICAKICAgIAoKICAgICAgICAgICAgdmFyIG1hcmtlcl80OTdhY2IyN2EzZDk0ZjY0YjczMWM2YjQyNjM3YmU5MCA9IEwubWFya2VyKAogICAgICAgICAgICAgICAgWzQ5LjYxMTI3NjgsNi4xMjk3OTldLAogICAgICAgICAgICAgICAgewogICAgICAgICAgICAgICAgICAgIGljb246IG5ldyBMLkljb24uRGVmYXVsdCgpCiAgICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgKQogICAgICAgICAgICAgICAgLmFkZFRvKG1hcF9mZTIwMjlkNzIwN2E0MWEyOGI2YzJhODUwY2Y4MTc0OCk7CiAgICAgICAgICAgIAogICAgCiAgICAgICAgICAgIHZhciBwb3B1cF8wM2QwZjM5NmUyMGE0YzAyYjFkN2RhODEzYjUxZTJiOSA9IEwucG9wdXAoe21heFdpZHRoOiAnMzAwJ30pOwoKICAgICAgICAgICAgCiAgICAgICAgICAgICAgICB2YXIgaHRtbF9mZjFiOTUxZTExNjg0NzQzOWNlYTA1MTI0NGY3MTQwNyA9ICQoJzxkaXYgaWQ9Imh0bWxfZmYxYjk1MWUxMTY4NDc0MzljZWEwNTEyNDRmNzE0MDciIHN0eWxlPSJ3aWR0aDogMTAwLjAlOyBoZWlnaHQ6IDEwMC4wJTsiPjxpPkx1eGVtYm91cmcsIDI1MjUsIEx1eGVtYm91cmc8L2k+PC9kaXY+JylbMF07CiAgICAgICAgICAgICAgICBwb3B1cF8wM2QwZjM5NmUyMGE0YzAyYjFkN2RhODEzYjUxZTJiOS5zZXRDb250ZW50KGh0bWxfZmYxYjk1MWUxMTY4NDc0MzljZWEwNTEyNDRmNzE0MDcpOwogICAgICAgICAgICAKCiAgICAgICAgICAgIG1hcmtlcl80OTdhY2IyN2EzZDk0ZjY0YjczMWM2YjQyNjM3YmU5MC5iaW5kUG9wdXAocG9wdXBfMDNkMGYzOTZlMjBhNGMwMmIxZDdkYTgxM2I1MWUyYjkpOwoKICAgICAgICAgICAgCiAgICAgICAgCjwvc2NyaXB0Pg==" style="position:absolute;width:100%;height:100%;left:0;top:0;border:none !important;" allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe></div></div>
+<div style="width:100%;"><div style="position:relative;width:100%;height:0;padding-bottom:60%;"><iframe src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw+CjxoZWFkPiAgICAKICAgIDxtZXRhIGh0dHAtZXF1aXY9ImNvbnRlbnQtdHlwZSIgY29udGVudD0idGV4dC9odG1sOyBjaGFyc2V0PVVURi04IiAvPgogICAgPHNjcmlwdD5MX1BSRUZFUl9DQU5WQVMgPSBmYWxzZTsgTF9OT19UT1VDSCA9IGZhbHNlOyBMX0RJU0FCTEVfM0QgPSBmYWxzZTs8L3NjcmlwdD4KICAgIDxzY3JpcHQgc3JjPSJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvbnBtL2xlYWZsZXRAMS4yLjAvZGlzdC9sZWFmbGV0LmpzIj48L3NjcmlwdD4KICAgIDxzY3JpcHQgc3JjPSJodHRwczovL2FqYXguZ29vZ2xlYXBpcy5jb20vYWpheC9saWJzL2pxdWVyeS8xLjExLjEvanF1ZXJ5Lm1pbi5qcyI+PC9zY3JpcHQ+CiAgICA8c2NyaXB0IHNyYz0iaHR0cHM6Ly9tYXhjZG4uYm9vdHN0cmFwY2RuLmNvbS9ib290c3RyYXAvMy4yLjAvanMvYm9vdHN0cmFwLm1pbi5qcyI+PC9zY3JpcHQ+CiAgICA8c2NyaXB0IHNyYz0iaHR0cHM6Ly9jZG5qcy5jbG91ZGZsYXJlLmNvbS9hamF4L2xpYnMvTGVhZmxldC5hd2Vzb21lLW1hcmtlcnMvMi4wLjIvbGVhZmxldC5hd2Vzb21lLW1hcmtlcnMuanMiPjwvc2NyaXB0PgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvbnBtL2xlYWZsZXRAMS4yLjAvZGlzdC9sZWFmbGV0LmNzcyIvPgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL21heGNkbi5ib290c3RyYXBjZG4uY29tL2Jvb3RzdHJhcC8zLjIuMC9jc3MvYm9vdHN0cmFwLm1pbi5jc3MiLz4KICAgIDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0iaHR0cHM6Ly9tYXhjZG4uYm9vdHN0cmFwY2RuLmNvbS9ib290c3RyYXAvMy4yLjAvY3NzL2Jvb3RzdHJhcC10aGVtZS5taW4uY3NzIi8+CiAgICA8bGluayByZWw9InN0eWxlc2hlZXQiIGhyZWY9Imh0dHBzOi8vbWF4Y2RuLmJvb3RzdHJhcGNkbi5jb20vZm9udC1hd2Vzb21lLzQuNi4zL2Nzcy9mb250LWF3ZXNvbWUubWluLmNzcyIvPgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL2NkbmpzLmNsb3VkZmxhcmUuY29tL2FqYXgvbGlicy9MZWFmbGV0LmF3ZXNvbWUtbWFya2Vycy8yLjAuMi9sZWFmbGV0LmF3ZXNvbWUtbWFya2Vycy5jc3MiLz4KICAgIDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0iaHR0cHM6Ly9yYXdnaXQuY29tL3B5dGhvbi12aXN1YWxpemF0aW9uL2ZvbGl1bS9tYXN0ZXIvZm9saXVtL3RlbXBsYXRlcy9sZWFmbGV0LmF3ZXNvbWUucm90YXRlLmNzcyIvPgogICAgPHN0eWxlPmh0bWwsIGJvZHkge3dpZHRoOiAxMDAlO2hlaWdodDogMTAwJTttYXJnaW46IDA7cGFkZGluZzogMDt9PC9zdHlsZT4KICAgIDxzdHlsZT4jbWFwIHtwb3NpdGlvbjphYnNvbHV0ZTt0b3A6MDtib3R0b206MDtyaWdodDowO2xlZnQ6MDt9PC9zdHlsZT4KICAgIAogICAgICAgICAgICA8c3R5bGU+ICNtYXBfMjUzNGNmZWNjN2Y1NDg5ODhhYjVhMDFkNGZhODU2OWEgewogICAgICAgICAgICAgICAgcG9zaXRpb24gOiByZWxhdGl2ZTsKICAgICAgICAgICAgICAgIHdpZHRoIDogMTAwLjAlOwogICAgICAgICAgICAgICAgaGVpZ2h0OiAxMDAuMCU7CiAgICAgICAgICAgICAgICBsZWZ0OiAwLjAlOwogICAgICAgICAgICAgICAgdG9wOiAwLjAlOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICA8L3N0eWxlPgogICAgICAgIAo8L2hlYWQ+Cjxib2R5PiAgICAKICAgIAogICAgICAgICAgICA8ZGl2IGNsYXNzPSJmb2xpdW0tbWFwIiBpZD0ibWFwXzI1MzRjZmVjYzdmNTQ4OTg4YWI1YTAxZDRmYTg1NjlhIiA+PC9kaXY+CiAgICAgICAgCjwvYm9keT4KPHNjcmlwdD4gICAgCiAgICAKCiAgICAgICAgICAgIAogICAgICAgICAgICAgICAgdmFyIGJvdW5kcyA9IG51bGw7CiAgICAgICAgICAgIAoKICAgICAgICAgICAgdmFyIG1hcF8yNTM0Y2ZlY2M3ZjU0ODk4OGFiNWEwMWQ0ZmE4NTY5YSA9IEwubWFwKAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJ21hcF8yNTM0Y2ZlY2M3ZjU0ODk4OGFiNWEwMWQ0ZmE4NTY5YScsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB7Y2VudGVyOiBbNDkuODE1ODY4Myw2LjEyOTY3NTFdLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgem9vbTogNiwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIG1heEJvdW5kczogYm91bmRzLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbGF5ZXJzOiBbXSwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHdvcmxkQ29weUp1bXA6IGZhbHNlLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY3JzOiBMLkNSUy5FUFNHMzg1NwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB9KTsKICAgICAgICAgICAgCiAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHRpbGVfbGF5ZXJfYmY1Njk1MWE0YmJhNDIxYmE3NDQ4YmIwNjkwNTQ5NmEgPSBMLnRpbGVMYXllcigKICAgICAgICAgICAgICAgICdodHRwOi8vZXVyb3BhLmV1L3dlYnRvb2xzL21hcHMvdGlsZXMvYm1hcmJsZS8zODU3L3t6fS97eX0ve3h9JywKICAgICAgICAgICAgICAgIHsKICAiYXR0cmlidXRpb24iOiAiKEMpIE5BU0EncyBFYXJ0aCBPYnNlcnZhdG9yeSAtLSBHSVNDTyBibHVlIG1hcmJsZSB0aWxlcyIsCiAgImRldGVjdFJldGluYSI6IGZhbHNlLAogICJtYXhab29tIjogMTgsCiAgIm1pblpvb20iOiAxLAogICJub1dyYXAiOiBmYWxzZSwKICAic3ViZG9tYWlucyI6ICJhYmMiCn0KICAgICAgICAgICAgICAgICkuYWRkVG8obWFwXzI1MzRjZmVjYzdmNTQ4OTg4YWI1YTAxZDRmYTg1NjlhKTsKICAgICAgICAKICAgIAoKICAgICAgICAgICAgdmFyIG1hcmtlcl81MmU0NTZiZDllZDg0ODdmOGU4M2Y3MTc1NzFhNzhiZSA9IEwubWFya2VyKAogICAgICAgICAgICAgICAgWzQ5LjgxNTg2ODMsNi4xMjk2NzUxXSwKICAgICAgICAgICAgICAgIHsKICAgICAgICAgICAgICAgICAgICBpY29uOiBuZXcgTC5JY29uLkRlZmF1bHQoKQogICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICkKICAgICAgICAgICAgICAgIC5hZGRUbyhtYXBfMjUzNGNmZWNjN2Y1NDg5ODhhYjVhMDFkNGZhODU2OWEpOwogICAgICAgICAgICAKICAgIAogICAgICAgICAgICB2YXIgcG9wdXBfMzQ0MDkzNWU5YTg5NDI2Njk4MmNkNTJhOTEwMjA2MjAgPSBMLnBvcHVwKHttYXhXaWR0aDogJzMwMCd9KTsKCiAgICAgICAgICAgIAogICAgICAgICAgICAgICAgdmFyIGh0bWxfNDEwNzg5ZjI5Nzg2NDAxYWJkNzdjYzFjYTMyYjY2MDYgPSAkKCc8ZGl2IGlkPSJodG1sXzQxMDc4OWYyOTc4NjQwMWFiZDc3Y2MxY2EzMmI2NjA2IiBzdHlsZT0id2lkdGg6IDEwMC4wJTsgaGVpZ2h0OiAxMDAuMCU7Ij5TY2hpZXJlbiwgNzQyMSwgTHV4ZW1ib3VyZzwvZGl2PicpWzBdOwogICAgICAgICAgICAgICAgcG9wdXBfMzQ0MDkzNWU5YTg5NDI2Njk4MmNkNTJhOTEwMjA2MjAuc2V0Q29udGVudChodG1sXzQxMDc4OWYyOTc4NjQwMWFiZDc3Y2MxY2EzMmI2NjA2KTsKICAgICAgICAgICAgCgogICAgICAgICAgICBtYXJrZXJfNTJlNDU2YmQ5ZWQ4NDg3ZjhlODNmNzE3NTcxYTc4YmUuYmluZFBvcHVwKHBvcHVwXzM0NDA5MzVlOWE4OTQyNjY5ODJjZDUyYTkxMDIwNjIwKTsKCiAgICAgICAgICAgIAogICAgICAgIAogICAgCgogICAgICAgICAgICB2YXIgbWFya2VyX2Q4NWNiMDBhZWI1YzQ0ZWM4N2M1YTVhMjQ4MzQwOTQ5ID0gTC5tYXJrZXIoCiAgICAgICAgICAgICAgICBbNDkuNjA0NzU4NSw2LjE0MjU4MDE0NjY2NjY2OV0sCiAgICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAgICAgaWNvbjogbmV3IEwuSWNvbi5EZWZhdWx0KCkKICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICApCiAgICAgICAgICAgICAgICAuYWRkVG8obWFwXzI1MzRjZmVjYzdmNTQ4OTg4YWI1YTAxZDRmYTg1NjlhKTsKICAgICAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHBvcHVwXzM3ODYzN2IyZDlhYzQ1MDViZDViYTU0NWM1YTg2OTY2ID0gTC5wb3B1cCh7bWF4V2lkdGg6ICczMDAnfSk7CgogICAgICAgICAgICAKICAgICAgICAgICAgICAgIHZhciBodG1sX2RlMDE3OWE4NWZjYjRmYTU5MDUyNjgxMzYzYmY5MzVmID0gJCgnPGRpdiBpZD0iaHRtbF9kZTAxNzlhODVmY2I0ZmE1OTA1MjY4MTM2M2JmOTM1ZiIgc3R5bGU9IndpZHRoOiAxMDAuMCU7IGhlaWdodDogMTAwLjAlOyI+UnVlIGQmIzM5O0l0emlnLCBMdXhlbWJvdXJnLCAxMTE4LCBMdXhlbWJvdXJnPC9kaXY+JylbMF07CiAgICAgICAgICAgICAgICBwb3B1cF8zNzg2MzdiMmQ5YWM0NTA1YmQ1YmE1NDVjNWE4Njk2Ni5zZXRDb250ZW50KGh0bWxfZGUwMTc5YTg1ZmNiNGZhNTkwNTI2ODEzNjNiZjkzNWYpOwogICAgICAgICAgICAKCiAgICAgICAgICAgIG1hcmtlcl9kODVjYjAwYWViNWM0NGVjODdjNWE1YTI0ODM0MDk0OS5iaW5kUG9wdXAocG9wdXBfMzc4NjM3YjJkOWFjNDUwNWJkNWJhNTQ1YzVhODY5NjYpOwoKICAgICAgICAgICAgCiAgICAgICAgCiAgICAKCiAgICAgICAgICAgIHZhciBtYXJrZXJfZWY5YzBhYjJjNDZjNDNlNTk4MWRiNDRiYTdhYmVmMjYgPSBMLm1hcmtlcigKICAgICAgICAgICAgICAgIFs0OC4zNzc3MTUyLDQuMjU3NjYxN10sCiAgICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAgICAgaWNvbjogbmV3IEwuSWNvbi5EZWZhdWx0KCkKICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICApCiAgICAgICAgICAgICAgICAuYWRkVG8obWFwXzI1MzRjZmVjYzdmNTQ4OTg4YWI1YTAxZDRmYTg1NjlhKTsKICAgICAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHBvcHVwX2VmOTYwNDViODg2MDRkMWU5YTBlOTU2ZjBiNjhmNTc1ID0gTC5wb3B1cCh7bWF4V2lkdGg6ICczMDAnfSk7CgogICAgICAgICAgICAKICAgICAgICAgICAgICAgIHZhciBodG1sX2M0MWE1YTE5NjQzYTQyMjRiMzg2ZjU5M2ZiNTZhMzgxID0gJCgnPGRpdiBpZD0iaHRtbF9jNDFhNWExOTY0M2E0MjI0YjM4NmY1OTNmYjU2YTM4MSIgc3R5bGU9IndpZHRoOiAxMDAuMCU7IGhlaWdodDogMTAwLjAlOyI+UnVlIGRlIGwmIzM5O8OJZ2xpc2UsIEJvdXktTHV4ZW1ib3VyZywgKEdyYW5kIEVzdCksIDEwMjIwLCBGcmFuY2U8L2Rpdj4nKVswXTsKICAgICAgICAgICAgICAgIHBvcHVwX2VmOTYwNDViODg2MDRkMWU5YTBlOTU2ZjBiNjhmNTc1LnNldENvbnRlbnQoaHRtbF9jNDFhNWExOTY0M2E0MjI0YjM4NmY1OTNmYjU2YTM4MSk7CiAgICAgICAgICAgIAoKICAgICAgICAgICAgbWFya2VyX2VmOWMwYWIyYzQ2YzQzZTU5ODFkYjQ0YmE3YWJlZjI2LmJpbmRQb3B1cChwb3B1cF9lZjk2MDQ1Yjg4NjA0ZDFlOWEwZTk1NmYwYjY4ZjU3NSk7CgogICAgICAgICAgICAKICAgICAgICAKICAgIAoKICAgICAgICAgICAgdmFyIG1hcmtlcl8zNWQ3NzM3ZjI1Y2Y0YmY5OTBlYzE5ZTg3OGY0YjE1MSA9IEwubWFya2VyKAogICAgICAgICAgICAgICAgWzQ5LjYxMTI3NjgsNi4xMjk3OTldLAogICAgICAgICAgICAgICAgewogICAgICAgICAgICAgICAgICAgIGljb246IG5ldyBMLkljb24uRGVmYXVsdCgpCiAgICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgKQogICAgICAgICAgICAgICAgLmFkZFRvKG1hcF8yNTM0Y2ZlY2M3ZjU0ODk4OGFiNWEwMWQ0ZmE4NTY5YSk7CiAgICAgICAgICAgIAogICAgCiAgICAgICAgICAgIHZhciBwb3B1cF9kNTdlMWMyY2RlYTc0OTU0YjRhY2U4Nzk1MWU3NGM4MCA9IEwucG9wdXAoe21heFdpZHRoOiAnMzAwJ30pOwoKICAgICAgICAgICAgCiAgICAgICAgICAgICAgICB2YXIgaHRtbF81NjEyNWJhNTFlODQ0ZGU3YWRjNWRlMWIxMTBlNDcwYSA9ICQoJzxkaXYgaWQ9Imh0bWxfNTYxMjViYTUxZTg0NGRlN2FkYzVkZTFiMTEwZTQ3MGEiIHN0eWxlPSJ3aWR0aDogMTAwLjAlOyBoZWlnaHQ6IDEwMC4wJTsiPkx1eGVtYm91cmcsIDI1MjUsIEx1eGVtYm91cmc8L2Rpdj4nKVswXTsKICAgICAgICAgICAgICAgIHBvcHVwX2Q1N2UxYzJjZGVhNzQ5NTRiNGFjZTg3OTUxZTc0YzgwLnNldENvbnRlbnQoaHRtbF81NjEyNWJhNTFlODQ0ZGU3YWRjNWRlMWIxMTBlNDcwYSk7CiAgICAgICAgICAgIAoKICAgICAgICAgICAgbWFya2VyXzM1ZDc3MzdmMjVjZjRiZjk5MGVjMTllODc4ZjRiMTUxLmJpbmRQb3B1cChwb3B1cF9kNTdlMWMyY2RlYTc0OTU0YjRhY2U4Nzk1MWU3NGM4MCk7CgogICAgICAgICAgICAKICAgICAgICAKPC9zY3JpcHQ+" style="position:absolute;width:100%;height:100%;left:0;top:0;border:none !important;" allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe></div></div>
 </div>
 
 </div>
@@ -12140,7 +12153,7 @@ GEOPY help: http://geopy.readthedocs.io/en/latest/
 <div class="prompt input_prompt">In&nbsp;[10]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">serv</span><span class="o">.</span><span class="n">place2area</span><span class="p">(</span><span class="n">whereamI</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">serv</span><span class="o">.</span><span class="n">place2geom</span><span class="p">(</span><span class="n">whereamI</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12361,8 +12374,8 @@ GEOPY help: http://geopy.readthedocs.io/en/latest/
 <div class="prompt input_prompt">In&nbsp;[11]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">area</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">place2area</span><span class="p">(</span><span class="n">whereamI</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">area</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">area</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">place2geom</span><span class="p">(</span><span class="n">whereamI</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">area</span>
 </pre></div>
 
 </div>
@@ -12375,13 +12388,23 @@ GEOPY help: http://geopy.readthedocs.io/en/latest/
 
 <div class="output_area">
 
-<div class="prompt"></div>
+<div class="prompt output_prompt">Out[11]:</div>
 
 
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>{&#39;geometry&#39;: {&#39;coordinates&#39;: [6.1296751, 49.8158683], &#39;type&#39;: &#39;Point&#39;}, &#39;type&#39;: &#39;Feature&#39;, &#39;properties&#39;: {&#39;osm_id&#39;: 2171347, &#39;osm_type&#39;: &#39;R&#39;, &#39;extent&#39;: [5.7357006, 50.1827724, 6.5312481, 49.4478539], &#39;country&#39;: &#39;Luxembourg&#39;, &#39;osm_key&#39;: &#39;place&#39;, &#39;osm_value&#39;: &#39;country&#39;, &#39;name&#39;: &#39;Luxembourg&#39;}}
-</pre>
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>{&#39;geometry&#39;: {&#39;coordinates&#39;: [6.1296751, 49.8158683], &#39;type&#39;: &#39;Point&#39;},
+ &#39;properties&#39;: {&#39;country&#39;: &#39;Luxembourg&#39;,
+  &#39;extent&#39;: [5.7357006, 50.1827724, 6.5312481, 49.4478539],
+  &#39;name&#39;: &#39;Luxembourg&#39;,
+  &#39;osm_id&#39;: 2171347,
+  &#39;osm_key&#39;: &#39;place&#39;,
+  &#39;osm_type&#39;: &#39;R&#39;,
+  &#39;osm_value&#39;: &#39;country&#39;},
+ &#39;type&#39;: &#39;Feature&#39;}</pre>
 </div>
+
 </div>
 
 </div>
