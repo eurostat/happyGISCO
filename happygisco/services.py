@@ -953,8 +953,8 @@ class GISCOService(OSMService):
         Note also:
                 
             >>> serv.url_nuts('BE100', year = 2016, scale = 3, vector = 'boundary', ifmt ='shp')
-                    ! only LABEL and REGION features are supported with single NUTS units distribution - FEATURE argument ignored !
-                    ! only GEOJSON is supported with single NUTS units distribution - FMT argument ignored !
+                    ! only LABEL and REGION features are supported with single NUTS units distribution - VECTOR argument ignored !
+                    ! only GEOJSON is supported with single NUTS units distribution - IFMT argument ignored !
                 'https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/distribution/BE100-region-03m-4326-2016.geojson'       
         
         Further note that it is possible to build the URL linking to the NUTS datasets 
@@ -982,30 +982,30 @@ class GISCOService(OSMService):
             source = source.upper()
         # retrieve the keyword parameters... note that all this parsing/checking/cleaning
         # may have been done thanks to the parse_* methods
-        year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
-        scale = kwargs.pop(_Decorator.KW_SCALE, 
+        year = kwargs.get(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
+        scale = kwargs.get(_Decorator.KW_SCALE, 
                            settings.DEF_NUTS2JSON_SCALE if source == 'NUTS2JSON' else   \
                            settings.DEF_GISCO_SCALE) # if source in ('BULK','NUTS','INFO') else None)
         if source != 'NUTS2JSON' and scale in settings.GISCO_SCALES.keys():
             scale = settings.GISCO_SCALES[scale]
-        fmt = kwargs.pop(_Decorator.KW_IFORMAT, 
+        fmt = kwargs.get(_Decorator.KW_IFORMAT, 
                          settings.DEF_NUTS2JSON_FORMAT if source == 'NUTS2JSON' else   \
                          settings.DEF_GISCO_FORMAT if source in ('BULK','NUTS') else None)
         if source != 'NUTS2JSON' and fmt in settings.GISCO_FORMATS.keys():
             fmt = settings.GISCO_FORMATS[fmt]
         #elif fmt in settings.DEF_NUTS2JSON_FORMAT.keys():
         #    fmt = settings.DEF_NUTS2JSON_FORMAT[fmt]
-        proj = kwargs.pop(_Decorator.KW_PROJECTION, 
+        proj = kwargs.get(_Decorator.KW_PROJECTION, 
                           settings.DEF_NUTS2JSON_PROJECTION if source == 'NUTS2JSON' else   \
                           settings.DEF_GISCO_PROJECTION) # if source in ('BULK','NUTS','INFO') else None)
         if source != 'NUTS2JSON' and proj in settings.GISCO_PROJECTIONS.keys():
             proj = settings.GISCO_PROJECTIONS[proj]
         elif proj in settings.NUTS2JSON_PROJECTIONS.keys():
             proj = settings.NUTS2JSON_PROJECTIONS[proj]
-        vec = kwargs.pop(_Decorator.KW_VECTOR, settings.DEF_GISCO_VECTOR) 
+        vec = kwargs.get(_Decorator.KW_VECTOR, settings.DEF_GISCO_VECTOR) 
         if vec in settings.GISCO_VECTORS.keys():
             vec = settings.GISCO_VECTORS[vec]
-        level = kwargs.pop(_Decorator.KW_LEVEL, settings.GISCO_NUTSLEVELS[0])        
+        level = kwargs.get(_Decorator.KW_LEVEL, settings.GISCO_NUTSLEVELS[0])        
         ## retrieve the default parameters values    
         #defkw = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS, _force_list_=True)(lambda **kw: kw)
         #defkw = defkw()
@@ -1037,7 +1037,7 @@ class GISCOService(OSMService):
         elif source == 'INFO':
             domain = ''
             if fmt != settings.GISCO_PATTERNS['nuts']['fmt']:
-                if fmt is not None:
+                if fmt is not None and _Decorator.KW_IFORMAT in kwargs:
                     happyWarning('only JSON format is supported with INFO file - %s argument ignored' % _Decorator.KW_IFORMAT.upper())
                 fmt = settings.GISCO_PATTERNS['nuts']['fmt']
             basename = settings.GISCO_PATTERNS['nuts']['info']
@@ -1062,21 +1062,22 @@ class GISCOService(OSMService):
             if not vec in list(settings.GISCO_VECTORS.keys()):
                 vec = {v:k for k,v in settings.GISCO_VECTORS.items()}[vec]
             if vec not in ('label','region'):
-                happyWarning('only LABEL and REGION features are supported with single NUTS units distribution - %s argument ignored' % _Decorator.KW_GEOMETRY.upper())
+                if _Decorator.KW_VECTOR in kwargs:
+                    happyWarning('only LABEL and REGION features are supported with single NUTS units distribution - %s argument ignored' % _Decorator.KW_VECTOR.upper())
                 vec = 'region' # settings.DEF_GISCO_VECTOR
             elif vec == 'label':
                 if scale != '':
-                    if scale is not None:
+                    if scale is not None and _Decorator.KW_SCALE in kwargs:
                         happyWarning('scale are not supported with LABEL datasets - %s argument ignored' % _Decorator.KW_SCALE.upper())
                     scale = ''
                 if proj not in (3035,4258):
-                    if proj is not None:
+                    if proj is not None and _Decorator.KW_PROJECTION in kwargs:
                         happyWarning('only 3035 and 4258 projections are supported with single LABEL unit distribution - %s argument ignored' % _Decorator.KW_PROJECTION.upper())
                     proj = 3035
             if vec == 'region': # not elif
                 scale = scale.lower() + '-'
             if fmt != 'geojson':
-                if fmt is not None:
+                if fmt is not None and _Decorator.KW_IFORMAT in kwargs:
                     happyWarning('only GEOJSON is supported with single NUTS units distribution - %s argument ignored' % _Decorator.KW_IFORMAT.upper())
                 fmt = 'geojson'
             url = '{a}://{b}/{c}/{d}/{e}-{f}-{g}{h}-{i}.{j}'.format        \
@@ -1122,13 +1123,13 @@ class GISCOService(OSMService):
                 source = 'INFO' # force to 'INFO' in case it is None
             source = source.upper()
         # retrieve the year
-        year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
+        year = kwargs.get(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
         # retrieve the scale
-        scale = kwargs.pop(_Decorator.KW_SCALE, 
+        scale = kwargs.get(_Decorator.KW_SCALE, 
                            settings.DEF_GISCO_SCALE if source != 'NUTS2JSON' else settings.DEF_NUTS2JSON_SCALE)
         if source != 'NUTS2JSON' and scale in settings.GISCO_SCALES.keys():
             scale = settings.GISCO_SCALES[scale]
-        fmt = kwargs.pop(_Decorator.KW_IFORMAT, 
+        fmt = kwargs.get(_Decorator.KW_IFORMAT, 
                          settings.DEF_GISCO_FORMAT if source != 'NUTS2JSON' else settings.DEF_NUTS2JSON_FORMAT)
         if source != 'NUTS2JSON' and fmt in settings.GISCO_FORMATS.keys():
             fmt = settings.GISCO_FORMATS[fmt]
@@ -1136,13 +1137,13 @@ class GISCOService(OSMService):
         #    fmt = {v:k for k,v in settings.GISCO_FORMATS.items()}[fmt]
         #elif fmt in settings.DEF_NUTS2JSON_FORMAT.keys():
         #    fmt = settings.DEF_NUTS2JSON_FORMAT[fmt]
-        proj = kwargs.pop(_Decorator.KW_PROJECTION, 
+        proj = kwargs.get(_Decorator.KW_PROJECTION, 
                           settings.DEF_GISCO_PROJECTION if source != 'NUTS2JSON' else settings.DEF_NUTS2JSON_PROJECTION)
         if source != 'NUTS2JSON' and proj in settings.GISCO_PROJECTIONS.keys():
             proj = settings.GISCO_PROJECTIONS[proj]
         elif proj in settings.NUTS2JSON_PROJECTIONS.keys():
             proj = settings.NUTS2JSON_PROJECTIONS[proj]
-        vec = kwargs.pop(_Decorator.KW_VECTOR, settings.DEF_GISCO_VECTOR) 
+        vec = kwargs.get(_Decorator.KW_VECTOR, settings.DEF_GISCO_VECTOR) 
         if vec in settings.GISCO_VECTORS.keys():
             vec = settings.GISCO_VECTORS[vec]
         theme = settings.GISCO_PATTERNS['country']['theme']
@@ -1815,8 +1816,8 @@ class GISCOService(OSMService):
             # ['SOURCE', 'YEAR', 'SCALE', 'IFORMAT']
             [dimensions.remove(attr) for attr in ('PROJECTION', 'VECTOR', 'LEVEL')] 
         elif source == 'INFO':
-            # ['SOURCE', 'YEAR', 'IFORMAT']
-            [dimensions.remove(attr) for attr in ('PROJECTION', 'SCALE', 'VECTOR', 'LEVEL')] 
+            # ['SOURCE', 'YEAR']
+            [dimensions.remove(attr) for attr in ('PROJECTION', 'SCALE', 'VECTOR', 'LEVEL', 'IFORMAT')] 
         elif source == 'NUTS2JSON':
             # ['SOURCE', 'YEAR', 'PROJECTION', 'SCALE', 'LEVEL', 'IFORMAT']
             [dimensions.remove(attr) for attr in ('VECTOR',)] 
@@ -2316,10 +2317,10 @@ class GISCOService(OSMService):
         if info in ('NAMES','UNITS'):            
             level = kwargs.pop(_Decorator.KW_LEVEL, None) # settings.GISCO_NUTSLEVELS
             if level is not None:
-                if level == 'ALL' or set(level) == set(settings.GISCO_NUTSLEVELS):
-                    level = None # settings.GISCO_NUTSLEVELS
-                elif not happyType.issequence(level):
+                if happyType.isnumeric(level):
                     level = [level,]
+                elif level == 'ALL' or set(level) == set(settings.GISCO_NUTSLEVELS):
+                    level = None # settings.GISCO_NUTSLEVELS
         if info == 'NAMES':
             scale = sorted(list(settings.GISCO_SCALES.keys()))[-1]
             year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
@@ -2375,7 +2376,7 @@ class GISCOService(OSMService):
                 data = pd.concat(data[data['NUTS_ID'].str.startswith(u)] for u in unit) 
             if level is not None:
                 data = pd.concat(data[data['NUTS_ID'].apply(lambda x: sum(c.isdigit() for c in x)==l)] for l in level)
-        else: # if info == 'INFO':
+        else: # if info == 'UNITS:
             try:
                 data = self.read_response(resp, **{_Decorator.KW_OFORMAT: 'jsontext'})
             except happyError as e:
