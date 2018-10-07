@@ -38,8 +38,8 @@ Once installed, the module can be imported simply:
 
 Simple examples are available in the form of _Jupyter_ notebooks under the [_notebooks/_](https://github.com/eurostat/happyGISCO/tree/master/notebooks) folder, *e.g.*:
 
-* a [basic use](http://nbviewer.jupyter.org/github/eurostat/happyGISCO/blob/master/notebooks/Example%20of%20Eurostat%20%27Data%20as%20a%20Service%27%20using%20happyGISCO%20module.ipynb) of the geocoding services,
-* an example of features definition and geocoding,
+* a [simple call](http://nbviewer.jupyter.org/github/eurostat/happyGISCO/blob/master/notebooks/example_GISCO_services.ipynb) to the geocoding services,
+* a [basic use](http://nbviewer.jupyter.org/github/eurostat/happyGISCO/blob/master/notebooks/example_GISCO_features.ipynb) of NUTS vector features,
 * an extended workflow for location identification and retrieval. 
 
 **Usage**
