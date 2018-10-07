@@ -2629,10 +2629,14 @@ class LeafMap(_Tool):
         except:
             raise happyError('leaflet-based mapping and tiling services not available')
         self.__map = None
+        self.__center = kwargs.pop('center', settings.EU_GEOCENTRE)
+        self.__zoom = kwargs.pop('zoom', settings.DEF_GISCO_ZOOM)
         tile = kwargs.pop(_Decorator.KW_TILE, None)
         attr = kwargs.pop(_Decorator.KW_ATTR, '')
         if LEAFLET_TOOL is True:
             try:
+                kwargs.update({'center':  self.__center,
+                               'zoom':    self.__zoom})
                 self.__map = ipyleaflet.Map(**kwargs)
             except:
                 raise happyError('wrong tiling initialisation')
@@ -2667,8 +2671,10 @@ class LeafMap(_Tool):
             except:
                 pass
             else:
-                kwargs.update({'tiles': self.__tile,
-                               'attr': self.__attr})
+                kwargs.update({'tiles':         self.__tile,
+                               'attr':          self.__attr,
+                               'location':      self.__center,
+                               'zoom_start':    self.__zoom})
             try:
                 self.__map = folium.Map(**kwargs)
             except:
@@ -2700,6 +2706,12 @@ class LeafMap(_Tool):
         """Attribution property (:data:`getter`).
         """
         return self.__attr
+
+    @property
+    def center(self):
+        """Map central location property (:data:`getter`).
+        """
+        return self.__center
             
     #/********************************************************************/
     def __getattr__(self, attr):
@@ -2731,10 +2743,35 @@ class LeafMap(_Tool):
             return res
     
     #/************************************************************************/
-    def add_layer(self, *args, **kwargs):
+    def add_area(self, *args, **kwargs):
         """
         """
-        pass
+        if args not in ((),None):
+            area =  args[0]
+        else:
+            area = kwargs.pop('area',None)
+        try:
+            assert area not in (None,[],{})
+        except:
+            raise happyError('no area argument parsed')
+        if happyType.issequence(area)                                \
+                and all([happyType.ismapping(a) for a in area]):
+            narea = len(area)
+        else:
+            area = [area,]
+            narea = 1
+        ndata = narea
+        if ndata != narea:
+            raise happyError('incompatible areas and data')
+        if LEAFLET_TOOL is True:
+            # see https://ipyleaflet.readthedocs.io/en/latest/api_reference/geo_json.html
+            for a in area:
+                try:
+                    self.Map.add_layer(ipyleaflet.GeoJSON(data=a))
+                except:
+                    raise happyError('area %s not added to map' % a)        
+        elif FOLIUM_TOOL is True:
+            pass
         
 
     #/************************************************************************/
@@ -2769,7 +2806,7 @@ class LeafMap(_Tool):
             for key in [cls.__name__.lower() for cls in FeatureList]
             if key in kwargs.keys()]
         nfeat = len(_featype)
-        if isinstance(location,(list,tuple))                                \
+        if happyType.issequence(location)                                \
                 and isinstance(location[0],(tuple,list,ipyleaflet.leaflet,) \
                                + tuple(FeatureList)):
             nloc = len(location)
@@ -2777,7 +2814,7 @@ class LeafMap(_Tool):
             location = [location,]
             nloc = 1
         if nfeat!=1 and nfeat!=nloc:
-            raise happyError('incompatible locations and feature description')
+            raise happyError('incompatible locations and feature descriptions')
         if LEAFLET_TOOL is True:
             for i, keyval in enumerate(_featype.items()):
                 key, val = keyval
