@@ -227,13 +227,13 @@ def __init(inst, *args, **kwargs):
     except:
         happyWarning('GDAL transform utilities not available')
     else:
-        inst.transform = tools.GDALTransform()
+        inst.transform = tools.GDALTransform(**kwargs)
     try:
         assert LEAFLET_TOOL
     except:
         happyWarning('folium mapping services not available')
     else:
-        inst.mapping = tools.LeafMap()
+        inst.mapping = tools.LeafMap(**kwargs)
 try:
     _Feature.__init__ = __init
 except:
@@ -951,10 +951,11 @@ class NUTS(_Feature):
                 unit = [unit,]  
             try:
                 dimensions = defdim.copy() 
-                dimensions.update({_Decorator.KW_LEVEL: [sum(c.isdigit() for c in u) for u in unit]})
+                level = [sum(c.isdigit() for c in u) for u in unit]
             except:
                 raise happyError('impossible to define NUTS dimensions from input unit')
             else:
+                dimensions.update({_Decorator.KW_LEVEL: level if len(unit)>1 else level[0]})
                 dimensions = [dimensions,]
         elif geom not in ([],None):
             if not happyType.issequence(geom): 
@@ -1535,7 +1536,8 @@ class NUTS(_Feature):
                 raise happyError('level not found') 
             else:
                 self.__level = level
-        return self.__level if self.__level is None or len(self.__level)>1 else self.__level[0] 
+        return self.__level if self.__level is None or len(self.__level)>1  \
+            else self.__level[0] 
     @level.setter
     def level(self, level):
         try:
@@ -1700,8 +1702,8 @@ class NUTS(_Feature):
         return self.name
     
     #/************************************************************************/
-    def dump(self, **kwargs):
-        """Dump the geometry stored in this NUTS instance.
+    def load(self, **kwargs):
+        """Load the geometry stored in this NUTS instance.
         """
         dimensions = self._dimensions
         dimensions = [dimensions.copy(),] if happyType.ismapping(dimensions)    \
@@ -1740,7 +1742,7 @@ class NUTS(_Feature):
         return geom if len(geom)>1 else geom[0]
     
     #/************************************************************************/
-    def dumps(self, **kwargs):
+    def loads(self, **kwargs):
         """Dump the geometry stored in this NUTS instance as a string. 
         """
         geom = self.dump(**kwargs)
@@ -1750,11 +1752,11 @@ class NUTS(_Feature):
             return happyType.jsonstringify(geom)
                     
     #/************************************************************************/
-    def load(self, **kwargs):
+    def dump(self, **kwargs):
         pass
                     
     #/************************************************************************/
-    def loads(self, **kwargs):
+    def dumps(self, **kwargs):
         pass
         
     #/************************************************************************/
@@ -1852,7 +1854,13 @@ class NUTS(_Feature):
                 loc = Location(kwargs)
         return self.fid in loc.nuts()
         
-
+    #/************************************************************************/
+    def carto(self, **kwargs):
+        """
+        """
+        self.mapping.add_area(self.load(**kwargs))
+        return self.mapping.Map
+        
 #%%
 #==============================================================================
 # CLASS Area
