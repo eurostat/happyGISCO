@@ -161,12 +161,14 @@ else:
         happyWarning("missing FASTENERS package (https://pypi.org/project/fasteners/)", ImportWarning)
     
 try:                                
+    JSON_INSTALLED = True
     import simplejson as json
 except ImportError:
     happyWarning("missing SIMPLEJSON package (https://pypi.python.org/pypi/simplejson/)", ImportWarning)
     try:
         import json
-    except ImportError: 
+    except ImportError:
+        JSON_INSTALLED = False
         happyWarning("JSON module missing in Python Standard Library", ImportWarning)
         class json:
             def loads(arg):  return '%s' % arg
@@ -250,12 +252,14 @@ class _Decorator(object):
     KW_NAME         = 'name'
     KW_ID           = 'id'
     KW_TILE         = 'tile'
-    KW_ATTR         = 'attr'
+    KW_ATTR         = 'attr' # 'attribution'
               
     KW_ORDER        = 'order'
     KW_KEYS         = 'keys'
     KW_VALUES       = 'values'
     KW_FORCE_LIST   = '_force_list_'
+    
+    KW_NO_WIDGET    = '_no_widget_'
 
     #/************************************************************************/
     class __base(object):
