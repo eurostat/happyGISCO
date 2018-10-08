@@ -70,7 +70,7 @@ import collections, itertools
 # local (absolute) imports
 from happygisco import happyVerbose, happyWarning, happyError, happyType
 from happygisco import settings
-from happygisco.base import SERVICE_AVAILABLE
+from happygisco.base import SERVICE_AVAILABLE, JSON_INSTALLED
 from happygisco.base import _Decorator, _CachedResponse, _Service, _NestedDict
 
 # requirements
@@ -138,16 +138,16 @@ else:
     LEVENSHTEIN_INSTALLED = True
     happyVerbose('Levenshtein help: https://rawgit.com/ztane/python-Levenshtein/master/docs/Levenshtein.html')
     
-try:                                
-    import simplejson as json
-except ImportError:
-    # happyWarning("missing SIMPLEJSON package (https://pypi.python.org/pypi/simplejson/)", ImportWarning)
-    try:                                
+try:    
+    assert JSON_INSTALLED
+except AssertionError:
+    class json:
+        def loads(arg):  return '%s' % arg
+else:
+    try:                          
+        import simplejson as json
+    except ImportError:
         import json
-    except ImportError: 
-        # happyWarning("JSON module missing in Python Standard Library", ImportWarning)
-        class json:
-            def loads(arg):  return '%s' % arg
 
 #%%
 #==============================================================================
@@ -1185,8 +1185,7 @@ class GISCOService(OSMService):
         return url            
     
     #/************************************************************************/
-    
-    def url_lau(source=None, **kwargs):
+    def url_lau(self, source=None, **kwargs):
         """Generate the URL of the |GISCO| LAU data files.
             
             >>> url = serv.url_lau(source=None, **kwargs)
@@ -1197,15 +1196,15 @@ class GISCOService(OSMService):
         pass
         
     #/************************************************************************/
-    def url_tile(self, tiles=None, **kwargs):
+    def url_tile(self, tile=None, **kwargs):
         """Generate the URL (or name) of the |GISCO| tiling web-service that can
         be used as a background layer in map displays.
             
-            >>> url, attr = serv.url_tile(tiles=None, **kwargs)
+            >>> url, attr = serv.url_tile(tile=None, **kwargs)
            
         Arguments
         ---------
-        tiles: str
+        tile: str
             string representing the background tile layer used for the map display; 
             it must be one of the tiling supported by |GISCO|, *i.e.* any string in 
             :literal:`['bmarble','borders','roadswater','hypso','coast','copernicus',`
@@ -1240,35 +1239,35 @@ class GISCOService(OSMService):
                  '© OpenStreetMap')
         """
         try:
-            assert tiles is None or happyType.isstring(tiles)
+            assert tile is None or happyType.isstring(tile)
         except:
             raise happyError('wrong format/value for TILES argument')
         else: 
             _d = {v['bckgrd']:k for k,v in settings.GISCO_TILES.items()}
-            if tiles in list(_d.keys()):
-                tiles = _d[tiles]
+            if tile in list(_d.keys()):
+                tile = _d[tile]
         try:
             attr = kwargs.get('attr','')
             assert attr is None or isinstance(attr,str)
         except:
             raise happyError('wrong format/value for ATTR keyword argument')
-        if not tiles in settings.GISCO_TILES.keys():
-            return tiles, attr   
+        if not tile in settings.GISCO_TILES.keys():
+            return tile, attr   
         try:
-            attr = settings.GISCO_TILES[tiles]['attr']
+            attr = settings.GISCO_TILES[tile]['attr']
         except:
             pass
         try:
-            bckgrd = settings.GISCO_TILES[tiles]['bckgrd']
+            bckgrd = settings.GISCO_TILES[tile]['bckgrd']
         except:
-            bckgrd = tiles # in case we forgot to specify a 'bckgrd' 
+            bckgrd = tile # in case we forgot to specify a 'bckgrd' 
         try:
             proj = kwargs.pop('proj', settings.DEF_GISCO_TILEPROJ)
             assert proj in (None,'') or proj in happyType.seqflatten(list(settings.GISCO_PROJECTIONS.items()))
         except:
             raise happyError('wrong format/value for PROJ keyword argument')
         else:
-            if proj in (None,'') or settings.GISCO_TILES[tiles]['proj'] is False:
+            if proj in (None,'') or settings.GISCO_TILES[tile]['proj'] is False:
                 proj = ''
             elif not proj in list(settings.GISCO_PROJECTIONS.values()):
                 proj = settings.GISCO_PROJECTIONS[proj]
@@ -1281,9 +1280,9 @@ class GISCOService(OSMService):
         else:
             if all([o in set('xyz') for o in order]):
                 order = '/'.join(['{%s}' % o for o in order])
-        tiles = '%s://%s/%s/%s%s' % (settings.PROTOCOL, self.map_url, 
-                                     bckgrd, proj, order)
-        return tiles, attr            
+        tile = '%s://%s/%s/%s%s' % (settings.PROTOCOL, self.map_url, 
+                                    bckgrd, proj, order)
+        return tile, attr            
 
     #/************************************************************************/
     def url_geocode(self, **kwargs):
@@ -1949,7 +1948,7 @@ class GISCOService(OSMService):
 
     #/************************************************************************/
     def country_info(self, **kwargs):
-        """Returns the list of ISO-codes of countries available in |GISCO| database.
+        """Return the list of ISO-codes of countries available in |GISCO| database.
             
             >>> countries = serv.country_info(**kwargs)
             
@@ -1963,7 +1962,7 @@ class GISCOService(OSMService):
             
         Returns
         -------
-        countries : 
+        countries : list
             list of all countries ISO-codes that are available (as labels at least)
             in |GISCO| database.
         
@@ -2108,7 +2107,7 @@ class GISCOService(OSMService):
     @_Decorator.parse_scale
     #@_Decorator.parse_level # we actually set None as default value
     def nuts_info(self, **kwargs):
-        """Returns some information regarding the |NUTS| datasets disseminated through
+        """Return some information regarding the |NUTS| datasets disseminated through
         |GISCO| Rest API.
             
             >>> data = serv.nuts_info(**kwargs)
@@ -2389,9 +2388,55 @@ class GISCOService(OSMService):
                 data = [d for d in data if any([d.startswith(u) for u in unit])]
             if level is not None:
                 data = [d for d in data if any([sum(c.isdigit() for c in d)==l for l in level])]
-        return data
-        
+        return data      
+
     #/************************************************************************/
+    def tile_info(self, **kwargs):
+        """Return information regarding the background tile.
+            
+            >>> info = serv.tile_info(**kwargs)
+            
+        Keyword arguments
+        -----------------
+        tile : str,list
+        attr : str, list
+        zoom : int
+        center : list
+        
+        Returns
+        -------
+        info : dict
+        
+        Examples
+        --------
+        
+            >>> info = serv.tile_info(tile='osmec')
+            >>> print(info)
+                {'attr': '© OpenStreetMap',
+                 'center': [50.033333, 10.35],
+                 'tile': 'https://europa.eu/webtools/maps/tiles/osm-ec/{z}/{y}/{x}',
+                 'zoom': 4}
+            >>> info = serv.tile_info(tile=['bmarble','copernicus'])
+            >>> print(info)
+                {'attr': ('© NASA’s Earth Observatory', '© Core003 Mosaic'),
+                 'center': [50.033333, 10.35],
+                 'tile': ('https://europa.eu/webtools/maps/tiles/bmarble/3857/{z}/{y}/{x}',
+                          'https://europa.eu/webtools/maps/tiles/copernicus003/{z}/{y}/{x}'),
+                 'zoom': 4}
+        """
+        tile = kwargs.pop(_Decorator.KW_TILE, settings.DEF_GISCO_TILE)
+        center = kwargs.pop('center', settings.EU_GEOCENTRE)
+        zoom = kwargs.pop('zoom', settings.DEF_GISCO_ZOOM)
+        if not happyType.issequence(tile):
+            tile = [tile,]
+        tile, attr = zip(*[self.url_tile(tile=t, **kwargs) if t in settings.GISCO_TILES else (t,'')   \
+                         for t in tile])
+        return {'center':           center,
+                'zoom':             zoom,
+                _Decorator.KW_TILE: tile if tile in (None,'') or len(tile)>1 else tile[0],
+                _Decorator.KW_ATTR: attr if attr in (None,'') or len(attr)>1 else attr[0]}
+        
+        #/************************************************************************/
     def nutsid2name(self, **kwargs):
         """
             
