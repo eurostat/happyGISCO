@@ -57,10 +57,10 @@ import functools#analysis:ignore
 from happygisco import happyWarning, happyVerbose, happyError, happyType
 from happygisco import settings
 #from happygisco import base
-from happygisco.base import ASYNCIO_AVAILABLE
+from happygisco.base import SERVICE_AVAILABLE, ASYNCIO_AVAILABLE, JSON_INSTALLED#analysis:ignore
 from happygisco.base import _Feature, _CachedResponse, _Decorator, _NestedDict
 from happygisco import tools     
-from happygisco.tools import GDAL_TOOL, FOLIUM_TOOL, LEAFLET_TOOL#analysis:ignore
+from happygisco.tools import GDAL_TOOL, FOLIUM_TOOL, LEAFLET_TOOL, WIDGET_TOOL
 #from happygisco.tools import GDALTransform, LeafMap
 from happygisco import services     
 from happygisco.services import GISCO_SERVICE, API_SERVICE
@@ -82,16 +82,16 @@ else:
         class Response():
             pass
 
-try:                                
-    import simplejson as json
-except ImportError:
-    happyWarning("missing SIMPLEJSON package (https://pypi.python.org/pypi/simplejson/)", ImportWarning)
-    try:                                
+try:    
+    assert JSON_INSTALLED
+except AssertionError:
+    class json:
+        def loads(arg):  return '%s' % arg
+else:
+    try:                          
+        import simplejson as json
+    except ImportError:
         import json
-    except ImportError: 
-        happyWarning("JSON module missing in Python Standard Library", ImportWarning)
-        class json:
-            def loads(arg):  return '%s' % arg
 
 try:
     assert GDAL_TOOL
@@ -104,6 +104,26 @@ except AssertionError:
             pass
 else:
     from osgeo import ogr
+        
+try:
+    assert LEAFLET_TOOL
+except AssertionError:
+    try:
+        assert FOLIUM_TOOL
+    except AssertionError:
+        pass
+    else:
+        import folium#analysis:ignore
+else:
+    import ipyleaflet#analysis:ignore
+    
+try:
+    assert WIDGET_TOOL
+except AssertionError:
+    pass
+else:
+    import ipywidgets # as widgets
+    
 
 #%%
 #==============================================================================
@@ -227,13 +247,25 @@ def __init(inst, *args, **kwargs):
     except:
         happyWarning('GDAL transform utilities not available')
     else:
-        inst.transform = tools.GDALTransform(**kwargs)
+        try:
+            _kwargs = kwargs.copy()
+        except:
+            happyWarning('basic transform available')
+            inst.mapping = tools.GDALTransform()
+        else:
+            inst.transform = tools.GDALTransform(**_kwargs)
     try:
         assert LEAFLET_TOOL
     except:
         happyWarning('folium mapping services not available')
     else:
-        inst.mapping = tools.LeafMap(**kwargs)
+        try:
+            _kwargs = inst.service.tile_info(**kwargs)
+        except:
+            happyWarning('basic mapping available')
+            inst.mapping = tools.LeafMap()
+        else:
+            inst.mapping = tools.LeafMap(**_kwargs)
 try:
     _Feature.__init__ = __init
 except:
@@ -1353,6 +1385,8 @@ class NUTS(_Feature):
             raise happyError('wrong format for %s argument' % _Decorator.KW_UNIT.upper())
         if unit is not None and not happyType.issequence(unit):
             unit = [unit,]
+        self.__geometry, self.__dimensions = None, None
+        self.mapping.clear()
         self.__unit = unit
                 
     #/************************************************************************/
@@ -1858,8 +1892,22 @@ class NUTS(_Feature):
     def carto(self, **kwargs):
         """
         """
-        self.mapping.add_area(self.load(**kwargs))
-        return self.mapping.Map
+        __no_widget = kwargs.pop(_Decorator.KW_NO_WIDGET, False)
+        if WIDGET_TOOL is True and __no_widget is False:
+            label = ipywidgets.Label(layout=ipywidgets.Layout(width='100%'))
+            def hover_handler(event=None, id=None, properties=None):
+                label.value = "NUTS area: %s - code: %s - level: %s" %      \
+                    (properties[_Decorator.parse_nuts.KW_NUTS_NAME], properties[_Decorator.parse_nuts.KW_NUTS_ID], properties[_Decorator.parse_nuts.KW_LEVEL])    
+        else:
+            hover_handler = None    
+        self.mapping.add_area(self.load(**kwargs), 
+                              hover = hover_handler, 
+                              name='NUTS area'
+                              )
+        if WIDGET_TOOL is True and __no_widget is False:
+            return ipywidgets.VBox([self.mapping.Map, label])
+        else:
+            return self.mapping.Map
         
 #%%
 #==============================================================================
