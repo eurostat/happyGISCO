@@ -62,18 +62,19 @@ except ImportError:
 # local (absolute) imports
 from happygisco import happyVerbose, happyWarning, happyError, happyType
 from happygisco import settings
+from happygisco.base import JSON_INSTALLED
 from happygisco.base import _Decorator, _Tool
 
-try:                                
-    import simplejson as json
-except ImportError:
-    happyWarning("missing SIMPLEJSON package (https://pypi.python.org/pypi/simplejson/)", ImportWarning)
-    try:                                
+try:    
+    assert JSON_INSTALLED
+except AssertionError:
+    class json:
+        def loads(arg):  return '%s' % arg
+else:
+    try:                          
+        import simplejson as json
+    except ImportError:
         import json
-    except ImportError: 
-        happyWarning("JSON module missing in Python Standard Library", ImportWarning)
-        class json:
-            def loads(arg):  return '%s' % arg
  
 try:                            
     import multiprocessing 
@@ -115,7 +116,7 @@ else:
     happyVerbose('ipyleaflet help: https://ipyleaflet.readthedocs.io/en/latest/index.html')
 
 try:
-    import ipywidgets as widgets
+    import ipywidgets # as widgets
 except ImportError:
     WIDGET_TOOL = False
     happyWarning('ipywidgets package (https://github.com/jupyter-widgets/ipywidgets) not loaded - Map resources not available')
@@ -2629,9 +2630,10 @@ class LeafMap(_Tool):
         except:
             raise happyError('leaflet-based mapping and tiling services not available')
         self.__map = None
+        self.__tile = []
         self.__center = kwargs.pop('center', settings.EU_GEOCENTRE)
         self.__zoom = kwargs.pop('zoom', settings.DEF_GISCO_ZOOM)
-        tile = kwargs.pop(_Decorator.KW_TILE, None)
+        url = kwargs.pop(_Decorator.KW_TILE, '')
         attr = kwargs.pop(_Decorator.KW_ATTR, '')
         if LEAFLET_TOOL is True:
             try:
@@ -2640,21 +2642,25 @@ class LeafMap(_Tool):
                 self.__map = ipyleaflet.Map(**kwargs)
             except:
                 raise happyError('wrong tiling initialisation')
-            if tile is not None:
-                self.__tile, self.__attr = tile, attr
-                if not happyType.issequence(tile):  tile = [tile,]
+            if not url in ('',None):
+                if not happyType.issequence(url):  url = [url,]
                 if not happyType.issequence(attr):  attr = [attr,]
-                ntile = len(tile)
+                ntile = len(url)
                 for i in range(ntile):
-                    atile = ipyleaflet.TileLayer(url=tile[i], attr=attr[i])
-                    self.__map.add_layer(atile[i])
+                    tile = ipyleaflet.TileLayer(url=url[i], attribution=attr[i])
+                    self.__map.add_layer(tile)
+                    self.__tile.append({_Decorator.KW_TILE: tile, 
+                                        _Decorator.KW_URL:  url[i], 
+                                        _Decorator.KW_ATTR: attr[i]})
                 if ntile > 1:
                     self.__map.add_control(ipyleaflet.LayersControl())
             else:
                 tile = self.__map.layers
-                self.__tile, self.__attr = zip(*[(t.url, t.attribution) for t in tile])
-                if len(tile)==1:
-                    self.__tile, self.__attr = self.__tile[0], self.__attr[0]
+                self.__tile = [{_Decorator.KW_TILE: t,
+                                _Decorator.KW_URL:  t.url, 
+                                _Decorator.KW_ATTR: t.attribution}     \
+                                  for t in tile]
+                
         elif FOLIUM_TOOL is True:          
             pars = inspect.signature(folium.Map).parameters
             #[setattr(self, '__' + p, kwargs.get(p, pars[p].default)) \
@@ -2699,13 +2705,8 @@ class LeafMap(_Tool):
     def tile(self):
         """Tile property (:data:`getter`).
         """
-        return self.__tile
-
-    @property
-    def attr(self):
-        """Attribution property (:data:`getter`).
-        """
-        return self.__attr
+        return self.__tile if self.__tile is None or (happyType.issequence(self.__tile) and len(self.__tile)>1)    \
+            else self.__tile[0]
 
     @property
     def center(self):
@@ -2764,15 +2765,70 @@ class LeafMap(_Tool):
         if ndata != narea:
             raise happyError('incompatible areas and data')
         if LEAFLET_TOOL is True:
+            hover_handler = kwargs.pop('hover', None)
             # see https://ipyleaflet.readthedocs.io/en/latest/api_reference/geo_json.html
             for a in area:
                 try:
-                    self.Map.add_layer(ipyleaflet.GeoJSON(data=a))
+                    layer = ipyleaflet.GeoJSON(data=a, hover_style={'fillColor': 'red'})
+                    if WIDGET_TOOL is True and hover_handler is not None:
+                        layer.on_hover(hover_handler)
                 except:
-                    raise happyError('area %s not added to map' % a)        
+                    raise happyError('area %s not added to map' % a) 
+                else:
+                    self.Map.add_layer(layer)
         elif FOLIUM_TOOL is True:
             pass
         
+    #/************************************************************************/
+    def remove_area(self, *args, **kwargs):
+        if args not in ((),None):
+            area =  args[0]
+        else:
+            area = kwargs.pop('area',None)
+        try:
+            assert area not in (None,[],{})
+        except:
+            raise happyError('no area argument parsed')
+        if happyType.issequence(area)                                \
+                and all([happyType.ismapping(a) for a in area]):
+            narea = len(area)
+        else:
+            area = [area,]
+            narea = 1
+        ndata = narea
+        if ndata != narea:
+            raise happyError('incompatible areas and data')
+        if LEAFLET_TOOL is True:
+            # see https://ipyleaflet.readthedocs.io/en/latest/api_reference/geo_json.html
+            for a in area:
+                try:
+                    self.Map.remove_layer(a)
+                except:
+                    raise happyError('area %s not removed from map' % a)        
+        elif FOLIUM_TOOL is True:
+            pass
+        
+    #/************************************************************************/
+    def clear(self, tile=False):
+        """
+        """
+        if LEAFLET_TOOL is True:
+            # see https://ipyleaflet.readthedocs.io/en/latest/api_reference/map.html
+            if tile is True:
+                try:
+                    self.Map.clear_layers()
+                except:
+                    raise happyError('map not cleared')
+            else:
+                for l in self.Map.layers:
+                    if l in [t[_Decorator.KW_TILE] for t in self.__tile] or l.base == True:
+                        continue
+                    try:
+                        self.Map.remove_layer(l)
+                    except:
+                        raise happyError('layer %s not cleaned' % l)
+        elif FOLIUM_TOOL is True:
+            pass
 
     #/************************************************************************/
     def add_location(self, *args, **kwargs):
@@ -2904,7 +2960,7 @@ else:
         
         #@_Decorator.parse_level 
         def gisco_level(self, **kwargs):
-            return widgets.SelectMultiple(
+            return ipywidgets.SelectMultiple(
                 options=        kwargs.pop('options',settings.GISCO_NUTSLEVELS),
                 value=          kwargs.pop('value',settings.DEF_GISCO_NUTSLEVEL),
                 description=    'NUTS levels',
@@ -2913,7 +2969,7 @@ else:
                               
         #@_Decorator.parse_year
         def gisco_year(self, **kwargs):
-            return widgets.RadioButtons(
+            return ipywidgets.RadioButtons(
                 options=        kwargs.pop('options',list(set(settings.GISCO_YEARS.values()))),
                 value=          kwargs.pop('value',settings.DEF_GISCO_YEAR),
                 description=    'NUTS year:',
@@ -2922,7 +2978,7 @@ else:
             
         #@_Decorator.parse_scale
         def gisco_scale(self, **kwargs):
-            return widgets.RadioButtons(
+            return ipywidgets.RadioButtons(
                 options=        kwargs.pop('options',list(set(settings.GISCO_SCALES.values()))),
                 value=          kwargs.pop('value',settings.DEF_GISCO_SCALE),
                 description=    'Spatial scale:',
@@ -2931,7 +2987,7 @@ else:
                                       
         #@_Decorator.parse_vector 
         def gisco_vector(self, **kwargs):
-            return widgets.RadioButtons(
+            return ipywidgets.RadioButtons(
                 options=        kwargs.pop('options',list(set(settings.GISCO_VECTORS.values()))),
                 value=          kwargs.pop('value',settings.DEF_GISCO_VECTOR),
                 description=    'Spatial type:',
@@ -2940,7 +2996,7 @@ else:
             
         #@_Decorator.parse_projection
         def gisco_projection(self, **kwargs):
-            return widgets.RadioButtons(
+            return ipywidgets.RadioButtons(
                 options=        kwargs.pop('options',list(set(settings.GISCO_PROJECTIONS.values()))),
                 value=          kwargs.pop('value',settings.DEF_GISCO_PROJECTION),
                 description=    'Projection:',
