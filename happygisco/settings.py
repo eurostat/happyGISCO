@@ -358,6 +358,9 @@ of `available tiles servers <https://webgate.ec.europa.eu/fpfis/wikis/pages/view
 GISCO_TILEORDER     = '{z}/{y}/{x}'
 """|GISCO| background tile ordering (used for visualisation).
 """
+DEF_GISCO_TILE      = 'osmec' # 'bmarble'
+"""Default |GISCO| background tile.
+"""
 DEF_GISCO_TILEPROJ  = 3857
 """Default |GISCO| background tile projection.
 """
