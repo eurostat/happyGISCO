@@ -11794,7 +11794,7 @@ div#notebook {
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">happygisco</span>
-<span class="kn">from</span> <span class="nn">happygisco</span> <span class="k">import</span> <span class="n">services</span>
+<span class="kn">from</span> <span class="nn">happygisco</span> <span class="k">import</span> <span class="n">settings</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">services</span>
 </pre></div>
 
 </div>
@@ -11826,7 +11826,7 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>We first create an instance of a <code>GISCO</code>-based service, namely using the <strong><code>services.GISCOService</code></strong> class.</p>
+<p>In this notebook, we will also show how the various services can be combined with other useful <code>Python</code> modules, <em>e.g.</em> <a href="https://gdal.org/python/"><strong><code>gdal</code></strong></a>, <a href="https://geopandas.readthedocs.io/en/latest"><strong><code>geopandas</code></strong></a>, <a href="https://ipyleaflet.readthedocs.io/en/latest/"><strong><code>ipyleaflet</code></strong></a> or <a href="https://github.com/python-visualization/folium"><strong><code>folium</code></strong></a>:</p>
 
 </div>
 </div>
@@ -11834,6 +11834,34 @@ div#notebook {
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[2]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">gdal</span> <span class="c1"># from osgeo import gdal</span>
+    <span class="kn">import</span> <span class="nn">geopandas</span>
+    <span class="kn">import</span> <span class="nn">folium</span>
+    <span class="kn">import</span> <span class="nn">ipyleaflet</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;!ups...some useful modules are missing!&#39;</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We first create an instance of a <code>GISCO</code>-based service, namely using the <strong><code>services.GISCOService</code></strong> class.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">serv</span> <span class="o">=</span> <span class="n">services</span><span class="o">.</span><span class="n">GISCOService</span><span class="p">()</span>
@@ -11856,7 +11884,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[3]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">whereamI</span> <span class="o">=</span> <span class="s1">&#39;Luxembourg&#39;</span>
@@ -11879,7 +11907,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[4]:</div>
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">coords</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">place2coord</span><span class="p">(</span><span class="n">whereamI</span><span class="p">)</span>
@@ -11896,7 +11924,7 @@ div#notebook {
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[4]:</div>
+<div class="prompt output_prompt">Out[5]:</div>
 
 
 
@@ -11925,7 +11953,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">coord</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">place2coord</span><span class="p">(</span><span class="n">whereamI</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -11942,7 +11970,7 @@ div#notebook {
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[5]:</div>
+<div class="prompt output_prompt">Out[6]:</div>
 
 
 
@@ -11969,7 +11997,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[6]:</div>
+<div class="prompt input_prompt">In&nbsp;[7]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">serv</span><span class="o">.</span><span class="n">coord2place</span><span class="p">(</span><span class="n">coord</span><span class="p">)</span>
@@ -11985,7 +12013,7 @@ div#notebook {
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[6]:</div>
+<div class="prompt output_prompt">Out[7]:</div>
 
 
 
@@ -12011,56 +12039,11 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="prompt input_prompt">In&nbsp;[8]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">names</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">coord2place</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
 <span class="n">names</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-<div class="prompt output_prompt">Out[7]:</div>
-
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>[&#39;Schieren, 7421, Luxembourg&#39;,
- &#34;Rue d&#39;Itzig, Luxembourg, 1118, Luxembourg&#34;,
- &#34;Rue de l&#39;Église, Bouy-Luxembourg, (Grand Est), 10220, France&#34;,
- &#39;Luxembourg, 2525, Luxembourg&#39;]</pre>
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Hum... note that one of the places retrieved is actually...in France. That's the ambiguity related to the toponame. Note that this issue is actually not solved when passing the country as well (but that is specific to...Luxembourg):</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[8]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">serv</span><span class="o">.</span><span class="n">coord2place</span><span class="p">(</span><span class="n">serv</span><span class="o">.</span><span class="n">place2coord</span><span class="p">(</span><span class="s1">&#39;Luxembourg, Luxembourg&#39;</span><span class="p">))</span>
 </pre></div>
 
 </div>
@@ -12095,7 +12078,7 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Note that we can run the service again to retrieve the actual <code>(Lon,lat)</code> locations of the toponames above:</p>
+<p>Hum... note that one of the places retrieved is actually...in France. That's the ambiguity related to the toponame. Note that this issue is actually not solved when passing the country as well (but that is specific to...Luxembourg):</p>
 
 </div>
 </div>
@@ -12103,6 +12086,51 @@ div#notebook {
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 <div class="prompt input_prompt">In&nbsp;[9]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">serv</span><span class="o">.</span><span class="n">coord2place</span><span class="p">(</span><span class="n">serv</span><span class="o">.</span><span class="n">place2coord</span><span class="p">(</span><span class="s1">&#39;Luxembourg, Luxembourg&#39;</span><span class="p">))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[9]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>[&#39;Schieren, 7421, Luxembourg&#39;,
+ &#34;Rue d&#39;Itzig, Luxembourg, 1118, Luxembourg&#34;,
+ &#34;Rue de l&#39;Église, Bouy-Luxembourg, (Grand Est), 10220, France&#34;,
+ &#39;Luxembourg, 2525, Luxembourg&#39;]</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Note that we can run the service again to retrieve the actual <code>(Lon,lat)</code> locations of the toponames above:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[10]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">serv</span><span class="o">.</span><span class="n">place2coord</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;Ll&#39;</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -12118,7 +12146,7 @@ div#notebook {
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[9]:</div>
+<div class="prompt output_prompt">Out[10]:</div>
 
 
 
@@ -12140,23 +12168,17 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>You could instead use the module <a href="https://geopandas.readthedocs.io/en/latest"><strong><code>geopandas</code></strong></a> if this is available on your local install. The module <code>geopandas</code> is actually based on the <a href="http://geopy.readthedocs.io/"><strong><code>geopy</code></strong></a> module (see this <a href="https://geopandas.readthedocs.io/en/latest/geocoding.html">page</a>), itself available in <strong><code>happyGISCO</code></strong> through the <strong><code>services.APIService</code></strong> class. Run for instance the following and compare it with the previous output:</p>
+<p>You could instead use the module <code>geopandas</code> when this is available on your local install. The module <code>geopandas</code> is actually based on the <a href="http://geopy.readthedocs.io/"><strong><code>geopy</code></strong></a> module (see this <a href="https://geopandas.readthedocs.io/en/latest/geocoding.html">page</a>), itself available in <strong><code>happyGISCO</code></strong> through the <strong><code>services.APIService</code></strong> class. Run for instance the following and compare it with the previous output:</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[10]:</div>
+<div class="prompt input_prompt">In&nbsp;[11]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="k">try</span><span class="p">:</span>
-    <span class="kn">import</span> <span class="nn">geopandas</span>
-<span class="k">except</span><span class="p">:</span>
-    <span class="n">output_loc</span> <span class="o">=</span> <span class="s1">&#39;!ups... nothing to output - geopandas not available!&#39;</span>
-<span class="k">else</span><span class="p">:</span>
-    <span class="n">output_loc</span> <span class="o">=</span> <span class="n">geopandas</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">geocode</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">provider</span><span class="o">=</span><span class="s2">&quot;nominatim&quot;</span><span class="p">)</span>
-<span class="n">output_loc</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">geopandas</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">geocode</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">provider</span><span class="o">=</span><span class="s2">&quot;nominatim&quot;</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -12169,7 +12191,7 @@ div#notebook {
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[10]:</div>
+<div class="prompt output_prompt">Out[11]:</div>
 
 
 
@@ -12232,25 +12254,19 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>We can exploit the outputs of the <em>GISCO</em> service, <code>names</code> and <code>coords</code> data, for visualisation. For that purpose, the module <a href="https://github.com/python-visualization/folium"><strong><code>folium</code></strong></a> that builds ontop of <a href="https://leafletjs.com"><strong><code>Leaflet.js</code></strong></a> can be used. To render the map in the notebook, we call the <em>"blue marble"</em> tiles (one of the <a href="https://webgate.ec.europa.eu/fpfis/wikis/display/GISCO/Geospatial+information+services+for+the+European+Commission+and+other+EU+users">background view services</a> of <em>GISCO</em>) as background. Note the use of the <code>GISCOService.url_title</code> method for that purpose.</p>
+<p>We can exploit the outputs of the <em>GISCO</em> service, <code>names</code> and <code>coords</code> data, for visualisation. For that purpose, the module <code>folium</code>, that actually builds ontop of <a href="https://leafletjs.com"><strong><code>Leaflet.js</code></strong></a> can be used. To render the map in the notebook, we call the <em>"blue marble"</em> tiles (one of the <a href="https://webgate.ec.europa.eu/fpfis/wikis/display/GISCO/Geospatial+information+services+for+the+European+Commission+and+other+EU+users">background view services</a> of <em>GISCO</em>) as background. Note the use of the <code>GISCOService.url_title</code> method for that purpose.</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[11]:</div>
+<div class="prompt input_prompt">In&nbsp;[12]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="k">try</span><span class="p">:</span>
-    <span class="kn">import</span> <span class="nn">folium</span>
-<span class="k">except</span><span class="p">:</span>
-    <span class="n">map_display</span> <span class="o">=</span> <span class="s1">&#39;!ups... nothing to display - folium not available!&#39;</span>
-    <span class="c1"># pass</span>
-<span class="k">else</span><span class="p">:</span>
-    <span class="n">tiles</span><span class="p">,</span> <span class="n">attr</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">url_tile</span><span class="p">(</span><span class="s1">&#39;bmarble&#39;</span><span class="p">)</span>
-    <span class="n">map_display</span> <span class="o">=</span> <span class="n">folium</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span><span class="n">location</span><span class="o">=</span><span class="n">coord</span><span class="p">,</span> <span class="n">tiles</span><span class="o">=</span><span class="n">tiles</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="n">attr</span><span class="p">,</span> <span class="n">zoom_start</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
-    <span class="p">[</span><span class="n">folium</span><span class="o">.</span><span class="n">Marker</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">popup</span><span class="o">=</span><span class="n">folium</span><span class="o">.</span><span class="n">Popup</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">names</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">parse_html</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span><span class="o">.</span><span class="n">add_to</span><span class="p">(</span><span class="n">map_display</span><span class="p">)</span> \
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">tiles</span><span class="p">,</span> <span class="n">attr</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">url_tile</span><span class="p">(</span><span class="s1">&#39;bmarble&#39;</span><span class="p">)</span>
+<span class="n">map_display</span> <span class="o">=</span> <span class="n">folium</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span><span class="n">location</span><span class="o">=</span><span class="n">coord</span><span class="p">,</span> <span class="n">tiles</span><span class="o">=</span><span class="n">tiles</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="n">attr</span><span class="p">,</span> <span class="n">zoom_start</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+<span class="p">[</span><span class="n">folium</span><span class="o">.</span><span class="n">Marker</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">popup</span><span class="o">=</span><span class="n">folium</span><span class="o">.</span><span class="n">Popup</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">names</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">parse_html</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span><span class="o">.</span><span class="n">add_to</span><span class="p">(</span><span class="n">map_display</span><span class="p">)</span> \
      <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">))]</span>
 <span class="n">map_display</span>
 </pre></div>
@@ -12265,12 +12281,12 @@ div#notebook {
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[11]:</div>
+<div class="prompt output_prompt">Out[12]:</div>
 
 
 
 <div class="output_html rendered_html output_subarea output_execute_result">
-<div style="width:100%;"><div style="position:relative;width:100%;height:0;padding-bottom:60%;"><iframe src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw+CjxoZWFkPiAgICAKICAgIDxtZXRhIGh0dHAtZXF1aXY9ImNvbnRlbnQtdHlwZSIgY29udGVudD0idGV4dC9odG1sOyBjaGFyc2V0PVVURi04IiAvPgogICAgPHNjcmlwdD5MX1BSRUZFUl9DQU5WQVMgPSBmYWxzZTsgTF9OT19UT1VDSCA9IGZhbHNlOyBMX0RJU0FCTEVfM0QgPSBmYWxzZTs8L3NjcmlwdD4KICAgIDxzY3JpcHQgc3JjPSJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvbnBtL2xlYWZsZXRAMS4yLjAvZGlzdC9sZWFmbGV0LmpzIj48L3NjcmlwdD4KICAgIDxzY3JpcHQgc3JjPSJodHRwczovL2FqYXguZ29vZ2xlYXBpcy5jb20vYWpheC9saWJzL2pxdWVyeS8xLjExLjEvanF1ZXJ5Lm1pbi5qcyI+PC9zY3JpcHQ+CiAgICA8c2NyaXB0IHNyYz0iaHR0cHM6Ly9tYXhjZG4uYm9vdHN0cmFwY2RuLmNvbS9ib290c3RyYXAvMy4yLjAvanMvYm9vdHN0cmFwLm1pbi5qcyI+PC9zY3JpcHQ+CiAgICA8c2NyaXB0IHNyYz0iaHR0cHM6Ly9jZG5qcy5jbG91ZGZsYXJlLmNvbS9hamF4L2xpYnMvTGVhZmxldC5hd2Vzb21lLW1hcmtlcnMvMi4wLjIvbGVhZmxldC5hd2Vzb21lLW1hcmtlcnMuanMiPjwvc2NyaXB0PgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvbnBtL2xlYWZsZXRAMS4yLjAvZGlzdC9sZWFmbGV0LmNzcyIvPgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL21heGNkbi5ib290c3RyYXBjZG4uY29tL2Jvb3RzdHJhcC8zLjIuMC9jc3MvYm9vdHN0cmFwLm1pbi5jc3MiLz4KICAgIDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0iaHR0cHM6Ly9tYXhjZG4uYm9vdHN0cmFwY2RuLmNvbS9ib290c3RyYXAvMy4yLjAvY3NzL2Jvb3RzdHJhcC10aGVtZS5taW4uY3NzIi8+CiAgICA8bGluayByZWw9InN0eWxlc2hlZXQiIGhyZWY9Imh0dHBzOi8vbWF4Y2RuLmJvb3RzdHJhcGNkbi5jb20vZm9udC1hd2Vzb21lLzQuNi4zL2Nzcy9mb250LWF3ZXNvbWUubWluLmNzcyIvPgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL2NkbmpzLmNsb3VkZmxhcmUuY29tL2FqYXgvbGlicy9MZWFmbGV0LmF3ZXNvbWUtbWFya2Vycy8yLjAuMi9sZWFmbGV0LmF3ZXNvbWUtbWFya2Vycy5jc3MiLz4KICAgIDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0iaHR0cHM6Ly9yYXdnaXQuY29tL3B5dGhvbi12aXN1YWxpemF0aW9uL2ZvbGl1bS9tYXN0ZXIvZm9saXVtL3RlbXBsYXRlcy9sZWFmbGV0LmF3ZXNvbWUucm90YXRlLmNzcyIvPgogICAgPHN0eWxlPmh0bWwsIGJvZHkge3dpZHRoOiAxMDAlO2hlaWdodDogMTAwJTttYXJnaW46IDA7cGFkZGluZzogMDt9PC9zdHlsZT4KICAgIDxzdHlsZT4jbWFwIHtwb3NpdGlvbjphYnNvbHV0ZTt0b3A6MDtib3R0b206MDtyaWdodDowO2xlZnQ6MDt9PC9zdHlsZT4KICAgIAogICAgICAgICAgICA8c3R5bGU+ICNtYXBfNGZkZDRkNDYwNDZiNGZiOTk2OWMxYjZhOTE0ODMwYWEgewogICAgICAgICAgICAgICAgcG9zaXRpb24gOiByZWxhdGl2ZTsKICAgICAgICAgICAgICAgIHdpZHRoIDogMTAwLjAlOwogICAgICAgICAgICAgICAgaGVpZ2h0OiAxMDAuMCU7CiAgICAgICAgICAgICAgICBsZWZ0OiAwLjAlOwogICAgICAgICAgICAgICAgdG9wOiAwLjAlOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICA8L3N0eWxlPgogICAgICAgIAo8L2hlYWQ+Cjxib2R5PiAgICAKICAgIAogICAgICAgICAgICA8ZGl2IGNsYXNzPSJmb2xpdW0tbWFwIiBpZD0ibWFwXzRmZGQ0ZDQ2MDQ2YjRmYjk5NjljMWI2YTkxNDgzMGFhIiA+PC9kaXY+CiAgICAgICAgCjwvYm9keT4KPHNjcmlwdD4gICAgCiAgICAKCiAgICAgICAgICAgIAogICAgICAgICAgICAgICAgdmFyIGJvdW5kcyA9IG51bGw7CiAgICAgICAgICAgIAoKICAgICAgICAgICAgdmFyIG1hcF80ZmRkNGQ0NjA0NmI0ZmI5OTY5YzFiNmE5MTQ4MzBhYSA9IEwubWFwKAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJ21hcF80ZmRkNGQ0NjA0NmI0ZmI5OTY5YzFiNmE5MTQ4MzBhYScsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB7Y2VudGVyOiBbNDkuODE1ODY4Myw2LjEyOTY3NTFdLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgem9vbTogNiwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIG1heEJvdW5kczogYm91bmRzLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbGF5ZXJzOiBbXSwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHdvcmxkQ29weUp1bXA6IGZhbHNlLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY3JzOiBMLkNSUy5FUFNHMzg1NwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB9KTsKICAgICAgICAgICAgCiAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHRpbGVfbGF5ZXJfYjNmMTFhMGRjNTMyNDUxZTk3MzY3MzBiMmVjM2QxNjYgPSBMLnRpbGVMYXllcigKICAgICAgICAgICAgICAgICdodHRwczovL2V1cm9wYS5ldS93ZWJ0b29scy9tYXBzL3RpbGVzL2JtYXJibGUvMzg1Ny97en0ve3l9L3t4fScsCiAgICAgICAgICAgICAgICB7CiAgImF0dHJpYnV0aW9uIjogIlx1MDBhOSBOQVNBXHUyMDE5cyBFYXJ0aCBPYnNlcnZhdG9yeSIsCiAgImRldGVjdFJldGluYSI6IGZhbHNlLAogICJtYXhab29tIjogMTgsCiAgIm1pblpvb20iOiAxLAogICJub1dyYXAiOiBmYWxzZSwKICAic3ViZG9tYWlucyI6ICJhYmMiCn0KICAgICAgICAgICAgICAgICkuYWRkVG8obWFwXzRmZGQ0ZDQ2MDQ2YjRmYjk5NjljMWI2YTkxNDgzMGFhKTsKICAgICAgICAKICAgIAoKICAgICAgICAgICAgdmFyIG1hcmtlcl85OGU5NTAxYTA3ZDg0Njc2YjgxOTFmZDllYWNlN2Q5YiA9IEwubWFya2VyKAogICAgICAgICAgICAgICAgWzQ5LjgxNTg2ODMsNi4xMjk2NzUxXSwKICAgICAgICAgICAgICAgIHsKICAgICAgICAgICAgICAgICAgICBpY29uOiBuZXcgTC5JY29uLkRlZmF1bHQoKQogICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICkKICAgICAgICAgICAgICAgIC5hZGRUbyhtYXBfNGZkZDRkNDYwNDZiNGZiOTk2OWMxYjZhOTE0ODMwYWEpOwogICAgICAgICAgICAKICAgIAogICAgICAgICAgICB2YXIgcG9wdXBfMjk3ODE1NTNhZWE2NGMyZWI4Nzg1Y2Q3MTY3NzM4M2IgPSBMLnBvcHVwKHttYXhXaWR0aDogJzMwMCd9KTsKCiAgICAgICAgICAgIAogICAgICAgICAgICAgICAgdmFyIGh0bWxfYTQ0ZWMyZGQxODBlNDliMmIxZjc0OWI4OTU2Mjc1NGMgPSAkKCc8ZGl2IGlkPSJodG1sX2E0NGVjMmRkMTgwZTQ5YjJiMWY3NDliODk1NjI3NTRjIiBzdHlsZT0id2lkdGg6IDEwMC4wJTsgaGVpZ2h0OiAxMDAuMCU7Ij5TY2hpZXJlbiwgNzQyMSwgTHV4ZW1ib3VyZzwvZGl2PicpWzBdOwogICAgICAgICAgICAgICAgcG9wdXBfMjk3ODE1NTNhZWE2NGMyZWI4Nzg1Y2Q3MTY3NzM4M2Iuc2V0Q29udGVudChodG1sX2E0NGVjMmRkMTgwZTQ5YjJiMWY3NDliODk1NjI3NTRjKTsKICAgICAgICAgICAgCgogICAgICAgICAgICBtYXJrZXJfOThlOTUwMWEwN2Q4NDY3NmI4MTkxZmQ5ZWFjZTdkOWIuYmluZFBvcHVwKHBvcHVwXzI5NzgxNTUzYWVhNjRjMmViODc4NWNkNzE2NzczODNiKTsKCiAgICAgICAgICAgIAogICAgICAgIAogICAgCgogICAgICAgICAgICB2YXIgbWFya2VyXzljYzIwYjVhY2NjZDRhMTM4ZTgyNDM5MGI5ZGEzMWZhID0gTC5tYXJrZXIoCiAgICAgICAgICAgICAgICBbNDkuNjA0NzU4NSw2LjE0MjU4MDE0NjY2NjY2OV0sCiAgICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAgICAgaWNvbjogbmV3IEwuSWNvbi5EZWZhdWx0KCkKICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICApCiAgICAgICAgICAgICAgICAuYWRkVG8obWFwXzRmZGQ0ZDQ2MDQ2YjRmYjk5NjljMWI2YTkxNDgzMGFhKTsKICAgICAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHBvcHVwXzAyZDZmMmFiNTQ3YjQ0NmE4ZTFkZTMyNjllMWMzY2U3ID0gTC5wb3B1cCh7bWF4V2lkdGg6ICczMDAnfSk7CgogICAgICAgICAgICAKICAgICAgICAgICAgICAgIHZhciBodG1sXzY4YjliMThkZjhlMTQ3MDY4YTY1ODQ5ZDQyYjAyOGNlID0gJCgnPGRpdiBpZD0iaHRtbF82OGI5YjE4ZGY4ZTE0NzA2OGE2NTg0OWQ0MmIwMjhjZSIgc3R5bGU9IndpZHRoOiAxMDAuMCU7IGhlaWdodDogMTAwLjAlOyI+UnVlIGQmIzM5O0l0emlnLCBMdXhlbWJvdXJnLCAxMTE4LCBMdXhlbWJvdXJnPC9kaXY+JylbMF07CiAgICAgICAgICAgICAgICBwb3B1cF8wMmQ2ZjJhYjU0N2I0NDZhOGUxZGUzMjY5ZTFjM2NlNy5zZXRDb250ZW50KGh0bWxfNjhiOWIxOGRmOGUxNDcwNjhhNjU4NDlkNDJiMDI4Y2UpOwogICAgICAgICAgICAKCiAgICAgICAgICAgIG1hcmtlcl85Y2MyMGI1YWNjY2Q0YTEzOGU4MjQzOTBiOWRhMzFmYS5iaW5kUG9wdXAocG9wdXBfMDJkNmYyYWI1NDdiNDQ2YThlMWRlMzI2OWUxYzNjZTcpOwoKICAgICAgICAgICAgCiAgICAgICAgCiAgICAKCiAgICAgICAgICAgIHZhciBtYXJrZXJfOTYxOWVjOTJmMzE3NDBlY2E1MTMyMWE1NWVhMjMxZmMgPSBMLm1hcmtlcigKICAgICAgICAgICAgICAgIFs0OC4zNzc3MTUyLDQuMjU3NjYxN10sCiAgICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAgICAgaWNvbjogbmV3IEwuSWNvbi5EZWZhdWx0KCkKICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICApCiAgICAgICAgICAgICAgICAuYWRkVG8obWFwXzRmZGQ0ZDQ2MDQ2YjRmYjk5NjljMWI2YTkxNDgzMGFhKTsKICAgICAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHBvcHVwXzExNWRlZDIyM2Q1NzQ4Mzg4ZWZhMmYyZTc2YTY0ZjEwID0gTC5wb3B1cCh7bWF4V2lkdGg6ICczMDAnfSk7CgogICAgICAgICAgICAKICAgICAgICAgICAgICAgIHZhciBodG1sX2EzODM1ZGUxOWJiZDQ4NjlhNWJjNzJiZTk4YzlkZWY3ID0gJCgnPGRpdiBpZD0iaHRtbF9hMzgzNWRlMTliYmQ0ODY5YTViYzcyYmU5OGM5ZGVmNyIgc3R5bGU9IndpZHRoOiAxMDAuMCU7IGhlaWdodDogMTAwLjAlOyI+UnVlIGRlIGwmIzM5O8OJZ2xpc2UsIEJvdXktTHV4ZW1ib3VyZywgKEdyYW5kIEVzdCksIDEwMjIwLCBGcmFuY2U8L2Rpdj4nKVswXTsKICAgICAgICAgICAgICAgIHBvcHVwXzExNWRlZDIyM2Q1NzQ4Mzg4ZWZhMmYyZTc2YTY0ZjEwLnNldENvbnRlbnQoaHRtbF9hMzgzNWRlMTliYmQ0ODY5YTViYzcyYmU5OGM5ZGVmNyk7CiAgICAgICAgICAgIAoKICAgICAgICAgICAgbWFya2VyXzk2MTllYzkyZjMxNzQwZWNhNTEzMjFhNTVlYTIzMWZjLmJpbmRQb3B1cChwb3B1cF8xMTVkZWQyMjNkNTc0ODM4OGVmYTJmMmU3NmE2NGYxMCk7CgogICAgICAgICAgICAKICAgICAgICAKICAgIAoKICAgICAgICAgICAgdmFyIG1hcmtlcl9mNTU5MDFjMGNiOGY0MGRmYjIzNTBmNjM3YTA5OGMwMyA9IEwubWFya2VyKAogICAgICAgICAgICAgICAgWzQ5LjYxMTI3NjgsNi4xMjk3OTldLAogICAgICAgICAgICAgICAgewogICAgICAgICAgICAgICAgICAgIGljb246IG5ldyBMLkljb24uRGVmYXVsdCgpCiAgICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgKQogICAgICAgICAgICAgICAgLmFkZFRvKG1hcF80ZmRkNGQ0NjA0NmI0ZmI5OTY5YzFiNmE5MTQ4MzBhYSk7CiAgICAgICAgICAgIAogICAgCiAgICAgICAgICAgIHZhciBwb3B1cF9kNzMyMmExYWZiMjk0YjA3YWVlMGYyNjM0ODg0NDc2YiA9IEwucG9wdXAoe21heFdpZHRoOiAnMzAwJ30pOwoKICAgICAgICAgICAgCiAgICAgICAgICAgICAgICB2YXIgaHRtbF9kNzQ4MTE2YzViMDA0Y2Q5ODYyNGM5M2E1YThhNTllOSA9ICQoJzxkaXYgaWQ9Imh0bWxfZDc0ODExNmM1YjAwNGNkOTg2MjRjOTNhNWE4YTU5ZTkiIHN0eWxlPSJ3aWR0aDogMTAwLjAlOyBoZWlnaHQ6IDEwMC4wJTsiPkx1eGVtYm91cmcsIDI1MjUsIEx1eGVtYm91cmc8L2Rpdj4nKVswXTsKICAgICAgICAgICAgICAgIHBvcHVwX2Q3MzIyYTFhZmIyOTRiMDdhZWUwZjI2MzQ4ODQ0NzZiLnNldENvbnRlbnQoaHRtbF9kNzQ4MTE2YzViMDA0Y2Q5ODYyNGM5M2E1YThhNTllOSk7CiAgICAgICAgICAgIAoKICAgICAgICAgICAgbWFya2VyX2Y1NTkwMWMwY2I4ZjQwZGZiMjM1MGY2MzdhMDk4YzAzLmJpbmRQb3B1cChwb3B1cF9kNzMyMmExYWZiMjk0YjA3YWVlMGYyNjM0ODg0NDc2Yik7CgogICAgICAgICAgICAKICAgICAgICAKPC9zY3JpcHQ+" style="position:absolute;width:100%;height:100%;left:0;top:0;border:none !important;" allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe></div></div>
+<div style="width:100%;"><div style="position:relative;width:100%;height:0;padding-bottom:60%;"><iframe src="data:text/html;charset=utf-8;base64,PCFET0NUWVBFIGh0bWw+CjxoZWFkPiAgICAKICAgIDxtZXRhIGh0dHAtZXF1aXY9ImNvbnRlbnQtdHlwZSIgY29udGVudD0idGV4dC9odG1sOyBjaGFyc2V0PVVURi04IiAvPgogICAgPHNjcmlwdD5MX1BSRUZFUl9DQU5WQVMgPSBmYWxzZTsgTF9OT19UT1VDSCA9IGZhbHNlOyBMX0RJU0FCTEVfM0QgPSBmYWxzZTs8L3NjcmlwdD4KICAgIDxzY3JpcHQgc3JjPSJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvbnBtL2xlYWZsZXRAMS4yLjAvZGlzdC9sZWFmbGV0LmpzIj48L3NjcmlwdD4KICAgIDxzY3JpcHQgc3JjPSJodHRwczovL2FqYXguZ29vZ2xlYXBpcy5jb20vYWpheC9saWJzL2pxdWVyeS8xLjExLjEvanF1ZXJ5Lm1pbi5qcyI+PC9zY3JpcHQ+CiAgICA8c2NyaXB0IHNyYz0iaHR0cHM6Ly9tYXhjZG4uYm9vdHN0cmFwY2RuLmNvbS9ib290c3RyYXAvMy4yLjAvanMvYm9vdHN0cmFwLm1pbi5qcyI+PC9zY3JpcHQ+CiAgICA8c2NyaXB0IHNyYz0iaHR0cHM6Ly9jZG5qcy5jbG91ZGZsYXJlLmNvbS9hamF4L2xpYnMvTGVhZmxldC5hd2Vzb21lLW1hcmtlcnMvMi4wLjIvbGVhZmxldC5hd2Vzb21lLW1hcmtlcnMuanMiPjwvc2NyaXB0PgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL2Nkbi5qc2RlbGl2ci5uZXQvbnBtL2xlYWZsZXRAMS4yLjAvZGlzdC9sZWFmbGV0LmNzcyIvPgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL21heGNkbi5ib290c3RyYXBjZG4uY29tL2Jvb3RzdHJhcC8zLjIuMC9jc3MvYm9vdHN0cmFwLm1pbi5jc3MiLz4KICAgIDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0iaHR0cHM6Ly9tYXhjZG4uYm9vdHN0cmFwY2RuLmNvbS9ib290c3RyYXAvMy4yLjAvY3NzL2Jvb3RzdHJhcC10aGVtZS5taW4uY3NzIi8+CiAgICA8bGluayByZWw9InN0eWxlc2hlZXQiIGhyZWY9Imh0dHBzOi8vbWF4Y2RuLmJvb3RzdHJhcGNkbi5jb20vZm9udC1hd2Vzb21lLzQuNi4zL2Nzcy9mb250LWF3ZXNvbWUubWluLmNzcyIvPgogICAgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSJodHRwczovL2NkbmpzLmNsb3VkZmxhcmUuY29tL2FqYXgvbGlicy9MZWFmbGV0LmF3ZXNvbWUtbWFya2Vycy8yLjAuMi9sZWFmbGV0LmF3ZXNvbWUtbWFya2Vycy5jc3MiLz4KICAgIDxsaW5rIHJlbD0ic3R5bGVzaGVldCIgaHJlZj0iaHR0cHM6Ly9yYXdnaXQuY29tL3B5dGhvbi12aXN1YWxpemF0aW9uL2ZvbGl1bS9tYXN0ZXIvZm9saXVtL3RlbXBsYXRlcy9sZWFmbGV0LmF3ZXNvbWUucm90YXRlLmNzcyIvPgogICAgPHN0eWxlPmh0bWwsIGJvZHkge3dpZHRoOiAxMDAlO2hlaWdodDogMTAwJTttYXJnaW46IDA7cGFkZGluZzogMDt9PC9zdHlsZT4KICAgIDxzdHlsZT4jbWFwIHtwb3NpdGlvbjphYnNvbHV0ZTt0b3A6MDtib3R0b206MDtyaWdodDowO2xlZnQ6MDt9PC9zdHlsZT4KICAgIAogICAgICAgICAgICA8c3R5bGU+ICNtYXBfZjUyZDc5YWE3ZWJhNDMzMmIzMzc1ZGZjN2YzNDU0NGIgewogICAgICAgICAgICAgICAgcG9zaXRpb24gOiByZWxhdGl2ZTsKICAgICAgICAgICAgICAgIHdpZHRoIDogMTAwLjAlOwogICAgICAgICAgICAgICAgaGVpZ2h0OiAxMDAuMCU7CiAgICAgICAgICAgICAgICBsZWZ0OiAwLjAlOwogICAgICAgICAgICAgICAgdG9wOiAwLjAlOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICA8L3N0eWxlPgogICAgICAgIAo8L2hlYWQ+Cjxib2R5PiAgICAKICAgIAogICAgICAgICAgICA8ZGl2IGNsYXNzPSJmb2xpdW0tbWFwIiBpZD0ibWFwX2Y1MmQ3OWFhN2ViYTQzMzJiMzM3NWRmYzdmMzQ1NDRiIiA+PC9kaXY+CiAgICAgICAgCjwvYm9keT4KPHNjcmlwdD4gICAgCiAgICAKCiAgICAgICAgICAgIAogICAgICAgICAgICAgICAgdmFyIGJvdW5kcyA9IG51bGw7CiAgICAgICAgICAgIAoKICAgICAgICAgICAgdmFyIG1hcF9mNTJkNzlhYTdlYmE0MzMyYjMzNzVkZmM3ZjM0NTQ0YiA9IEwubWFwKAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJ21hcF9mNTJkNzlhYTdlYmE0MzMyYjMzNzVkZmM3ZjM0NTQ0YicsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB7Y2VudGVyOiBbNDkuODE1ODY4Myw2LjEyOTY3NTFdLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgem9vbTogNiwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIG1heEJvdW5kczogYm91bmRzLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbGF5ZXJzOiBbXSwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHdvcmxkQ29weUp1bXA6IGZhbHNlLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgY3JzOiBMLkNSUy5FUFNHMzg1NwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB9KTsKICAgICAgICAgICAgCiAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHRpbGVfbGF5ZXJfY2VlMjJkZDU5YTM0NDU1NWFjZjcyMDU5YThhNWVmMjQgPSBMLnRpbGVMYXllcigKICAgICAgICAgICAgICAgICdodHRwczovL2V1cm9wYS5ldS93ZWJ0b29scy9tYXBzL3RpbGVzL2JtYXJibGUvMzg1Ny97en0ve3l9L3t4fScsCiAgICAgICAgICAgICAgICB7CiAgImF0dHJpYnV0aW9uIjogIlx1MDBhOSBOQVNBXHUyMDE5cyBFYXJ0aCBPYnNlcnZhdG9yeSIsCiAgImRldGVjdFJldGluYSI6IGZhbHNlLAogICJtYXhab29tIjogMTgsCiAgIm1pblpvb20iOiAxLAogICJub1dyYXAiOiBmYWxzZSwKICAic3ViZG9tYWlucyI6ICJhYmMiCn0KICAgICAgICAgICAgICAgICkuYWRkVG8obWFwX2Y1MmQ3OWFhN2ViYTQzMzJiMzM3NWRmYzdmMzQ1NDRiKTsKICAgICAgICAKICAgIAoKICAgICAgICAgICAgdmFyIG1hcmtlcl9hY2MxNTA3MzVkNTg0NjU5ODZiMmZhZTBjNzY5ODE3ZCA9IEwubWFya2VyKAogICAgICAgICAgICAgICAgWzQ5LjgxNTg2ODMsNi4xMjk2NzUxXSwKICAgICAgICAgICAgICAgIHsKICAgICAgICAgICAgICAgICAgICBpY29uOiBuZXcgTC5JY29uLkRlZmF1bHQoKQogICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICkKICAgICAgICAgICAgICAgIC5hZGRUbyhtYXBfZjUyZDc5YWE3ZWJhNDMzMmIzMzc1ZGZjN2YzNDU0NGIpOwogICAgICAgICAgICAKICAgIAogICAgICAgICAgICB2YXIgcG9wdXBfOTZjMTIyM2VhNWE1NDk1MzhhMWU0ZDZhMTkyNGFmYTEgPSBMLnBvcHVwKHttYXhXaWR0aDogJzMwMCd9KTsKCiAgICAgICAgICAgIAogICAgICAgICAgICAgICAgdmFyIGh0bWxfYzc3YjJlZTE3YmI1NGI4Mzg5NjhiMzAzODlhYzI5ZDcgPSAkKCc8ZGl2IGlkPSJodG1sX2M3N2IyZWUxN2JiNTRiODM4OTY4YjMwMzg5YWMyOWQ3IiBzdHlsZT0id2lkdGg6IDEwMC4wJTsgaGVpZ2h0OiAxMDAuMCU7Ij5TY2hpZXJlbiwgNzQyMSwgTHV4ZW1ib3VyZzwvZGl2PicpWzBdOwogICAgICAgICAgICAgICAgcG9wdXBfOTZjMTIyM2VhNWE1NDk1MzhhMWU0ZDZhMTkyNGFmYTEuc2V0Q29udGVudChodG1sX2M3N2IyZWUxN2JiNTRiODM4OTY4YjMwMzg5YWMyOWQ3KTsKICAgICAgICAgICAgCgogICAgICAgICAgICBtYXJrZXJfYWNjMTUwNzM1ZDU4NDY1OTg2YjJmYWUwYzc2OTgxN2QuYmluZFBvcHVwKHBvcHVwXzk2YzEyMjNlYTVhNTQ5NTM4YTFlNGQ2YTE5MjRhZmExKTsKCiAgICAgICAgICAgIAogICAgICAgIAogICAgCgogICAgICAgICAgICB2YXIgbWFya2VyX2FmOTZkNTgwYTlmNDRjNzQ5OTYxZGY3Zjc1YzFjODY2ID0gTC5tYXJrZXIoCiAgICAgICAgICAgICAgICBbNDkuNjA0NzU4NSw2LjE0MjU4MDE0NjY2NjY2OV0sCiAgICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAgICAgaWNvbjogbmV3IEwuSWNvbi5EZWZhdWx0KCkKICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICApCiAgICAgICAgICAgICAgICAuYWRkVG8obWFwX2Y1MmQ3OWFhN2ViYTQzMzJiMzM3NWRmYzdmMzQ1NDRiKTsKICAgICAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHBvcHVwX2EyMDkxNWQ0MTcyNjRmZDdiOGYzNDBlOTIyYzg2YmVjID0gTC5wb3B1cCh7bWF4V2lkdGg6ICczMDAnfSk7CgogICAgICAgICAgICAKICAgICAgICAgICAgICAgIHZhciBodG1sXzQyOTRkNWU2NTZkMTQ1ZDNhMDA4YmZlNGFhYjIyODhkID0gJCgnPGRpdiBpZD0iaHRtbF80Mjk0ZDVlNjU2ZDE0NWQzYTAwOGJmZTRhYWIyMjg4ZCIgc3R5bGU9IndpZHRoOiAxMDAuMCU7IGhlaWdodDogMTAwLjAlOyI+UnVlIGQmIzM5O0l0emlnLCBMdXhlbWJvdXJnLCAxMTE4LCBMdXhlbWJvdXJnPC9kaXY+JylbMF07CiAgICAgICAgICAgICAgICBwb3B1cF9hMjA5MTVkNDE3MjY0ZmQ3YjhmMzQwZTkyMmM4NmJlYy5zZXRDb250ZW50KGh0bWxfNDI5NGQ1ZTY1NmQxNDVkM2EwMDhiZmU0YWFiMjI4OGQpOwogICAgICAgICAgICAKCiAgICAgICAgICAgIG1hcmtlcl9hZjk2ZDU4MGE5ZjQ0Yzc0OTk2MWRmN2Y3NWMxYzg2Ni5iaW5kUG9wdXAocG9wdXBfYTIwOTE1ZDQxNzI2NGZkN2I4ZjM0MGU5MjJjODZiZWMpOwoKICAgICAgICAgICAgCiAgICAgICAgCiAgICAKCiAgICAgICAgICAgIHZhciBtYXJrZXJfNjQ0N2I0ZjBkOWEwNGU0MTg1MmVkZWUxYzliNzNlNmMgPSBMLm1hcmtlcigKICAgICAgICAgICAgICAgIFs0OC4zNzc3MTUyLDQuMjU3NjYxN10sCiAgICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAgICAgaWNvbjogbmV3IEwuSWNvbi5EZWZhdWx0KCkKICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICApCiAgICAgICAgICAgICAgICAuYWRkVG8obWFwX2Y1MmQ3OWFhN2ViYTQzMzJiMzM3NWRmYzdmMzQ1NDRiKTsKICAgICAgICAgICAgCiAgICAKICAgICAgICAgICAgdmFyIHBvcHVwX2M4N2QzYjM3M2Q3NzRkYTI4Yjk1YTViMWE0M2Q3M2RmID0gTC5wb3B1cCh7bWF4V2lkdGg6ICczMDAnfSk7CgogICAgICAgICAgICAKICAgICAgICAgICAgICAgIHZhciBodG1sX2EwZTE2Y2ExZDczZTQ1OTU5YzkzNmUyZTA5YzBiMDNiID0gJCgnPGRpdiBpZD0iaHRtbF9hMGUxNmNhMWQ3M2U0NTk1OWM5MzZlMmUwOWMwYjAzYiIgc3R5bGU9IndpZHRoOiAxMDAuMCU7IGhlaWdodDogMTAwLjAlOyI+UnVlIGRlIGwmIzM5O8OJZ2xpc2UsIEJvdXktTHV4ZW1ib3VyZywgKEdyYW5kIEVzdCksIDEwMjIwLCBGcmFuY2U8L2Rpdj4nKVswXTsKICAgICAgICAgICAgICAgIHBvcHVwX2M4N2QzYjM3M2Q3NzRkYTI4Yjk1YTViMWE0M2Q3M2RmLnNldENvbnRlbnQoaHRtbF9hMGUxNmNhMWQ3M2U0NTk1OWM5MzZlMmUwOWMwYjAzYik7CiAgICAgICAgICAgIAoKICAgICAgICAgICAgbWFya2VyXzY0NDdiNGYwZDlhMDRlNDE4NTJlZGVlMWM5YjczZTZjLmJpbmRQb3B1cChwb3B1cF9jODdkM2IzNzNkNzc0ZGEyOGI5NWE1YjFhNDNkNzNkZik7CgogICAgICAgICAgICAKICAgICAgICAKICAgIAoKICAgICAgICAgICAgdmFyIG1hcmtlcl9kZTdmNGRjMmRlMWM0ODhjYjM3MDZjY2U3NmU3ZDYwNiA9IEwubWFya2VyKAogICAgICAgICAgICAgICAgWzQ5LjYxMTI3NjgsNi4xMjk3OTldLAogICAgICAgICAgICAgICAgewogICAgICAgICAgICAgICAgICAgIGljb246IG5ldyBMLkljb24uRGVmYXVsdCgpCiAgICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgKQogICAgICAgICAgICAgICAgLmFkZFRvKG1hcF9mNTJkNzlhYTdlYmE0MzMyYjMzNzVkZmM3ZjM0NTQ0Yik7CiAgICAgICAgICAgIAogICAgCiAgICAgICAgICAgIHZhciBwb3B1cF9hODAzYzljODJlOTY0ZThiYWY1ZjQ2NzU2ZGE4Y2VlMiA9IEwucG9wdXAoe21heFdpZHRoOiAnMzAwJ30pOwoKICAgICAgICAgICAgCiAgICAgICAgICAgICAgICB2YXIgaHRtbF8wMGRlMjU3MDMwZmE0ZjU1YmIxYzcxZTI0NDllNzdkZiA9ICQoJzxkaXYgaWQ9Imh0bWxfMDBkZTI1NzAzMGZhNGY1NWJiMWM3MWUyNDQ5ZTc3ZGYiIHN0eWxlPSJ3aWR0aDogMTAwLjAlOyBoZWlnaHQ6IDEwMC4wJTsiPkx1eGVtYm91cmcsIDI1MjUsIEx1eGVtYm91cmc8L2Rpdj4nKVswXTsKICAgICAgICAgICAgICAgIHBvcHVwX2E4MDNjOWM4MmU5NjRlOGJhZjVmNDY3NTZkYThjZWUyLnNldENvbnRlbnQoaHRtbF8wMGRlMjU3MDMwZmE0ZjU1YmIxYzcxZTI0NDllNzdkZik7CiAgICAgICAgICAgIAoKICAgICAgICAgICAgbWFya2VyX2RlN2Y0ZGMyZGUxYzQ4OGNiMzcwNmNjZTc2ZTdkNjA2LmJpbmRQb3B1cChwb3B1cF9hODAzYzljODJlOTY0ZThiYWY1ZjQ2NzU2ZGE4Y2VlMik7CgogICAgICAgICAgICAKICAgICAgICAKPC9zY3JpcHQ+" style="position:absolute;width:100%;height:100%;left:0;top:0;border:none !important;" allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe></div></div>
 </div>
 
 </div>
@@ -12291,7 +12307,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[12]:</div>
+<div class="prompt input_prompt">In&nbsp;[13]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">serv</span><span class="o">.</span><span class="n">place2geom</span><span class="p">(</span><span class="n">whereamI</span><span class="p">)</span>
@@ -12307,7 +12323,7 @@ div#notebook {
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[12]:</div>
+<div class="prompt output_prompt">Out[13]:</div>
 
 
 
@@ -12512,7 +12528,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[13]:</div>
+<div class="prompt input_prompt">In&nbsp;[14]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">area</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">place2geom</span><span class="p">(</span><span class="n">whereamI</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -12529,7 +12545,7 @@ div#notebook {
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[13]:</div>
+<div class="prompt output_prompt">Out[14]:</div>
 
 
 
@@ -12563,7 +12579,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[14]:</div>
+<div class="prompt input_prompt">In&nbsp;[15]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">serv</span><span class="o">.</span><span class="n">place2nuts</span><span class="p">(</span><span class="n">whereamI</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
@@ -12579,7 +12595,7 @@ div#notebook {
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[14]:</div>
+<div class="prompt output_prompt">Out[15]:</div>
 
 
 
@@ -12615,7 +12631,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[15]:</div>
+<div class="prompt input_prompt">In&nbsp;[16]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">serv</span><span class="o">.</span><span class="n">place2nuts</span><span class="p">(</span><span class="n">whereamI</span><span class="p">)</span>
@@ -12631,7 +12647,7 @@ div#notebook {
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[15]:</div>
+<div class="prompt output_prompt">Out[16]:</div>
 
 
 
@@ -12700,7 +12716,7 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="prompt input_prompt">In&nbsp;[17]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">serv</span><span class="o">.</span><span class="n">coord2nuts</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
@@ -12716,7 +12732,7 @@ div#notebook {
 
 <div class="output_area">
 
-<div class="prompt output_prompt">Out[16]:</div>
+<div class="prompt output_prompt">Out[17]:</div>
 
 
 
@@ -12733,6 +12749,1645 @@ div#notebook {
  &#39;layerId&#39;: 2,
  &#39;layerName&#39;: &#39;NUTS_2013&#39;,
  &#39;value&#39;: &#39;LU00&#39;}</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Investing more into NUTS, let's use some of the other available services, for instance the <code>GISCOService.nuts_info</code> to retrieve the NUTS areas for a given county:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[18]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">serv</span><span class="o">.</span><span class="n">nuts_info</span><span class="p">(</span><span class="n">info</span><span class="o">=</span><span class="s1">&#39;UNITS&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;BE&#39;</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[18]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>[&#39;BE&#39;,
+ &#39;BE1&#39;,
+ &#39;BE10&#39;,
+ &#39;BE100&#39;,
+ &#39;BE2&#39;,
+ &#39;BE21&#39;,
+ &#39;BE211&#39;,
+ &#39;BE212&#39;,
+ &#39;BE213&#39;,
+ &#39;BE22&#39;,
+ &#39;BE221&#39;,
+ &#39;BE222&#39;,
+ &#39;BE223&#39;,
+ &#39;BE23&#39;,
+ &#39;BE231&#39;,
+ &#39;BE232&#39;,
+ &#39;BE233&#39;,
+ &#39;BE234&#39;,
+ &#39;BE235&#39;,
+ &#39;BE236&#39;,
+ &#39;BE24&#39;,
+ &#39;BE241&#39;,
+ &#39;BE242&#39;,
+ &#39;BE25&#39;,
+ &#39;BE251&#39;,
+ &#39;BE252&#39;,
+ &#39;BE253&#39;,
+ &#39;BE254&#39;,
+ &#39;BE255&#39;,
+ &#39;BE256&#39;,
+ &#39;BE257&#39;,
+ &#39;BE258&#39;,
+ &#39;BE3&#39;,
+ &#39;BE31&#39;,
+ &#39;BE310&#39;,
+ &#39;BE32&#39;,
+ &#39;BE321&#39;,
+ &#39;BE322&#39;,
+ &#39;BE323&#39;,
+ &#39;BE324&#39;,
+ &#39;BE325&#39;,
+ &#39;BE326&#39;,
+ &#39;BE327&#39;,
+ &#39;BE33&#39;,
+ &#39;BE331&#39;,
+ &#39;BE332&#39;,
+ &#39;BE334&#39;,
+ &#39;BE335&#39;,
+ &#39;BE336&#39;,
+ &#39;BE34&#39;,
+ &#39;BE341&#39;,
+ &#39;BE342&#39;,
+ &#39;BE343&#39;,
+ &#39;BE344&#39;,
+ &#39;BE345&#39;,
+ &#39;BE35&#39;,
+ &#39;BE351&#39;,
+ &#39;BE352&#39;,
+ &#39;BE353&#39;]</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>but also restricting the search for a given level:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[19]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">units</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">nuts_info</span><span class="p">(</span><span class="n">info</span><span class="o">=</span><span class="s1">&#39;UNITS&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;AT&#39;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">units</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[19]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>[&#39;AT11&#39;, &#39;AT12&#39;, &#39;AT13&#39;, &#39;AT21&#39;, &#39;AT22&#39;, &#39;AT31&#39;, &#39;AT32&#39;, &#39;AT33&#39;, &#39;AT34&#39;]</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>It is then possible to fetch the responses from <em>GISCO</em> API associated to these areas. One still needs to define some additional parameters regarding the retrieved data:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[20]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">resp</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">nuts_response</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">units</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="mi">2013</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;20m&#39;</span><span class="p">,</span> <span class="n">vector</span><span class="o">=</span><span class="s1">&#39;region&#39;</span><span class="p">)</span>
+<span class="n">resp</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[20]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>{&#39;AT11&#39;: {2013: {4326: {&#39;20m&#39;: {&#39;RG&#39;: {&#39;geojson&#39;: &lt;Response [200]&gt;}}}}}, &#39;AT12&#39;: {2013: {4326: {&#39;20m&#39;: {&#39;RG&#39;: {&#39;geojson&#39;: &lt;Response [200]&gt;}}}}}, &#39;AT13&#39;: {2013: {4326: {&#39;20m&#39;: {&#39;RG&#39;: {&#39;geojson&#39;: &lt;Response [200]&gt;}}}}}, &#39;AT21&#39;: {2013: {4326: {&#39;20m&#39;: {&#39;RG&#39;: {&#39;geojson&#39;: &lt;Response [200]&gt;}}}}}, &#39;AT22&#39;: {2013: {4326: {&#39;20m&#39;: {&#39;RG&#39;: {&#39;geojson&#39;: &lt;Response [200]&gt;}}}}}, &#39;AT31&#39;: {2013: {4326: {&#39;20m&#39;: {&#39;RG&#39;: {&#39;geojson&#39;: &lt;Response [200]&gt;}}}}}, &#39;AT32&#39;: {2013: {4326: {&#39;20m&#39;: {&#39;RG&#39;: {&#39;geojson&#39;: &lt;Response [200]&gt;}}}}}, &#39;AT33&#39;: {2013: {4326: {&#39;20m&#39;: {&#39;RG&#39;: {&#39;geojson&#39;: &lt;Response [200]&gt;}}}}}, &#39;AT34&#39;: {2013: {4326: {&#39;20m&#39;: {&#39;RG&#39;: {&#39;geojson&#39;: &lt;Response [200]&gt;}}}}}}</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>This is indeed a nested dictionary structure (from <code>base._NestedDict</code> class):</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[21]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">resp</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">resp</span><span class="o">.</span><span class="n">dimensions</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">resp</span><span class="o">.</span><span class="n">xget</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s1">&#39;AT32&#39;</span><span class="p">))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>&lt;class &#39;happygisco.base._NestedDict&#39;&gt;
+OrderedDict([(&#39;source&#39;, [&#39;AT11&#39;, &#39;AT12&#39;, &#39;AT13&#39;, &#39;AT21&#39;, &#39;AT22&#39;, &#39;AT31&#39;, &#39;AT32&#39;, &#39;AT33&#39;, &#39;AT34&#39;]), (&#39;year&#39;, 2013), (&#39;proj&#39;, 4326), (&#39;scale&#39;, &#39;20m&#39;), (&#39;vector&#39;, &#39;RG&#39;), (&#39;ifmt&#39;, &#39;geojson&#39;)])
+&lt;Response [200]&gt;
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>From this response, we can easily retrieve the data themselves, again stored in a nested dictionary structure:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[22]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">nuts_geometry</span><span class="p">(</span><span class="n">resp</span><span class="o">=</span><span class="n">resp</span><span class="p">)</span>
+<span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="n">base</span><span class="o">.</span><span class="n">_NestedDict</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[22]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>True</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>which could actually be run directly using a command similar to that use for fetching the response:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[23]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">data</span> <span class="o">==</span> <span class="n">serv</span><span class="o">.</span><span class="n">nuts_geometry</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">units</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="mi">2013</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;20m&#39;</span><span class="p">,</span> <span class="n">vector</span><span class="o">=</span><span class="s1">&#39;region&#39;</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[23]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>True</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The actual geometries can be extracted from the dictionary easily:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[24]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">geometries</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">xvalues</span><span class="p">()</span>
+<span class="n">geometries</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[24]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>[{&#39;crs&#39;: {&#39;properties&#39;: {&#39;name&#39;: &#39;urn:ogc:def:crs:EPSG::4326&#39;},
+   &#39;type&#39;: &#39;name&#39;},
+  &#39;features&#39;: [{&#39;geometry&#39;: {&#39;coordinates&#39;: [[[17.1608, 48.00666],
+       [17.09466, 47.97087],
+       [17.08519, 47.87444],
+       [17.00995, 47.85834],
+       [17.07445, 47.80826],
+       [17.09307, 47.70824],
+       [16.74903, 47.68142],
+       [16.61229, 47.76023],
+       [16.42185, 47.6647],
+       [16.65208, 47.6229],
+       [16.71451, 47.53963],
+       [16.64622, 47.4466],
+       [16.44546, 47.40721],
+       [16.43376, 47.35292],
+       [16.48374, 47.2876],
+       [16.41949, 47.19492],
+       [16.52933, 47.12723],
+       [16.46333, 47.09496],
+       [16.52057, 47.05618],
+       [16.43888, 47.0297],
+       [16.50827, 47.00126],
+       [16.30226, 46.99843],
+       [16.11385, 46.86907],
+       [15.99624, 46.8354],
+       [16.12172, 46.99067],
+       [16.08651, 47.07421],
+       [16.11346, 47.16184],
+       [16.01516, 47.36713],
+       [16.17177, 47.4224],
+       [16.28108, 47.45513],
+       [16.3725, 47.64249],
+       [16.26905, 47.79641],
+       [16.37719, 47.82732],
+       [16.38889, 47.8816],
+       [16.48692, 47.94262],
+       [16.58028, 47.88861],
+       [16.7021, 48.01165],
+       [16.89, 48.07464],
+       [16.97924, 48.02345],
+       [17.0163, 48.07352],
+       [16.97108, 48.10057],
+       [17.06674, 48.11868],
+       [17.06741, 48.03144],
+       [17.1608, 48.00666]]],
+     &#39;type&#39;: &#39;Polygon&#39;},
+    &#39;id&#39;: &#39;AT11&#39;,
+    &#39;properties&#39;: {&#39;CNTR_CODE&#39;: &#39;AT&#39;,
+     &#39;FID&#39;: &#39;AT11&#39;,
+     &#39;LEVL_CODE&#39;: 2,
+     &#39;NUTS_ID&#39;: &#39;AT11&#39;,
+     &#39;NUTS_NAME&#39;: &#39;Burgenland (AT)&#39;},
+    &#39;type&#39;: &#39;Feature&#39;}],
+  &#39;type&#39;: &#39;FeatureCollection&#39;},
+ {&#39;crs&#39;: {&#39;properties&#39;: {&#39;name&#39;: &#39;urn:ogc:def:crs:EPSG::4326&#39;},
+   &#39;type&#39;: &#39;name&#39;},
+  &#39;features&#39;: [{&#39;geometry&#39;: {&#39;coordinates&#39;: [[[15.54245, 48.9077],
+       [15.75363, 48.85218],
+       [15.84331, 48.87339],
+       [16.10288, 48.7454],
+       [16.64849, 48.78521],
+       [16.90202, 48.71798],
+       [16.94028, 48.61725],
+       [16.94978, 48.53579],
+       [16.85111, 48.43864],
+       [16.84237, 48.35333],
+       [16.95718, 48.26348],
+       [16.9762, 48.17224],
+       [17.06674, 48.11868],
+       [16.97108, 48.10057],
+       [17.0163, 48.07352],
+       [16.97924, 48.02345],
+       [16.89, 48.07464],
+       [16.7021, 48.01165],
+       [16.58028, 47.88861],
+       [16.48692, 47.94262],
+       [16.38889, 47.8816],
+       [16.37719, 47.82732],
+       [16.26905, 47.79641],
+       [16.3725, 47.64249],
+       [16.28108, 47.45513],
+       [16.17177, 47.4224],
+       [16.0874, 47.50716],
+       [15.84701, 47.56779],
+       [15.82178, 47.63796],
+       [15.7251, 47.64646],
+       [15.71915, 47.70988],
+       [15.61171, 47.75109],
+       [15.37488, 47.82456],
+       [15.21731, 47.79603],
+       [15.08925, 47.74147],
+       [14.73846, 47.74872],
+       [14.70999, 47.85064],
+       [14.77172, 47.88378],
+       [14.49363, 47.9978],
+       [14.45612, 48.04304],
+       [14.47904, 48.10441],
+       [14.52118, 48.23761],
+       [14.68837, 48.15729],
+       [14.82884, 48.18908],
+       [14.99205, 48.25593],
+       [14.98645, 48.31931],
+       [14.94369, 48.32365],
+       [14.96445, 48.37851],
+       [14.87373, 48.45924],
+       [14.91246, 48.51396],
+       [14.69101, 48.5843],
+       [14.80867, 48.7788],
+       [14.97933, 48.77235],
+       [14.99045, 49.00965],
+       [15.15733, 48.99178],
+       [15.16025, 48.94169],
+       [15.36588, 48.98171],
+       [15.54245, 48.9077]],
+      [[16.1819, 48.17103],
+       [16.2181, 48.12807],
+       [16.57699, 48.14444],
+       [16.53638, 48.17461],
+       [16.54698, 48.263],
+       [16.43804, 48.31627],
+       [16.20516, 48.26206],
+       [16.1819, 48.17103]]],
+     &#39;type&#39;: &#39;Polygon&#39;},
+    &#39;id&#39;: &#39;AT12&#39;,
+    &#39;properties&#39;: {&#39;CNTR_CODE&#39;: &#39;AT&#39;,
+     &#39;FID&#39;: &#39;AT12&#39;,
+     &#39;LEVL_CODE&#39;: 2,
+     &#39;NUTS_ID&#39;: &#39;AT12&#39;,
+     &#39;NUTS_NAME&#39;: &#39;Niederösterreich&#39;},
+    &#39;type&#39;: &#39;Feature&#39;}],
+  &#39;type&#39;: &#39;FeatureCollection&#39;},
+ {&#39;crs&#39;: {&#39;properties&#39;: {&#39;name&#39;: &#39;urn:ogc:def:crs:EPSG::4326&#39;},
+   &#39;type&#39;: &#39;name&#39;},
+  &#39;features&#39;: [{&#39;geometry&#39;: {&#39;coordinates&#39;: [[[16.57699, 48.14444],
+       [16.2181, 48.12807],
+       [16.1819, 48.17103],
+       [16.20516, 48.26206],
+       [16.43804, 48.31627],
+       [16.54698, 48.263],
+       [16.53638, 48.17461],
+       [16.57699, 48.14444]]],
+     &#39;type&#39;: &#39;Polygon&#39;},
+    &#39;id&#39;: &#39;AT13&#39;,
+    &#39;properties&#39;: {&#39;CNTR_CODE&#39;: &#39;AT&#39;,
+     &#39;FID&#39;: &#39;AT13&#39;,
+     &#39;LEVL_CODE&#39;: 2,
+     &#39;NUTS_ID&#39;: &#39;AT13&#39;,
+     &#39;NUTS_NAME&#39;: &#39;Wien&#39;},
+    &#39;type&#39;: &#39;Feature&#39;}],
+  &#39;type&#39;: &#39;FeatureCollection&#39;},
+ {&#39;crs&#39;: {&#39;properties&#39;: {&#39;name&#39;: &#39;urn:ogc:def:crs:EPSG::4326&#39;},
+   &#39;type&#39;: &#39;name&#39;},
+  &#39;features&#39;: [{&#39;geometry&#39;: {&#39;coordinates&#39;: [[[13.35452, 47.0971],
+       [13.68654, 47.03982],
+       [13.78453, 46.94388],
+       [13.94672, 46.94063],
+       [14.13256, 47.06234],
+       [14.39619, 46.9807],
+       [14.84448, 47.0481],
+       [15.02701, 46.90973],
+       [14.97627, 46.78478],
+       [15.03015, 46.76979],
+       [15.06512, 46.65211],
+       [14.87967, 46.61125],
+       [14.81861, 46.50938],
+       [14.67458, 46.45069],
+       [14.56518, 46.37245],
+       [14.4345, 46.44294],
+       [13.71418, 46.5227],
+       [13.50425, 46.5663],
+       [12.73139, 46.63429],
+       [12.69064, 46.65697],
+       [12.72496, 46.74344],
+       [12.966, 46.78955],
+       [12.84116, 46.86098],
+       [12.72464, 46.99579],
+       [12.75782, 47.04582],
+       [12.65683, 47.09952],
+       [12.7309, 47.13099],
+       [13.07302, 47.01341],
+       [13.35452, 47.0971]]],
+     &#39;type&#39;: &#39;Polygon&#39;},
+    &#39;id&#39;: &#39;AT21&#39;,
+    &#39;properties&#39;: {&#39;CNTR_CODE&#39;: &#39;AT&#39;,
+     &#39;FID&#39;: &#39;AT21&#39;,
+     &#39;LEVL_CODE&#39;: 2,
+     &#39;NUTS_ID&#39;: &#39;AT21&#39;,
+     &#39;NUTS_NAME&#39;: &#39;Kärnten&#39;},
+    &#39;type&#39;: &#39;Feature&#39;}],
+  &#39;type&#39;: &#39;FeatureCollection&#39;},
+ {&#39;crs&#39;: {&#39;properties&#39;: {&#39;name&#39;: &#39;urn:ogc:def:crs:EPSG::4326&#39;},
+   &#39;type&#39;: &#39;name&#39;},
+  &#39;features&#39;: [{&#39;geometry&#39;: {&#39;coordinates&#39;: [[[15.84701, 47.56779],
+       [16.0874, 47.50716],
+       [16.17177, 47.4224],
+       [16.01516, 47.36713],
+       [16.11346, 47.16184],
+       [16.08651, 47.07421],
+       [16.12172, 46.99067],
+       [15.99624, 46.8354],
+       [15.98475, 46.75221],
+       [16.03809, 46.65615],
+       [15.78642, 46.70747],
+       [15.64999, 46.70576],
+       [15.50885, 46.61623],
+       [15.40198, 46.65355],
+       [15.06512, 46.65211],
+       [15.03015, 46.76979],
+       [14.97627, 46.78478],
+       [15.02701, 46.90973],
+       [14.84448, 47.0481],
+       [14.39619, 46.9807],
+       [14.13256, 47.06234],
+       [13.94672, 46.94063],
+       [13.78453, 46.94388],
+       [13.90357, 47.06291],
+       [13.88316, 47.10958],
+       [13.99612, 47.13281],
+       [13.86418, 47.25217],
+       [13.6076, 47.28356],
+       [13.56334, 47.42046],
+       [13.58566, 47.4748],
+       [13.72256, 47.46211],
+       [13.75593, 47.55273],
+       [13.69406, 47.62321],
+       [13.77742, 47.71453],
+       [14.0106, 47.70089],
+       [14.05078, 47.61716],
+       [14.20579, 47.65254],
+       [14.3264, 47.60755],
+       [14.73846, 47.74872],
+       [15.08925, 47.74147],
+       [15.21731, 47.79603],
+       [15.37488, 47.82456],
+       [15.61171, 47.75109],
+       [15.71915, 47.70988],
+       [15.7251, 47.64646],
+       [15.82178, 47.63796],
+       [15.84701, 47.56779]]],
+     &#39;type&#39;: &#39;Polygon&#39;},
+    &#39;id&#39;: &#39;AT22&#39;,
+    &#39;properties&#39;: {&#39;CNTR_CODE&#39;: &#39;AT&#39;,
+     &#39;FID&#39;: &#39;AT22&#39;,
+     &#39;LEVL_CODE&#39;: 2,
+     &#39;NUTS_ID&#39;: &#39;AT22&#39;,
+     &#39;NUTS_NAME&#39;: &#39;Steiermark&#39;},
+    &#39;type&#39;: &#39;Feature&#39;}],
+  &#39;type&#39;: &#39;FeatureCollection&#39;},
+ {&#39;crs&#39;: {&#39;properties&#39;: {&#39;name&#39;: &#39;urn:ogc:def:crs:EPSG::4326&#39;},
+   &#39;type&#39;: &#39;name&#39;},
+  &#39;features&#39;: [{&#39;geometry&#39;: {&#39;coordinates&#39;: [[[14.69101, 48.5843],
+       [14.91246, 48.51396],
+       [14.87373, 48.45924],
+       [14.96445, 48.37851],
+       [14.94369, 48.32365],
+       [14.98645, 48.31931],
+       [14.99205, 48.25593],
+       [14.82884, 48.18908],
+       [14.68837, 48.15729],
+       [14.52118, 48.23761],
+       [14.47904, 48.10441],
+       [14.45612, 48.04304],
+       [14.49363, 47.9978],
+       [14.77172, 47.88378],
+       [14.70999, 47.85064],
+       [14.73846, 47.74872],
+       [14.3264, 47.60755],
+       [14.20579, 47.65254],
+       [14.05078, 47.61716],
+       [14.0106, 47.70089],
+       [13.77742, 47.71453],
+       [13.69406, 47.62321],
+       [13.75593, 47.55273],
+       [13.72256, 47.46211],
+       [13.58566, 47.4748],
+       [13.51617, 47.4965],
+       [13.47674, 47.54125],
+       [13.5233, 47.61833],
+       [13.48409, 47.64154],
+       [13.55087, 47.71412],
+       [13.43627, 47.73855],
+       [13.53869, 47.78235],
+       [13.28971, 47.82437],
+       [13.28029, 47.95471],
+       [13.37343, 47.96581],
+       [13.30393, 48.00787],
+       [12.86018, 47.99664],
+       [12.75156, 48.11281],
+       [12.94468, 48.20669],
+       [13.17704, 48.29439],
+       [13.40784, 48.37216],
+       [13.43843, 48.5489],
+       [13.51337, 48.59098],
+       [13.72709, 48.51302],
+       [13.82576, 48.61862],
+       [13.79611, 48.7136],
+       [13.83951, 48.77161],
+       [14.11594, 48.58917],
+       [14.32452, 48.56234],
+       [14.47007, 48.64844],
+       [14.69101, 48.5843]]],
+     &#39;type&#39;: &#39;Polygon&#39;},
+    &#39;id&#39;: &#39;AT31&#39;,
+    &#39;properties&#39;: {&#39;CNTR_CODE&#39;: &#39;AT&#39;,
+     &#39;FID&#39;: &#39;AT31&#39;,
+     &#39;LEVL_CODE&#39;: 2,
+     &#39;NUTS_ID&#39;: &#39;AT31&#39;,
+     &#39;NUTS_NAME&#39;: &#39;Oberösterreich&#39;},
+    &#39;type&#39;: &#39;Feature&#39;}],
+  &#39;type&#39;: &#39;FeatureCollection&#39;},
+ {&#39;crs&#39;: {&#39;properties&#39;: {&#39;name&#39;: &#39;urn:ogc:def:crs:EPSG::4326&#39;},
+   &#39;type&#39;: &#39;name&#39;},
+  &#39;features&#39;: [{&#39;geometry&#39;: {&#39;coordinates&#39;: [[[13.58566, 47.4748],
+       [13.56334, 47.42046],
+       [13.6076, 47.28356],
+       [13.86418, 47.25217],
+       [13.99612, 47.13281],
+       [13.88316, 47.10958],
+       [13.90357, 47.06291],
+       [13.78453, 46.94388],
+       [13.68654, 47.03982],
+       [13.35452, 47.0971],
+       [13.07302, 47.01341],
+       [12.7309, 47.13099],
+       [12.65683, 47.09952],
+       [12.39952, 47.1528],
+       [12.24075, 47.06917],
+       [12.13601, 47.08067],
+       [12.08186, 47.19437],
+       [12.11455, 47.30644],
+       [12.4698, 47.32377],
+       [12.50609, 47.39413],
+       [12.69959, 47.47789],
+       [12.64163, 47.5545],
+       [12.6666, 47.57863],
+       [12.57503, 47.63232],
+       [12.6958, 47.68222],
+       [12.8073, 47.61023],
+       [12.77926, 47.57929],
+       [12.81025, 47.54706],
+       [13.00329, 47.46337],
+       [13.04606, 47.5205],
+       [13.09795, 47.63372],
+       [13.04797, 47.70912],
+       [12.90505, 47.72364],
+       [13.0039, 47.84797],
+       [12.87579, 47.96261],
+       [12.86018, 47.99664],
+       [13.30393, 48.00787],
+       [13.37343, 47.96581],
+       [13.28029, 47.95471],
+       [13.28971, 47.82437],
+       [13.53869, 47.78235],
+       [13.43627, 47.73855],
+       [13.55087, 47.71412],
+       [13.48409, 47.64154],
+       [13.5233, 47.61833],
+       [13.47674, 47.54125],
+       [13.51617, 47.4965],
+       [13.58566, 47.4748]]],
+     &#39;type&#39;: &#39;Polygon&#39;},
+    &#39;id&#39;: &#39;AT32&#39;,
+    &#39;properties&#39;: {&#39;CNTR_CODE&#39;: &#39;AT&#39;,
+     &#39;FID&#39;: &#39;AT32&#39;,
+     &#39;LEVL_CODE&#39;: 2,
+     &#39;NUTS_ID&#39;: &#39;AT32&#39;,
+     &#39;NUTS_NAME&#39;: &#39;Salzburg&#39;},
+    &#39;type&#39;: &#39;Feature&#39;}],
+  &#39;type&#39;: &#39;FeatureCollection&#39;},
+ {&#39;crs&#39;: {&#39;properties&#39;: {&#39;name&#39;: &#39;urn:ogc:def:crs:EPSG::4326&#39;},
+   &#39;type&#39;: &#39;name&#39;},
+  &#39;features&#39;: [{&#39;geometry&#39;: {&#39;coordinates&#39;: [[[[12.33805, 47.69709],
+        [12.57503, 47.63232],
+        [12.6666, 47.57863],
+        [12.64163, 47.5545],
+        [12.69959, 47.47789],
+        [12.50609, 47.39413],
+        [12.4698, 47.32377],
+        [12.11455, 47.30644],
+        [12.08186, 47.19437],
+        [12.13601, 47.08067],
+        [11.74703, 46.96887],
+        [11.6272, 47.0133],
+        [11.16428, 46.96572],
+        [11.02225, 46.76541],
+        [10.75759, 46.78519],
+        [10.66737, 46.87549],
+        [10.46965, 46.85491],
+        [10.48935, 46.93779],
+        [10.38932, 47.00052],
+        [10.14497, 46.85101],
+        [10.09822, 46.92736],
+        [10.15981, 46.98375],
+        [10.13423, 47.08386],
+        [10.21299, 47.15758],
+        [10.17835, 47.27011],
+        [10.47541, 47.4317],
+        [10.43132, 47.50368],
+        [10.45444, 47.5558],
+        [10.8862, 47.53685],
+        [10.87104, 47.48188],
+        [10.9912, 47.39613],
+        [11.0165, 47.39637],
+        [11.42143, 47.44485],
+        [11.38381, 47.47221],
+        [11.41022, 47.49532],
+        [11.57243, 47.51464],
+        [11.63288, 47.59245],
+        [12.06066, 47.61874],
+        [12.20732, 47.60984],
+        [12.18393, 47.70037],
+        [12.26489, 47.73248],
+        [12.25718, 47.6791],
+        [12.33805, 47.69709]]],
+      [[[12.69064, 46.65697],
+        [12.47792, 46.67984],
+        [12.31281, 46.78387],
+        [12.2737, 46.88439],
+        [12.14381, 46.91378],
+        [12.12134, 47.007],
+        [12.24075, 47.06917],
+        [12.39952, 47.1528],
+        [12.65683, 47.09952],
+        [12.75782, 47.04582],
+        [12.72464, 46.99579],
+        [12.84116, 46.86098],
+        [12.966, 46.78955],
+        [12.72496, 46.74344],
+        [12.69064, 46.65697]]]],
+     &#39;type&#39;: &#39;MultiPolygon&#39;},
+    &#39;id&#39;: &#39;AT33&#39;,
+    &#39;properties&#39;: {&#39;CNTR_CODE&#39;: &#39;AT&#39;,
+     &#39;FID&#39;: &#39;AT33&#39;,
+     &#39;LEVL_CODE&#39;: 2,
+     &#39;NUTS_ID&#39;: &#39;AT33&#39;,
+     &#39;NUTS_NAME&#39;: &#39;Tirol&#39;},
+    &#39;type&#39;: &#39;Feature&#39;}],
+  &#39;type&#39;: &#39;FeatureCollection&#39;},
+ {&#39;crs&#39;: {&#39;properties&#39;: {&#39;name&#39;: &#39;urn:ogc:def:crs:EPSG::4326&#39;},
+   &#39;type&#39;: &#39;name&#39;},
+  &#39;features&#39;: [{&#39;geometry&#39;: {&#39;coordinates&#39;: [[[9.96781, 47.54624],
+       [9.99953, 47.48302],
+       [10.09147, 47.45908],
+       [10.09985, 47.35476],
+       [10.23393, 47.38329],
+       [10.17835, 47.27011],
+       [10.21299, 47.15758],
+       [10.13423, 47.08386],
+       [10.15981, 46.98375],
+       [10.09822, 46.92736],
+       [10.14497, 46.85101],
+       [9.87615, 46.93464],
+       [9.87942, 47.01956],
+       [9.60708, 47.06077],
+       [9.62058, 47.15165],
+       [9.53075, 47.27058],
+       [9.67337, 47.38151],
+       [9.55872, 47.54189],
+       [9.73657, 47.53491],
+       [9.76547, 47.58886],
+       [9.96781, 47.54624]]],
+     &#39;type&#39;: &#39;Polygon&#39;},
+    &#39;id&#39;: &#39;AT34&#39;,
+    &#39;properties&#39;: {&#39;CNTR_CODE&#39;: &#39;AT&#39;,
+     &#39;FID&#39;: &#39;AT34&#39;,
+     &#39;LEVL_CODE&#39;: 2,
+     &#39;NUTS_ID&#39;: &#39;AT34&#39;,
+     &#39;NUTS_NAME&#39;: &#39;Vorarlberg&#39;},
+    &#39;type&#39;: &#39;Feature&#39;}],
+  &#39;type&#39;: &#39;FeatureCollection&#39;}]</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let us display the data using <code>ipyleaflet</code> this time:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[25]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">tile_info</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">tile_info</span><span class="p">(</span><span class="n">tile</span><span class="o">=</span><span class="s1">&#39;osmec&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">tile_info</span><span class="p">)</span>
+<span class="n">map_display</span> <span class="o">=</span> <span class="n">ipyleaflet</span><span class="o">.</span><span class="n">Map</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="n">tile_info</span><span class="p">[</span><span class="s1">&#39;center&#39;</span><span class="p">],</span> <span class="n">zoom</span><span class="o">=</span><span class="n">tile_info</span><span class="p">[</span><span class="s1">&#39;zoom&#39;</span><span class="p">])</span>
+<span class="n">map_display</span><span class="o">.</span><span class="n">add_layer</span><span class="p">(</span><span class="n">ipyleaflet</span><span class="o">.</span><span class="n">TileLayer</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">tile_info</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">],</span> <span class="n">attribution</span><span class="o">=</span><span class="n">tile_info</span><span class="p">[</span><span class="s1">&#39;attr&#39;</span><span class="p">]))</span>
+<span class="p">[</span><span class="n">map_display</span><span class="o">.</span><span class="n">add_layer</span><span class="p">(</span><span class="n">ipyleaflet</span><span class="o">.</span><span class="n">GeoJSON</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">g</span><span class="p">,</span> <span class="n">hover_style</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;fillColor&#39;</span><span class="p">:</span> <span class="s1">&#39;red&#39;</span><span class="p">}))</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">geometries</span><span class="p">]</span>
+<span class="n">map_display</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>{&#39;center&#39;: [50.033333, 10.35], &#39;zoom&#39;: 4, &#39;url&#39;: &#39;https://europa.eu/webtools/maps/tiles/osm-ec/{z}/{y}/{x}&#39;, &#39;attr&#39;: &#39;© OpenStreetMap&#39;}
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+
+
+
+ 
+ 
+<div id="bc852b2f-9496-4ae5-b2c6-4351d5a1568b"></div>
+<div class="output_subarea output_widget_view ">
+<script type="text/javascript">
+var element = $('#bc852b2f-9496-4ae5-b2c6-4351d5a1568b');
+</script>
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id": "66ed52eac8f74e80a92c19e5f79a329b", "version_major": 2, "version_minor": 0}
+</script>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>To enable "interoperability", the geometries can then be parsed into a <code>geopandas.GeoDataFrame</code> structure using the following:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[26]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">gdf</span> <span class="o">=</span> <span class="n">geopandas</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="o">.</span><span class="n">from_features</span><span class="p">([</span><span class="n">g</span><span class="p">[</span><span class="s1">&#39;features&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">geometries</span><span class="p">],</span> <span class="n">crs</span><span class="o">=</span><span class="n">geometries</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;crs&#39;</span><span class="p">])</span>
+<span class="n">gdf</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[26]:</div>
+
+
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>CNTR_CODE</th>
+      <th>FID</th>
+      <th>LEVL_CODE</th>
+      <th>NUTS_ID</th>
+      <th>NUTS_NAME</th>
+      <th>geometry</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>AT</td>
+      <td>AT11</td>
+      <td>2</td>
+      <td>AT11</td>
+      <td>Burgenland (AT)</td>
+      <td>POLYGON ((17.1608 48.00666, 17.09466 47.97087,...</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>AT</td>
+      <td>AT12</td>
+      <td>2</td>
+      <td>AT12</td>
+      <td>Niederösterreich</td>
+      <td>POLYGON ((15.54245 48.9077, 15.75363 48.85218,...</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>AT</td>
+      <td>AT13</td>
+      <td>2</td>
+      <td>AT13</td>
+      <td>Wien</td>
+      <td>POLYGON ((16.57699 48.14444, 16.2181 48.12807,...</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>AT</td>
+      <td>AT21</td>
+      <td>2</td>
+      <td>AT21</td>
+      <td>Kärnten</td>
+      <td>POLYGON ((13.35452 47.0971, 13.68654 47.03982,...</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>AT</td>
+      <td>AT22</td>
+      <td>2</td>
+      <td>AT22</td>
+      <td>Steiermark</td>
+      <td>POLYGON ((15.84701 47.56779, 16.0874 47.50716,...</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The dataframe structure can be plotted directly:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[27]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+<span class="n">gdf</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[27]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>&lt;matplotlib.axes._subplots.AxesSubplot at 0x3206be860&gt;</pre>
+</div>
+
+</div>
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+
+
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,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
+"
+>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Similarly, let's repeat the whole operation when considering all NUTS boundaries over Europe:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[28]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">serv</span><span class="o">.</span><span class="n">nuts_geometry</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s1">&#39;NUTS&#39;</span><span class="p">,</span> <span class="n">year</span><span class="o">=</span><span class="mi">2016</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s1">&#39;60m&#39;</span><span class="p">,</span> <span class="n">vector</span><span class="o">=</span><span class="s1">&#39;boundary&#39;</span><span class="p">)</span>
+<span class="n">geometries</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">xvalues</span><span class="p">(</span><span class="n">_force_list_</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">gdf</span> <span class="o">=</span> <span class="n">geopandas</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="o">.</span><span class="n">from_features</span><span class="p">(</span><span class="n">geometries</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">crs</span><span class="o">=</span><span class="n">geometries</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;crs&#39;</span><span class="p">])</span>
+<span class="o">%</span><span class="k">matplotlib</span> inline
+<span class="n">gdf</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+
+<div class="prompt output_prompt">Out[28]:</div>
+
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>&lt;matplotlib.axes._subplots.AxesSubplot at 0x3280f3358&gt;</pre>
+</div>
+
+</div>
+
+<div class="output_area">
+
+<div class="prompt"></div>
+
+
+
+
+<div class="output_png output_subarea ">
+<img src="data:image/png;base64,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
+AAAAAElFTkSuQmCC
+"
+>
 </div>
 
 </div>
