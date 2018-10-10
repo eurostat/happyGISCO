@@ -1739,6 +1739,12 @@ class NUTS(_Feature):
     def load(self, **kwargs):
         """Load the geometry stored in this NUTS instance.
         """
+        fmt = kwargs.pop(_Decorator.KW_OFORMAT, 'json')
+        try:
+            assert fmt in ('json','gdf')
+        except:
+            # nothing at the moment
+            pass
         dimensions = self._dimensions
         dimensions = [dimensions.copy(),] if happyType.ismapping(dimensions)    \
             else [d.copy() for d in dimensions]
@@ -1748,6 +1754,8 @@ class NUTS(_Feature):
             if _Decorator.KW_UNIT in kwargs:
                 kwargs.update({_Decorator.KW_SOURCE: kwargs.pop(_Decorator.KW_UNIT)}) 
             [d.update(kwargs) for d in dimensions] 
+        # df = geopandas.read_file(self.url)
+        # df = geopandas.GeoDataFrame(self.geom)
         try:
             assert self.__geom # getattr(self, self.__mangled_attr(_Decorator.KW_GEOMETRY))
         except AssertionError:
@@ -1894,6 +1902,7 @@ class NUTS(_Feature):
         """
         __no_widget = kwargs.pop(_Decorator.KW_NO_WIDGET, False)
         if WIDGET_TOOL is True and __no_widget is False:
+            # see https://github.com/jupyter-widgets/ipyleaflet/blob/master/examples/CountriesGeoJSON.ipynb
             label = ipywidgets.Label(layout=ipywidgets.Layout(width='100%'))
             def hover_handler(event=None, id=None, properties=None):
                 label.value = "NUTS area: %s - code: %s - level: %s" %      \
@@ -1908,6 +1917,13 @@ class NUTS(_Feature):
             return ipywidgets.VBox([self.mapping.Map, label])
         else:
             return self.mapping.Map
+        
+    #/************************************************************************/
+    def choro(self, **kwargs):
+        """Create a choropleth map over the areas provided by the given NUTS
+        instance.
+        """
+        pass
         
 #%%
 #==============================================================================
