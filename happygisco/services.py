@@ -1555,6 +1555,7 @@ class GISCOService(OSMService):
                                if __del_source is False or source not in ('NUTS2JSON','BULK','INFO') or k!='SOURCE'],
                            **{_Decorator.KW_ORDER: True}) # [getattr(_Decorator,'KW_' + k) for k in dimensions.keys()]
         dim = {}
+        kwargs.update({_Decorator.KW_OFORMAT: 'response'})
         for prod in itertools.product(*list(dimensions.values())):
             dim.update(dict(zip([getattr(_Decorator,'KW_' + attr) for attr in dimensions.keys()], prod)))
             try:
@@ -1581,8 +1582,6 @@ class GISCOService(OSMService):
         """Generic version of methods :meth:`~GISCOService.country_geometry` and
         :meth:`~GISCOService.nuts_geometry`.
         """
-        # we use a default output format here!
-        ofmt = kwargs.pop(_Decorator.KW_OFORMAT, 'JSON')
         # we want a response type in the first place
         try:
             response = kwargs.pop(_Decorator.KW_RESPONSE,None)
@@ -1595,13 +1594,14 @@ class GISCOService(OSMService):
             except AttributeError:
                 raise happyError('argument DATA not recognised - must be ''NUTS'' or ''country''')
             try:
-                response = read_response(**kwargs)
+                _kwargs = kwargs.copy()
+                _kwargs.update({_Decorator.KW_OFORMAT: 'response'}) 
+                response = read_response(**_kwargs)
             except happyError as e:
                 raise happyError(errtype=e)
             except:
                 raise happyError('error reading %s response' % data.upper())
         # we insert the output format again
-        kwargs.update({_Decorator.KW_OFORMAT: ofmt}) 
         if isinstance(response,(_CachedResponse, requests.Response)):
             try:
                 return self.read_response(response, **kwargs)
@@ -1715,7 +1715,7 @@ class GISCOService(OSMService):
             >>> print(r.url)
                 'https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_RG_60M_2010_4326_LEVL_0.geojson'
             >>> print(r.order)
-                ['source', 'year', 'proj', 'scale', 'vector', 'ifmt']
+                ['source', 'year', 'proj', 'scale', 'vector', 'level', 'ifmt']
             >>> print(r.dimensions)
                 OrderedDict([(source, 'NUTS'),
                              ('year', 2010),
@@ -1931,6 +1931,11 @@ class GISCOService(OSMService):
             >>> newdata = serv.nuts_geometry(resp=r)
             >>> newdata == data
                 True
+        
+        When dealing with bulk datasets:
+            
+            >>> r = serv.nuts_response(source='BULK', year=2016, scale='60m')
+            >>> data = serv.nuts_geometry(resp=r)            
         
         Resources
         ---------
@@ -2414,14 +2419,14 @@ class GISCOService(OSMService):
             >>> print(info)
                 {'attr': '© OpenStreetMap',
                  'center': [50.033333, 10.35],
-                 'tile': 'https://europa.eu/webtools/maps/tiles/osm-ec/{z}/{y}/{x}',
+                 'url':  'https://europa.eu/webtools/maps/tiles/osm-ec/{z}/{y}/{x}',
                  'zoom': 4}
             >>> info = serv.tile_info(tile=['bmarble','copernicus'])
             >>> print(info)
                 {'attr': ('© NASA’s Earth Observatory', '© Core003 Mosaic'),
                  'center': [50.033333, 10.35],
-                 'tile': ('https://europa.eu/webtools/maps/tiles/bmarble/3857/{z}/{y}/{x}',
-                          'https://europa.eu/webtools/maps/tiles/copernicus003/{z}/{y}/{x}'),
+                 'url': ('https://europa.eu/webtools/maps/tiles/bmarble/3857/{z}/{y}/{x}',
+                         'https://europa.eu/webtools/maps/tiles/copernicus003/{z}/{y}/{x}'),
                  'zoom': 4}
         """
         tile = kwargs.pop(_Decorator.KW_TILE, settings.DEF_GISCO_TILE)
@@ -2429,11 +2434,11 @@ class GISCOService(OSMService):
         zoom = kwargs.pop('zoom', settings.DEF_GISCO_ZOOM)
         if not happyType.issequence(tile):
             tile = [tile,]
-        tile, attr = zip(*[self.url_tile(tile=t, **kwargs) if t in settings.GISCO_TILES else (t,'')   \
+        url, attr = zip(*[self.url_tile(tile=t, **kwargs) if t in settings.GISCO_TILES else (t,'')   \
                          for t in tile])
         return {'center':           center,
                 'zoom':             zoom,
-                _Decorator.KW_TILE: tile if tile in (None,'') or len(tile)>1 else tile[0],
+                _Decorator.KW_URL:  url if url in (None,'') or len(url)>1 else url[0],
                 _Decorator.KW_ATTR: attr if attr in (None,'') or len(attr)>1 else attr[0]}
         
         #/************************************************************************/
