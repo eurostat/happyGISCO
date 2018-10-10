@@ -2682,6 +2682,8 @@ class LeafMap(_Tool):
                                'location':      self.__center,
                                'zoom_start':    self.__zoom})
             try:
+                #self.__map = folium.Map()
+                #self.__map.add_tile_layer()
                 self.__map = folium.Map(**kwargs)
             except:
                 raise happyError('wrong tiling initialisation')
@@ -2792,9 +2794,11 @@ class LeafMap(_Tool):
         if happyType.issequence(area)                                \
                 and all([happyType.ismapping(a) for a in area]):
             narea = len(area)
-        else:
+        elif happyType.ismapping(area):
             area = [area,]
             narea = 1
+        else:
+            raise happyError('wrong format for parsed area argument')            
         ndata = narea
         if ndata != narea:
             raise happyError('incompatible areas and data')
@@ -2945,6 +2949,34 @@ class LeafMap(_Tool):
         # return self.Map
     
 
+    #/************************************************************************/
+    def choropleth(self, *args, **kwargs):
+        if args not in ((),None):
+            area =  args[0]
+        else:
+            area = kwargs.pop('area',None)
+        try:
+            assert area not in (None,[],{})
+        except:
+            raise happyError('no area argument parsed')
+        if happyType.issequence(area)                                \
+                and all([happyType.isstring(a) for a in area]):
+            narea = len(area)
+        elif happyType.isstring(area):
+            area = [area,]
+            narea = 1
+        else:
+            raise happyError('wrong format for parsed area argument')            
+        ndata = narea
+        if ndata != narea:
+            raise happyError('incompatible areas and data')
+        if LEAFLET_TOOL is True:
+            pass
+        elif FOLIUM_TOOL is True:
+            self.Map.choropleth(geo_str=area, 
+                                data=data, key_on=key_on, columns=columns,
+                                **kwargs)
+    
 #%%
 #==============================================================================
 # CLASS DimensionWidgets
