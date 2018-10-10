@@ -391,6 +391,11 @@ NUTS2LAU            =  {2016:
                         }
 """Conversion tables between LAU and NUTS datasets.
 """
+NUTS_FORMATS        = {'geojson':           'json',  
+                       # 'topojson':         'json',
+                       'geopandas':         'gpd',
+                       'string':            'str'
+                       }
 
 NUTS2JSON_DOMAIN    = 'raw.githubusercontent.com/eurostat/Nuts2json/gh-pages'
 """Domain of |Nuts2json| database.
