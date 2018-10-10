@@ -112,43 +112,44 @@ else:
         happyVerbose('AIOFILES help: https://pypi.org/project/aiofiles/')
     else:
         happyWarning("missing AIOFILES package (visit https://pypi.org/project/aiofiles/)", ImportWarning)
-        
+  
+ASYNCIO_AVAILABLE = False
+
 try:                
-    assert ASYNCIO_AVAILABLE                             
+    assert ASYNCIO_AVAILABLE is False                             
     import requests # urllib2
-except AssertionError:
-    SERVICE_AVAILABLE = False                
+except (AssertionError,ImportError) as e:
+    if e == ImportError:
+        SERVICE_AVAILABLE = False                
+        happyWarning('missing REQUESTS package (https://pypi.python.org/pypi/requests/) - GISCO ONLINE service will not be accessed')
     class requests():
         class Response():
             pass
-except ImportError:                 
-    SERVICE_AVAILABLE = False                
-    happyWarning('missing REQUESTS package (https://pypi.python.org/pypi/requests/) - GISCO ONLINE service will not be accessed')
 else:
     SERVICE_AVAILABLE = True                
 
 try:   
-    assert ASYNCIO_AVAILABLE                             
+    assert ASYNCIO_AVAILABLE is False                              
     import requests_cache 
-except AssertionError:
+except (AssertionError,ImportError) as e:
     REQUESTS_CACHE_INSTALLED = False
-    pass
-except ImportError:
-    REQUESTS_CACHE_INSTALLED = False
-    happyWarning("missing REQUESTS_CACHE package (https://pypi.python.org/pypi/requests-cache)", ImportWarning)
+    if e == ImportError:
+        happyWarning("missing REQUESTS_CACHE package (https://pypi.python.org/pypi/requests-cache)", ImportWarning)
 else:
     REQUESTS_CACHE_INSTALLED = True
     happyVerbose('REQUESTS_CACHE help: http://requests-cache.readthedocs.io/en/latest/')
     
 try:                                
-    assert ASYNCIO_AVAILABLE                             
+    assert ASYNCIO_AVAILABLE is False                              
     import cachecontrol#analysis:ignore
-except AssertionError:
+except (AssertionError,ImportError) as e:
     CACHECONTROL_INSTALLED = False
-    pass
-except ImportError:  
-    CACHECONTROL_INSTALLED = False
-    happyWarning("missing CACHECONTROL package (visit https://pypi.python.org/pypi/requests-cache)", ImportWarning)
+    if e == ImportError:
+        happyWarning("missing CACHECONTROL package (visit https://pypi.python.org/pypi/requests-cache)", ImportWarning)
+    class CacheControl():
+        pass
+    class FileCache():
+        pass
 else:
     CACHECONTROL_INSTALLED = True
     happyVerbose('CACHECONTROL help: https://cachecontrol.readthedocs.io/en/latest/')
@@ -948,15 +949,24 @@ class _Decorator(object):
                     coord = [[float(g[_Decorator.parse_geometry.KW_LAT]),
                               float(g[_Decorator.parse_geometry.KW_LON])] for g in geom]
                     assert coord not in ([],None,[None])
-                except: # geometry is formatted like a GISCO output
-                    coord = [g for g in geom                                                        \
+                except: # geometry is formatted like a GEOJSON output
+                    coord = [g for g in geom                                                    \
                        if _Decorator.parse_geometry.KW_GEOMETRY in g                            \
                            and _Decorator.parse_geometry.KW_PROPERTIES in g                     \
                            and _Decorator.parse_geometry.KW_TYPE in g                           \
                            and g[_Decorator.parse_geometry.KW_TYPE]=='Feature'                  \
-                           and (not(settings.CHECK_TYPE) or g[_Decorator.parse_geometry.KW_GEOMETRY][_Decorator.parse_geometry.KW_TYPE]=='Point')          \
-                           and (not(settings.CHECK_OSM_KEY) or g[_Decorator.parse_geometry.KW_PROPERTIES][_Decorator.parse_geometry.KW_OSM_KEY]=='place')  \
                        ]
+                    _coord = [c for c in coord                                              \
+                              if (not(settings.CHECK_TYPE) or c[_Decorator.parse_geometry.KW_GEOMETRY][_Decorator.parse_geometry.KW_TYPE]=='Point')]
+                    try:    assert _coord != []
+                    except: pass
+                    else:
+                        coord = _coord
+                        _coord = [c for c in coord                                              \
+                                  if (not(settings.CHECK_OSM_KEY) or c[_Decorator.parse_geometry.KW_PROPERTIES][_Decorator.parse_geometry.KW_OSM_KEY]=='place')]
+                        try:    assert _coord != []
+                        except: pass
+                        else:   coord = _coord                       
                     #coord = dict(zip(['lon','lat'],                                                 \
                     #                  zip(*[c[self.KW_GEOMETRY][self.KW_COORDINATES] for c in coord])))
                     coord = [_[_Decorator.parse_geometry.KW_GEOMETRY][_Decorator.parse_geometry.KW_COORDINATES][::-1]   \
@@ -1944,8 +1954,6 @@ class _Decorator(object):
 # CLASS _CachedResponse
 #==============================================================================
 
-ASYNCIO_AVAILABLE = False
-
 try:
     assert SERVICE_AVAILABLE is True
 except:
@@ -1953,12 +1961,14 @@ except:
         #doc-ignore
         pass 
 else:
-    if ASYNCIO_AVAILABLE is False:            
-        class _CachedResponse(requests.Response):
-            pass 
-    else:        
-        class _CachedResponse(aiohttp.ClientResponse):
-            pass 
+    class _CachedResponse(requests.Response):
+        # why not derive this class from aiohttp.ClientResponse in the case
+        # ASYNCIO_AVAILABLE is True? actually, we refer here to aiohttp doc,
+        # namely http://docs.aiohttp.org/en/stable/client_reference.html:
+        #   "User never creates the instance of ClientResponse class but gets 
+        #   it from API calls"
+        def __repr__(self):
+            return '<Response [%s]>' % (self.status_code)
     def __init(inst, *args, **kwargs):
         r, url = args
         path = kwargs.pop('path','')
@@ -2394,29 +2404,37 @@ class _Service(object):
     async \
     def __async_cache_response(self, session, url, force_download, cache_store, expire_after):
         # asynchronous implementation of cache_response
+        print('__async_cache_response')
         pathname = self.__build_cache(url, cache_store)
         is_cached = self.__is_cached(pathname, expire_after)
+        print('pathname=%s' % pathname)
+        print('is_cached=%s' % is_cached)
         if force_download is True or is_cached is False or cache_store in (None,False):
+            print('force_download')
             response = await session.get(url)
             content = await response.content.read()
             if cache_store not in (None,False):
                 try:
                     assert aiofiles
                 except:  # we loose the benefits of the async ... but ok
+                    print('__async open')
                     with open(pathname, 'wb') as f:
                         f.write(content)
                 else:
                     async with aiofiles.open(pathname, 'wb') as f:
                         await f.write(content)
         else:
+            print('read')
             try:
                 assert aiofiles
             except:
+                print('__async read')
                 with open(pathname, 'rb') as f:
                     content = f.read() 
             else:
                 async with aiofiles.open(pathname, 'rb') as f:
                     content = await f.read() 
+        print('again pathname = %s' % pathname)
         return content, pathname
     
     #/************************************************************************/
@@ -2466,8 +2484,8 @@ class _Service(object):
             async def async_cache_all_response(loop, url):
                 async with aiohttp.ClientSession(loop=loop, raise_for_status=True) as session:
                     # tasks to do
-                    tasks = [self.__async_cache_response(session, u, 
-                                                       force_download, cache_store, expire_after)         \
+                    tasks = [self.__async_cache_response(session, u,
+                                                         force_download, cache_store, expire_after)         \
                                 for u in url]
                     # gather task responses
                     return await asyncio.gather(*tasks, return_exceptions=True) 
@@ -2516,6 +2534,7 @@ class _Service(object):
     #/************************************************************************/
     async \
     def __async_get_response(self, session, url, force_download, caching, cache_store, expire_after):
+        print('in __async_get_response')
         if caching is False or cache_store is None:
             try:
                 resp = await session.get(url)                
@@ -2523,11 +2542,13 @@ class _Service(object):
                 raise happyError('wrong request formulated') 
         else: 
             try:
-                resp, path = await self.__aio_cache_response(session, url, force_download, cache_store, expire_after)
+                resp, path = await self.__async_cache_response(session, url, force_download, cache_store, expire_after)
             except:
                 raise happyError('wrong request formulated')  
             else:
+                print('url=%s' % url)
                 resp = _CachedResponse(resp, url, path=path)
+        print('cache response')
         try:
             assert resp is not None
             # yield from response.raise_for_status()
@@ -2675,8 +2696,16 @@ class _Service(object):
     
     #/************************************************************************/
     def __sync_read_response(self, response, **kwargs):
-        fmt = kwargs.pop(_Decorator.KW_OFORMAT, None)
-        if fmt in (None,'resp'):
+        if not _Decorator.KW_OFORMAT in kwargs:
+            try:
+                url = response.url
+            except:
+                fmt = 'json'
+            else:
+                fmt = 'zip' if any([url.endswith(z) for z in ('zip','gzip','gz')]) else 'json'
+        else:
+            fmt = kwargs.pop(_Decorator.KW_OFORMAT, None)
+        if fmt in (None,'resp','response'):
             return response
         try:
             assert fmt is None or happyType.isstring(fmt)
@@ -2754,16 +2783,15 @@ class _Service(object):
         # deal with special case
         operators = [op for op in self.ZIP_OPERATIONS if op in kwargs.keys()] 
         try:
-            #assert set(kwargs.keys()).difference(set(self.ZIP_OPERATIONS)) == set()
-            assert operators not in ([],[None])
+            assert operators in ([],[None]) or sum([1 for op in operators]) == 1
         except:
-            raise happyError('parsed operations are not recognised')
-        try:
-            assert sum([1 for op in operators]) == 1
-        except:
-            raise happyError('only one operation supported per call')  
+            raise happyError('only one operation supported per call')
         else:
-            operator = operators[0] 
+            if operators in ([],[None]):
+                operator = 'extractall'
+                kwargs.update({operator: self.cache_store})
+            else:
+                operator = operators[0] 
         members, path = None, None
         if operator in ('extract', 'getinfo', 'read'):
             members = kwargs.pop(operator, None)
@@ -2774,7 +2802,9 @@ class _Service(object):
                 assert kwargs.get(operator) not in (False,None)
             except:
                 raise happyError('no operation parsed')
-        if not happyType.issequence(members):
+        if operator.startswith('extract'):
+            happyWarning('data extracted from zip file will be physically stored on local disk')
+        if members is not None and not happyType.issequence(members):
             members = [members,]
         with zipfile.ZipFile(data) as zf:
             #if not zipfile.is_zipfile(zf): # does not work
@@ -2793,8 +2823,16 @@ class _Service(object):
     #/************************************************************************/
     async \
     def __async_read_response(self, response, **kwargs):
-        fmt = kwargs.pop(_Decorator.KW_OFORMAT, 'json')
-        if fmt=='resp':
+        if not _Decorator.KW_OFORMAT in kwargs:
+            try:
+                url = response.url
+            except:
+                fmt = 'json'
+            else:
+                fmt = 'zip' if any([url.endswith(z) for z in ('zip','gzip','gz')]) else 'json'
+        else:
+            fmt = kwargs.pop(_Decorator.KW_OFORMAT, None)
+        if fmt in (None,'resp','response'):
             return response
         try:
             assert fmt is None or happyType.isstring(fmt)
@@ -2873,15 +2911,15 @@ class _Service(object):
         operators = [op for op in self.ZIP_OPERATIONS if op in kwargs.keys()] 
         try:
             #assert set(kwargs.keys()).difference(set(self.ZIP_OPERATIONS)) == set()
-            assert operators not in ([],[None])
+            assert operators in ([],[None]) or sum([1 for op in operators]) == 1
         except:
-            raise happyError('parsed operations are not recognised')
-        try:
-            assert sum([1 for op in operators]) == 1
-        except:
-            raise happyError('only one operation supported per call')  
+            raise happyError('only one operation supported per call')
         else:
-            operator = operators[0] 
+            if operators in ([],[None]):
+                operator = 'extractall'
+                kwargs.update({operator: self.cache_store})
+            else:
+                operator = operators[0] 
         members, path = None, None
         if operator in ('extract', 'getinfo', 'read'):
             members = kwargs.pop(operator, None)
@@ -2892,7 +2930,9 @@ class _Service(object):
                 assert kwargs.get(operator) not in (False,None)
             except:
                 raise happyError('no operation parsed')
-        if not happyType.issequence(members):
+        if operator.startswith('extract'):
+            happyWarning('data extracted from zip file will be physically stored on local disk')
+        if members is not None and not happyType.issequence(members):
             members = [members,]
         # whatever comes next is actually not asynchronous
         async with zipfile.ZipFile(data) as zf:
@@ -3423,8 +3463,8 @@ class _NestedDict(dict):
             
     #/************************************************************************/
     def __getattr__(self, attr): 
-        # ugly trick here...
-        if attr in inspect.getmembers(base._NestedDict, predicate=inspect.ismethod):#analysis:ignore
+        # ugly trick here... 
+        if attr in inspect.getmembers(self.__class__, predicate=inspect.ismethod):#analysis:ignore
             return object.__getattribute__(self, attr)
         try:
             xkeys = self.xkeys(**{_Decorator.KW_FORCE_LIST: True})
@@ -3432,16 +3472,17 @@ class _NestedDict(dict):
             # res = [getattr(v, attr) for v in self.xvalues(**{_Decorator.KW_FORCE_LIST: True})]
         except:
             raise AttributeError('attribute %s not recognised' % attr)
+        if len(xkeys)>1:
+            try:
+                cls = self.__class__
+                res = cls(list(zip(xkeys, xvalues)))
+            except:
+                raise AttributeError('wrong nested data structure' % attr)
         else:
-            xitems = zip(xkeys, xvalues)
-        try:
-            cls = self.__class__
-            res = cls(list(xitems))
-        except:
-            raise AttributeError('wrong nested data structure' % attr)
-        else:
-            return res # if res in ([],[None],None) or (happyType.issequence(res) and res.xlen()>1) else xvalues[0]
-
+            res = xvalues if xvalues in ([],[None],None) or (happyType.issequence(xvalues) and len(xvalues)>1) \
+            else xvalues[0]
+        return res 
+    
     #/************************************************************************/
     def __copy__(self):
         cls = self.__class__
