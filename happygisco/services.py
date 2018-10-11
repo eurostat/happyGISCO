@@ -1784,21 +1784,21 @@ class GISCOService(OSMService):
         """
         try:
             source = kwargs.pop(_Decorator.KW_SOURCE, None)
-            assert source is None or happyType.isstring(source)
+            assert source in ([],None) or happyType.isstring(source)
         except AssertionError:
             raise happyError('wrong format/value for %s argument' % _Decorator.KW_SOURCE.upper())
         try:
             unit = kwargs.pop(_Decorator.KW_UNIT, None)
-            assert unit is None or happyType.isstring(unit) or                          \
+            assert unit in ([],None) or happyType.isstring(unit) or                          \
                 (happyType.issequence(unit) and all([happyType.isstring(u) for u in unit]))
         except AssertionError:
             raise happyError('wrong format/value for %s argument' % _Decorator.KW_UNIT.upper())        
         try:
-            assert source is None or unit is None
+            assert source in ([],None) or unit in ([],None)
         except:
             raise happyError('incompatible parameters %s and %s' % (_Decorator.KW_UNIT.upper(),_Decorator.KW_SOURCE.upper()))
         else:
-            if unit is None and source is None:
+            if unit in ([],None) and source in ([],None):
                 source = 'NUTS'  # force to 'NUTS' in case both are None
             elif unit is not None:
                 if unit=='ALL':
@@ -1809,7 +1809,7 @@ class GISCOService(OSMService):
                 elif not happyType.issequence(unit):
                     unit = [unit,]
             else: 
-                source = source.upper()                
+                source = source.upper()       
         dimensions = settings.GISCO_DATA_DIMENSIONS.copy()
         if source == 'BULK':
             # ['SOURCE', 'YEAR', 'SCALE', 'IFORMAT']
@@ -2105,6 +2105,8 @@ class GISCOService(OSMService):
             else:
                 if info == 'CODES':
                     data = list(data.keys())
+        if data in ([],None):
+            happyWarning('null/empty information returned - no data available')
         return data
         
     #/************************************************************************/
@@ -2393,6 +2395,8 @@ class GISCOService(OSMService):
                 data = [d for d in data if any([d.startswith(u) for u in unit])]
             if level is not None:
                 data = [d for d in data if any([sum(c.isdigit() for c in d)==l for l in level])]
+        if data in ([],None):
+            happyWarning('null/empty information returned - no data available')
         return data      
 
     #/************************************************************************/
