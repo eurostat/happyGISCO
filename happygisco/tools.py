@@ -100,10 +100,10 @@ else:
 try:
     import geopandas
 except ImportError:
-    GEOPANDAS_INSTALLED = False
+    GEOPANDAS_TOOL = False
     happyWarning('GEOPANDAS package (https://github.com/geopandas/geopandas) not loaded - GeoDataFrame structures not available')
 else:
-    GEOPANDAS_INSTALLED = True
+    GEOPANDAS_TOOL = True
     happyVerbose('GEOPANDAS help: http://geopandas.org')
 
 try:
