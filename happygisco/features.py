@@ -1536,7 +1536,7 @@ class NUTS(_Feature):
             else:
                 self.__geom = geom
         if self.__geom not in ([],None): 
-            geom = [g.xvalues(**{KW_FORCE_LIST: True}) if isinstance(g, _NestedDict) else g \
+            geom = [g.xvalues(**{_Decorator.KW_FORCE_LIST: True}) if isinstance(g, _NestedDict) else g \
                     for g in self.__geom]
             return geom if len(geom)>1 else geom[0]         
         else:
@@ -1762,7 +1762,7 @@ class NUTS(_Feature):
                 fmt = settings.NUTS_FORMATS[fmt]
             if fmt == 'gpd':
                 try:
-                    assert GEOPANDAS_INSTALLED
+                    assert GEOPANDAS_TOOL
                 except:
                     raise happyError('GEOPANDAS not installed - output GeoDataFrame not available')                    
         dimensions = self._dimensions
@@ -1792,7 +1792,7 @@ class NUTS(_Feature):
             geom = self.__geom
         try:
             for i, g in enumerate(geom):
-                dimensions[i].update({KW_FORCE_LIST: True})
+                dimensions[i].update({_Decorator.KW_FORCE_LIST: True})
                 geom[i] = g.xvalues(**dimensions[i]) if isinstance(g, _NestedDict) else g
         except:
             raise happyError('error when dumping arguments %s' % kwargs) 
