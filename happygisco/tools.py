@@ -98,6 +98,15 @@ else:
     gdal.UseExceptions() # so that GDAL raises an exception instead of returning None when it cannot open something
 
 try:
+    import geopandas
+except ImportError:
+    GEOPANDAS_INSTALLED = False
+    happyWarning('GEOPANDAS package (https://github.com/geopandas/geopandas) not loaded - GeoDataFrame structures not available')
+else:
+    GEOPANDAS_INSTALLED = True
+    happyVerbose('GEOPANDAS help: http://geopandas.org')
+
+try:
     import ipyleaflet
 except ImportError:
     LEAFLET_TOOL = False
