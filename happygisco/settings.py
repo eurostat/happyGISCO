@@ -218,7 +218,7 @@ GISCO_YEARS         = [2003, 2006, 2010, 2013, 2016
                        ]
 """Years of adoption/revision of |NUTS| areas.
 """
-DEF_GISCO_YEAR      = 2013
+DEF_GISCO_YEAR      = 2016
 """Default year considered for |NUTS| datasets (not the most recent, but up-to-date).
 """
 GISCO_PROJECTIONS   = {'WGS84':             4326,
