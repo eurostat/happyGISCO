@@ -60,7 +60,7 @@ from happygisco import settings
 from happygisco.base import SERVICE_AVAILABLE, ASYNCIO_AVAILABLE, JSON_INSTALLED#analysis:ignore
 from happygisco.base import _Feature, _CachedResponse, _Decorator, _NestedDict
 from happygisco import tools     
-from happygisco.tools import GDAL_TOOL, FOLIUM_TOOL, LEAFLET_TOOL, WIDGET_TOOL
+from happygisco.tools import GDAL_TOOL, GEOPANDAS_TOOL, FOLIUM_TOOL, LEAFLET_TOOL, WIDGET_TOOL
 #from happygisco.tools import GDALTransform, LeafMap
 from happygisco import services     
 from happygisco.services import GISCO_SERVICE, API_SERVICE
@@ -105,6 +105,13 @@ except AssertionError:
 else:
     from osgeo import ogr
         
+try:
+    assert GEOPANDAS_TOOL
+except AssertionError:
+    pass
+else:
+    import geopandas
+    
 try:
     assert LEAFLET_TOOL
 except AssertionError:
@@ -1020,6 +1027,11 @@ class NUTS(_Feature):
         if not (geom in ([],None) and content in ([],None)):
             [d.update({kw: d.get(kw) or defdim[kw]}) for kw in defdim.keys() for d in dimensions]
         # dimensions = _NestedDict([d.items() for d in dimensions])
+        # test on projection
+        try:
+            assert len(set([d.get(_Decorator.KW_PROJECTION) for d in dimensions])) <=1
+        except:
+            raise happyError('currently, one projection per NUTS feature only is supported')
         return dimensions # if len(dimensions)>1 else dimensions[0]
    
     #/************************************************************************/    
@@ -1524,7 +1536,8 @@ class NUTS(_Feature):
             else:
                 self.__geom = geom
         if self.__geom not in ([],None): 
-            geom = [g.xvalues() if isinstance(g, _NestedDict) else g for g in self.__geom]
+            geom = [g.xvalues(**{KW_FORCE_LIST: True}) if isinstance(g, _NestedDict) else g \
+                    for g in self.__geom]
             return geom if len(geom)>1 else geom[0]         
         else:
             return None
@@ -1741,10 +1754,17 @@ class NUTS(_Feature):
         """
         fmt = kwargs.pop(_Decorator.KW_OFORMAT, 'json')
         try:
-            assert fmt in ('json','gdf')
+            assert fmt in happyType.seqflatten(list(settings.NUTS_FORMATS.items()))
         except:
-            # nothing at the moment
-            pass
+            raise happyError('dump format %s not recognised' % fmt)
+        else:
+            if fmt in settings.NUTS_FORMATS.keys():
+                fmt = settings.NUTS_FORMATS[fmt]
+            if fmt == 'gpd':
+                try:
+                    assert GEOPANDAS_INSTALLED
+                except:
+                    raise happyError('GEOPANDAS not installed - output GeoDataFrame not available')                    
         dimensions = self._dimensions
         dimensions = [dimensions.copy(),] if happyType.ismapping(dimensions)    \
             else [d.copy() for d in dimensions]
@@ -1771,8 +1791,9 @@ class NUTS(_Feature):
         else:
             geom = self.__geom
         try:
-            geom = [g.xvalues(**dimensions[i]) if isinstance(g, _NestedDict) else g   \
-                    for i, g in enumerate(geom)]
+            for i, g in enumerate(geom):
+                dimensions[i].update({KW_FORCE_LIST: True})
+                geom[i] = g.xvalues(**dimensions[i]) if isinstance(g, _NestedDict) else g
         except:
             raise happyError('error when dumping arguments %s' % kwargs) 
         #try:
@@ -1781,8 +1802,29 @@ class NUTS(_Feature):
         #except:
         #    data = None
         #json.dumps(resp.json())
-        return geom if len(geom)>1 else geom[0]
-    
+        if fmt in ('json','str'):
+            if fmt == 'str':
+                geom = [happyType.jsonstringify(g) for g in geom]
+            return geom if (happyType.issequence(geom) and len(geom)>1) else geom[0]
+        elif fmt == 'gpd':
+            try:
+                proj = self.__geom.dimensions[_Decorator.KW_PROJECTION]
+                xlen = self.__geom.xlen()#analysis:ignore
+            except:
+                proj = self.projection
+                xlen = len(geom)#analysis:ignore
+            finally:
+                if proj in settings.GISCO_PROJECTIONS.keys():
+                    proj = settings.GISCO_PROJECTIONS[proj]
+                crs = "+init=epsg:%s" % proj
+            try:
+                features = happyType.seqflatten([g['features'] for g in geom])
+            except:
+                features = geom[0]['features']
+            finally:
+                features = [f[0] if happyType.issequence(f) else f for f in features]
+            return geopandas.GeoDataFrame.from_features(features, crs=crs)
+            
     #/************************************************************************/
     def loads(self, **kwargs):
         """Dump the geometry stored in this NUTS instance as a string. 
