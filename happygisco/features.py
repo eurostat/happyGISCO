@@ -268,6 +268,8 @@ def __init(inst, *args, **kwargs):
     else:
         try:
             _kwargs = inst.service.tile_info(**kwargs)
+            if kwargs.pop(_Decorator.KW_TILE,None) == 'osmec':
+                _kwargs.update({'_keep_base_': True})
         except:
             happyWarning('basic mapping available')
             inst.mapping = tools.LeafMap()
@@ -1536,9 +1538,11 @@ class NUTS(_Feature):
             else:
                 self.__geom = geom
         if self.__geom not in ([],None): 
-            geom = [g.xvalues(**{_Decorator.KW_FORCE_LIST: True}) if isinstance(g, _NestedDict) else g \
+            #geom = [g.xvalues(**{_Decorator.KW_FORCE_LIST: True}) if isinstance(g, _NestedDict) else g \
+            #        for g in self.__geom]
+            geom = [g.xvalues() if isinstance(g, _NestedDict) else g \
                     for g in self.__geom]
-            return geom if len(geom)>1 else geom[0]         
+            return geom if happyType.issequence(geom) and len(geom)>1 else geom[0]         
         else:
             return None
     @geometry.setter
@@ -1796,6 +1800,9 @@ class NUTS(_Feature):
                 geom[i] = g.xvalues(**dimensions[i]) if isinstance(g, _NestedDict) else g
         except:
             raise happyError('error when dumping arguments %s' % kwargs) 
+        else:
+            if len(geom) == 1 and happyType.issequence(geom[0]):
+                geom = geom[0]
         #try:
         #    data = resp.content 
         #    data = json.loads(data.decode(chardet.detect(data)["encoding"]))

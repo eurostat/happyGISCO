@@ -225,6 +225,9 @@ class _Decorator(object):
     KW_LOCATION     = 'location' 
     KW_NUTS         = 'nuts' 
     KW_AREA         = 'area'
+    
+    KW_CENTER       = 'center'
+    KW_ZOOM         = 'zoom'
       
     # input vector data
     KW_DATA         = 'data'

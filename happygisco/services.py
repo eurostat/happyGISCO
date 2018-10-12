@@ -2434,16 +2434,16 @@ class GISCOService(OSMService):
                  'zoom': 4}
         """
         tile = kwargs.pop(_Decorator.KW_TILE, settings.DEF_GISCO_TILE)
-        center = kwargs.pop('center', settings.EU_GEOCENTRE)
-        zoom = kwargs.pop('zoom', settings.DEF_GISCO_ZOOM)
+        center = kwargs.pop(_Decorator.KW_CENTER, settings.EU_GEOCENTRE)
+        zoom = kwargs.pop(_Decorator.KW_ZOOM, settings.DEF_GISCO_ZOOM)
         if not happyType.issequence(tile):
             tile = [tile,]
         url, attr = zip(*[self.url_tile(tile=t, **kwargs) if t in settings.GISCO_TILES else (t,'')   \
                          for t in tile])
-        return {'center':           center,
-                'zoom':             zoom,
-                _Decorator.KW_URL:  url if url in (None,'') or len(url)>1 else url[0],
-                _Decorator.KW_ATTR: attr if attr in (None,'') or len(attr)>1 else attr[0]}
+        return {_Decorator.KW_CENTER:   center,
+                _Decorator.KW_ZOOM:     zoom,
+                _Decorator.KW_URL:      url if url in (None,'') or len(url)>1 else url[0],
+                _Decorator.KW_ATTR:     attr if attr in (None,'') or len(attr)>1 else attr[0]}
         
         #/************************************************************************/
     def nutsid2name(self, **kwargs):

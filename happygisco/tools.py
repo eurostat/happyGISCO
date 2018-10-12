@@ -2640,18 +2640,21 @@ class LeafMap(_Tool):
             raise happyError('leaflet-based mapping and tiling services not available')
         self.__map = None
         self.__tile = []
-        self.__center = kwargs.pop('center', settings.EU_GEOCENTRE)
-        self.__zoom = kwargs.pop('zoom', settings.DEF_GISCO_ZOOM)
-        url = kwargs.pop(_Decorator.KW_TILE, '')
+        keep_base = kwargs.pop('_keep_base_', False)
+        self.__center = kwargs.pop(_Decorator.KW_CENTER, settings.EU_GEOCENTRE)
+        self.__zoom = kwargs.pop(_Decorator.KW_ZOOM, settings.DEF_GISCO_ZOOM)
+        url = kwargs.pop(_Decorator.KW_URL, '')
         attr = kwargs.pop(_Decorator.KW_ATTR, '')
         if LEAFLET_TOOL is True:
             try:
-                kwargs.update({'center':  self.__center,
-                               'zoom':    self.__zoom})
+                kwargs.update({_Decorator.KW_CENTER:  self.__center,
+                               _Decorator.KW_ZOOM:    self.__zoom})
                 self.__map = ipyleaflet.Map(**kwargs)
             except:
                 raise happyError('wrong tiling initialisation')
             if not url in ('',None):
+                if not keep_base is True:
+                    self.Map.clear_layers()
                 if not happyType.issequence(url):  url = [url,]
                 if not happyType.issequence(attr):  attr = [attr,]
                 ntile = len(url)
