@@ -1454,8 +1454,9 @@ class GISCOService(OSMService):
         -----------------
         kwargs : dict
             parameters used to build the query URL; allowed parameters are: 
-            :literal:`inSR, outSR, geometries, transformation, transformForward` and :literal:`f`;
-            see |GISCOWIKI| on *background services* for more details.
+            :literal:`inSR, outSR, geometries, transformation, transformForward` 
+            and :literal:`f`; see |GISCOWIKI| on *background services* for more 
+            details.
                 
         Returns
         -------
@@ -1475,11 +1476,16 @@ class GISCOService(OSMService):
                                    geometries='-9.1630,38.7775')
                 'https://webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/Utilities/Geometry/GeometryServer/project?inSR=4326&outSR=3035&geometries=-9.1630,38.7775&f=json'
         
+        Note
+        ----
+        A (GUI) interface is also made available to users at 
+        `this address <https://webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/Utilities/Geometry/GeometryServer/project>`_.
+        
         See also
         --------
-        :meth:`~GISCOService.url_geocode`, :meth:`~GISCOService.url_reverse`, 
-        :meth:`~GISCOService.url_routing`, :meth:`~GISCOService.url_findnuts`,
-        :meth:`base._Service.build_url`.
+        :meth:`~GISCOService.coordtrans`, :meth:`~GISCOService.url_geocode`, 
+        :meth:`~GISCOService.url_reverse`, :meth:`~GISCOService.url_routing`, 
+        :meth:`~GISCOService.url_findnuts`, :meth:`base._Service.build_url`.
         """
         keys = ['inSR', 'outSR', 'geometries', 'transformation', 'transformForward', 'f'] # ?
         happyVerbose('\n            * '.join(['input filters used for tranform service:',]+[attr + '='+ str(kwargs[attr]) \
@@ -3611,8 +3617,67 @@ class GISCOService(OSMService):
         return self.coord2route(coord, **kwargs)
 
     #/************************************************************************/
-    def geomtrans(self, *args, **kwargs):
-        pass
+    @_Decorator.parse_coordinate
+    def coordtrans(self, coord, **kwargs):
+        """Transform geographical :literal:`(lat,Lon)` coordinates from one 
+        coordinate reference system (projection) to another
+        
+            >>> coord_proj = serv.coordtrans(coord, **kwargs)
+            
+        Keywords arguments
+        ------------------
+        iproj : str,int
+            input coordinate reference system (projection).
+        oproj : str,int
+            output coordinate reference system (projection).
+            
+        Example
+        -------
+        
+            >>> serv.coordtrans(coord=[-9.1630,38.7775], iproj='WGS84', oproj='LAEA')
+            >>> [2664895.0682282075, 1953237.726974148]
+            
+        See also
+        --------
+        :meth:`~GISCOService.url_transform`, :meth:`base._Service.read_url`.
+        """
+        icrs, ocrs = kwargs.pop('iproj', None), kwargs.pop('oproj', None)
+        try:
+            assert not(icrs in ('',None) or ocrs in ('',None))
+        except AssertionError:
+            raise happyError('missing IPROJ/OPROJ projection argument(s)') 
+        func = lambda *a, **kw: kw.get(_Decorator.KW_PROJECTION)
+        try:
+            icrs = _Decorator.parse_projection(func)(**{_Decorator.KW_PROJECTION: icrs})
+        except:
+            raise happyError('wrong IPROJ projection argument(s)') 
+        try:
+            ocrs = _Decorator.parse_projection(func)(**{_Decorator.KW_PROJECTION: ocrs})
+        except:
+            raise happyError('wrong OPROJ projection argument(s)')
+        geometries = ['%s,%s' % (c[0],c[1]) for c in coord]        
+        _kwargs = {'inSR':          icrs,
+                   'outSR':         ocrs,
+                   'f':             'json'}
+        coord_proj = []
+        # hum, we should set some asynchronous process here...
+        for g in geometries:
+            _kwargs.update({'geometries':    g})            
+            try:
+                url = self.url_transform(**_kwargs)
+            except:
+                raise happyError('error tranform URL formatting for %s coordinates' % g)
+            try:
+                response = self.read_url(url, **{_Decorator.KW_OFORMAT: 'json'}) 
+            except happyError as e:
+                raise happyError(errtype=e)
+            c = [[g['x'],g['y']] for g in response['geometries']]
+            # example
+            # input is: '-9.1630,38.7775'
+            # url is: 'https://webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/Utilities/Geometry/GeometryServer/project?inSR=4326&outSR=3035&geometries=-9.1630,38.7775&f=json'
+            # output is: {"geometries":[{"x":2664895.0682282075,"y":1953237.7269741481}]}
+            coord_proj.append(c[0] if len(c)==1 else c)
+        return coord_proj if len(coord_proj)>1 else coord_proj[0]
         
     
 #%%
