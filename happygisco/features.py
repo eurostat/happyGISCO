@@ -1968,10 +1968,11 @@ class NUTS(_Feature):
             return self.mapping.Map
         
     #/************************************************************************/
-    def choro(self, **kwargs):
+    def choro(self, data, **kwargs):
         """Create a choropleth map over the areas provided by the given NUTS
         instance.
         """
+        gdf = self.load(**{_Decorator.KW_OFMT: 'gpd'}, **kwargs)
         pass
         
 #%%
