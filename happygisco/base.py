@@ -1074,10 +1074,10 @@ class _Decorator(object):
                    'SHRT_ENGL': 'Portugal'},
                   'displayFieldName': 'NUTS_ID', 'layerId': 2, 'layerName': 'NUTS_2013',
                   'value': 'PT170'}]
-            >>> res = settings._Decorator.parse_nuts(func)(nuts)
+            >>> res = _Decorator.parse_nuts(func)(nuts)
             >>> all([res[i] == nuts[i] for i in range(len(res))])
                 True
-            >>> settings._Decorator.parse_nuts(func)(nuts, level=2)
+            >>> _Decorator.parse_nuts(func)(nuts, level=2)
                  {'attributes': {'CNTR_CODE': 'PT', 'LEVL_CODE': '2',
                    'NAME_LATN': 'Área Metropolitana de Lisboa', 'NUTS_ID': 'PT17',
                    'NUTS_NAME': 'Área Metropolitana de Lisboa', 'OBJECTID': '376',
@@ -1189,13 +1189,16 @@ class _Decorator(object):
             if __key_nuts and nuts in ([],None): 
                 raise happyError('NUTS attributes not recognised')              
             if level is not None:
+                if not happyType.issequence(level):
+                    level = [level,]
+                level = [str(l) for l in level]
                 try:
                     nuts = [n for n in nuts                 \
-                            if n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL] == str(level)]
+                            if n[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_LEVEL] in level]
                 except:
                     try :
                         nuts = [n for n in nuts             \
-                                if n[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_LEVEL] == str(level)]                    
+                                if n[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_LEVEL] in level]                    
                     except:
                         nuts = {}
             if REDUCE_ANSWER and len(nuts)==1:    nuts=nuts[0]
