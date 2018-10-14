@@ -3005,8 +3005,8 @@ else:
         #@_Decorator.parse_level 
         def gisco_level(self, **kwargs):
             return ipywidgets.SelectMultiple(
-                options=        kwargs.pop('options',settings.GISCO_NUTSLEVELS),
-                value=          kwargs.pop('value',settings.DEF_GISCO_NUTSLEVEL),
+                options=        kwargs.pop('options',settings.GISCO_LEVELS),
+                value=          kwargs.pop('value',settings.DEF_GISCO_LEVEL),
                 description=    'NUTS levels',
                 disabled=       False
             )
@@ -3183,5 +3183,3 @@ class _Pools(object):
                args=(function, ii, chunk, out_q, err_q, lock))  
              for ii, chunk in enumerate(sequence)]  
         return _Pools.run_tasks(procs, err_q, out_q, numcores)  
-
-
