@@ -1005,7 +1005,7 @@ class GISCOService(OSMService):
         vec = kwargs.get(_Decorator.KW_VECTOR, settings.DEF_GISCO_VECTOR) 
         if vec in settings.GISCO_VECTORS.keys():
             vec = settings.GISCO_VECTORS[vec]
-        level = kwargs.get(_Decorator.KW_LEVEL, settings.GISCO_NUTSLEVELS[0])        
+        level = kwargs.get(_Decorator.KW_LEVEL, settings.GISCO_LEVELS[0])        
         ## retrieve the default parameters values    
         #defkw = _Decorator.parse_default(settings.GISCO_DATA_DIMENSIONS, _force_list_=True)(lambda **kw: kw)
         #defkw = defkw()
@@ -1068,7 +1068,7 @@ class GISCOService(OSMService):
             elif vec == 'label':
                 if scale != '':
                     if scale is not None and _Decorator.KW_SCALE in kwargs:
-                        happyWarning('scale are not supported with LABEL datasets - %s argument ignored' % _Decorator.KW_SCALE.upper())
+                        happyWarning('scale is not supported with LABEL datasets - %s argument ignored' % _Decorator.KW_SCALE.upper())
                     scale = ''
                 if proj not in (3035,4258):
                     if proj is not None and _Decorator.KW_PROJECTION in kwargs:
@@ -1178,10 +1178,21 @@ class GISCOService(OSMService):
                  d=basename.format(year=year), e=fmt)
         else:
             domain = settings.GISCO_PATTERNS['country']['domain']
-            space = 'region'
-            url = '{a}://{b}/{c}/{d}/{e}-{f}-{g}-{h}-{i}.{j}'.format        \
+            if not vec in list(settings.GISCO_VECTORS.keys()):
+                vec = {v:k for k,v in settings.GISCO_VECTORS.items()}[vec]
+            if vec not in ('label','region'):
+                if _Decorator.KW_VECTOR in kwargs:
+                    happyWarning('only LABEL and REGION features are supported with single country units distribution - %s argument ignored' % _Decorator.KW_VECTOR.upper())
+                vec = 'region' # settings.DEF_GISCO_VECTOR
+            elif vec == 'label':
+                if scale != '':
+                    if scale is not None and _Decorator.KW_SCALE in kwargs:
+                        happyWarning('scale is not supported with LABEL datasets - %s argument ignored' % _Decorator.KW_SCALE.upper())
+                    scale = ''
+            vecscale = vec if vec=='label' else 'region-%s' % scale.lower()            
+            url = '{a}://{b}/{c}/{d}/{e}-{f}-{g}-{h}.{i}'.format        \
                 (a=protocol, b=self.cache_url, c=theme, d=domain,
-                 e=source, f=space, g=scale.lower(), h=proj, i=year, j=fmt)             
+                 e=source, f=vecscale, g=proj, h=year, i=fmt)             
         return url            
     
     #/************************************************************************/
@@ -1443,12 +1454,12 @@ class GISCOService(OSMService):
         # url_routing(lat=[13.388860, 13.397634, 13.428555],lon=[52.517037,52.529407,52.523219])
 
     #/************************************************************************/
-    def url_transform(self, **kwargs):
-        """Generate the query URL for |GISCO| projection tranform web-service (from 
+    def url_conversion(self, **kwargs):
+        """Generate the query URL for |GISCO| projection conversion web-service (from 
         a geocoordinate in a given projection reference system to its transformation
         in another projection reference system)
        
-            >>> url = serv.url_transform(**kwargs)
+            >>> url = serv.url_conversion(**kwargs)
            
         Keyword arguments
         -----------------
@@ -1472,7 +1483,7 @@ class GISCOService(OSMService):
         from *WGS84* projection system to *LAEA*:
 
             >>> serv = services.GISCOService()
-            >>> serv.url_transform(inSR=4326, outSR=3035, f='json',
+            >>> serv.url_conversion(inSR=4326, outSR=3035, f='json',
                                    geometries='-9.1630,38.7775')
                 'https://webgate.ec.europa.eu/estat/inspireec/gis/arcgis/rest/services/Utilities/Geometry/GeometryServer/project?inSR=4326&outSR=3035&geometries=-9.1630,38.7775&f=json'
         
@@ -1483,7 +1494,7 @@ class GISCOService(OSMService):
         
         See also
         --------
-        :meth:`~GISCOService.coordtrans`, :meth:`~GISCOService.url_geocode`, 
+        :meth:`~GISCOService.coordproject`, :meth:`~GISCOService.url_geocode`, 
         :meth:`~GISCOService.url_reverse`, :meth:`~GISCOService.url_routing`, 
         :meth:`~GISCOService.url_findnuts`, :meth:`base._Service.build_url`.
         """
@@ -1551,9 +1562,8 @@ class GISCOService(OSMService):
         
     #/************************************************************************/
     def _data_response(self, data, dimensions, **kwargs):
-        """Generic version of methods :meth:`~GISCOService.country_response` and
-        :meth:`~GISCOService.nuts_response`.
-        """
+        # generic version of methods :meth:`~GISCOService.country_response` and
+        # :meth:`~GISCOService.nuts_response`.
         __del_source = True
         source = dimensions.get('SOURCE')
         if len(source) == 1: source = source[0]
@@ -1585,12 +1595,11 @@ class GISCOService(OSMService):
 
     #/************************************************************************/
     def _data_geometry(self, data, **kwargs):
-        """Generic version of methods :meth:`~GISCOService.country_geometry` and
-        :meth:`~GISCOService.nuts_geometry`.
-        """
+        # generic version of methods :meth:`~GISCOService.country_geometry` and
+        # :meth:`~GISCOService.nuts_geometry`.
+        response = kwargs.pop(_Decorator.KW_RESPONSE,None)
         # we want a response type in the first place
         try:
-            response = kwargs.pop(_Decorator.KW_RESPONSE,None)
             assert response is None or isinstance(response,(_CachedResponse, requests.Response, _NestedDict))
         except AssertionError:
             raise happyError('wrong format/value for %s argument' % _Decorator.KW_RESPONSE.upper())
@@ -1689,6 +1698,17 @@ class GISCOService(OSMService):
                 continue
             if not happyType.issequence(val):      val = [val,]
             dimensions.update({attr: val})
+        if source not in ('INFO','NUTS2JSON'):    
+            if 'VECTOR' in dimensions:
+                dimensions.update({'VECTOR': ['RG' if v not in ('LB','label','RG','region') else v      \
+                                                          for v in dimensions.get('VECTOR')]})
+                _alllabels = all([v in ('LB','label') for v in dimensions.get('VECTOR')])
+            else:
+                _alllabels = False
+            if 'IFORMAT' in dimensions:
+                dimensions.update({'IFORMAT': ['geojson' for g in dimensions.get('IFORMAT')]})
+            if 'SCALE' in dimensions and _alllabels:
+                dimensions.pop('SCALE')
         dimensions.update({'SOURCE': [source,] if source is not None else code})
         kwargs.update({_Decorator.KW_OFORMAT: 'resp'})
         return self._data_response('country', dimensions, **kwargs)
@@ -2150,7 +2170,7 @@ class GISCOService(OSMService):
             level of the NUTS region to consider; in the case :data:`info` is set 
             to :literal:'UNITS' or :literal:'NAMES', this (these) NUTS level(s) 
             is(are) also used to further filter the regions/units of interest; it 
-            can take any value in :data:`settings.GISCO_NUTSLEVELS`; default: 
+            can take any value in :data:`settings.GISCO_LEVELS`; default: 
             :data:`level='ALL'`, *i.e.* all NUTS levels are considered.
         _caching_ : bool
             flag set to actually download the files when retrieving the information; 
@@ -2327,12 +2347,12 @@ class GISCOService(OSMService):
         kwargs.update({_Decorator.KW_SOURCE: source,
                        _Decorator.KW_CACHING: caching})                 
         if info in ('NAMES','UNITS'):            
-            level = kwargs.pop(_Decorator.KW_LEVEL, None) # settings.GISCO_NUTSLEVELS
+            level = kwargs.pop(_Decorator.KW_LEVEL, None) # settings.GISCO_LEVELS
             if level is not None:
                 if happyType.isnumeric(level):
                     level = [level,]
-                elif level == 'ALL' or set(level) == set(settings.GISCO_NUTSLEVELS):
-                    level = None # settings.GISCO_NUTSLEVELS
+                elif level == 'ALL' or set(level) == set(settings.GISCO_LEVELS):
+                    level = None # settings.GISCO_LEVELS
         if info == 'NAMES':
             scale = sorted(list(settings.GISCO_SCALES.keys()))[-1]
             year = kwargs.pop(_Decorator.KW_YEAR, settings.DEF_GISCO_YEAR)
@@ -2401,7 +2421,7 @@ class GISCOService(OSMService):
                 data = [d for d in data if any([d.startswith(u) for u in unit])]
             if level is not None:
                 data = [d for d in data if any([sum(c.isdigit() for c in d)==l for l in level])]
-        if data in ([],None):
+        if data is None:
             happyWarning('null/empty information returned - no data available')
         return data      
 
@@ -2534,7 +2554,7 @@ class GISCOService(OSMService):
         else: # load the data!
             if info is None:
                 info = self.nuts_info(info='NAMES', **kwargs)
-        if name is not None and LEVENSHTEIN_INSTALLED is True:
+        if LEVENSHTEIN_INSTALLED is True and name is not None and dist is True:
                 dist = dist and 'jaro_winkler'
                 try:
                     distance = getattr(Levenshtein,dist)
@@ -2564,7 +2584,7 @@ class GISCOService(OSMService):
             dest = None
         else:
             if dest not in ([],[[]],[None]):
-                dest = [d if d is None or len(d)>1 else d[0] for d in dest]
+                dest = [d or None if d in (None,[]) or len(d)>1 else d[0] for d in dest]
         return dest if dest is None or len(dest)>1 else dest[0]
         
     #/************************************************************************/
@@ -2730,7 +2750,7 @@ class GISCOService(OSMService):
                 if vec == 'LB':         year, proj = sub[1:3]
                 else:                   scale, year, proj = sub[1:4]
                 if 'LEVL' in sub:       level = sub[-1]
-                else:                   level = settings.GISCO_NUTSLEVELS # 'ALL'
+                else:                   level = settings.GISCO_LEVELS # 'ALL'
             elif turl.find(settings.GISCO_PATTERNS['nuts']['domain']) >= 0:
                 sub = sub[0].split('-')
                 unit, vec = sub[0:2]
@@ -2901,8 +2921,7 @@ class GISCOService(OSMService):
       
     #/************************************************************************/
     def _place2geom(self, place, **kwargs): 
-        """Iterable version of :meth:`~GISCOService.place2geom`.
-        """
+        # iterable version of :meth:`~GISCOService.place2geom`.
         kwargs.update({'key': _Decorator.parse_geometry.KW_FEATURES})
         #return super(GISCOService,self)._place2geom(place, **kwargs)
         for g in super(GISCOService,self)._place2geom(place, **kwargs):
@@ -3069,7 +3088,7 @@ class GISCOService(OSMService):
     #/************************************************************************/
     @_Decorator.parse_coordinate
     def coord2geom(self, coord, **kwargs): # specific use
-        """Retrieve the place (topo)name of a given location provided by its 
+        """Retrieve the geometry associated of a given location provided by its 
         geographic coordinates using |GISCO| service.
         
             >>>  geom = serv.coord2geom(coord, **kwargs)
@@ -3233,8 +3252,7 @@ class GISCOService(OSMService):
 
     #/************************************************************************/
     def _coord2nuts(self, coord, **kwargs):
-        """Iterable version of :meth:`~GISCOService.coord2nuts`.
-        """
+        # iterable version of :meth:`~GISCOService.coord2nuts`.
         if not happyType.issequence(coord):     
             coord = list(coord)
         if not all([happyType.issequence(c) for c in coord]):     
@@ -3618,28 +3636,43 @@ class GISCOService(OSMService):
 
     #/************************************************************************/
     @_Decorator.parse_coordinate
-    def coordtrans(self, coord, **kwargs):
+    def coordconvert(self, coord, **kwargs):
         """Transform geographical :literal:`(lat,Lon)` coordinates from one 
-        coordinate reference system (projection) to another
+        spatial reference system (projection) to another
         
-            >>> coord_proj = serv.coordtrans(coord, **kwargs)
+            >>> new_coord = serv.coordproject(coord, **kwargs)
             
-        Keywords arguments
-        ------------------
+        Arguments
+        ---------
+        coord : list[float], list[list]
+            geolocation(s) in spatial reference system :data:`iproj` (see below) 
+            expressed as tuple/list of :literal:`(lat,Lon)` geographic coordinates.
+            
+        Keyword arguments
+        -----------------
         iproj : str,int
-            input coordinate reference system (projection).
+            input spatial reference system (projection).
         oproj : str,int
-            output coordinate reference system (projection).
+            output spatial reference system (projection).
+            
+        Returns
+        -------
+        new_coord : list[float], list[list]
+            geolocation(s) in spatial reference system :data:`oproj` (see above) 
+            equivalent to :data:`coord` geolocation(s).
             
         Example
         -------
-        
-            >>> serv.coordtrans(coord=[-9.1630,38.7775], iproj='WGS84', oproj='LAEA')
+        One can for instance convert some geographical coordinates from WGS84 to 
+        LAEA:
+            
+            >>> serv.coordproject(coord=[-9.1630,38.7775], iproj='WGS84', oproj='LAEA')
             >>> [2664895.0682282075, 1953237.726974148]
             
         See also
         --------
-        :meth:`~GISCOService.url_transform`, :meth:`base._Service.read_url`.
+        :meth:`features.Location.convert`, :meth:`~GISCOService.url_conversion`, 
+        :meth:`base._Service.read_url`.
         """
         icrs, ocrs = kwargs.pop('iproj', None), kwargs.pop('oproj', None)
         try:
@@ -3664,7 +3697,7 @@ class GISCOService(OSMService):
         for g in geometries:
             _kwargs.update({'geometries':    g})            
             try:
-                url = self.url_transform(**_kwargs)
+                url = self.url_conversion(**_kwargs)
             except:
                 raise happyError('error tranform URL formatting for %s coordinates' % g)
             try:
