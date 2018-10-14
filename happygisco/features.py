@@ -312,11 +312,11 @@ class Location(_Feature):
     #/************************************************************************/
     @_Decorator.parse_place_or_coordinate
     def __init__(self, *args, **kwargs):
+        self.__place, self.__coord, self.__geom = [''], [], []
         # kwargs.pop('order',None)
-        self.__place = kwargs.pop(_Decorator.KW_PLACE, None)
-        self.__coord = kwargs.pop(_Decorator.KW_COORD, None)
         super(Location,self).__init__(*args, **kwargs)
-        self.__geom = None
+        self.place = kwargs.pop(_Decorator.KW_PLACE, None)
+        self.coord = kwargs.pop(_Decorator.KW_COORD, None)
         # set additional parameters... only PROJECTION so far
         defkw = _Decorator.parse_default(['PROJECTION'])(lambda **kw: kw)()
         for key in defkw.keys(): 
@@ -340,13 +340,16 @@ class Location(_Feature):
                 raise happyError('place not found') 
             else:
                 self.__place = place
-        return self.__place if self.__place is None or len(self.__place)>1 else self.__place[0]    
+        return self.__place if self.__place in ('',None) or len(self.__place)>1     \
+            else self.__place[0]    
     @place.setter
     def place(self,place):
         try:
             place = _Decorator.parse_place(lambda p: p)(place)
         except:
             raise happyError('unrecognised address/location argument') 
+        if not happyType.issequence(place):
+            place = [place,]
         self.__place = place
 
     #/************************************************************************/
@@ -362,15 +365,61 @@ class Location(_Feature):
                 raise happyError('coordinates not found') 
             else:
                 self.__coord = coord
-        return self.__coord # if len(self.__coord)>1 else self.__coord[0]    
+        return self.__coord if self.__coord is None or len(self.__coord)>1  \
+            else self.__coord[0]    
     @coord.setter
     def coord(self,coord):
         try:
             coord = _Decorator.parse_coordinates(lambda c: c)(coord)
         except:
             raise happyError('unrecognised coordinates argument') 
+        if not happyType.issequence(coord):
+            coord = [coord,]
         self.__coord = coord
-
+        
+    #/************************************************************************/
+    def __get_geometry(self, **kwargs):
+        #ignore-doc
+        # build a vector geometry upon the geographical coordinates represented
+        # by this instance. 
+        try:
+            return self.transform.coord2geom(self.coord, **kwargs)
+        except:     
+            raise happyError('unable to build a vector geometry upon given coordinates') 
+    
+    #/************************************************************************/
+    def __get_nuts(self, **kwargs):
+        #ignore-doc
+        # find NUTS identifier associated to the geolocations of the current
+        # :class:`Location` instance.
+        #    >>> nuts = self.whichnuts(**kwargs)
+        try:        
+            assert GDAL_TOOL and isinstance(self.transform, tools.GDALTransform)
+            feat = self.transform.coord2feat(self.coord, **kwargs)
+        except:
+            try:        
+                assert GISCO_SERVICE and isinstance(self.service, services.GISCOService)
+                feat = self.service.coord2nuts(self.coord, **kwargs)
+            except:
+                happyError('error while identifying NUTS')
+        if feat in (None,[]):
+            return feat
+        elif not happyType.issequence(feat):
+            feat = [feat,]
+        try:
+            nuts = [f[_Decorator.parse_nuts.KW_ATTRIBUTES][_Decorator.parse_nuts.KW_NUTS_ID] for f in feat]
+        except:
+            try:
+                nuts = [f[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_FID]  for f in feat]
+            except:
+                try:
+                    nuts = [ff[_Decorator.parse_nuts.KW_PROPERTIES][_Decorator.parse_nuts.KW_FID] \
+                                 for f in feat                                         \
+                                 for ff in f[_Decorator.parse_nuts.KW_FEATURES]]                          
+                except:
+                    nuts = feat # geom = geom.ExportToJson()
+        return nuts if len(nuts)>1 else nuts[0] 
+    
     #/************************************************************************/
     @property
     def nuts(self):
@@ -379,17 +428,13 @@ class Location(_Feature):
         """ 
         if self.__nuts in ([],None):
             try:
-                nuts = self.findnuts()
+                nuts = self.__get_nuts()
             except:     
-                happyWarning('NUTS not found') 
-                return
+                pass
             else:
-                if not isinstance(nuts,list): nuts = [nuts,]
-                # note that "NUTS_ID" is present as a field of both outputs returned
-                # by GDALTransform.coord2feat and GISCOService.coord2nuts
-                self.__nuts = [n[_Decorator.parse_nuts.KW_NUTS_ID] for n in nuts]
-        return self.__nuts    
-
+                self.__nuts = nuts
+        return self.__nuts if self.__nuts is None or (happyType.issequence(self.__nuts) and len(self.__nuts)>1)    \
+            else self.__nuts[0]
 
     #/************************************************************************/
     @property
@@ -403,7 +448,8 @@ class Location(_Feature):
     @property
     def geometry(self):
         """Geom(etry) property (:data:`getter`) of a :class:`Location` instance.
-        This is a vector data built from the geolocations in this instance.
+        It is generally defined as multipoint geometry (:class:`ogr.Geometry`) 
+        featuring all the points listed in this instance.
         """ 
         if self.__geom in ([],None):
             try:
@@ -413,7 +459,8 @@ class Location(_Feature):
                 return
             else:
                 self.__geom = geom
-        return self.__geom
+        return self.__geom if self.__geom is None or (happyType.issequence(self.__geom) and len(self.__geom)>1 ) \
+            else self.__geom[0]         
 
     #/************************************************************************/
     def __repr__(self):
@@ -421,40 +468,6 @@ class Location(_Feature):
             return [','.join(p.replace(',',' ').split()) for p in self.place]
         except:
             return ''
-        
-    #/************************************************************************/
-    def __get_geometry(self, **kwargs):
-        """Build a vector geometry upon the geographical coordinates represented
-        by this instance. 
-       
-            >>> geom = loc.get_geometry(**kwargs)
-        
-        Keyword arguments
-        -----------------        
-        kwargs : dict  
-            see keyword arguments of the :meth:`tools.GDALTransform.coord2geom` method.
-
-        Returns
-        -------
-        geom : :class:`ogr.Geometry`
-            multipoint geometry featuring all the points listed in this instance.
-
-        Raises
-        ------
-        happyError
-            when unable to build geometry.
-
-        Example
-        -------
-        
-        See also
-        --------
-        :meth:`tools.GDALTransform.coord2geom`.
-        """
-        try:
-            return self.transform.coord2geom(self.coord, **kwargs)
-        except:     
-            raise happyError('unable to build a vector geometry upon given coordinates') 
 
     #/************************************************************************/
     def geocode(self, **kwargs):   
@@ -538,10 +551,12 @@ class Location(_Feature):
 
         Example
         -------
-
+        The user can use this method to retrieve the place(s) associated to any
+        given geolocation(s): 
+            
             >>> loc = features.Location('48.85693, 2.3412')
             >>> paris = loc.reverse()
-            >>> print paris
+            >>> paris
                 [u'76 Quai des Orf\xe8vres, 75001 Paris, France', u"Saint-Germain-l'Auxerrois, Paris, France", 
                  u'75001 Paris, France', u'1er Arrondissement, Paris, France', u'Paris, France', 
                  u'Paris, France', u'\xcele-de-France, France', u'France']
@@ -603,7 +618,7 @@ class Location(_Feature):
         
         Raises
         ------
-        IOError
+        happyError
             when wrong unit/code for geodesic distance or when unable to find/recognize
             locations.
             
@@ -678,9 +693,6 @@ class Location(_Feature):
             shortest route and waypoints along the route; see :meth:`services.GISCOService.coord2route`
             method.
             
-        Example
-        -------
-            
         Note
         ----
         This method is available only when the service parsed to initialise this
@@ -703,68 +715,48 @@ class Location(_Feature):
         return self.service.coord2route(coord=coord, **kwargs)
 
     #/************************************************************************/
-    def transform(self,**kwargs):
-        pass
-    
-    #/************************************************************************/
-    def findnuts(self, **kwargs):
-        """Compute the route starting at this instance location and going through
-        the various steps/destinations represented by a list of (topo) name(s) or
-        geographic coordinates. 
-            
-            >>> id = loc.findnuts(**kwargs)
-    
-        Keyword arguments
-        -----------------
-        kwargs : dict
-            see method :meth:`services.GISCOService.coord2nuts`.
+    @_Decorator.parse_projection
+    def convert(self, **kwargs):
+        """Convert the geolocations of the current instance to another spatial
+        reference system (projection). 
+       
+            >>> new_loc = loc.convert(**kwargs)
+        
+        Keywords arguments
+        ------------------
+        proj : str,int
+            spatial reference system in which the geographical coordinates will
+            be projected.
             
         Returns
         -------
-        nuts : dict, list[dict]
-            a (list of) dictionary(ies) representing NUTS geometries; see
-            :meth:`services.GISCOService.coord2nuts` method.
+        new_loc : :class:`Location`
+            geolocation whith coordinates equivalent to that of the current instance
+            within the spatial reference system :data:`proj`.
 
         Raises
         ------
         happyError
-            when unable to identify NUTS region.
-
-        Example
-        -------
-            
-        Note
-        ----
-        This method is available only when the service parsed to initialise this
-        instance is an instance of :class:`services.GISCOService` class.
-
+            when unable to convert the instance geographical coordinates.
+        
         See also
         --------
-        :meth:`~Location.isnuts`,
-        :meth:`services.GISCOService.coord2nuts`, :meth:`services.GISCOService.place2nuts`,
-        :meth:`tools.GDALTransform.coord2feat`.
+        :meth:`GISCOService.coordconvert`.
         """
-        #if not (GISCO_SERVICE and GDAL_TOOL):
-        #    happyWarning('findnuts method available only with GISCO service or GDAL tool')
-        #    return
-        try:        
-            assert GDAL_TOOL and isinstance(self.transform, tools.GDALTransform)
-            feat = self.transform.coord2feat(self.coord, **kwargs)
-        except:
-            try:        
-                assert GISCO_SERVICE and isinstance(self.service, services.GISCOService)
-                feat = self.service.coord2nuts(self.coord, **kwargs)
-            except:
-                happyError('error while identifying NUTS')
-        if feat in (None,[]):
-            return feat
-        try:
-            if isinstance(feat,list):
-                return [f['attributes'] for f in feat]
-            else:
-                return feat['attributes'] 
-        except:
-            return feat.items()  # return feat.ExportToJson()
+        iproj = self.projection
+        oproj = kwargs.pop(_Decorator.KW_PROJECTION,None)
+        if oproj == iproj:
+            happyWarning('identical projection system... nothing to do')
+            _kwargs = {_Decorator.KW_COORD:         self.coord,
+                       _Decorator.KW_PROJECTION:    iproj}
+        else:
+            try:
+                new_coord = self.service.coordconvert(self.__coord, iproj = iproj, oproj = oproj)
+            except:     
+                raise happyError('unable to convert the current coordinates') 
+            _kwargs = {_Decorator.KW_COORD:         new_coord,
+                       _Decorator.KW_PROJECTION:    oproj}                
+        return Location(**_kwargs)
      
     #/************************************************************************/
     def isnuts(self, nuts):
@@ -785,15 +777,26 @@ class Location(_Feature):
             :data:`True` if the location belongs to the NUTS geometry represented
             by :data:`nuts` (whatever NUTS level), :data:`False` otherwise.
             
+        Raises
+        ------
+        happyError
+            when a wrong argument is parsed as the input NUTS identifier
+
         See also
         --------
         :meth:`~Location.findnuts`, :meth:`~Location.iscontained`.
         """
-        if isinstance(nuts, NUTS):
-            nuts = nuts.id
-        elif not isinstance(nuts, str):
+        if isinstance(nuts, NUTS): # features.NUTS
+            fid = nuts.fid
+        elif not happyType.isstring(nuts)   \
+                or (happyType.issequence(nuts) and all([happyType.isstring(n) for n in nuts])):
             raise happyError('wrong type for input NUTS identifier')
-        return any([n == nuts for n in self.nuts])
+        if not happyType.issequence(fid):
+            fid = [fid,]
+        nuts = self.nuts
+        if not happyType.issequence(nuts):
+            nuts = [nuts,]
+        return any([id_ in fid for id_ in nuts])
      
     #/************************************************************************/
     def iscontained(self, layer):
@@ -813,6 +816,11 @@ class Location(_Feature):
             :data:`True` if the location belongs to the NUTS geometry represented
             by :data:`nuts` (whatever NUTS level), :data:`False` otherwise.
 
+        Raises
+        ------
+        happyError
+            when it is impossible to establish relationship
+
         See also
         --------
         :meth:`~Location.geometry`, :meth:`~Location.isnuts`, 
@@ -823,11 +831,11 @@ class Location(_Feature):
         #    return
         try:
             # geom = self.transform.coord2geom(self.coord, **kwargs)
-            fid = self.transform.lay2fid(layer, self.geom)
+            fid = self.transform.lay2fid(layer, self.geometry)
         except:
             raise happyError('impossible to establish relationship')
         if fid in ((),[],None)  \
-                or (isinstance(fid,list) and all([f is None for f in fid])):
+                or (isinstance(fid,list) and all([id_ is None for id_ in fid])):
             return False
         else:
             return True
@@ -866,12 +874,12 @@ class NUTS(_Feature):
             args = ()
         # we need to declare them beforehand, unless we use the mangled method...
         self.__dimensions = []
-        self.__unit = None
-        self.__file, self.__url = '', ''
-        self.__layer, self.__feat, self.__geom = None, None, None
-        self.__response, self.__content = None, None
+        self.__unit = ['']
+        self.__file, self.__url = [''], ['']
+        self.__layer, self.__feat, self.__geom = [], [], []
+        self.__response, self.__content = [], []
         self.__level, self.__scale = [], []
-        self.__year, self.__name = None, ''        
+        self.__year, self.__name = [], ['']        
         super(NUTS,self).__init__(**kwargs)        
         # initialise the attributes of the NUTS feature 
         items = []
@@ -913,6 +921,7 @@ class NUTS(_Feature):
                     
     #/************************************************************************/
     def __mangled_attr(self, attr):
+        #ignore-doc
         return '_%s__%s' % (self.__class__.__name__, attr)
     
     ##/************************************************************************/
@@ -1314,7 +1323,7 @@ class NUTS(_Feature):
     @property
     def _content(self):
         #ignore-doc
-        return self.__content if self.__content is None or len(self.__content)>1     \
+        return self.__content if self.__content in ([],None) or len(self.__content)>1     \
             else self.__content[0]
     @_content.setter
     def _content(self, content):
@@ -1335,7 +1344,7 @@ class NUTS(_Feature):
     @property
     def _response(self):
         #ignore-doc
-        return self.__resp if self.__resp is None or len(self.__resp)>1     \
+        return self.__resp if self.__resp in ([],None) or len(self.__resp)>1     \
             else self.__resp[0]
     @_response.setter
     def _response(self, resp):
@@ -1379,16 +1388,16 @@ class NUTS(_Feature):
     @property
     def unit(self):
         """Unit property (:data:`setter`/:data:`getter`) of a :class:`NUTS` 
-        instance, if any.
+        instance, if any. This is a string or a list of strings. 
         """ 
-        if self.__unit in ('',[],None):
+        if self.__unit in ('',[''],None):
             try:
                 unit = self.__get_unit()
             except:
                 unit = None
             else:
                 self.__unit = unit
-        return self.__unit if self.__unit is None or (happyType.issequence(self.__unit) and len(self.__unit)>1)    \
+        return self.__unit if self.__unit in ('',None) or (happyType.issequence(self.__unit) and len(self.__unit)>1)    \
             else self.__unit[0]
     @unit.setter
     def unit(self, unit):
@@ -1407,16 +1416,16 @@ class NUTS(_Feature):
     @property
     def url(self):
         """URL property (:data:`setter`/:data:`getter`) of a :class:`NUTS` 
-        instance, if any.
+        instance, if any. This is a string or a list of strings.
         """ 
-        if self.__url in ([],'',None):
+        if self.__url in ('',[''],None):
             try:
                 url = self.__get_url()
             except:
                 pass
             else:
                 self.__url = url
-        return self.__url if self.__url is None or len(self.__url)>1        \
+        return self.__url if self.__url in ('',None) or len(self.__url)>1        \
             else self.__url[0]    
     @url.setter
     def url(self, url):
@@ -1440,9 +1449,9 @@ class NUTS(_Feature):
     @property
     def file(self):
         """File property (:data:`setter`/:data:`getter`) of a :class:`NUTS` 
-        instance, if any.
+        instance, if any. This is a string or a list of strings.
         """ 
-        if self.__file in ([],None):
+        if self.__file in ([],[''],None):
             try:
                 file = self.__get_file()
             except:
@@ -1467,6 +1476,7 @@ class NUTS(_Feature):
     @property
     def layer(self):
         """Layer property (:data:`setter`/:data:`getter`) of a :class:`NUTS` instance.
+        This is an object of type :class:`ogr.Layer`, or a list of such objects.
         """ 
         if self.__layer in ([],None):
             try:
@@ -1497,6 +1507,7 @@ class NUTS(_Feature):
     @property
     def feature(self):
         """Feature property (:data:`setter`/:data:`getter`) of a :class:`NUTS` instance.
+        This is an object of type :class:`ogr.Feature`, or a list of such objects.
         """ 
         if self.__feat in ([],None):
             try:
@@ -1527,6 +1538,8 @@ class NUTS(_Feature):
     @property
     def geometry(self):
         """Geometry property (:data:`setter`/:data:`getter`) of a :class:`NUTS` instance.
+        This is a dictionary object, or an object of type :class:`base._NestedDict`, 
+        or a list of such objects.
         """ 
         if self.__geom in ([],None):
             geom = self.__get_geometry() 
@@ -1555,9 +1568,17 @@ class NUTS(_Feature):
         except:
             raise happyError('wrong %s argument' % _Decorator.KW_GEOMETRY.upper()) 
         if geom is not None and not happyType.issequence(geom):
-                geom = [geom,]
-        self.__geom = [happyType.jsonstringify(g) for g in geom]
-
+            geom = [geom,]
+        try:
+            geom_ = [happyType.jsonstringify(g) for g in geom]
+        except:
+            self.__geom = geom
+        else:
+            try:
+                self.__geom = [_NestedDict(g) for g in geom_]
+            except:
+                self.__geom = geom_
+         
     #/************************************************************************/    
     @property
     def coord(self):
@@ -1676,6 +1697,28 @@ class NUTS(_Feature):
     
     #/************************************************************************/    
     @property
+    def coordinates(self):
+        try:
+            geom = self.geometry
+        except:
+            return None
+        else:
+            if not happyType.issequence(geom):
+                geom = [geom,]
+        try:
+            coord = [f[_Decorator.parse_nuts.KW_GEOMETRY][_Decorator.parse_nuts.KW_COORDINATES]     \
+                   for f in geom]
+        except:
+            try:
+                coord = [f[_Decorator.parse_nuts.KW_GEOMETRY][_Decorator.parse_nuts.KW_COORDINATES] \
+                             for g in geom                                         \
+                             for f in g[_Decorator.parse_nuts.KW_FEATURES]]                          
+            except:
+                coord = None
+        return coord if coord is None or len(coord)>1 else coord[0]
+    
+    #/************************************************************************/    
+    @property
     def name(self):
         """Name property (:data:`getter`) of a :class:`NUTS` instance. 
         A name type is :class:`str`.
@@ -1755,6 +1798,10 @@ class NUTS(_Feature):
     #/************************************************************************/
     def load(self, **kwargs):
         """Load the geometry stored in this NUTS instance.
+
+        Raises
+        ------
+        happyError
         """
         fmt = kwargs.pop(_Decorator.KW_OFORMAT, 'json')
         try:
@@ -1835,6 +1882,10 @@ class NUTS(_Feature):
     #/************************************************************************/
     def loads(self, **kwargs):
         """Dump the geometry stored in this NUTS instance as a string. 
+
+        Raises
+        ------
+        happyError
         """
         geom = self.dump(**kwargs)
         if happyType.issequence(geom) and len(geom)>1:
@@ -1867,6 +1918,10 @@ class NUTS(_Feature):
         coord : list, list[float]
             :literal:`(lat,Lon)` geographic coordinates associated to the name of
             this NUTS instance.
+
+        Raises
+        ------
+        happyError
             
         Note
         ----
@@ -1918,6 +1973,10 @@ class NUTS(_Feature):
         ans : bool 
             :data:`True` if the current NUTS geometry location contains the geolocation
             parsed as an argument, :data:`False` otherwise.
+
+        Raises
+        ------
+        happyError
             
         References
         ----------
@@ -1948,6 +2007,10 @@ class NUTS(_Feature):
     #/************************************************************************/
     def carto(self, **kwargs):
         """
+
+        Raises
+        ------
+        happyError
         """
         __no_widget = kwargs.pop(_Decorator.KW_NO_WIDGET, False)
         if WIDGET_TOOL is True and __no_widget is False:
@@ -1971,6 +2034,10 @@ class NUTS(_Feature):
     def choro(self, data, **kwargs):
         """Create a choropleth map over the areas provided by the given NUTS
         instance.
+
+        Raises
+        ------
+        happyError
         """
         gdf = self.load(**{_Decorator.KW_OFMT: 'gpd'}, **kwargs)
         pass
