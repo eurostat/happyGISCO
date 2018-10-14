@@ -38,8 +38,8 @@ Once installed, the module can be imported simply:
 
 Simple examples are available in the form of _Jupyter_ notebooks under the [_notebooks/_](https://github.com/eurostat/happyGISCO/tree/master/notebooks) folder, *e.g.*:
 
-* a [simple call](http://nbviewer.jupyter.org/github/eurostat/happyGISCO/blob/master/notebooks/example_GISCO_services.ipynb) to the geocoding services,
-* a [basic use](http://nbviewer.jupyter.org/github/eurostat/happyGISCO/blob/master/notebooks/example_GISCO_features.ipynb) of NUTS vector features,
+* some [basic calls](http://nbviewer.jupyter.org/github/eurostat/happyGISCO/blob/master/notebooks/example_GISCO_services.ipynb) to the geocoding services,
+* a [simple application](http://nbviewer.jupyter.org/github/eurostat/happyGISCO/blob/master/notebooks/example_GISCO_features.ipynb) with NUTS vector features,
 * an extended workflow for location identification and retrieval. 
 
 **Usage**
@@ -158,11 +158,8 @@ One can for instance declare a specific location, and run any of the methods sup
        'location': [44.297338, 37.002496], 'name': ''},
       {'hint': 'DcOGgEuuRIQAAAAAAAAAAE0AAAAAAAAASgQAAOofZwBScQAAzuv3AcpmDwLU3csCvrFGAAAAAQEZfn5e',
        'location': [33.024974, 34.563786], 'name': ''}])
->>> location.findnuts(level=3)
-    {'CNTR_CODE': 'PT', 'LEVL_CODE': '3',
-     'NAME_LATN': 'çrea Metropolitana de Lisboa', 'NUTS_ID': 'PT170',
-     'NUTS_NAME': 'çrea Metropolitana de Lisboa', 'OBJECTID': '1233',
-     'SHRT_ENGL': 'Portugal'}
+>>> location.findnuts(level=[2,3])
+     {2: 'PT17', 3: 'PT170'}
 >>> location.distance('Paris, France')
     1455.7107037157618
 ```
@@ -195,12 +192,14 @@ In the associated classes `GeoAngle` and `GeoCoordinate`, you will find also som
 * _TERCET_ [tool](http://ec.europa.eu/eurostat/tercet) and [territorial typologies](http://ec.europa.eu/eurostat/web/nuts/tercet-territorial-typologies).
 * Service [Nuts2json](https://github.com/eurostat/Nuts2json) of NUTS `topojson`/`geojson` datasets reformatted for web-mapping (datasets and scripts).
  
-**<a name="Software"></a>Software resources**
+**<a name="Software"></a>Software resources/dependencies**
 
 * `gdal` [package](https://pypi.python.org/pypi/GDAL) and [cookbook](https://pcjericks.github.io/py-gdalogr-cookbook/index.html).
 * Geocoding/processing packages: [`googlemaps`](https://pypi.python.org/pypi/googlemaps/), [`googleplaces`](https://github.com/slimkrazy/python-google-places) or [`geopy`](https://github.com/geopy/geopy) (_suggested_).
-* Packages for map visualisations: [`ipyleaflet`](https://github.com/jupyter-widgets/ipyleaflet) or [`folium`](https://github.com/python-visualization/folium) (_recommended_).
-* Packages for caching: [`requests_cache`](https://pypi.python.org/pypi/requests-cache) or [`cachecontrol`](https://pypi.python.org/pypi/requests-cache) (_recommended_). 
+* Packages for (geospatial) data handling: [`pandas`](http://pandas.pydata.org) and [`geopandas`](http://geopandas.org).
+* Packages for map visualisations: [`ipyleaflet`](https://github.com/jupyter-widgets/ipyleaflet) or [`folium`](https://github.com/python-visualization/folium).
+* [asyncio](https://docs.python.org/3/library/asyncio.html) library and [aiohttp](https://pypi.org/project/aiohttp/) for asynchronous I/O.
+* Packages for caching: [`requests_cache`](https://pypi.python.org/pypi/requests-cache) or [`cachecontrol`](https://pypi.python.org/pypi/requests-cache). 
 
 **<a name="References"></a>References**
 
