@@ -258,11 +258,11 @@ GISCO_VECTORS      = {'region':            'RG',
 DEF_GISCO_VECTOR    = 'RG'
 """Default spatial typology.
 """
-GISCO_NUTSLEVELS    = [0, 1, 2, 3
+GISCO_LEVELS        = [0, 1, 2, 3
                        ]
 """Levels of |NUTS| areas.
 """
-DEF_GISCO_NUTSLEVEL = GISCO_NUTSLEVELS[0]
+DEF_GISCO_LEVEL     = GISCO_LEVELS[0]
 """Default |NUTS| level.
 """
 GISCO_FORMATS       = {'shp':               'shx',   # 'shapefile': 'shp', 
@@ -424,11 +424,11 @@ all maps are squared.
 DEF_NUTS2JSON_SCALE = DEF_GISCO_SCALE
 """Default map dimension (in pixel).
 """
-NUTS2JSON_NUTSLEVELS = GISCO_NUTSLEVELS
+NUTS2JSON_LEVELS    = GISCO_LEVELS
 NUTS2JSON_DATA_DIMENSIONS = GISCO_DATA_DIMENSIONS
 # dumb variables
 
-OSM_URL             = 'nominatim.openstreetmap.org/'
+OSM_URL           = 'nominatim.openstreetmap.org/'
 """|OSM| web-service complete URL.
 """
 CODER_OSM         = 'osm'
