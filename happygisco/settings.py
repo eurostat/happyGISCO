@@ -394,7 +394,7 @@ NUTS2LAU            =  {2016:
 NUTS_FORMATS        = {'geojson':           'json',  
                        # 'topojson':         'json',
                        'geopandas':         'gpd',
-                       'string':            'str'
+                       'text':              'txt'
                        }
 
 NUTS2JSON_DOMAIN    = 'raw.githubusercontent.com/eurostat/Nuts2json/gh-pages'
