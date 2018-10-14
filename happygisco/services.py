@@ -2704,13 +2704,24 @@ class GISCOService(OSMService):
         source, unit, year, scale, fmt, proj, vec, level =                         \
             None, None, None, None, None, None, None, None
         __force_list = kwargs.pop(_Decorator.KW_FORCE_LIST, False)
-        isgisco, isnuts2json = url.find(self.cache_url), url.find(settings.NUTS2JSON_DOMAIN)
+        __domain = kwargs.pop(_Decorator.KW_DOMAIN, None)
+        try:
+            assert __domain is None or (happyType.isstring(__domain) and __domain.upper() in ('GISCO','NUTS2JSON'))
+        except:
+            raise happyError('wrong argument for %s parameter' % _Decorator.KW_DOMAIN)
+        if __domain is not None:
+            isgisco, isnuts2json = __domain.upper()=='GISCO', __domain.upper()=='NUTS2JSON'
+        else:
+            isgisco, isnuts2json = url.find(self.cache_url), url.find(settings.NUTS2JSON_DOMAIN)
         if isgisco < 0 and isnuts2json < 0:
             happyVerbose('URL not recognised as GISCO/NUTS2JSON URL')
             return None # {}
         # let us look at the last part of the URL only
         if isgisco > 0:
-            turl = url.split(self.cache_url)[-1]
+            if url.find(self.cache_url)>=0:
+                turl = url.split(self.cache_url)[-1]
+            else:
+                turl = ''
             url = url.split('/')[-1]
             sub = url.split('.')
             if url.count('.') > 1: # or len(sub)>2
@@ -2751,7 +2762,7 @@ class GISCOService(OSMService):
                 else:                   scale, year, proj = sub[1:4]
                 if 'LEVL' in sub:       level = sub[-1]
                 else:                   level = settings.GISCO_LEVELS # 'ALL'
-            elif turl.find(settings.GISCO_PATTERNS['nuts']['domain']) >= 0:
+            elif turl=='' or turl.find(settings.GISCO_PATTERNS['nuts']['domain']) >= 0:
                 sub = sub[0].split('-')
                 unit, vec = sub[0:2]
                 if vec == 'label':      proj, year = sub[2:]
@@ -2761,7 +2772,10 @@ class GISCOService(OSMService):
                 vec = settings.GISCO_VECTORS[vec]
         elif isnuts2json > 0:
             # source = 'NUTS2JSON'
-            sub = url.split(settings.NUTS2JSON_DOMAIN)[-1].split('.')[0]
+            if url.find(settings.NUTS2JSON_DOMAIN)>=0:
+                sub = url.split(settings.NUTS2JSON_DOMAIN)[-1].split('.')[0]
+            else:
+                sub = url
             if sub.startswith('/'):     sub = sub[1:]
             year, proj, scale, data = sub.split('/')
             sub = data.split('_')
@@ -3668,6 +3682,11 @@ class GISCOService(OSMService):
             
             >>> serv.coordproject(coord=[-9.1630,38.7775], iproj='WGS84', oproj='LAEA')
             >>> [2664895.0682282075, 1953237.726974148]
+            
+            
+        Notes
+        -----
+        See also this service: https://epsg.io/transform.
             
         See also
         --------
