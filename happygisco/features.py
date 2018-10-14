@@ -313,6 +313,7 @@ class Location(_Feature):
     @_Decorator.parse_place_or_coordinate
     def __init__(self, *args, **kwargs):
         self.__place, self.__coord, self.__geom = [''], [], []
+        self.__nuts = None
         # kwargs.pop('order',None)
         super(Location,self).__init__(*args, **kwargs)
         self.place = kwargs.pop(_Decorator.KW_PLACE, None)
@@ -345,7 +346,10 @@ class Location(_Feature):
     @place.setter
     def place(self,place):
         try:
+            assert place is not None
             place = _Decorator.parse_place(lambda p: p)(place)
+        except AssertionError:
+            return
         except:
             raise happyError('unrecognised address/location argument') 
         if not happyType.issequence(place):
@@ -370,7 +374,10 @@ class Location(_Feature):
     @coord.setter
     def coord(self,coord):
         try:
+            assert coord is not None
             coord = _Decorator.parse_coordinates(lambda c: c)(coord)
+        except AssertionError:
+            return
         except:
             raise happyError('unrecognised coordinates argument') 
         if not happyType.issequence(coord):
@@ -469,6 +476,48 @@ class Location(_Feature):
         except:
             return ''
 
+    #/************************************************************************/
+    def findnuts(self, **kwargs):  
+        """Identify the NUTS area of the current location.
+        
+            >>> id = loc.findnuts(**kwargs)
+            
+        Keyword arguments
+        -----------------
+        kwargs :
+            see method :meth:`services.GISCOService.coord2nuts`.
+            
+        Returns
+        -------
+        id : dict,str
+            idenfier(s) representing the NUTS areas; when one level is requested,
+            a single string identifier is returned, otherwise a dictionary indexed 
+            by the NUTS level is returned.
+
+        Raises
+        ------
+        happyError 
+            when unable to identify NUTS region.
+            
+        Example
+        -------
+        
+            >>> location = features.Location(place="Lisbon, Portugal")
+            >>> location.findnuts()
+                {0: 'PT', 1: 'PT1', 2: 'PT17', 3: 'PT170'}
+            >>> location.findnuts(level=3)
+                'PT170'
+                
+        See also
+        --------
+        :meth:`services.GISCOService.coord2nuts`.
+        """
+        id_ = self.__get_nuts(**kwargs)
+        if happyType.isstring(id_):
+            return id_
+        elif happyType.issequence(id_) and all([happyType.isstring(i) for i in id_]):
+            return {sum(c.isdigit() for c in i):i for i in id_}
+        
     #/************************************************************************/
     def geocode(self, **kwargs):   
         """Convert the object place name to geographic coordinates using the 
@@ -906,7 +955,7 @@ class NUTS(_Feature):
                 raise happyError('incompatible keyword arguments parsed')
             else:   
                 happyVerbose('no arguments parsed - NUTS initialised but not defined') 
-                return
+                pass
         else:
             items = items[0]
         for key in settings.GISCO_DATA_DIMENSIONS:
@@ -917,8 +966,9 @@ class NUTS(_Feature):
             except AssertionError:                 
                 pass   
             else:
+                # setattr(self, self.__mangled_attr(kw)), attr) 
                 setattr(self, kw, attr)   
-                    
+            
     #/************************************************************************/
     def __mangled_attr(self, attr):
         #ignore-doc
@@ -988,7 +1038,7 @@ class NUTS(_Feature):
         [defdim.pop(getattr(_Decorator, 'KW_' + k),None) for k in ('SOURCE',)] # ('FORMAT','SOURCE')
         for key in defdim.keys():
             try:
-                assert getattr(self, self.__mangled_attr(key)) # getattr(self, key)
+                assert getattr(self, self.__mangled_attr(key)) # getattr(self, '__' + key)
             except:
                 defval = None
             else:
@@ -997,16 +1047,18 @@ class NUTS(_Feature):
         if unit in ([],'',None) and geom in ([],{},None) and content in ([],'',None) and url in ([],'',None):
             return [defdim,]
         if unit not in ([],'',None):
-            if not happyType.issequence(unit): 
-                unit = [unit,]  
-            try:
-                dimensions = defdim.copy() 
-                level = [sum(c.isdigit() for c in u) for u in unit]
-            except:
-                raise happyError('impossible to define NUTS dimensions from input unit')
-            else:
-                dimensions.update({_Decorator.KW_LEVEL: level if len(unit)>1 else level[0]})
-                dimensions = [dimensions,]
+            dimensions = defdim.copy() 
+            if (happyType.issequence(unit) and unit[0]!='NUTS')             \
+                    or (happyType.isstring(unit) and unit!='NUTS'):
+                #if not happyType.issequence(unit): 
+                #    unit = [unit,]  
+                try:
+                    level = [sum(c.isdigit() for c in u) for u in unit]
+                except:
+                    raise happyError('impossible to define NUTS dimensions from input unit')
+                else:
+                    dimensions.update({_Decorator.KW_LEVEL: level if len(unit)>1 else level[0]})
+            dimensions = [dimensions,]
         elif geom not in ([],None):
             if not happyType.issequence(geom): 
                 geom = [geom,]  
@@ -1879,8 +1931,8 @@ class NUTS(_Feature):
         #except:
         #    data = None
         #json.dumps(resp.json())
-        if fmt in ('json','str'):
-            if fmt == 'str':
+        if fmt in ('json','txt'):
+            if fmt == 'txt':
                 geom = [happyType.jsonstringify(g) for g in geom]
             return geom if (happyType.issequence(geom) and len(geom)>1) else geom[0]
         elif fmt == 'gpd':
@@ -1914,11 +1966,7 @@ class NUTS(_Feature):
         --------
         :meth:`~NUTS.load`.
         """
-        geom = self.dump(**kwargs)
-        if happyType.issequence(geom) and len(geom)>1:
-            return [happyType.jsonstringify(g) for g in geom]
-        else:
-            return happyType.jsonstringify(geom)
+        return self.load(**kwargs, **{_Decorator.KW_OFORMAT: 'txt'})
                     
     #/************************************************************************/
     def dump(self, **kwargs):
