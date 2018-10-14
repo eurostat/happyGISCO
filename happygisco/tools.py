@@ -98,7 +98,7 @@ else:
     gdal.UseExceptions() # so that GDAL raises an exception instead of returning None when it cannot open something
 
 try:
-    import geopandas
+    import geopandas#analysis:ignore
 except ImportError:
     GEOPANDAS_TOOL = False
     happyWarning('GEOPANDAS package (https://github.com/geopandas/geopandas) not loaded - GeoDataFrame structures not available')
@@ -111,18 +111,18 @@ try:
 except ImportError:
     LEAFLET_TOOL = False
     happyWarning('ipyleaflet package (https://github.com/jupyter-widgets/ipyleaflet) not loaded - Map resources not available')
-    try:
-        FOLIUM_TOOL = False
-        import folium
-    except ImportError:
-        happyWarning('folium package (https://github.com/python-visualization/folium) not loaded - Map resources not available')
-    else:
-        FOLIUM_TOOL = True
-        happyVerbose('folium help: http://python-visualization.github.io/folium')
 else:
     LEAFLET_TOOL = True
-    FOLIUM_TOOL = False
     happyVerbose('ipyleaflet help: https://ipyleaflet.readthedocs.io/en/latest/index.html')
+
+try:
+    import folium
+except ImportError:
+    FOLIUM_TOOL = False
+    happyWarning('folium package (https://github.com/python-visualization/folium) not loaded - Map resources not available')
+else:
+    FOLIUM_TOOL = True
+    happyVerbose('folium help: http://python-visualization.github.io/folium')
 
 try:
     import ipywidgets # as widgets
@@ -2653,7 +2653,7 @@ class LeafMap(_Tool):
             except:
                 raise happyError('wrong tiling initialisation')
             if not url in ('',None):
-                if not keep_base is True:
+                if not keep_base is True and len(self.Map.layers)>1:
                     self.Map.clear_layers()
                 if not happyType.issequence(url):  url = [url,]
                 if not happyType.issequence(attr):  attr = [attr,]
