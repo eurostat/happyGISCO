@@ -1798,16 +1798,39 @@ class NUTS(_Feature):
     #/************************************************************************/
     def load(self, **kwargs):
         """Load the geometry stored in this NUTS instance.
+        
+            >>> data = nuts.load(**kwargs)
+        
+        Keyword arguments
+        -----------------
+        fmt : str
+            flag providing the output format; any string in :data:`settings.NUTS_FORMATS`,
+            *e.g.* :literal:`json, gpd, str`, is accepted so as to generally supported
+            JSON (dictionary), :mod:`geopandas` and :type:`str` output formats.
+        kwargs : dict
+            any other keyword arguments used to filter the input geometry(ies),*e.g.*
+            regarding source (unit), year, level, projection, scale and format of 
+            the data.
 
         Raises
         ------
         happyError
+            an error is raised when:
+                * the load format is not recognised
+                * some property is missing
+                
+        Example
+        -------
+                
+        See also
+        --------
+        :meth:`~NUTS.loads`.
         """
         fmt = kwargs.pop(_Decorator.KW_OFORMAT, 'json')
         try:
             assert fmt in happyType.seqflatten(list(settings.NUTS_FORMATS.items()))
         except:
-            raise happyError('dump format %s not recognised' % fmt)
+            raise happyError('loal format %s not recognised' % fmt)
         else:
             if fmt in settings.NUTS_FORMATS.keys():
                 fmt = settings.NUTS_FORMATS[fmt]
@@ -1881,11 +1904,15 @@ class NUTS(_Feature):
             
     #/************************************************************************/
     def loads(self, **kwargs):
-        """Dump the geometry stored in this NUTS instance as a string. 
+        """Load the geometry stored in this NUTS instance as a string. 
 
         Raises
         ------
         happyError
+                
+        See also
+        --------
+        :meth:`~NUTS.load`.
         """
         geom = self.dump(**kwargs)
         if happyType.issequence(geom) and len(geom)>1:
@@ -2006,11 +2033,14 @@ class NUTS(_Feature):
         
     #/************************************************************************/
     def carto(self, **kwargs):
-        """
+        """Create a map where the vector geometry(ies) provided by the given NUTS instance 
+        are represented.
+        
+            >>> nuts.carto(**kwargs)
 
-        Raises
-        ------
-        happyError
+        See also
+        --------
+        :meth:`tools.LeafMap.add_area`, :meth:`~NUTS.load`, :meth:`~NUTS.choro`.
         """
         __no_widget = kwargs.pop(_Decorator.KW_NO_WIDGET, False)
         if WIDGET_TOOL is True and __no_widget is False:
@@ -2032,12 +2062,12 @@ class NUTS(_Feature):
         
     #/************************************************************************/
     def choro(self, data, **kwargs):
-        """Create a choropleth map over the areas provided by the given NUTS
+        """Create a choropleth map over the geometry(ies) provided by the given NUTS
         instance.
 
-        Raises
-        ------
-        happyError
+        See also
+        --------
+        :meth:`tools.LeafMap.choropleth`, :meth:`~NUTS.load`, :meth:`~NUTS.carto`.
         """
         gdf = self.load(**{_Decorator.KW_OFMT: 'gpd'}, **kwargs)
         pass
