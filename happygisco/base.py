@@ -1108,6 +1108,7 @@ class _Decorator(object):
         KW_TYPE         = 'type' 
         KW_CRS          = 'crs' 
         KW_NAME         = 'name'
+        KW_COORDINATES  = 'coordinates'
         # GISCO-like dictionaries
         KW_RESULTS      = 'results'
         KW_ATTRIBUTES   = 'attributes'
@@ -1761,7 +1762,7 @@ class _Decorator(object):
         new_func : callable
             the decorated function that now accepts  :data:`level` as a keyword 
             argument to parse a NUTS level; the supported levels are 
-            :literal:`0,1,2,3`, as listed in :data:`settings.GISCO_NUTSLEVELS`.
+            :literal:`0,1,2,3`, as listed in :data:`settings.GISCO_LEVELS`.
         
         Examples
         --------          
@@ -1794,8 +1795,8 @@ class _Decorator(object):
         def __init__(self, *args, **kwargs):
             kwargs.update({'_parse_cls_':   [int, str, list], # list of levels 
                            '_key_':         _Decorator.KW_LEVEL, 
-                           '_values_':      settings.GISCO_NUTSLEVELS + ['ALL',],
-                           '_key_default_': settings.DEF_GISCO_NUTSLEVEL})
+                           '_values_':      settings.GISCO_LEVELS + ['ALL',],
+                           '_key_default_': settings.DEF_GISCO_LEVEL})
             super(_Decorator.parse_level,self).__init__(*args, **kwargs)
             
     
@@ -1945,7 +1946,7 @@ class _Decorator(object):
 #                            _values_=settings.GISCO_SCALES, _key_default_=settings.DEF_GISCO_SCALE)
 #_Decorator.parse_level =                        \
 #    _Decorator._parse_class([int, list], _Decorator.KW_LEVEL, 
-#                            _values_=settings.GISCO_NUTSLEVELS, _key_default_=settings.DEF_GISCO_NUTSLEVE)
+#                            _values_=settings.GISCO_LEVELS, _key_default_=settings.DEF_GISCO_NUTSLEVE)
 #_Decorator.parse_layer =                        \
 #    _Decorator._parse_class(ogr.Layer, _Decorator.KW_LAYER)
 #_Decorator.parse_vector =                        \
@@ -1965,38 +1966,37 @@ except:
         pass 
 else:
     class _CachedResponse(requests.Response):
+        """Generic class used for representing a cached response.
+            
+            >>> resp = base._CachedResponse(resp, url, path='')
+        """ 
         # why not derive this class from aiohttp.ClientResponse in the case
         # ASYNCIO_AVAILABLE is True? actually, we refer here to aiohttp doc,
         # namely http://docs.aiohttp.org/en/stable/client_reference.html:
         #   "User never creates the instance of ClientResponse class but gets 
         #   it from API calls"
+        __attrs__ = requests.Response.__attrs__ + ['_cache_path', 'cache_store']
+        def __init__(self, *args, **kwargs):
+            r, url = args
+            path = kwargs.pop('path','')
+            try:
+                assert happyType.isstring(url) and happyType.isstring(path) \
+                    and isinstance(r,(bytes,requests.Response,aiohttp.ClientResponse))
+            except:
+                raise happyError('parsed initialising parameters not recognised')
+            super(_CachedResponse,self).__init__()
+            self.url = url
+            self._cache_path = self.cache_store = path
+            if isinstance(r,bytes):
+                self.reason, self.status_code = "OK", 200
+                self._content, self._content_consumed = r, True           
+            elif isinstance(r,(requests.Response,aiohttp.ClientResponse)):
+                # self.__response = r
+                for attr in r.__dict__:
+                    setattr(self, attr, getattr(r, attr))
+            # self._encoding = ?
         def __repr__(self):
             return '<Response [%s]>' % (self.status_code)
-    def __init(inst, *args, **kwargs):
-        r, url = args
-        path = kwargs.pop('path','')
-        try:
-            assert happyType.isstring(url) and happyType.isstring(path) \
-                and isinstance(r,(bytes,requests.Response,aiohttp.ClientResponse))
-        except:
-            raise happyError('parsed initialising parameters not recognised')
-        super(_CachedResponse,inst).__init__()
-        inst.url = url
-        inst._cache_path = path
-        if isinstance(r,bytes):
-            inst.reason, inst.status_code = "OK", 200
-            inst._content, inst._content_consumed = r, True           
-        elif isinstance(r,(requests.Response,aiohttp.ClientResponse)):
-            # self.__response = r
-            for attr in r.__dict__:
-                setattr(inst, attr, getattr(r, attr))
-        # self._encoding = ?
-    _CachedResponse.__init__ = __init
-    _CachedResponse.__doc__ =                                                   \
-        """Generic class used for representing a cached response.
-            
-            >>> resp = base._CachedResponse(resp, url, path='')
-        """ 
                  
 #%%
 #==============================================================================
@@ -2253,10 +2253,10 @@ class _Service(object):
     #/************************************************************************/
     @staticmethod
     def __default_cache():
-        """Create default pathname for cache directory depending on OS platform.
-        Inspired by `Python` package `mod:wbdata`: default path defined for 
-        `property:path` property of `class:Cache` class.
-        """
+        #ignore-doc
+        # create default pathname for cache directory depending on OS platform.
+        # inspired by `Python` package `mod:wbdata`: default path defined for 
+        # `property:path` property of `class:Cache` class.
         platform = sys.platform
         if platform.startswith("win"): # windows
             basedir = os.getenv("LOCALAPPDATA",os.getenv("APPDATA",os.path.expanduser("~")))
@@ -2269,12 +2269,12 @@ class _Service(object):
     #/************************************************************************/
     @staticmethod
     def __build_cache(url, cache_store):
-        """Build unique filename from URL name and cache directory, e.g. using 
-        hashlib encoding.
-        :param url:
-        :param cache_store:
-        :returns: a unique pathname representing the input URL
-        """
+        #ignore-doc
+        # build unique filename from URL name and cache directory, e.g. using 
+        # hashlib encoding.
+        # :param url:
+        # :param cache_store:
+        # :returns: a unique pathname representing the input URL
         pathname = url.encode('utf-8')
         try:
             pathname = hashlib.md5(pathname).hexdigest()
@@ -2407,13 +2407,9 @@ class _Service(object):
     async \
     def __async_cache_response(self, session, url, force_download, cache_store, expire_after):
         # asynchronous implementation of cache_response
-        print('__async_cache_response')
         pathname = self.__build_cache(url, cache_store)
         is_cached = self.__is_cached(pathname, expire_after)
-        print('pathname=%s' % pathname)
-        print('is_cached=%s' % is_cached)
         if force_download is True or is_cached is False or cache_store in (None,False):
-            print('force_download')
             response = await session.get(url)
             content = await response.content.read()
             if cache_store not in (None,False):
@@ -2427,17 +2423,14 @@ class _Service(object):
                     async with aiofiles.open(pathname, 'wb') as f:
                         await f.write(content)
         else:
-            print('read')
             try:
                 assert aiofiles
             except:
-                print('__async read')
                 with open(pathname, 'rb') as f:
                     content = f.read() 
             else:
                 async with aiofiles.open(pathname, 'rb') as f:
                     content = await f.read() 
-        print('again pathname = %s' % pathname)
         return content, pathname
     
     #/************************************************************************/
@@ -2519,11 +2512,13 @@ class _Service(object):
             try:
                 if CACHECONTROL_INSTALLED is True:
                     resp = self.session.get(url)                
+                    path = cache_store
                 elif REQUESTS_CACHE_INSTALLED is True:
                     with requests_cache.enabled(cache_store, **kwargs):
-                        resp = self.session.get(url)                
+                        resp = self.session.get(url)  
+                    path = cache_store
                 else:
-                    resp, path = self.__cache_response(url, force_download, cache_store, expire_after)
+                    resp, path = self.__sync_cache_response(url, force_download, cache_store, expire_after)
             except:
                 raise happyError('wrong request formulated')  
             else:
@@ -2537,7 +2532,6 @@ class _Service(object):
     #/************************************************************************/
     async \
     def __async_get_response(self, session, url, force_download, caching, cache_store, expire_after):
-        print('in __async_get_response')
         if caching is False or cache_store is None:
             try:
                 resp = await session.get(url)                
@@ -2551,7 +2545,6 @@ class _Service(object):
             else:
                 print('url=%s' % url)
                 resp = _CachedResponse(resp, url, path=path)
-        print('cache response')
         try:
             assert resp is not None
             # yield from response.raise_for_status()
@@ -3123,8 +3116,8 @@ class _Service(object):
             is :data:`protocol://domain/path/query?filters`, when all parameters above
             are passed.
     
-        Example
-        -------
+        Examples
+        --------
         Let us, for instance, build a URL query to *Eurostat* Rest API (just enter 
         the output URL in your browser to check the output):
             
