@@ -440,7 +440,7 @@ KEY_OSM           = None
 
 # dummy variables
 CHECK_TYPE          = True
-CHECK_OSM_KEY       = True
+CHECK_OSM_KEY       = False # True
 
 CODER_GOOGLE        = 'GoogleV3'
 """Identifier of |GISCO| geocoder.
