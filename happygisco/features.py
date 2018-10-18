@@ -1569,7 +1569,7 @@ class NUTS(_Feature):
                 pass
             else:
                 self.__feat = feature
-        return self.__feat if self.__feat is None or len(self.__feat)>1     \
+        return self.__feat if self.__feat in ([],None) or len(self.__feat)>1     \
             else self.__feat[0]   
     @feature.setter
     def feature(self, feature):
