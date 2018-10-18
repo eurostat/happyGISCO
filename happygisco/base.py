@@ -74,7 +74,8 @@ import inspect
 import asyncio
 
 import time
-import hashlib, shutil
+import hashlib, urllib
+import shutil
 import copy, zipfile
 #import abc
 
@@ -3173,7 +3174,8 @@ class _Service(object):
             #        else (k, d[k]) for k in d for i in d[k]]
             _izip_replicate = lambda d : [[(k,i) for i in d[k]] if isinstance(d[k], (tuple,list))        \
                 else (k, d[k])  for k in d]          
-            filters = '&'.join(['{k}={v}'.format(k=k, v=v) for (k, v) in _izip_replicate(kwargs)])
+            # filters = '&'.join(['{k}={v}'.format(k=k, v=v) for (k, v) in _izip_replicate(kwargs)])
+            filters = urllib.parse.urlencode(_izip_replicate(kwargs))
             # filters = '&'.join(map("=".join,kwargs.items()))
             sep = '?'
             try:        
