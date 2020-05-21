@@ -38,8 +38,9 @@ Once installed, the module can be imported simply:
 
 Simple examples are available in the form of _Jupyter_ notebooks under the [_notebooks/_](https://github.com/eurostat/happyGISCO/tree/master/notebooks) folder, *e.g.*:
 
-* some [basic calls](http://nbviewer.jupyter.org/github/eurostat/happyGISCO/blob/master/notebooks/example_GISCO_services.ipynb) to the geocoding services,
-* a [simple application](http://nbviewer.jupyter.org/github/eurostat/happyGISCO/blob/master/notebooks/example_GISCO_features.ipynb) with NUTS vector features,
+* some [basic calls](http://nbviewer.jupyter.org/github/eurostat/happyGISCO/blob/master/notebooks/01_example_GISCO_services.ipynb) to the geocoding services,
+* a [simple application](http://nbviewer.jupyter.org/github/eurostat/happyGISCO/blob/master/notebooks/02_example_GISCO_features.ipynb) with NUTS vector features,
+* an [efficient tiled-based and multiprocessor algorithm](http://nbviewer.jupyter.org/github/eurostat/happyGISCO/blob/master/notebooks/03_algorithm_layers_overlay.ipynb) for the overlay of vector model layer onto a regular grid, with NUTS polygonal representation as an illustration.
 * an extended workflow for location identification and retrieval. 
 
 **Usage**
