@@ -82,7 +82,7 @@ def create_module_file(package, module, opts):
     text += format_directive(module, package)
     write_file(makename(package, module), text, opts)
 
-def create_package_file(root, master_package, subroot, py_files, opts, subs):
+def create_package_file(root, main_package, subroot, py_files, opts, subs):
     """Build the text of the file and write the file."""
     package = os.path.split(root)[-1]
     text = format_heading(1, '%s Package' % package)
@@ -98,7 +98,7 @@ def create_package_file(root, master_package, subroot, py_files, opts, subs):
         else:
             heading = ':mod:`%s` Module' % py_file
         text += format_heading(2, heading)
-        text += format_directive(is_package and subroot or py_path, master_package)
+        text += format_directive(is_package and subroot or py_path, main_package)
         text += '\n'
 
     # build a list of directories that are packages (they contain an INIT file)
@@ -108,12 +108,12 @@ def create_package_file(root, master_package, subroot, py_files, opts, subs):
         text += format_heading(2, 'Subpackages')
         text += '.. toctree::\n\n'
         for sub in subs:
-            text += '    %s.%s\n' % (makename(master_package, subroot), sub)
+            text += '    %s.%s\n' % (makename(main_package, subroot), sub)
         text += '\n'
 
-    write_file(makename(master_package, subroot), text, opts)
+    write_file(makename(main_package, subroot), text, opts)
 
-def create_modules_toc_file(master_package, modules, opts, name='modules'):
+def create_modules_toc_file(main_package, modules, opts, name='modules'):
     """
     Create the module's index.
     """

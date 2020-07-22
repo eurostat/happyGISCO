@@ -3119,11 +3119,11 @@ class _Pools(object):
             for proc in procs:  proc.start()  
             for proc in procs:  proc.join()  
         except Exception as e:  
-            # kill all slave processes on ctrl-C  
+            # kill all subordinate processes on ctrl-C  
             die(procs)  
             raise e  
         if not err_q.empty():  
-            # kill all on any exception from any one slave  
+            # kill all on any exception from any one subordinate  
             die(procs)  
             raise err_q.get()  
         # Processes finish in arbitrary order. Process IDs double  
@@ -3170,7 +3170,7 @@ class _Pools(object):
         manager = multiprocessing.Manager()  
         # Create FIFO queue and lock shared objects and return proxies to them.  
         # The managers handles a server process that manages shared objects that  
-        # each slave process has access to. Bottom line -- thread-safe.  
+        # each subordinate process has access to. Bottom line -- thread-safe.  
         out_q = manager.Queue()  
         err_q = manager.Queue()  
         lock = manager.Lock()  
